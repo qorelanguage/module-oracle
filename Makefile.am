@@ -8,6 +8,7 @@ noinst_HEADERS = src/oracle-config.h \
 
 EXTRA_DIST = COPYING ChangeLog AUTHORS README \
 	test/db-test.q \
+	docs/oracle-module-doc.html \
 	qore-oracle-module.spec
 
 libtool: $(LIBTOOL_DEPS)

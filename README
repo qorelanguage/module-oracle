@@ -15,7 +15,7 @@ The driver's name is "oracle" and the Datasource type constant is SQL::DSOracle
 ex: $db = new Datasource(DSOracle);
 ex: $db = new Datasource("oracle");
 
-Documentation TBD
+Documentation in docs/oracle-module-doc.html
 
 test/example script: test/db-test.q
 
