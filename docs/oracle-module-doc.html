@@ -571,7 +571,7 @@ You can reach me at: mailto:david_nichols@users.sourceforge.net</pre>
 [[Binding and Types]]
 </pre>
 </div>
-<div title="Introduction" modifier="DavidNichols" created="200808200719" modified="200809060754" changecount="45">
+<div title="Introduction" modifier="DavidNichols" created="200808200719" modified="200809060809" changecount="46">
 <pre>The oracle module provides an Oracle driver to Qore's DBI system, allowing Qore programs to take access Oracle databases through the Qore's {{{Datasource}}} and {{{DatasourcePool}}} classes.
 
 Note that this documentation is based on [[TittldyWiki|http://www.tiddlywiki.com/]], a wiki entirely contained in a single web page.
@@ -591,7 +591,8 @@ Oracle Database 10g Release 10.2.0.1.0 - 64bit Production
 }}}
 
 The {{{Datasource::getClientVersion()}}} returns a hash giving version information in the following keys: major, minor, update, patch, port_update.
-</pre>
+
+Note: There seems to be a bug in Oracle 9i and earlier in the streaming {{{OCILobRead()}}} function, where the LOB buffer must be at least twice as big as the LOB data to be read. This bug does not affect versions of the Qore oracle module linked with Oracle 10g libraries.</pre>
 </div>
 <div title="MainMenu" modifier="DavidNichols" created="200808200730" modified="200809060801" changecount="29">
 <pre>[[Introduction]]
