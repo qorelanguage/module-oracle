@@ -236,14 +236,17 @@ case "$with_oracle" in
   *) ORACLE_DIR=$with_oracle; with_oracle=yes ;;
 esac
 
-if test "$with_oracle" = "yes"; then
-   AC_ARG_WITH([oracle-instant-client],
-  [AS_HELP_STRING([--with-oracle-instant-client@<:@=DIR@:>@],
-                  [directory for Oracle instant client files])],
-   ,
-  [with_oracle_instant_client=$ORACLE_INSTANT_CLIENT])
+if test "$with_oracle" != "yes"; then
+   AC_MSG_ERROR([oracle not found; cannot build module without oracle support])
+fi
 
-   if test -n "$with_oracle_instant_client"; then
+AC_ARG_WITH([oracle-instant-client],
+	    [AS_HELP_STRING([--with-oracle-instant-client@<:@=DIR@:>@],
+            [directory for Oracle instant client files])],
+            ,
+            [with_oracle_instant_client=$ORACLE_INSTANT_CLIENT])
+
+if test -n "$with_oracle_instant_client"; then
       AC_MSG_CHECKING([for Oracle instant client SDK])
       if test -f "$with_oracle_instant_client/sdk/include/oci.h"; then
 	 AC_MSG_RESULT([ok])
@@ -253,7 +256,7 @@ if test "$with_oracle" = "yes"; then
       else
 	 AC_MSG_ERROR([instant client SDK include files not found, use --without-oracle to build without Oracle support or install the instant client SDK])
       fi
-   else
+else
       if test -d "$ORACLE_DIR/rdbms/public"; then
          ORACLE_INCLUDES="-I$ORACLE_DIR/rdbms/public"
       fi
@@ -272,32 +275,31 @@ if test "$with_oracle" = "yes"; then
          oracle_lib_dir="$ORACLE_DIR/lib"
       fi
       get_oracle_version $oracle_lib_dir $ORACLE_DIR
-   fi
+fi
 
-   AC_SUBST(ORACLE_INCLUDES)
+AC_SUBST(ORACLE_INCLUDES)
 
-   case "$ORACLE_VERSION" in
-      9*|10*) ORACLE_LIBS="-L$oracle_lib_dir -lclntsh" ;; 
-      *)      AC_MSG_ERROR(Unsupported Oracle version) ;;
-   esac
-   AC_SUBST(ORACLE_LIBS)
+case "$ORACLE_VERSION" in
+   9*|10*) ORACLE_LIBS="-L$oracle_lib_dir -lclntsh" ;; 
+   *)      AC_MSG_ERROR(Unsupported Oracle version) ;;
+esac
+AC_SUBST(ORACLE_LIBS)
 
-   # check for 'oci.h'
-   SAVE_CXXFLAGS="$CXXFLAGS"
-   SAVE_LDFLAGS="$LDFLAGS"
-   CXXFLAGS="$CXXFLAGS $ORACLE_INCLUDES"
-   LDFLAGS="$LDFLAGS $ORACLE_LIBS"
-   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+# check for 'oci.h'
+SAVE_CXXFLAGS="$CXXFLAGS"
+SAVE_LDFLAGS="$LDFLAGS"
+CXXFLAGS="$CXXFLAGS $ORACLE_INCLUDES"
+LDFLAGS="$LDFLAGS $ORACLE_LIBS"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <oci.h>
          ]],[[
         ]])], with_oracle=yes, AC_MSG_ERROR(file 'oci.h' not found in '$ORACLE_INCLUDES'))
-   AC_CHECK_FUNC([OCIClientVersion], [have_ociclientversion=yes], [have_ociclientversion=no])
-   if test "$have_ociclientversion" = "yes"; then
-      AC_DEFINE(HAVE_OCICLIENTVERSION, 1, [define if OCIClientVersion is available])      
-   fi
-   CXXFLAGS="$SAVE_CXXFLAGS"
-   LDFLAGS="$SAVE_LDFLAGS"
+AC_CHECK_FUNC([OCIClientVersion], [have_ociclientversion=yes], [have_ociclientversion=no])
+if test "$have_ociclientversion" = "yes"; then
+   AC_DEFINE(HAVE_OCICLIENTVERSION, 1, [define if OCIClientVersion is available])      
 fi
+CXXFLAGS="$SAVE_CXXFLAGS"
+LDFLAGS="$SAVE_LDFLAGS"
 
 set_qore_cppflags()
 {
