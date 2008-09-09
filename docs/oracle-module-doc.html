@@ -506,9 +506,8 @@ Also see AdvancedOptions</pre>
 </div>
 <!--POST-SHADOWAREA-->
 <div id="storeArea">
-<div title="Binding By Value" modifier="DavidNichols" created="200809060743" modified="200809060743" changecount="17">
-<pre>&quot;Binding By Value&quot;
-|!Argument|OCI Type|Description|h
+<div title="Binding By Value" modifier="DavidNichols" created="200809060743" modified="200809071812" changecount="24">
+<pre>|!Argument|!OCI Type|!Description|h
 |{{{Type::Binary}}}|{{{SQLT_BIN}}}|For use with {{{BLOB}}} columns, for example.|
 |{{{Type::String}}}|{{{SQLT_STR}}}|For use with string data, {{{VARCHAR}}}, {{{CHAR}}}, {{{CLOB}}} columns, etc|
 |{{{Type::Int}}}|{{{SQLT_INT}}} or {{{SQLT_STR}}}|if the int &gt; 32-bits = {{{SQLT_STR}}}, &lt;= 32-bit int = {{{SQLT_INT}}}|
@@ -517,7 +516,7 @@ Also see AdvancedOptions</pre>
 |{{{Type::Date}}}|{{{SQLT_TIMESTAMP}}}|For use with {{{DATE}}}, {{{TIMESTAMP}}}, etc columns|
 </pre>
 </div>
-<div title="Binding and Types" modifier="DavidNichols" created="200809060754" modified="200809060806" changecount="21">
+<div title="Binding and Types" modifier="DavidNichols" created="200809060754" modified="200809071813" changecount="22">
 <pre>When retrieving Oracle data, Oracle types are converted to Qore types as per [[Default Oracle to Qore Type Mappings]].
 
 Binding by value is supported for any statement executed through this driver; Oracle types are converted to Qore types as per [[Binding By Value]].
@@ -548,9 +547,9 @@ hash: (3 members)
 <pre>David Nichols is the author of the [[Qore programming language|http://qoretechnologies.com/qore]] and of this xmlsec module.
 You can reach me at: mailto:david_nichols@users.sourceforge.net</pre>
 </div>
-<div title="Default Oracle to Qore Type Mappings" modifier="DavidNichols" created="200809060731" modified="200809060752" changecount="17">
+<div title="Default Oracle to Qore Type Mappings" modifier="DavidNichols" created="200809060731" modified="200809071812" changecount="19">
 <pre>''Default Oracle to Qore Type Mappings''
-|!Oracle Column Type|Qore Type|Notes|h
+|!Oracle Column Type|!Qore Type|!Notes|h
 |{{{REAL, FLOAT, DOUBLE PRECISION, BINARY_FLOAT, BINARY_DOUBLE}}}|{{{Type::Float}}}|direct conversion|
 |{{{DATE}}}|{{{Type::Date}}}|direct conversion|
 |{{{TIMESTAMP}}}|{{{Type::Date}}} (absolute)|microseconds are converted to milliseconds, some precision may be lost|
@@ -571,7 +570,7 @@ You can reach me at: mailto:david_nichols@users.sourceforge.net</pre>
 [[Binding and Types]]
 </pre>
 </div>
-<div title="Introduction" modifier="DavidNichols" created="200808200719" modified="200809060809" changecount="46">
+<div title="Introduction" modifier="DavidNichols" created="200808200719" modified="200809071809" changecount="47">
 <pre>The oracle module provides an Oracle driver to Qore's DBI system, allowing Qore programs to take access Oracle databases through the Qore's {{{Datasource}}} and {{{DatasourcePool}}} classes.
 
 Note that this documentation is based on [[TittldyWiki|http://www.tiddlywiki.com/]], a wiki entirely contained in a single web page.
@@ -590,7 +589,7 @@ The {{{Datasource::getServerVersion()}}} and {{{Datasource::getClientVersion()}}
 Oracle Database 10g Release 10.2.0.1.0 - 64bit Production
 }}}
 
-The {{{Datasource::getClientVersion()}}} returns a hash giving version information in the following keys: major, minor, update, patch, port_update.
+The {{{Datasource::getClientVersion()}}} returns a hash giving version information in the following keys: {{{major}}}, {{{minor}}}, {{{update}}}, {{{patch}}}, {{{port_update}}}.
 
 Note: There seems to be a bug in Oracle 9i and earlier in the streaming {{{OCILobRead()}}} function, where the LOB buffer must be at least twice as big as the LOB data to be read. This bug does not affect versions of the Qore oracle module linked with Oracle 10g libraries.</pre>
 </div>
