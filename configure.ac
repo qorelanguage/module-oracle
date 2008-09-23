@@ -191,6 +191,17 @@ AC_ARG_WITH([oracle],
    [with_oracle=auto])
 
 if test "$with_oracle" = "auto"; then
+   if test -z "$ORACLE_HOME" -a -z "$ORACLE_INSTANT_CLIENT" -a -d "/usr/lib/oracle"; then
+      dir=`ls -rt /usr/include/oracle|tail -1`
+      if test "$enable_64bit" = yes; then
+      	 dir="/usr/lib/oracle/$dir/client64"
+      else
+	 dir="/usr/lib/oracle/$dir/client32"
+      fi
+      if test -d "$dir"; then\
+      	 ORACLE_INSTANT_CLIENT="$dir"
+      fi
+   fi
    if test -n "$ORACLE_HOME" -o -n "$ORACLE_INSTANT_CLIENT" -o "$with_oracle_instant_client"; then
       with_oracle=yes
    else
@@ -198,33 +209,42 @@ if test "$with_oracle" = "auto"; then
    fi
 fi
 
-get_oracle_version()
-{
+get_oracle_version() {
   AC_MSG_CHECKING([Oracle version])
+
+  # find latest oracle client library
   if test -n "$2" -a -s "$1/orainst/unix.rgs"; then
     ORACLE_VERSION=`grep '"ocommon"' $1/orainst/unix.rgs | sed "s/[ ][ ]*/:/g" | cut -d: -f 6 | cut -c 2-4`
     test -z "$ORACLE_VERSION" && ORACLE_VERSION=7.3
-  elif test -f $1/libclntsh.$SHLIB_SUFFIX.10.1; then
-    ORACLE_VERSION=10.1
-  elif test -f $1/libclntsh.$SHLIB_SUFFIX.10.0; then
-    ORACLE_VERSION=10.0
-  elif test -f $1/libclntsh.$SHLIB_SUFFIX.9.0; then
-    ORACLE_VERSION=9.0
-  elif test -f $1/libclntsh.$SHLIB_SUFFIX.8.0; then
-    ORACLE_VERSION=8.1
-  elif test -f $1/libclntsh.$SHLIB_SUFFIX.1.0; then
-    ORACLE_VERSION=8.0
-  elif test -f $1/libclntsh.a; then
-    if test -f $1/libcore4.a; then
-      ORACLE_VERSION=8.0
-    else
-      ORACLE_VERSION=8.1
-    fi
   else
-    AC_MSG_ERROR([Oracle libraries not found, use --without-oracle to build without Oracle support])
+    lf=`ls $1/libclntsh.so.@<:@1-9@:>@* 2>/dev/null|tail -1`
+    if test -z "$lf"; then
+       AC_MSG_ERROR([Oracle libraries not found in $1, check oracle installation])
+    fi
+  
+    lf=`basename "$lf" | sed s/.*so\.//`
+    case "$lf" in  
+       12*) ORACLE_VERSION=12 ;;
+       11*) ORACLE_VERSION=11 ;;
+       10*) ORACLE_VERSION=10 ;;
+       9*) ORACLE_VERSION=9 ;;
+       8*) ORACLE_VERSION=8 ;;
+    esac
+
+    if test -z "$ORACLE_VERSION" -a -f $1/libclntsh.a; then
+        ORACLE_VERSION=8
+    	#if test -f $1/libcore4.a; then
+    	#  ORACLE_VERSION=8.0
+    	#else
+    	#  ORACLE_VERSION=8.1
+    	#fi
+    fi
   fi
-  ora_ver_major=`echo $ORACLE_VERSION | cut -f1 -d.`
-  if test $ora_ver_major -lt 10; then
+
+  if test -z "$ORACLE_VERSION"; then
+    AC_MSG_ERROR([Oracle libraries not found in $1, check Oracle installation])
+  fi
+  if test $ORACLE_VERSION -lt 10; then
      AC_DEFINE(NEED_ORACLE_LOB_WORKAROUND, 1, [define if we need a workaround for the Oracle streaming LOB callback bug])
   fi
   AC_MSG_RESULT($ORACLE_VERSION)
@@ -247,14 +267,32 @@ AC_ARG_WITH([oracle-instant-client],
             [with_oracle_instant_client=$ORACLE_INSTANT_CLIENT])
 
 if test -n "$with_oracle_instant_client"; then
-      AC_MSG_CHECKING([for Oracle instant client SDK])
+      AC_MSG_CHECKING([for Oracle instant client SDK])      
       if test -f "$with_oracle_instant_client/sdk/include/oci.h"; then
 	 AC_MSG_RESULT([ok])
 	 ORACLE_INCLUDES="-I$with_oracle_instant_client/sdk/include"
 	 oracle_lib_dir=$with_oracle_instant_client
-	 get_oracle_version $with_oracle_instant_client
-      else
-	 AC_MSG_ERROR([instant client SDK include files not found, use --without-oracle to build without Oracle support or install the instant client SDK])
+	 get_oracle_version "$with_oracle_instant_client"
+      elif test -d "/usr/include/oracle"; then
+	 # see if oracle includes are in /usr/include/oracle/<ver>/client*/
+      	 dir=`ls -rt /usr/include/oracle|tail -1`
+	 if test "$enable_64bit" = yes; then
+	    dir="/usr/include/oracle/$dir/client64"
+	 else
+	    dir="/usr/include/oracle/$dir/client32"
+         fi
+	 if test ! -f "$dir/oci.h"; then
+	    AC_MSG_ERROR([instant client SDK include files not found, check instant client and instant client SDK (header files) installation])
+	 else
+	     # try to find oracle libraries in instant client dir
+	     if test ! -d "$with_oracle_instant_client/lib"; then
+	     	AC_MSG_ERROR([instant client libraries not found in $with_oracle_instant_client/lib, check instant client installation])
+	     fi
+	     AC_MSG_RESULT([ok])
+	     ORACLE_INCLUDES="-I$dir"
+	     oracle_lib_dir=$with_oracle_instant_client/lib
+	     get_oracle_version $with_oracle_instant_client/lib
+	 fi
       fi
 else
       if test -d "$ORACLE_DIR/rdbms/public"; then
@@ -280,7 +318,7 @@ fi
 AC_SUBST(ORACLE_INCLUDES)
 
 case "$ORACLE_VERSION" in
-   9*|10*) ORACLE_LIBS="-L$oracle_lib_dir -lclntsh" ;; 
+   9*|10*|11*|12*) ORACLE_LIBS="-L$oracle_lib_dir -lclntsh" ;; 
    *)      AC_MSG_ERROR(Unsupported Oracle version) ;;
 esac
 AC_SUBST(ORACLE_LIBS)
