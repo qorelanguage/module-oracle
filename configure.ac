@@ -217,12 +217,12 @@ get_oracle_version() {
     ORACLE_VERSION=`grep '"ocommon"' $1/orainst/unix.rgs | sed "s/[ ][ ]*/:/g" | cut -d: -f 6 | cut -c 2-4`
     test -z "$ORACLE_VERSION" && ORACLE_VERSION=7.3
   else
-    lf=`ls $1/libclntsh.so.@<:@1-9@:>@* 2>/dev/null|tail -1`
+    lf=`ls $1/libclntsh.${SHLIB_SUFFIX}.@<:@1-9@:>@* 2>/dev/null|tail -1`
     if test -z "$lf"; then
        AC_MSG_ERROR([Oracle libraries not found in $1, check oracle installation])
     fi
   
-    lf=`basename "$lf" | sed s/.*so\.//`
+    lf=`basename "$lf" | sed s/.*${SHLIB_SUFFIX}\.//`
     case "$lf" in  
        12*) ORACLE_VERSION=12 ;;
        11*) ORACLE_VERSION=11 ;;
@@ -242,7 +242,7 @@ get_oracle_version() {
   fi
 
   if test -z "$ORACLE_VERSION"; then
-    AC_MSG_ERROR([Oracle libraries not found in $1, check Oracle installation])
+    AC_MSG_ERROR([unrecognized Oracle version in $1, check Oracle installation])
   fi
   if test $ORACLE_VERSION -lt 10; then
      AC_DEFINE(NEED_ORACLE_LOB_WORKAROUND, 1, [define if we need a workaround for the Oracle streaming LOB callback bug])

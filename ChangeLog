@@ -1,3 +1,17 @@
+2008-09-23 08:37  david_nichols
+
+	* README, configure.ac: updated configure to detect oracle 11g
+	  properly
+
+2008-09-09 09:11  david_nichols
+
+	* docs/oracle-module-doc.html: updated docs
+
+2008-09-09 07:13  david_nichols
+
+	* ChangeLog, docs/oracle-module-doc.html: updated docs and
+	  ChangeLog
+
 2008-09-08 18:05  david_nichols
 
 	* configure, configure.ac: fixed configure when oracle is not found
