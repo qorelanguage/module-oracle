@@ -1,3 +1,8 @@
+2008-10-06 20:14  david_nichols
+
+	* ChangeLog, configure.ac: fixed oracle detection on osx and hpux
+	  parisc, updated changelog
+
 2008-09-23 08:37  david_nichols
 
 	* README, configure.ac: updated configure to detect oracle 11g
