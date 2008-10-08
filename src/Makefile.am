@@ -17,5 +17,5 @@ endif
 endif
 
 install-exec-hook:
-	mv $(libdir)/oracle.$(MODULE_SUFFIX) $(libdir)/oracle.qmod
-	rm -f $(libdir)/oracle.la $(libdir)/oracle.a
+	mv $(DESTDIR)$(libdir)/oracle.$(MODULE_SUFFIX) $(DESTDIR)$(libdir)/oracle.qmod
+	rm -f $(DESTDIR)$(libdir)/oracle.la $(libdir)/oracle.a
