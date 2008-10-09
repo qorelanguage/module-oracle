@@ -182,11 +182,9 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
    // iterate column list
    OraColumn *w = head;
    int i = 0;
-   while (w)
-   {
+   while (w) {
       //printd(5, "w->dtype=%d\n", w->dtype);
-      switch (w->dtype)
-      {
+      switch (w->dtype) {
 	 case SQLT_INT:
 	 case SQLT_UIN:
 	    w->val.i8 = 0;
@@ -196,13 +194,25 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
 	    break;
 
 	 case SQLT_FLT:
+#ifdef SQLT_BFLOAT
 	 case SQLT_BFLOAT:
+#endif
+#ifdef SQLT_BDOUBLE
 	 case SQLT_BDOUBLE:
+#endif
+#ifdef SQLT_IBFLOAT
 	 case SQLT_IBFLOAT:
+#endif
+#ifdef SQLT_IBDOUBLE
 	 case SQLT_IBDOUBLE:
+#endif
+#ifdef SQLT_BDOUBLE
 	    ora_checkerr(d_ora->errhp,
-			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.f8, sizeof(double), SQLT_BDOUBLE, &w->ind, 0, 0, OCI_DEFAULT), 
-			 str, ds, xsink);
+			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.f8, sizeof(double), SQLT_BDOUBLE, &w->ind, 0, 0, OCI_DEFAULT), str, ds, xsink);
+#else
+	    ora_checkerr(d_ora->errhp,
+			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.f8, sizeof(double), SQLT_FLT, &w->ind, 0, 0, OCI_DEFAULT), str, ds, xsink);
+#endif
 	    break;
 
 	 case SQLT_DAT:
@@ -354,10 +364,18 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, ExceptionSink *xsink)
 	 return new QoreBigIntNode(val.i8);
 
       case SQLT_FLT:
-      case SQLT_BFLOAT:
-      case SQLT_BDOUBLE:
-      case SQLT_IBFLOAT:
-      case SQLT_IBDOUBLE:
+#ifdef SQLT_BFLOAT
+	 case SQLT_BFLOAT:
+#endif
+#ifdef SQLT_BDOUBLE
+	 case SQLT_BDOUBLE:
+#endif
+#ifdef SQLT_IBFLOAT
+	 case SQLT_IBFLOAT:
+#endif
+#ifdef SQLT_IBDOUBLE
+	 case SQLT_IBDOUBLE:
+#endif
 	 return new QoreFloatNode(val.f8);
 
       case SQLT_DAT:
@@ -855,10 +873,14 @@ void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionS
       return;
    }
 
-   if (ntype == NT_FLOAT)
-   {
+   if (ntype == NT_FLOAT) {
+#ifdef SQLT_BDOUBLE
       ora_checkerr(d_ora->errhp, 
 		   OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &(reinterpret_cast<QoreFloatNode *>(const_cast<AbstractQoreNode *>(data.v.value))->f), sizeof(double), SQLT_BDOUBLE, (dvoid *)NULL, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindValue()", ds, xsink);
+#else
+      ora_checkerr(d_ora->errhp, 
+		   OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &(reinterpret_cast<QoreFloatNode *>(const_cast<AbstractQoreNode *>(data.v.value))->f), sizeof(double), SQLT_FLT, (dvoid *)NULL, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindValue()", ds, xsink);
+#endif
       return;
    }
 
@@ -934,10 +956,14 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
       buftype = SQLT_INT;
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.i8, sizeof(int64), SQLT_INT, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
    }
-   else if (!strcmp(data.ph.type, "float"))
-   {
+   else if (!strcmp(data.ph.type, "float")) {
+#ifdef SQLT_BDOUBLE
       buftype = SQLT_BDOUBLE;
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.f8, sizeof(double), SQLT_BDOUBLE, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
+#else
+      buftype = SQLT_FLT;
+      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.f8, sizeof(double), SQLT_FLT, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
+#endif
    }
    else if (!strcmp(data.ph.type, "hash"))
    {
@@ -977,8 +1003,13 @@ AbstractQoreNode *OraBindNode::getValue(Datasource *ds, ExceptionSink *xsink)
       return get_oracle_timestamp(ds, buf.odt, xsink);
    else if (buftype == SQLT_INT)
       return new QoreBigIntNode(buf.i8);
+#ifdef SQLT_BDOUBLE
    else if (buftype == SQLT_BDOUBLE)
       return new QoreFloatNode(buf.f8);
+#else
+   else if (buftype == SQLT_FLT)
+      return new QoreFloatNode(buf.f8);
+#endif
    else if (buftype == SQLT_RSET)
       return ora_fetch((OCIStmt *)buf.ptr, ds, xsink);
    else if (buftype == SQLT_LVB)

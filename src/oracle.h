@@ -89,10 +89,18 @@ class OraColumn {
 	       case SQLT_INT:
 	       case SQLT_UIN:
 	       case SQLT_FLT:
+#ifdef SQLT_BFLOAT
 	       case SQLT_BFLOAT:
+#endif
+#ifdef SQLT_BDOUBLE
 	       case SQLT_BDOUBLE:
+#endif
+#ifdef SQLT_IBFLOAT
 	       case SQLT_IBFLOAT:
+#endif
+#ifdef SQLT_IBDOUBLE
 	       case SQLT_IBDOUBLE:
+#endif
 	       case SQLT_DAT:
 		  break;
 
