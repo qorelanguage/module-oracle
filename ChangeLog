@@ -1,3 +1,7 @@
+2008-10-09 08:19  david_nichols
+
+	* ChangeLog: udpated changelog
+
 2008-10-09 08:16  david_nichols
 
 	* configure.ac, src/oracle.cc, src/oracle.h: fixed compile for
