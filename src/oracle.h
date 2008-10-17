@@ -24,9 +24,9 @@
 
 #define QORE_ORACLE_H
 
-#include <qore/Qore.h>
-
+#include "../config.h"
 #include "oracle-config.h"
+#include <qore/Qore.h>
 
 #include <oci.h>
 

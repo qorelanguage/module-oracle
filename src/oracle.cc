@@ -22,9 +22,6 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include <qore/Qore.h>
-#include <qore/DBI.h>
-
 #include "oracle.h"
 #include "oracle-module.h"
 
@@ -65,14 +62,12 @@ class OracleData {
       ub2 charsetid;
 };
 
-static int ora_checkerr(OCIError *errhp, sword status, const char *query_name, Datasource *ds, ExceptionSink *xsink)
-{
+static int ora_checkerr(OCIError *errhp, sword status, const char *query_name, Datasource *ds, ExceptionSink *xsink) {
    text errbuf[512];
    sb4 errcode = 0;
 
    //printd(5, "ora_checkerr(%08p, %d, %s, isEvent=%d)\n", errhp, status, query_name ? query_name : "none", xsink->isEvent());
-   switch (status)
-   {
+   switch (status) {
       case OCI_SUCCESS:
       case OCI_SUCCESS_WITH_INFO:
 	 // ignore SUCCESS_WITH_INFO codes
@@ -107,8 +102,7 @@ static int ora_checkerr(OCIError *errhp, sword status, const char *query_name, D
    return -1;
 }
 
-static int oracle_commit(Datasource *ds, ExceptionSink *xsink)
-{
+static int oracle_commit(Datasource *ds, ExceptionSink *xsink) {
    int status;
 
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
@@ -119,8 +113,7 @@ static int oracle_commit(Datasource *ds, ExceptionSink *xsink)
    return 0;
 }
 
-static int oracle_rollback(Datasource *ds, ExceptionSink *xsink)
-{
+static int oracle_rollback(Datasource *ds, ExceptionSink *xsink) {
    int status;
 
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
@@ -129,8 +122,7 @@ static int oracle_rollback(Datasource *ds, ExceptionSink *xsink)
    return 0;
 }
 
-OraColumns::OraColumns(OCIStmt *stmthp, Datasource *ds, const char *str, ExceptionSink *xsink)
-{
+OraColumns::OraColumns(OCIStmt *stmthp, Datasource *ds, const char *str, ExceptionSink *xsink) {
    QORE_TRACE("OraColumns::OraColumns()");
 
    len = 0;
@@ -143,12 +135,11 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *ds, const char *str, Excepti
    void *parmp;
 
    // get columns in output
-   while (OCIParamGet(stmthp, OCI_HTYPE_STMT, d_ora->errhp, &parmp, size() + 1) == OCI_SUCCESS)
-   {
+   while (OCIParamGet(stmthp, OCI_HTYPE_STMT, d_ora->errhp, &parmp, size() + 1) == OCI_SUCCESS) {
       ub2 dtype;
       text *col_name;
       int col_name_len;
-      ub2 col_max_size;
+      ub2 col_max_size, col_char_len;
 
       // get column type
       ora_checkerr(d_ora->errhp, 
@@ -160,21 +151,29 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *ds, const char *str, Excepti
 		   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_name, (ub4 *)&col_name_len, OCI_ATTR_NAME, d_ora->errhp), 
 		   str, ds, xsink);
       if (xsink->isEvent()) return;
-      // get size
-      ora_checkerr(d_ora->errhp, 
-		   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_max_size, 0, OCI_ATTR_DATA_SIZE, d_ora->errhp), 
-		   str, ds, xsink);
 
+      // get char size and multiply by bytes per char in the target character encoding
+      // NOTE: we cannot use OCI_ATTR_DATA_SIZE here, as this will give the maximum number of
+      //       bytes in the server's encoding 
+      ora_checkerr(d_ora->errhp, 
+		   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_char_len, 0, OCI_ATTR_CHAR_SIZE, d_ora->errhp), 
+		   str, ds, xsink);
       if (xsink->isEvent()) return;
 
+#if QORE_VERSION_CODE >= 007001
+      col_max_size = col_char_len * ds->getQoreEncoding()->getMaxCharWidth();
+#else
+      // qore < 0.7.1 did not have the QoreEncoding::getMaxCharWidth() call, so we assume character width = 1
+      // for all character encodings except UTF8
+      col_max_size = col_char_len * (ds->getQoreEncoding() == QCS_UTF8 ? 4 : 1);
+#endif
+
+      printd(0, "OraColumns::OraColumns() column %s: type=%d chars=%d size=%d\n", col_name, dtype, col_char_len, col_max_size);
       add((char *)col_name, col_name_len, col_max_size, dtype);
    }
-
-
 }
 
-void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, ExceptionSink *xsink)
-{
+void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, ExceptionSink *xsink) {
    //QORE_TRACE("OraColumne::define()");
 
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
@@ -295,7 +294,6 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
       w = w->next;
       i++;
    }
-
 }
 
 static DateTimeNode *convert_date_time(unsigned char *str)
