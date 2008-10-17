@@ -139,11 +139,11 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *ds, const char *str, Excepti
       ub2 dtype;
       text *col_name;
       int col_name_len;
-      ub2 col_max_size, col_char_len;
-
+      ub2 col_max_size;
+      
       // get column type
       ora_checkerr(d_ora->errhp, 
-		   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &dtype, 0, OCI_ATTR_DATA_TYPE, d_ora->errhp), 
+                   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &dtype, 0, OCI_ATTR_DATA_TYPE, d_ora->errhp), 
 		   str, ds, xsink);
       if (xsink->isEvent()) return;
       // get column name
@@ -152,23 +152,42 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *ds, const char *str, Excepti
 		   str, ds, xsink);
       if (xsink->isEvent()) return;
 
-      // get char size and multiply by bytes per char in the target character encoding
-      // NOTE: we cannot use OCI_ATTR_DATA_SIZE here, as this will give the maximum number of
-      //       bytes in the server's encoding 
+      // see if column uses character or byte semantics
+      ub1 char_semantics;
       ora_checkerr(d_ora->errhp, 
-		   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_char_len, 0, OCI_ATTR_CHAR_SIZE, d_ora->errhp), 
-		   str, ds, xsink);
+                   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &char_semantics, (ub4 *)0, OCI_ATTR_CHAR_USED, d_ora->errhp), 
+                   str, ds, xsink);
       if (xsink->isEvent()) return;
+      
+      if (char_semantics) {
+	 ub2 col_char_len;
+
+	 // get char size and multiply by bytes per char in the target character encoding
+	 // NOTE: we cannot use OCI_ATTR_DATA_SIZE here, as this will give the maximum number of
+	 //       bytes in the server's encoding 
+	 ora_checkerr(d_ora->errhp, 
+	              OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_char_len, 0, OCI_ATTR_CHAR_SIZE, d_ora->errhp), 
+	              str, ds, xsink);
+	 if (xsink->isEvent()) return;
+
+	 //printd(0, "OraColumns::OraColumns() column %s: chars=%d\n", col_name, col_char_len);
 
 #if QORE_VERSION_CODE >= 007001
-      col_max_size = col_char_len * ds->getQoreEncoding()->getMaxCharWidth();
+	 col_max_size = col_char_len * ds->getQoreEncoding()->getMaxCharWidth();
 #else
-      // qore < 0.7.1 did not have the QoreEncoding::getMaxCharWidth() call, so we assume character width = 1
-      // for all character encodings except UTF8
-      col_max_size = col_char_len * (ds->getQoreEncoding() == QCS_UTF8 ? 4 : 1);
+	 // qore < 0.7.1 did not have the QoreEncoding::getMaxCharWidth() call, so we assume character width = 1
+	 // for all character encodings except UTF8
+	 col_max_size = col_char_len * (ds->getQoreEncoding() == QCS_UTF8 ? 4 : 1);
 #endif
+      }
+      else {
+	 ora_checkerr(d_ora->errhp, 
+	              OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_max_size, 0, OCI_ATTR_DATA_SIZE, d_ora->errhp), 
+	              str, ds, xsink);
+	 if (xsink->isEvent()) return;
+      }
 
-      printd(0, "OraColumns::OraColumns() column %s: type=%d chars=%d size=%d\n", col_name, dtype, col_char_len, col_max_size);
+      //printd(0, "OraColumns::OraColumns() column %s: type=%d size=%d\n", col_name, dtype, col_max_size);
       add((char *)col_name, col_name_len, col_max_size, dtype);
    }
 }
@@ -885,15 +904,13 @@ void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionS
    xsink->raiseException("ORACLE-BIND-PLACEHOLDER-ERROR", "type '%s' is not supported for SQL binding", data.v.value->getTypeName());
 }
 
-void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionSink *xsink)
-{
+void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionSink *xsink) {
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
    OCIBind *bndp = NULL;
 
    printd(5, "OraBindNode::bindPlaceholder(ds=%08p, pos=%d) type=%s, size=%d)\n", ds, pos, data.ph.type, data.ph.maxsize);
 
-   if (!strcmp(data.ph.type, "string"))
-   {
+   if (!strcmp(data.ph.type, "string")) {
       if (data.ph.maxsize < 0)
 	 data.ph.maxsize = DBI_DEFAULT_STR_LEN;
 
@@ -904,8 +921,7 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
 
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, buf.ptr, data.ph.maxsize + 1, SQLT_STR, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
    }
-   else if (!strcmp(data.ph.type, "date"))
-   {
+   else if (!strcmp(data.ph.type, "date")) {
       //printd(5, "oraBindNode::bindPlaceholder() this=%08p, DATE buftype=%d\n", this, SQLT_DATE);
       buftype = SQLT_DATE;
       buf.odt = NULL;
