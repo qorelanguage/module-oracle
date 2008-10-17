@@ -435,7 +435,7 @@ else
       qv_sub=`grep QORE_VERSION_SUB $QORE_INC_DIR/qore/qore-version.h|cut -f3 -d\  2>/dev/null`
 
       qvc=`printf "%02d%02d%02d" $qv_major $qv_minor $qv_sub`
-      AC_DEFINE_UNQUOTED([QORE_VERSION_CODE], $qcv, [define when missing in Qore headers])
+      AC_DEFINE_UNQUOTED([QORE_VERSION_CODE], $qvc, [define when missing in Qore headers])
    fi
 
    if test $qvc -lt 000700; then
