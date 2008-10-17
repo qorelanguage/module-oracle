@@ -122,6 +122,16 @@ static int oracle_rollback(Datasource *ds, ExceptionSink *xsink) {
    return 0;
 }
 
+static int get_char_width(const QoreEncoding *enc, int num) {
+#if QORE_VERSION_CODE >= 007001
+   return num * enc->getMaxCharWidth();
+#else
+   // qore < 0.7.1 did not have the QoreEncoding::getMaxCharWidth() call, so we assume character width = 1
+   // for all character encodings except UTF8
+   return num * (enc == QCS_UTF8 ? 4 : 1);
+#endif
+}
+
 OraColumns::OraColumns(OCIStmt *stmthp, Datasource *ds, const char *str, ExceptionSink *xsink) {
    QORE_TRACE("OraColumns::OraColumns()");
 
@@ -146,49 +156,27 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *ds, const char *str, Excepti
                    OCIAttrGet(parmp, OCI_DTYPE_PARAM, &dtype, 0, OCI_ATTR_DATA_TYPE, d_ora->errhp), 
 		   str, ds, xsink);
       if (xsink->isEvent()) return;
+
       // get column name
       ora_checkerr(d_ora->errhp, 
 		   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_name, (ub4 *)&col_name_len, OCI_ATTR_NAME, d_ora->errhp), 
 		   str, ds, xsink);
       if (xsink->isEvent()) return;
 
-      // see if column uses character or byte semantics
-      ub1 char_semantics;
+      ub2 col_char_len;
       ora_checkerr(d_ora->errhp, 
-                   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &char_semantics, (ub4 *)0, OCI_ATTR_CHAR_USED, d_ora->errhp), 
-                   str, ds, xsink);
+		   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_char_len, 0, OCI_ATTR_CHAR_SIZE, d_ora->errhp), 
+		   str, ds, xsink);
       if (xsink->isEvent()) return;
-      
-      if (char_semantics) {
-	 ub2 col_char_len;
 
-	 // get char size and multiply by bytes per char in the target character encoding
-	 // NOTE: we cannot use OCI_ATTR_DATA_SIZE here, as this will give the maximum number of
-	 //       bytes in the server's encoding 
-	 ora_checkerr(d_ora->errhp, 
-	              OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_char_len, 0, OCI_ATTR_CHAR_SIZE, d_ora->errhp), 
-	              str, ds, xsink);
-	 if (xsink->isEvent()) return;
+      ora_checkerr(d_ora->errhp, 
+		   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_max_size, 0, OCI_ATTR_DATA_SIZE, d_ora->errhp), 
+		   str, ds, xsink);
+      if (xsink->isEvent()) return;
 
-	 //printd(0, "OraColumns::OraColumns() column %s: chars=%d\n", col_name, col_char_len);
+      //printd(5, "OraColumns::OraColumns() column %s: type=%d char_len=%d size=%d (SQLT_STR=%d)\n", col_name, dtype, col_char_len, col_max_size, SQLT_STR);
 
-#if QORE_VERSION_CODE >= 007001
-	 col_max_size = col_char_len * ds->getQoreEncoding()->getMaxCharWidth();
-#else
-	 // qore < 0.7.1 did not have the QoreEncoding::getMaxCharWidth() call, so we assume character width = 1
-	 // for all character encodings except UTF8
-	 col_max_size = col_char_len * (ds->getQoreEncoding() == QCS_UTF8 ? 4 : 1);
-#endif
-      }
-      else {
-	 ora_checkerr(d_ora->errhp, 
-	              OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_max_size, 0, OCI_ATTR_DATA_SIZE, d_ora->errhp), 
-	              str, ds, xsink);
-	 if (xsink->isEvent()) return;
-      }
-
-      //printd(0, "OraColumns::OraColumns() column %s: type=%d size=%d\n", col_name, dtype, col_max_size);
-      add((char *)col_name, col_name_len, col_max_size, dtype);
+      add((char *)col_name, col_name_len, col_max_size, dtype, col_char_len);
    }
 }
 
@@ -304,6 +292,7 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
 	    break;
 
 	 default: // treated as a string
+	    if (w->charlen) w->maxsize = w->charlen * get_char_width(ds->getQoreEncoding(), w->charlen); 
 	    w->val.ptr = malloc(sizeof(char) * (w->maxsize + 1));
 	    ora_checkerr(d_ora->errhp,
 			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, w->val.ptr, w->maxsize + 1, SQLT_STR, &w->ind, 0, 0, OCI_DEFAULT), 
@@ -327,23 +316,20 @@ static DateTimeNode *convert_date_time(unsigned char *str)
    return new DateTimeNode(year, str[2], str[3], str[4] - 1, str[5] - 1, str[6] - 1);
 }
 
-extern "C" sb4 read_clob_callback(void *sp, CONST dvoid *bufp, ub4 len, ub1 piece)
-{
+extern "C" sb4 read_clob_callback(void *sp, CONST dvoid *bufp, ub4 len, ub1 piece) {
    printd(5, "read_clob_callback(%08p, %08p, %d, %d)\n", sp, bufp, len, piece);
    (reinterpret_cast<QoreStringNode *>(sp))->concat((char *)bufp, len);
    return OCI_CONTINUE;
 }
 
-extern "C" sb4 read_blob_callback(void *bp, CONST dvoid *bufp, ub4 len, ub1 piece)
-{
+extern "C" sb4 read_blob_callback(void *bp, CONST dvoid *bufp, ub4 len, ub1 piece) {
    printd(5, "read_blob_callback(%08p, %08p, %d, %d)\n", bp, bufp, len, piece);
    ((BinaryNode *)bp)->append((char *)bufp, len);
    return OCI_CONTINUE;
 }
 
 
-AbstractQoreNode *get_oracle_timestamp(Datasource *ds, OCIDateTime *odt, ExceptionSink *xsink)
-{
+AbstractQoreNode *get_oracle_timestamp(Datasource *ds, OCIDateTime *odt, ExceptionSink *xsink) {
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
    //printd(5, "OraColumn::getValue() using TIMESTAMP handle %08p\n", val.odt);
 
@@ -367,15 +353,13 @@ AbstractQoreNode *get_oracle_timestamp(Datasource *ds, OCIDateTime *odt, Excepti
    return new DateTimeNode(year, month, day, hour, minute, second, us / 1000);
 }
 
-AbstractQoreNode *OraColumn::getValue(Datasource *ds, ExceptionSink *xsink)
-{
+AbstractQoreNode *OraColumn::getValue(Datasource *ds, ExceptionSink *xsink) {
    //printd(5, "OraColumn::getValue() dtype=%d, ind=%d, maxsize=%d\n", dtype, ind, maxsize);
 
    if (ind == -1)      // SQL NULL returned
       return null();
 
-   switch (dtype)
-   {
+   switch (dtype) {
       case SQLT_INT:
       case SQLT_UIN:
 	 return new QoreBigIntNode(val.i8);
@@ -404,8 +388,7 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, ExceptionSink *xsink)
       case SQLT_DATE:
 	 return get_oracle_timestamp(ds, val.odt, xsink);
 
-      case SQLT_INTERVAL_YM:
-      {
+      case SQLT_INTERVAL_YM: {
 	 // get oracle data
 	 OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
@@ -420,8 +403,7 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, ExceptionSink *xsink)
 		 new DateTimeNode(year, month, 0, 0, 0, 0, 0, true));
       }
 
-      case SQLT_INTERVAL_DS:
-      {
+      case SQLT_INTERVAL_DS: {
 	 // get oracle data
 	 OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
@@ -436,8 +418,7 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, ExceptionSink *xsink)
 		 new DateTimeNode(0, 0, day, hour, minute, second, microsecond / 1000, true));
       }
 
-      case SQLT_LVB:
-      {
+      case SQLT_LVB: {
 	 // get oracle data
 	 OracleData *d_ora = (OracleData *)ds->getPrivateData();
 	 BinaryNode *b = new BinaryNode();
@@ -494,7 +475,7 @@ static QoreHashNode *ora_fetch(OCIStmt *stmthp, Datasource *ds, ExceptionSink *x
    // retrieve results from statement and return hash
    
    // setup column structure for output columns
-   OraColumns columns(stmthp, ds, "ora_fetch()", xsink);
+   OraColumns columns(stmthp, ds, "ora_fetch() get_attributes", xsink);
    if (*xsink)
       return 0;
 
@@ -503,8 +484,7 @@ static QoreHashNode *ora_fetch(OCIStmt *stmthp, Datasource *ds, ExceptionSink *x
       
    // create hash elements for each column, assign empty list
    OraColumn *w = columns.getHead();
-   while (w)
-   {
+   while (w) {
       printd(5, "ora_fetch() allocating list for '%s' column\n", w->name);
       h->setKeyValue(w->name, new QoreListNode(), xsink);
       w = w->next;
@@ -513,21 +493,18 @@ static QoreHashNode *ora_fetch(OCIStmt *stmthp, Datasource *ds, ExceptionSink *x
    int num_rows = 0;
    
    // setup temporary row to accept values
-   columns.define(stmthp, ds, "ora_fetch()", xsink);
+   columns.define(stmthp, ds, "ora_fetch() define", xsink);
    
    // now finally fetch the data
-   while (!xsink->isEvent())
-   {
+   while (!xsink->isEvent()) {
       int status;
       OracleData *d_ora = (OracleData *)ds->getPrivateData();
       
-      if ((status = OCIStmtFetch(stmthp, d_ora->errhp, 1, OCI_FETCH_NEXT, OCI_DEFAULT)))
-      {
+      if ((status = OCIStmtFetch(stmthp, d_ora->errhp, 1, OCI_FETCH_NEXT, OCI_DEFAULT))) {
 	 if (status == OCI_NO_DATA)
 	    break;
-	 else
-	 {
-	    ora_checkerr(d_ora->errhp, status, "ora_fetch()", ds, xsink);
+	 else {
+	    ora_checkerr(d_ora->errhp, status, "ora_fetch() OCIStmtFetch()", ds, xsink);
 	    if (xsink->isEvent())
 	       break;
 	 }
@@ -536,15 +513,13 @@ static QoreHashNode *ora_fetch(OCIStmt *stmthp, Datasource *ds, ExceptionSink *x
       // copy data or perform per-value processing if needed
       OraColumn *w = columns.getHead();
       int i = 0;
-      while (w)
-      {
+      while (w) {
 	 // get pointer to value of target node
 	 QoreListNode *l = reinterpret_cast<QoreListNode *>(h->getKeyValue(w->name));
 	 AbstractQoreNode **v = l->get_entry_ptr(num_rows);
 	 
 	 // dereference node if already present
-	 if (*v)
-	 {
+	 if (*v) {
 	    printd(1, "ora_fetch(): dereferencing result value (col=%s)\n", w->name);
 	    (*v)->deref(xsink);
 	 }
@@ -672,8 +647,7 @@ OraBindGroup::OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreLi
    }
 }
 
-void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink)
-{
+void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink) {
    printd(5, "parseQuery() args=%08p str=%s\n", args, str->getBuffer());
 
    char quote = 0;
@@ -681,24 +655,20 @@ void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink)
    const char *p = str->getBuffer();
    unsigned index = 0;
    QoreString tmp(ds->getQoreEncoding());
-   while (*p)
-   {
-      if (!quote && (*p) == '%') // found value marker
-      {
+   while (*p) {
+      if (!quote && (*p) == '%') { // found value marker
 	 int offset = p - str->getBuffer();
 	 const AbstractQoreNode *v = args ? args->retrieve_entry(index++) : NULL;
 
 	 p++;
-	 if ((*p) == 'd')
-	 {
+	 if ((*p) == 'd') {
 	    DBI_concat_numeric(&tmp, v);
 	    str->replace(offset, 2, &tmp);
 	    p = str->getBuffer() + offset + tmp.strlen();
 	    tmp.clear();
 	    continue;
 	 }
-	 if ((*p) == 's')
-	 {
+	 if ((*p) == 's') {
 	    if (DBI_concat_string(&tmp, v, xsink))
 	       break;
 	    str->replace(offset, 2, &tmp);
@@ -706,14 +676,12 @@ void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink)
 	    tmp.clear();
 	    continue;
 	 }
-	 if ((*p) != 'v')
-	 {
+	 if ((*p) != 'v') {
 	    xsink->raiseException("DBI-EXEC-PARSE-EXCEPTION", "invalid value specification (expecting '%v' or '%%d', got %%%c)", *p);
 	    break;
 	 }
 	 p++;
-	 if (isalpha(*p))
-	 {
+	 if (isalpha(*p)) {
 	    xsink->raiseException("DBI-EXEC-PARSE-EXCEPTION", "invalid value specification (expecting '%v' or '%%d', got %%v%c*)", *p);
 	    break;
 	 }
@@ -728,8 +696,7 @@ void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink)
 	 printd(5, "OraBindGroup::parseQuery() adding value type=%s\n",v ? v->getTypeName() : "<NULL>");
 	 add(v);
       }
-      else if (!quote && (*p) == ':') // found placeholder marker
-      {
+      else if (!quote && (*p) == ':') { // found placeholder marker
 	 p++;
 	 if (!isalpha(*p))
 	    continue;
@@ -746,19 +713,16 @@ void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink)
 	    add(tstr.giveBuffer(), -1, "string");
 	 else {
 	    qore_type_t vtype = v->getType();
-	    if (vtype == NT_HASH)
-	    {
+	    if (vtype == NT_HASH) {
 	       const QoreHashNode *h = reinterpret_cast<const QoreHashNode *>(v);
 	       // get and check data type
 	       const AbstractQoreNode *t = h->getKeyValue("type");
-	       if (!t)
-	       {
+	       if (!t) {
 		  xsink->raiseException("DBI-EXEC-EXCEPTION", "missing 'type' key in placeholder hash");
 		  break;	 
 	       }
 	       const QoreStringNode *str = dynamic_cast<const QoreStringNode *>(t);
-	       if (!str)
-	       {
+	       if (!str) {
 		  xsink->raiseException("DBI-EXEC-EXCEPTION", "expecting type name as value of 'type' key, got '%s'", t->getTypeName());
 		  break;
 	       }
@@ -778,8 +742,7 @@ void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink)
 	       xsink->raiseException("DBI-EXEC-EXCEPTION", "expecting string or hash for placeholder description, got '%s'", v->getTypeName());
 	 }
       }
-      else if (((*p) == '\'') || ((*p) == '\"'))
-      {
+      else if (((*p) == '\'') || ((*p) == '\"')) {
 	 if (!quote)
 	    quote = *p;
 	 else if (quote == (*p))
@@ -791,8 +754,7 @@ void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink)
    }
 }
 
-void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionSink *xsink)
-{
+void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionSink *xsink) {
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
    OCIBind *bndp = NULL;
    ind = 0;
@@ -800,8 +762,7 @@ void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionS
    //printd(5, "OraBindNode::bindValue() type=%s\n", data.v.value ? data.v.value->getTypeName() : "NOTHING");
 
    // bind a NULL
-   if (is_nothing(data.v.value) || is_null(data.v.value))
-   {
+   if (is_nothing(data.v.value) || is_null(data.v.value)) {
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, NULL, 0, SQLT_STR, (dvoid *)NULL, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), 
 		   "OraBindNode::bindValue()", ds, xsink);
       return;
@@ -838,8 +799,7 @@ void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionS
       buf.odt = NULL;
       ora_checkerr(d_ora->errhp,
 		   OCIDescriptorAlloc(d_ora->envhp, (dvoid **)&buf.odt, OCI_DTYPE_TIMESTAMP, 0, NULL), "OraBindNode::bindValue() TIMESTAMP", ds, xsink);
-      if (!*xsink)
-      {
+      if (!*xsink) {
 	 ora_checkerr(d_ora->errhp, 
 		      OCIDateTimeConstruct (d_ora->envhp, d_ora->errhp, buf.odt, (sb2)d->getYear(), (ub1)d->getMonth(), (ub1)d->getDay(),
 					    (ub1)d->getHour(), (ub1)d->getMinute(), (ub1)d->getSecond(),
@@ -861,23 +821,20 @@ void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionS
       return;
    }
 
-   if (ntype == NT_BOOLEAN)
-   {
+   if (ntype == NT_BOOLEAN) {
       buf.i4 = reinterpret_cast<const QoreBoolNode *>(data.v.value)->getValue();
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.i4, sizeof(int), SQLT_INT, (dvoid *)NULL, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindValue()", ds, xsink);
       return;
    }
 
-   if (ntype == NT_INT)
-   {
+   if (ntype == NT_INT) {
       const QoreBigIntNode *b = reinterpret_cast<const QoreBigIntNode *>(data.v.value);
       if (b->val <= MAXINT32 && b->val >= -MAXINT32)
       {
 	 buf.i4 = b->val;
 	 ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.i4, sizeof(int), SQLT_INT, (dvoid *)NULL, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindValue()", ds, xsink);
       }
-      else // bind as a string value
-      {
+      else { // bind as a string value
 	 buftype = SQLT_STR;
 
 	 QoreString *tstr = new QoreString(ds->getQoreEncoding());
@@ -995,15 +952,13 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
       xsink->raiseException("DBI-EXEC-EXCEPTION", "type '%s' is not supported for SQL binding", data.ph.type);
 }
 
-AbstractQoreNode *OraBindNode::getValue(Datasource *ds, ExceptionSink *xsink)
-{
+AbstractQoreNode *OraBindNode::getValue(Datasource *ds, ExceptionSink *xsink) {
    // if NULL, then return NULL
    if (ind == -1)
       return null();
 
    //printd(5, "buftype: %d\n", buftype);
-   if (buftype == SQLT_STR)
-   {
+   if (buftype == SQLT_STR) {
       // must be string data
       remove_trailing_blanks((char *)buf.ptr);
       int len = strlen((char *)buf.ptr);
@@ -1026,16 +981,14 @@ AbstractQoreNode *OraBindNode::getValue(Datasource *ds, ExceptionSink *xsink)
 #endif
    else if (buftype == SQLT_RSET)
       return ora_fetch((OCIStmt *)buf.ptr, ds, xsink);
-   else if (buftype == SQLT_LVB)
-   {
+   else if (buftype == SQLT_LVB) {
       // get oracle data
       OracleData *d_ora = (OracleData *)ds->getPrivateData();
       BinaryNode *b = new BinaryNode();
       b->append(OCIRawPtr(d_ora->envhp, (OCIRaw *)buf.ptr), OCIRawSize(d_ora->envhp, (OCIRaw *)buf.ptr));
       return b;
    }
-   else if (buftype == SQLT_CLOB || buftype == SQLT_BLOB)
-   {
+   else if (buftype == SQLT_CLOB || buftype == SQLT_BLOB) {
       // get oracle data
       OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
@@ -1045,8 +998,7 @@ AbstractQoreNode *OraBindNode::getValue(Datasource *ds, ExceptionSink *xsink)
       void *bbuf = malloc(LOB_BLOCK_SIZE);
       AbstractQoreNode *rv;
       ub4 amt = 0;
-      if (buftype == SQLT_CLOB)
-      {
+      if (buftype == SQLT_CLOB) {
 	 QoreStringNodeHolder str(new QoreStringNode(ds->getQoreEncoding()));
 	 // read LOB data in streaming callback mode
 	 ora_checkerr(d_ora->errhp,
@@ -1054,8 +1006,7 @@ AbstractQoreNode *OraBindNode::getValue(Datasource *ds, ExceptionSink *xsink)
 				 *str, read_clob_callback, (ub2)d_ora->charsetid, (ub1)0), "oraReadCLOBCallback()", ds, xsink);
 	 rv = *xsink ? 0 : str.release();
       }
-      else
-      {
+      else {
 	 BinaryNode *b = new BinaryNode();
 	 // read LOB data in streaming callback mode
 	 ora_checkerr(d_ora->errhp,
@@ -1070,12 +1021,10 @@ AbstractQoreNode *OraBindNode::getValue(Datasource *ds, ExceptionSink *xsink)
    return 0;
 }
 
-QoreHashNode *OraBindGroup::getOutputHash(ExceptionSink *xsink)
-{
+QoreHashNode *OraBindGroup::getOutputHash(ExceptionSink *xsink) {
    QoreHashNode *h = new QoreHashNode();
    OraBindNode *w = head;
-   while (w)
-   {
+   while (w) {
       if (w->bindtype == BN_PLACEHOLDER)
 	 h->setKeyValue(w->data.ph.name, w->getValue(ds, xsink), xsink);
       w = w->next;
@@ -1083,8 +1032,7 @@ QoreHashNode *OraBindGroup::getOutputHash(ExceptionSink *xsink)
    return h;
 }
 
-int OraBindGroup::oci_exec(const char *who, ub4 iters, ExceptionSink *xsink)
-{
+int OraBindGroup::oci_exec(const char *who, ub4 iters, ExceptionSink *xsink) {
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
    int status = OCIStmtExecute(d_ora->svchp, stmthp, d_ora->errhp, iters, 0, 0, 0, OCI_DEFAULT);
@@ -1137,8 +1085,7 @@ int OraBindGroup::oci_exec(const char *who, ub4 iters, ExceptionSink *xsink)
    return 0;
 }
 
-AbstractQoreNode *OraBindGroup::exec(ExceptionSink *xsink)
-{
+AbstractQoreNode *OraBindGroup::exec(ExceptionSink *xsink) {
    if (oci_exec("OraBindGroup::exec", 1, xsink))
       return 0;
 
@@ -1152,13 +1099,11 @@ AbstractQoreNode *OraBindGroup::exec(ExceptionSink *xsink)
    */
 
    AbstractQoreNode *rv;
-   if (!xsink->isEvent())
-   {
+   if (!xsink->isEvent()) {
       // if there are output variables, then fix values if necessary and return
       if (hasOutput)
 	 rv = getOutputHash(xsink);
-      else // get row count
-      {
+      else { // get row count
 	 int rc = 0;
 	 ora_checkerr(d_ora->errhp, OCIAttrGet(stmthp, OCI_HTYPE_STMT, &rc, 0, OCI_ATTR_ROW_COUNT, d_ora->errhp), "OraBindGroup::exec():attr", ds, xsink);
 	 rv = new QoreBigIntNode(rc);
@@ -1175,8 +1120,7 @@ AbstractQoreNode *OraBindGroup::exec(ExceptionSink *xsink)
    return rv;
 }
 
-AbstractQoreNode *OraBindGroup::select(ExceptionSink *xsink)
-{
+AbstractQoreNode *OraBindGroup::select(ExceptionSink *xsink) {
    if (oci_exec("OraBindGroup::select", 0, xsink))
       return 0;
 
@@ -1227,8 +1171,7 @@ AbstractQoreNode *OraBindGroup::selectRows(ExceptionSink *xsink)
    return l;
 }
 
-static AbstractQoreNode *oracle_exec(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink)
-{
+static AbstractQoreNode *oracle_exec(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink) {
    OraBindGroup bg(ds, qstr, args, xsink);
 
    if (xsink->isException())
@@ -1237,8 +1180,7 @@ static AbstractQoreNode *oracle_exec(Datasource *ds, const QoreString *qstr, con
    return bg.exec(xsink);
 }
 
-static AbstractQoreNode *oracle_select(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink)
-{
+static AbstractQoreNode *oracle_select(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink) {
    OraBindGroup bg(ds, qstr, args, xsink);
 
    if (xsink->isException())
@@ -1247,8 +1189,7 @@ static AbstractQoreNode *oracle_select(Datasource *ds, const QoreString *qstr, c
    return bg.select(xsink);
 }
 
-static AbstractQoreNode *oracle_select_rows(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink)
-{
+static AbstractQoreNode *oracle_select_rows(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink) {
    OraBindGroup bg(ds, qstr, args, xsink);
 
    if (xsink->isException())
@@ -1257,8 +1198,7 @@ static AbstractQoreNode *oracle_select_rows(Datasource *ds, const QoreString *qs
    return bg.selectRows(xsink);
 }
 
-static int oracle_open(Datasource *ds, ExceptionSink *xsink)
-{
+static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
    printd(5, "oracle_open() datasource %08p for DB=%s open\n", ds, ds->getDBName());
 
    if (!ds->getUsername()) {
@@ -1330,11 +1270,10 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink)
    }
 
    // map the Oracle character set to a qore character set
-   if (need_to_set_charset)
-   {
+   if (need_to_set_charset) {
       // map Oracle character encoding name to QORE/OS character encoding name
       if ((OCINlsNameMap(d_ora->envhp, (oratext *)nbuf, OCI_NLS_MAXBUFSZ, (oratext *)ds->getDBEncoding(), OCI_NLS_CS_ORA_TO_IANA) == OCI_SUCCESS)) {
-	 printd(5, "oracle_open() Oracle character set '%s' mapped to '%s' character set\n", ds->getDBEncoding(), nbuf);
+	 printd(5, "oracle_open() Oracle character encoding '%s' mapped to '%s' character encoding\n", ds->getDBEncoding(), nbuf);
 	 ds->setQoreEncoding(nbuf);
       }
       else {
@@ -1347,8 +1286,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink)
 #error need to define HAVE_OCIENVNLSCREATE (with Oracle 9i+)
 /*
    d_ora->charsetid = 0;
-   if (ds->getDBEncoding())
-   {
+   if (ds->getDBEncoding()) {
       xsink->raiseException("DBI:ORACLE:NO_OCIENVCREATE", "compile-time options do not support Oracle character set specifications");
       delete d_ora;
       ds->setPrivateData(NULL);
@@ -1385,8 +1323,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink)
    return 0;
 }
 
-static int oracle_close(Datasource *ds)
-{
+static int oracle_close(Datasource *ds) {
    QORE_TRACE("oracle_close()");
 
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
@@ -1399,13 +1336,11 @@ static int oracle_close(Datasource *ds)
    delete d_ora;
    ds->setPrivateData(NULL);
 
-
    return 0;
 }
 
 #define VERSION_BUF_SIZE 512
-static AbstractQoreNode *oracle_get_server_version(Datasource *ds, ExceptionSink *xsink)
-{
+static AbstractQoreNode *oracle_get_server_version(Datasource *ds, ExceptionSink *xsink) {
    // get private data structure for connection
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
    
@@ -1423,8 +1358,7 @@ static AbstractQoreNode *oracle_get_server_version(Datasource *ds, ExceptionSink
 }
 
 #ifdef HAVE_OCICLIENTVERSION
-static AbstractQoreNode *oracle_get_client_version(const Datasource *ds, ExceptionSink *xsink)
-{
+static AbstractQoreNode *oracle_get_client_version(const Datasource *ds, ExceptionSink *xsink) {
    sword major, minor, update, patch, port_update;
 
    OCIClientVersion(&major, &minor, &update, &patch, &port_update);
@@ -1438,8 +1372,7 @@ static AbstractQoreNode *oracle_get_client_version(const Datasource *ds, Excepti
 }
 #endif
 
-QoreStringNode *oracle_module_init()
-{
+QoreStringNode *oracle_module_init() {
    QORE_TRACE("oracle_module_init()");
 
    // register driver with DBI subsystem
@@ -1458,21 +1391,15 @@ QoreStringNode *oracle_module_init()
    
    DBID_ORACLE = DBI.registerDriver("oracle", methods, DBI_ORACLE_CAPS);
 
-
    return NULL;
 }
 
-void oracle_module_ns_init(QoreNamespace *rns, QoreNamespace *qns)
-{
+void oracle_module_ns_init(QoreNamespace *rns, QoreNamespace *qns) {
    QORE_TRACE("oracle_module_ns_init()");
    // nothing to do at the moment
-
 }
 
 
-void oracle_module_delete()
-{
+void oracle_module_delete() {
    QORE_TRACE("oracle_module_delete()");
-   //DBI_deregisterDriver(DBID_ORACLE);
-
 }

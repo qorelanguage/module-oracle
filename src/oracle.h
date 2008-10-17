@@ -62,30 +62,29 @@ class OraColumn {
       ub2 dtype;           // Oracle datatype for column
       OCIDefine *defp;     // define handle
       sb2 ind;             // indicator value
+      ub2 charlen;
 
       union ora_value val;
 
       class OraColumn *next;
 
-      DLLLOCAL inline OraColumn(const char *n, int len, int ms, ub2 dt)
-      {
+      DLLLOCAL inline OraColumn(const char *n, int len, int ms, ub2 dt, ub2 n_charlen) {
 	 name = (char *)malloc(sizeof(char) * (len + 1));
 	 strncpy(name, n, len);
 	 name[len] = '\0';
 	 strtolower(name);
 	 maxsize = ms;
 	 dtype = dt;
+	 charlen = n_charlen;
+
 	 defp = NULL;
 
 	 next = NULL;
       }
-      DLLLOCAL inline ~OraColumn()
-      {
+      DLLLOCAL inline ~OraColumn() {
 	 free(name);
-	 if (defp)
-	 {
-	    switch (dtype)
-	    {
+	 if (defp) {
+	    switch (dtype) {
 	       case SQLT_INT:
 	       case SQLT_UIN:
 	       case SQLT_FLT:
@@ -142,24 +141,22 @@ class OraColumn {
 class OraColumns {
   private:
       int len;
-      class OraColumn *head, *tail;
+      OraColumn *head, *tail;
 
    public:
       DLLLOCAL OraColumns(OCIStmt *stmthp, class Datasource *ds, const char *str, ExceptionSink *xsink);
-      DLLLOCAL inline ~OraColumns()
-      {
-	 class OraColumn *w = head;
-	 while (w)
-	 {
+      DLLLOCAL inline ~OraColumns() {
+	 OraColumn *w = head;
+	 while (w) {
 	    head = w->next;
 	    delete w;
 	    w = head;
 	 }
       }
-      DLLLOCAL inline void add(const char *name, int nlen, int maxsize, ub2 dtype)
+      DLLLOCAL inline void add(const char *name, int nlen, int maxsize, ub2 dtype, ub2 char_len)
       {
 	 len++;
-	 class OraColumn *c = new OraColumn(name, nlen, maxsize, dtype);
+	 OraColumn *c = new OraColumn(name, nlen, maxsize, dtype, char_len);
 
 	 if (!tail)
 	    head = c;
@@ -170,12 +167,10 @@ class OraColumns {
 	 // printd(5, "column: '%s'\n", c->name);
 	 printd(5, "OraColumns::add() %2d name='%s' (max %d) type=%d\n", size(), c->name, c->maxsize, dtype);
       }
-      DLLLOCAL inline class OraColumn *getHead() 
-      {
+      DLLLOCAL inline class OraColumn *getHead() {
 	 return head;
       }
-      DLLLOCAL inline int size()
-      {
+      DLLLOCAL inline int size() {
 	 return len;
       }
 
