@@ -1,3 +1,38 @@
+2008-10-17 17:14  david_nichols
+
+	* src/oracle.cc, src/oracle.h: updated oracle binding to manually
+	  calculate the buffer size for string binds using the number of
+	  characters in the column * the maximum width of the target
+	  character encoding - it seems that in the case where the oracle
+	  server's character encoding is a single/byte encoding and binding
+	  to a multi-byte encoding (such as UTF8 or "al32utf8"), then
+	  oracle reports the maxumum buffer size needed for such columns as
+	  equal to the character length, however it should be actually 4
+	  times larger (in the case of al32utf8)
+
+2008-10-17 07:01  david_nichols
+
+	* configure.ac, qore-oracle-module.spec: updated to version 1.0.1
+
+2008-10-17 06:59  david_nichols
+
+	* src/oracle.cc: bind fixes, disabled debugging statements
+
+2008-10-17 06:41  david_nichols
+
+	* configure.ac: fixed typo
+
+2008-10-17 06:38  david_nichols
+
+	* configure.ac, src/oracle.cc, src/oracle.h: updated string binding
+	  to bind number of bytes according to the number of characters in
+	  the column * number of bytes per character in the target
+	  character encoding
+
+2008-10-11 07:29  david_nichols
+
+	* ChangeLog: updated changelog
+
 2008-10-09 08:19  david_nichols
 
 	* ChangeLog: udpated changelog
