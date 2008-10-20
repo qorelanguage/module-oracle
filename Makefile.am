@@ -7,6 +7,7 @@ noinst_HEADERS = src/oracle-config.h \
 	src/oracle-module.h
 
 EXTRA_DIST = COPYING ChangeLog AUTHORS README \
+	RELEASE-NOTES \
 	test/db-test.q \
 	docs/oracle-module-doc.html \
 	qore-oracle-module.spec
