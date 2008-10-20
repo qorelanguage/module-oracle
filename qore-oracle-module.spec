@@ -1,5 +1,7 @@
-%define module_api 0.4
-%define module_dir %{_libdir}/qore-module-api-%{module_api}
+%define module_api %(qore --module-api)
+%define module_dir %(qore --module-dir)
+
+#%define module_dir %{_libdir}/qore-module-api-%{module_api}
 
 %if 0%{?sles_version}
 
