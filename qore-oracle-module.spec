@@ -1,8 +1,6 @@
 %define module_api %(qore --module-api)
 %define module_dir %(qore --module-dir)
 
-#%define module_dir %{_libdir}/qore-module-api-%{module_api}
-
 %if 0%{?sles_version}
 
 %if 0%{?sles_version} == 10
@@ -53,11 +51,11 @@ URL: http://www.qoretechnologies.com/qore
 Source: http://prdownloads.sourceforge.net/qore/%{name}-%{version}.tar.gz
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Requires: /usr/bin/env
-Requires: qore-module-api-0.4
 BuildRequires: gcc-c++
 BuildRequires: qore-devel
 BuildRequires: qore
+Requires: /usr/bin/env
+Requires: qore-module-api-${module_api}
 
 %description
 Oracle DBI driver module for the Qore Programming Language. The Oracle driver is
