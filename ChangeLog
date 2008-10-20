@@ -1,3 +1,16 @@
+2008-10-20 12:02  david_nichols
+
+	* Makefile.am, qore-oracle-module.spec: added release notes to tar
+	  and rpms
+
+2008-10-20 12:00  david_nichols
+
+	* RELEASE-NOTES: added release notes file
+
+2008-10-18 07:18  david_nichols
+
+	* ChangeLog: updated changelog
+
 2008-10-17 17:14  david_nichols
 
 	* src/oracle.cc, src/oracle.h: updated oracle binding to manually
