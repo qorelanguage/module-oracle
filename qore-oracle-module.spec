@@ -1,5 +1,5 @@
-%define module_api %(qore --module-api)
-%define module_dir %(qore --module-dir)
+%define module_api %(qore --module-api 2>/dev/null)
+%define module_dir %(qore --module-dir 2>/dev/null)
 
 %if 0%{?sles_version}
 
