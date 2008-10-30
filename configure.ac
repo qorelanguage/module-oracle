@@ -438,17 +438,23 @@ else
       AC_DEFINE_UNQUOTED([QORE_VERSION_CODE], $qvc, [define when missing in Qore headers])
    fi
 
-   if test $qvc -lt 000700; then
-      AC_MSG_ERROR([found $qore_version; this module requires at least version 0.7.0])
+   if test $qvc -lt 000701; then
+      AC_MSG_ERROR([found $qore_version; this module requires at least version 0.7.1])
    fi
 
    AC_MSG_RESULT([${qore_version} OK])
 
+   MODULE_API=`qore --module-api`
+   AC_SUBST(MODULE_API)
+
    if test -z "${prefix}" -o "${prefix}" = "NONE"; then
       libdir=`qore --module-dir`
    else
-      module_api=`qore --module-api`
-      libdir="$prefix/lib${LIBSUFFIX}/qore-module-api-$module_api"
+      libdir="$prefix/lib${LIBSUFFIX}/qore-modules"
+      qlibdir=`qore --module-dir`
+      if test "$libdir" != "$qlibdir"; then
+         AC_MSG_WARN([warning, installed qore's module dir is $qlibdir, this module will be installed in $libdir])
+      fi
    fi
 fi
 
