@@ -35,7 +35,7 @@
 #include <memory>
 
 DLLEXPORT char qore_module_name[] = "oracle";
-DLLEXPORT char qore_module_version[] = "1.0";
+DLLEXPORT char qore_module_version[] = PACKAGE_VERSION;
 DLLEXPORT char qore_module_description[] = "Oracle database driver";
 DLLEXPORT char qore_module_author[] = "David Nichols";
 DLLEXPORT char qore_module_url[] = "http://qore.sourceforge.net";

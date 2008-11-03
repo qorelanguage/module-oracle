@@ -1,3 +1,30 @@
+2008-10-30 17:20  david_nichols
+
+	* qore-oracle-module.spec: various fixes
+
+2008-10-30 10:55  david_nichols
+
+	* README: qore 0.7.1 is minimum required version for compilation
+
+2008-10-30 10:55  david_nichols
+
+	* configure.ac, qore-oracle-module.spec, src/Makefile.am: update to
+	  new qore module api handling
+
+2008-10-20 19:57  david_nichols
+
+	* qore-oracle-module.spec: fixed spec file to allow for future qore
+	  module api versions
+
+2008-10-20 19:49  david_nichols
+
+	* qore-oracle-module.spec: update module spec file to handle future
+	  qore module api versions
+
+2008-10-20 12:03  david_nichols
+
+	* ChangeLog: updated changelog
+
 2008-10-20 12:02  david_nichols
 
 	* Makefile.am, qore-oracle-module.spec: added release notes to tar
