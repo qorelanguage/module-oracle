@@ -55,7 +55,7 @@ BuildRequires: gcc-c++
 BuildRequires: qore-devel
 BuildRequires: qore
 Requires: /usr/bin/env
-Requires: qore-module-api-${module_api}
+Requires: qore-module-api-%{module_api}
 
 %description
 Oracle DBI driver module for the Qore Programming Language. The Oracle driver is
