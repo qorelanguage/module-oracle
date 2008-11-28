@@ -1,4 +1,10 @@
 *************
+version 1.0.2
+*************
+
+* fixed detection of Oracle instant client installed from 32-bit RPMs
+
+*************
 version 1.0.1
 *************
 

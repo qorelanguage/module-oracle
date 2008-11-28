@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 # AC_PREREQ(2.59)
-AC_INIT([qore-oracle-module], [1.0.1],
+AC_INIT([qore-oracle-module], [1.0.2],
         [David Nichols <nicholsman@gmail.com>],
         [qore-oracle-module])
 AM_INIT_AUTOMAKE
@@ -198,11 +198,11 @@ AC_ARG_WITH([oracle],
 
 if test "$with_oracle" = "auto"; then
    if test -z "$ORACLE_HOME" -a -z "$ORACLE_INSTANT_CLIENT" -a -d "/usr/lib/oracle"; then
-      dir=`ls -rt /usr/include/oracle|tail -1`
+      dir=`ls -rt /usr/lib/oracle|tail -1`
       if test "$enable_64bit" = yes; then
       	 dir="/usr/lib/oracle/$dir/client64"
       else
-	 dir="/usr/lib/oracle/$dir/client32"
+	 dir="/usr/lib/oracle/$dir/client"
       fi
       if test -d "$dir"; then\
       	 ORACLE_INSTANT_CLIENT="$dir"
