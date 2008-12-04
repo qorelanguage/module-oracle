@@ -1,4 +1,11 @@
 *************
+version 1.0.3
+*************
+
+* made default to use SQLT_FLT bindings because using SQLT_BDOUBLE with Oracle
+  9i or earlier will not work
+
+*************
 version 1.0.2
 *************
 

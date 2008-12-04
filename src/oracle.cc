@@ -212,7 +212,7 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
 #ifdef SQLT_IBDOUBLE
 	 case SQLT_IBDOUBLE:
 #endif
-#ifdef SQLT_BDOUBLE
+#if defined(SQLT_BDOUBLE) && defined(USE_NEW_NUMERIC_TYPES)
 	    ora_checkerr(d_ora->errhp,
 			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.f8, sizeof(double), SQLT_BDOUBLE, &w->ind, 0, 0, OCI_DEFAULT), str, ds, xsink);
 #else
@@ -848,7 +848,7 @@ void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionS
    }
 
    if (ntype == NT_FLOAT) {
-#ifdef SQLT_BDOUBLE
+#if defined(SQLT_BDOUBLE) && defined(USE_NEW_NUMERIC_TYPES)
       ora_checkerr(d_ora->errhp, 
 		   OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &(reinterpret_cast<QoreFloatNode *>(const_cast<AbstractQoreNode *>(data.v.value))->f), sizeof(double), SQLT_BDOUBLE, (dvoid *)NULL, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindValue()", ds, xsink);
 #else
@@ -879,7 +879,7 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, buf.ptr, data.ph.maxsize + 1, SQLT_STR, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
    }
    else if (!strcmp(data.ph.type, "date")) {
-      //printd(5, "oraBindNode::bindPlaceholder() this=%08p, DATE buftype=%d\n", this, SQLT_DATE);
+      printd(5, "oraBindNode::bindPlaceholder() this=%08p, DATE buftype=%d\n", this, SQLT_DATE);
       buftype = SQLT_DATE;
       buf.odt = NULL;
       ora_checkerr(d_ora->errhp,
@@ -928,7 +928,7 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.i8, sizeof(int64), SQLT_INT, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
    }
    else if (!strcmp(data.ph.type, "float")) {
-#ifdef SQLT_BDOUBLE
+#if defined(SQLT_BDOUBLE) && defined(USE_NEW_NUMERIC_TYPES)
       buftype = SQLT_BDOUBLE;
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.f8, sizeof(double), SQLT_BDOUBLE, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
 #else
