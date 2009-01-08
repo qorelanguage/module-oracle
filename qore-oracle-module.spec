@@ -86,7 +86,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%{module_dir}/oracle-api-%{module_api}.qmod
+%{module_dir}
 %doc COPYING README RELEASE-NOTES ChangeLog AUTHORS test/db-test.q docs/oracle-module-doc.html
 
 %changelog
