@@ -291,7 +291,7 @@ if test -n "$with_oracle_instant_client"; then
 	 if test "$enable_64bit" = yes; then
 	    dir="/usr/include/oracle/$dir/client64"
 	 else
-	    dir="/usr/include/oracle/$dir/client32"
+	    dir="/usr/include/oracle/$dir/client"
          fi
 	 if test ! -f "$dir/oci.h"; then
 	    AC_MSG_ERROR([instant client SDK include files not found, check instant client and instant client SDK (header files) installation])

@@ -5,6 +5,8 @@ version 1.0.4
 updated configure to check the directory specified with --prefix first when
 looking for dependent libraries
 
+fixed instant client detection from 32-bit RPMs (again)
+
 
 *************
 version 1.0.3
