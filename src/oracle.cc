@@ -1112,7 +1112,7 @@ AbstractQoreNode *OraBindGroup::exec(ExceptionSink *xsink) {
       // commit transaction if autocommit set for datasource
       if (ds->getAutoCommit())
 	 if ((status = OCITransCommit(d_ora->svchp, d_ora->errhp, (ub4) 0)))
-	    ora_checkerr(d_ora->errhp, status, "OraBindGroup():commit", ds, xsink);
+	    ora_checkerr(d_ora->errhp, status, "OraBindGroup::commit()", ds, xsink);
    }   
    else
       rv = NULL;
