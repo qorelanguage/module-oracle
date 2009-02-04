@@ -81,7 +81,7 @@ static int ora_checkerr(OCIError *errhp, sword status, const char *query_name, D
 	    xsink->raiseException("DBI:ORACLE:OCI-ERROR", "%s@%s: %s", ds->getUsername(), ds->getDBName(), remove_trailing_newlines((char *)errbuf));
 	 break;
       case OCI_INVALID_HANDLE:
-	 xsink->raiseException("DBI:ORACLE:OCI-INVALID-HANDLE", "%s@%s: %s", ds->getUsername(), ds->getDBName(), remove_trailing_newlines((char *)errbuf));
+	 xsink->raiseException("DBI:ORACLE:OCI-INVALID-HANDLE", "%s@%s: an invalid OCI handle was used", ds->getUsername(), ds->getDBName());
 	 break;
       case OCI_NEED_DATA:
 	 xsink->raiseException("DBI:ORACLE:OCI-NEED-DATA", "Oracle OCI error");
