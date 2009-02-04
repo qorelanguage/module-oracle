@@ -1,4 +1,12 @@
 *************
+version 1.0.5
+*************
+
+fixed a bug raising invalid handle exceptions; the exception description
+contained a random series of bytes instead of string data
+
+
+*************
 version 1.0.4
 *************
 
