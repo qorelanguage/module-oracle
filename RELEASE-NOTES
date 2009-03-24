@@ -1,4 +1,11 @@
 *************
+version 1.0.6
+*************
+
+updated to allow result sets and nested tables, etc to be returned directly
+
+
+*************
 version 1.0.5
 *************
 

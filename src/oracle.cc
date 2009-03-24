@@ -180,6 +180,72 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *ds, const char *str, Excepti
    }
 }
 
+static QoreHashNode *ora_fetch(OCIStmt *stmthp, Datasource *ds, ExceptionSink *xsink) {
+   // retrieve results from statement and return hash
+   
+   // setup column structure for output columns
+   OraColumns columns(stmthp, ds, "ora_fetch() get_attributes", xsink);
+   if (*xsink)
+      return 0;
+
+   // allocate result hash for result value
+   QoreHashNode *h = new QoreHashNode();
+      
+   // create hash elements for each column, assign empty list
+   OraColumn *w = columns.getHead();
+   while (w) {
+      printd(5, "ora_fetch() allocating list for '%s' column\n", w->name);
+      h->setKeyValue(w->name, new QoreListNode(), xsink);
+      w = w->next;
+   }
+   
+   int num_rows = 0;
+   
+   // setup temporary row to accept values
+   columns.define(stmthp, ds, "ora_fetch() define", xsink);
+   
+   // now finally fetch the data
+   while (!xsink->isEvent()) {
+      int status;
+      OracleData *d_ora = (OracleData *)ds->getPrivateData();
+      
+      if ((status = OCIStmtFetch(stmthp, d_ora->errhp, 1, OCI_FETCH_NEXT, OCI_DEFAULT))) {
+	 if (status == OCI_NO_DATA)
+	    break;
+	 else {
+	    ora_checkerr(d_ora->errhp, status, "ora_fetch() OCIStmtFetch()", ds, xsink);
+	    if (xsink->isEvent())
+	       break;
+	 }
+      }
+      
+      // copy data or perform per-value processing if needed
+      OraColumn *w = columns.getHead();
+      int i = 0;
+      while (w) {
+	 // get pointer to value of target node
+	 QoreListNode *l = reinterpret_cast<QoreListNode *>(h->getKeyValue(w->name));
+	 AbstractQoreNode **v = l->get_entry_ptr(num_rows);
+	 
+	 // dereference node if already present
+	 if (*v) {
+	    printd(1, "ora_fetch(): dereferencing result value (col=%s)\n", w->name);
+	    (*v)->deref(xsink);
+	 }
+	 // FIXME: check for exception after this call
+	 (*v) = w->getValue(ds, xsink);
+	 if (xsink->isEvent())
+	    break;
+	 w = w->next;
+	 i++;
+      }
+      num_rows++;
+   }
+   printd(2, "ora_fetch(): %d column(s), %d row(s) retrieved as output\n", columns.size(), num_rows);
+
+   return h;
+}
+
 void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, ExceptionSink *xsink) {
    //QORE_TRACE("OraColumne::define()");
 
@@ -268,8 +334,7 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
 
 	 // handle raw data
 	 case SQLT_BIN:
-	 case SQLT_LBI:
-	 {
+	 case SQLT_LBI: {
 	    int size = w->maxsize + sizeof(int);
 	    w->val.ptr = malloc(size);
 	    w->dtype = SQLT_LVB;
@@ -281,12 +346,23 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
 
 	 case SQLT_BLOB:
 	 case SQLT_CLOB:
-	    w->val.ptr = NULL;
+	    w->val.ptr = 0;
 	    ora_checkerr(d_ora->errhp, 
 			 OCIDescriptorAlloc(d_ora->envhp, &w->val.ptr, OCI_DTYPE_LOB, 0, NULL), str, ds, xsink);
 	    if (xsink->isEvent()) return;
 	    printd(5, "OraColumns::define() got LOB locator handle %08p\n", w->val.ptr);
 	    ora_checkerr(d_ora->errhp,
+			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.ptr, 0, w->dtype, &w->ind, 0, 0, OCI_DEFAULT), 
+			 str, ds, xsink);
+	    break;
+	    
+	 case SQLT_RSET:
+	    w->val.ptr = 0;
+	    // allocate statement handle for result list
+	    ora_checkerr(d_ora->errhp, 
+			 OCIHandleAlloc(d_ora->envhp, &w->val.ptr, OCI_HTYPE_STMT, 0, 0), str, ds, xsink);
+	    if (xsink->isEvent()) return;
+	    ora_checkerr(d_ora->errhp, 
 			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.ptr, 0, w->dtype, &w->ind, 0, 0, OCI_DEFAULT), 
 			 str, ds, xsink);
 	    break;
@@ -304,8 +380,7 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
    }
 }
 
-static DateTimeNode *convert_date_time(unsigned char *str)
-{
+static DateTimeNode *convert_date_time(unsigned char *str) {
    int year;
    if ((str[0] < 100) || (str[1] < 100))
       year = 9999; 
@@ -327,7 +402,6 @@ extern "C" sb4 read_blob_callback(void *bp, CONST dvoid *bufp, ub4 len, ub1 piec
    ((BinaryNode *)bp)->append((char *)bufp, len);
    return OCI_CONTINUE;
 }
-
 
 AbstractQoreNode *get_oracle_timestamp(Datasource *ds, OCIDateTime *odt, ExceptionSink *xsink) {
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
@@ -427,8 +501,7 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, ExceptionSink *xsink) {
       }
 
       case SQLT_CLOB:
-      case SQLT_BLOB:
-      {
+      case SQLT_BLOB: {
 	 // get oracle data
 	 OracleData *d_ora = (OracleData *)ds->getPrivateData();
 	 
@@ -438,8 +511,7 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, ExceptionSink *xsink) {
 	 void *buf = malloc(LOB_BLOCK_SIZE);
 	 AbstractQoreNode *rv;
 	 ub4 amt = 0;
-	 if (dtype == SQLT_CLOB)
-	 {
+	 if (dtype == SQLT_CLOB) {
 	    QoreStringNodeHolder str(new QoreStringNode(ds->getQoreEncoding()));
 	    // read LOB data in streaming callback mode
 	    ora_checkerr(d_ora->errhp,
@@ -447,8 +519,7 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, ExceptionSink *xsink) {
 				    *str, read_clob_callback, (ub2)d_ora->charsetid, (ub1)0), "oraReadCLOBCallback()", ds, xsink);
 	    rv = *xsink ? 0 : str.release();
 	 }
-	 else
-	 {
+	 else {
 	    SimpleRefHolder<BinaryNode> b(new BinaryNode());
 	    // read LOB data in streaming callback mode
 	    ora_checkerr(d_ora->errhp,
@@ -460,6 +531,9 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, ExceptionSink *xsink) {
 	 return rv;
       }
 
+      case SQLT_RSET:
+	 return ora_fetch((OCIStmt *)val.ptr, ds, xsink);
+
       default:
 	 //printd(5, "type=%d\n", dtype);
 	 // must be string data
@@ -470,84 +544,15 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, ExceptionSink *xsink) {
    return NULL;
 }
 
-static QoreHashNode *ora_fetch(OCIStmt *stmthp, Datasource *ds, ExceptionSink *xsink)
-{
-   // retrieve results from statement and return hash
-   
-   // setup column structure for output columns
-   OraColumns columns(stmthp, ds, "ora_fetch() get_attributes", xsink);
-   if (*xsink)
-      return 0;
-
-   // allocate result hash for result value
-   QoreHashNode *h = new QoreHashNode();
-      
-   // create hash elements for each column, assign empty list
-   OraColumn *w = columns.getHead();
-   while (w) {
-      printd(5, "ora_fetch() allocating list for '%s' column\n", w->name);
-      h->setKeyValue(w->name, new QoreListNode(), xsink);
-      w = w->next;
-   }
-   
-   int num_rows = 0;
-   
-   // setup temporary row to accept values
-   columns.define(stmthp, ds, "ora_fetch() define", xsink);
-   
-   // now finally fetch the data
-   while (!xsink->isEvent()) {
-      int status;
-      OracleData *d_ora = (OracleData *)ds->getPrivateData();
-      
-      if ((status = OCIStmtFetch(stmthp, d_ora->errhp, 1, OCI_FETCH_NEXT, OCI_DEFAULT))) {
-	 if (status == OCI_NO_DATA)
-	    break;
-	 else {
-	    ora_checkerr(d_ora->errhp, status, "ora_fetch() OCIStmtFetch()", ds, xsink);
-	    if (xsink->isEvent())
-	       break;
-	 }
-      }
-      
-      // copy data or perform per-value processing if needed
-      OraColumn *w = columns.getHead();
-      int i = 0;
-      while (w) {
-	 // get pointer to value of target node
-	 QoreListNode *l = reinterpret_cast<QoreListNode *>(h->getKeyValue(w->name));
-	 AbstractQoreNode **v = l->get_entry_ptr(num_rows);
-	 
-	 // dereference node if already present
-	 if (*v) {
-	    printd(1, "ora_fetch(): dereferencing result value (col=%s)\n", w->name);
-	    (*v)->deref(xsink);
-	 }
-	 // FIXME: check for exception after this call
-	 (*v) = w->getValue(ds, xsink);
-	 if (xsink->isEvent())
-	    break;
-	 w = w->next;
-	 i++;
-      }
-      num_rows++;
-   }
-   printd(2, "ora_fetch(): %d column(s), %d row(s) retrieved as output\n", columns.size(), num_rows);
-
-   return h;
-}
-
 // returns a list of hashes for a "horizontal" fetch
-static QoreListNode *ora_fetch_horizontal(OCIStmt *stmthp, Datasource *ds, ExceptionSink *xsink)
-{
+static QoreListNode *ora_fetch_horizontal(OCIStmt *stmthp, Datasource *ds, ExceptionSink *xsink) {
    QoreListNode *l = NULL;
    // retrieve results from statement and return hash
    
    // setup column structure for output columns
    OraColumns columns(stmthp, ds, "ora_fetch_horizontal()", xsink);
 
-   if (!xsink->isEvent())
-   {
+   if (!xsink->isEvent()) {
       // allocate result hash for result value
       l = new QoreListNode();
 
@@ -936,8 +941,7 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.f8, sizeof(double), SQLT_FLT, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
 #endif
    }
-   else if (!strcmp(data.ph.type, "hash"))
-   {
+   else if (!strcmp(data.ph.type, "hash")) {
       buftype = SQLT_RSET;
 
       // allocate statement handle for result list
