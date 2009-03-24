@@ -140,7 +140,7 @@ class OraColumn {
 	    OCIHandleFree(defp, OCI_HTYPE_DEFINE);
 	 }	 
       }
-      DLLLOCAL AbstractQoreNode *getValue(Datasource *ds, ExceptionSink *xsink);
+      DLLLOCAL AbstractQoreNode *getValue(Datasource *ds, bool horizontal, ExceptionSink *xsink);
 };
 
 class OraColumns {
@@ -244,7 +244,7 @@ class OraBindNode {
 
       DLLLOCAL void bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionSink *xsink);
       DLLLOCAL void bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionSink *xsink);
-      DLLLOCAL AbstractQoreNode *getValue(Datasource *ds, ExceptionSink *xsink);
+      DLLLOCAL AbstractQoreNode *getValue(Datasource *ds, bool horizontal, ExceptionSink *xsink);
 };
 
 class OraBindGroup {
