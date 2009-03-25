@@ -186,14 +186,14 @@ static QoreListNode *ora_fetch_horizontal(OCIStmt *stmthp, Datasource *ds, Excep
    // retrieve results from statement and return hash
    
    // setup column structure for output columns
-   OraColumns columns(stmthp, ds, "ora_fetch_horizontal()", xsink);
+   OraColumns columns(stmthp, ds, "ora_fetch_horizontal() (get params)", xsink);
 
    if (!xsink->isEvent()) {
       // allocate result hash for result value
       l = new QoreListNode();
 
       // setup temporary row to accept values
-      columns.define(stmthp, ds, "ora_fetch_horizontal()", xsink);
+      columns.define(stmthp, ds, "ora_fetch_horizontal() (define)", xsink);
 
       OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
@@ -205,7 +205,7 @@ static QoreListNode *ora_fetch_horizontal(OCIStmt *stmthp, Datasource *ds, Excep
 	    if (status == OCI_NO_DATA)
 	       break;
 	    else {
-	       ora_checkerr(d_ora->errhp, status, "ora_fetch_horizontal()", ds, xsink);
+	       ora_checkerr(d_ora->errhp, status, "ora_fetch_horizontal() (fetch)", ds, xsink);
 	       if (xsink->isEvent())
 		  break;
 	    }
@@ -419,7 +419,7 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
 	    break;
 
 	 default: // treated as a string
-	    if (w->charlen) w->maxsize = w->charlen * get_char_width(ds->getQoreEncoding(), w->charlen); 
+	    if (w->charlen) w->maxsize = get_char_width(ds->getQoreEncoding(), w->charlen); 
 	    w->val.ptr = malloc(sizeof(char) * (w->maxsize + 1));
 	    ora_checkerr(d_ora->errhp,
 			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, w->val.ptr, w->maxsize + 1, SQLT_STR, &w->ind, 0, 0, OCI_DEFAULT), 
