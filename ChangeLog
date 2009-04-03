@@ -1,3 +1,83 @@
+2009-03-25 16:09  david_nichols
+
+	* RELEASE-NOTES, src/oracle.cc: fixed a bug calculating memory for
+	  character buffers; memory was calculated as the square of the
+	  memory actually needed
+
+2009-03-24 17:28  david_nichols
+
+	* src/oracle.cc, src/oracle.h: fixed returning result sets to honor
+	  "horizontal" or "vertical" data structure preferences
+
+2009-03-24 09:20  david_nichols
+
+	* RELEASE-NOTES, configure.ac, qore-oracle-module.spec,
+	  src/oracle.cc, src/oracle.h: updated to allow result sets and
+	  nested tabled to be returned directly; updated release to version
+	  1.0.6
+
+2009-02-04 09:42  david_nichols
+
+	* src/oracle.cc: corrected a typo
+
+2009-02-04 09:14  david_nichols
+
+	* RELEASE-NOTES: fixed exception string with invalid handle errors
+
+2009-02-04 09:12  david_nichols
+
+	* configure.ac, qore-oracle-module.spec, src/oracle.cc: updated
+	  version to 1.0.5 for next release; fixed a bug in handling
+	  invalid
+	  handle error messages
+
+2009-01-20 09:20  david_nichols
+
+	* RELEASE-NOTES, configure.ac: fixed instant client detection from
+	  32-bit rpms in configure (again)
+
+2009-01-08 18:43  david_nichols
+
+	* qore-oracle-module.spec: simplified spec files a little
+
+2009-01-08 15:13  david_nichols
+
+	* qore-oracle-module.spec: commented-out additional "Source0" line
+	  so that packages will build on Fedora 10 (OBS)
+
+2009-01-08 14:44  david_nichols
+
+	* reconf.sh: updated reconf.sh to look for glibtoolize as well as
+	  libtoolize
+
+2009-01-07 13:02  david_nichols
+
+	* Makefile.am, RELEASE-NOTES, configure.ac, ltmain.sh,
+	  qore-oracle-module.spec, reconf.sh: upadted reconf.sh to use
+	  libtoolize to generate ltmain.sh
+
+2008-12-04 09:54  david_nichols
+
+	* RELEASE-NOTES, configure.ac, qore-oracle-module.spec,
+	  src/oracle.cc: made default to use SQLT_FLT bindings because
+	  using SQLT_BDOUBLE with Oracle
+	  9i or earlier will not work; incremented release to 1.0.3
+
+2008-11-28 17:28  david_nichols
+
+	* qore-oracle-module.spec: fixed typo in spec file
+
+2008-11-28 17:26  david_nichols
+
+	* RELEASE-NOTES, configure.ac, qore-oracle-module.spec: fixed
+	  detection of Oracle instant client installed from 32-bit RPMs;
+	  updated to version 1.0.2
+
+2008-11-03 14:17  david_nichols
+
+	* ChangeLog, src/oracle-module.h, src/oracle.cc: make module
+	  version reflect package version
+
 2008-10-30 17:20  david_nichols
 
 	* qore-oracle-module.spec: various fixes
