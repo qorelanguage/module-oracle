@@ -709,7 +709,7 @@ void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink) {
 	 const AbstractQoreNode *v;
 	 // assume string if no argument passed
 	 if (!args || args->size() <= index || !(v = args->retrieve_entry(index++)))
-	    add(tstr.giveBuffer(), -1, "string");
+	    add(tstr.giveBuffer(), -1, "string", 0);
 	 else {
 	    qore_type_t vtype = v->getType();
 	    if (vtype == NT_HASH) {
@@ -725,18 +725,19 @@ void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink) {
 		  xsink->raiseException("DBI-EXEC-EXCEPTION", "expecting type name as value of 'type' key, got '%s'", t->getTypeName());
 		  break;
 	       }
+	       const AbstractQoreNode *v = h->getKeyValue("value");
 	       
 	       // get and check size
 	       const AbstractQoreNode *sz = h->getKeyValue("size");
 	       int size = sz ? sz->getAsInt() : -1;
 	       
 	       printd(5, "OraBindGroup::parseQuery() adding placeholder name=%s, size=%d, type=%s\n", tstr.getBuffer(), size, str->getBuffer());
-	       add(tstr.giveBuffer(), size, str->getBuffer());
+	       add(tstr.giveBuffer(), size, str->getBuffer(), v);
 	    }
 	    else if (vtype == NT_STRING)
-	       add(tstr.giveBuffer(), -1, (reinterpret_cast<const QoreStringNode *>(v))->getBuffer());
+	       add(tstr.giveBuffer(), -1, (reinterpret_cast<const QoreStringNode *>(v))->getBuffer(), 0);
 	    else if (vtype == NT_INT)
-	       add(tstr.giveBuffer(), (reinterpret_cast<const QoreBigIntNode *>(v))->val, "string");
+	       add(tstr.giveBuffer(), (reinterpret_cast<const QoreBigIntNode *>(v))->val, "string", 0);
 	    else
 	       xsink->raiseException("DBI-EXEC-EXCEPTION", "expecting string or hash for placeholder description, got '%s'", v->getTypeName());
 	 }
@@ -873,7 +874,15 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
       // simply malloc some space for sending to the new node
       buftype = SQLT_STR;
       buf.ptr = malloc(sizeof(char) * (data.ph.maxsize + 1));
-      ((char *)buf.ptr)[0] = '\0';
+
+      if (data.ph.value) {
+	 QoreStringValueHelper str(data.ph.value);
+	 
+	 strncpy((char *)buf.ptr, str->getBuffer(), data.ph.maxsize);
+	 ((char *)buf.ptr)[data.ph.maxsize] = '\0';	 
+      }
+      else
+	 ((char *)buf.ptr)[0] = '\0';
 
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, buf.ptr, data.ph.maxsize + 1, SQLT_STR, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
    }

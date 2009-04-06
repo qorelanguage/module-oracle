@@ -183,13 +183,14 @@ class OraColumns {
 
 union ora_bind {
       struct {
-	    char *name;       // name for output hash
-	    int maxsize;      // maximum size, -1 = default for type
-	    const char *type;       // qore datatype for column
+	    char *name;                      // name for output hash
+	    int maxsize;                     // maximum size, -1 = default for type
+	    const char *type;                // qore datatype for column
+	    const AbstractQoreNode *value;   // value to be bound, if any
       } ph;
       struct {
 	    const AbstractQoreNode *value;   // value to be bound
-	    QoreString *tstr;   // temporary string to be deleted
+	    QoreString *tstr;                // temporary string to be deleted
       } v;
 };
 
@@ -209,11 +210,12 @@ class OraBindNode {
 	 buftype = 0;
 	 next = NULL;
       }
-      DLLLOCAL inline OraBindNode(char *name, int size, const char *typ) {
+      DLLLOCAL inline OraBindNode(char *name, int size, const char *typ, const AbstractQoreNode *v) {
 	 bindtype = BN_PLACEHOLDER;
 	 data.ph.name = name;
 	 data.ph.maxsize = size;
 	 data.ph.type = typ;
+	 data.ph.value = v;
 	 buftype = 0;
 	 next = NULL;
       }
@@ -294,8 +296,8 @@ class OraBindGroup {
 	 add(c);
 	 printd(5, "OraBindGroup::add()\n");
       }
-      DLLLOCAL inline void add(char *name, int size, const char *type) {
-	 OraBindNode *c = new OraBindNode(name, size, type);
+      DLLLOCAL inline void add(char *name, int size, const char *type, const AbstractQoreNode *val) {
+	 OraBindNode *c = new OraBindNode(name, size, type, val);
 	 add(c);
 	 printd(5, "OraBindGroup::add()\n");
 	 hasOutput = true;
