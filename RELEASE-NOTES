@@ -2,6 +2,16 @@
 version 1.0.6
 *************
 
+updated to allow input and output variables to be bound for stored procedure
+and function calls for types: string, binary, integer, float, date
+
+fixed binary binding and retrieving in stored procedure and function calls
+
+
+*************
+version 1.0.6
+*************
+
 updated to allow result sets and nested tables, etc to be returned directly
 fixed a bug calculating memory for character buffers; memory was calculated as
 the square of the memory actually needed

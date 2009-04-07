@@ -44,6 +44,16 @@
 
 #define ORA_RAW_SIZE 65535
 
+static int ora_checkerr(OCIError *errhp, sword status, const char *query_name, Datasource *ds, ExceptionSink *xsink);
+
+class OracleData {
+   public:
+      OCIEnv *envhp;
+      OCIError *errhp;
+      OCISvcCtx *svchp;
+      ub2 charsetid;
+};
+
 // FIXME: do not hardcode byte widths - could be incorrect on some platforms
 union ora_value {
       void *ptr;
@@ -81,9 +91,11 @@ class OraColumn {
 
 	 next = NULL;
       }
-      DLLLOCAL inline ~OraColumn() {
+
+      DLLLOCAL void del(Datasource *ds, ExceptionSink *xsink) {
 	 free(name);
 	 if (defp) {
+	    //printd(5, "freeing type %d\n", dtype);
 	    switch (dtype) {
 	       case SQLT_INT:
 	       case SQLT_UIN:
@@ -132,6 +144,13 @@ class OraColumn {
 		     OCIDescriptorFree(val.odt, OCI_DTYPE_INTERVAL_DS);
 		  break;
 
+	       case SQLT_LVB: {
+		  OracleData *d_ora = (OracleData *)ds->getPrivateData();
+		  //printd(5, "freeing binary pointer for SQLT_LVB %p\n", val.ptr);
+		  ora_checkerr(d_ora->errhp, OCIRawResize(d_ora->envhp, d_ora->errhp, 0, (OCIRaw**)&val.ptr), "OraColumns::del() free binary buffer", ds, xsink);
+		  break;
+	       }
+
 	       default:	  // for all columns where data must be allocated
 		  if (val.ptr)
 		     free(val.ptr);
@@ -140,6 +159,9 @@ class OraColumn {
 	    OCIHandleFree(defp, OCI_HTYPE_DEFINE);
 	 }	 
       }
+
+      DLLLOCAL inline ~OraColumn() {
+      }
       DLLLOCAL AbstractQoreNode *getValue(Datasource *ds, bool horizontal, ExceptionSink *xsink);
 };
 
@@ -147,13 +169,16 @@ class OraColumns {
   private:
       int len;
       OraColumn *head, *tail;
+      Datasource *ds;
+      ExceptionSink *xsink;
 
    public:
-      DLLLOCAL OraColumns(OCIStmt *stmthp, Datasource *ds, const char *str, ExceptionSink *xsink);
+      DLLLOCAL OraColumns(OCIStmt *stmthp, Datasource *n_ds, const char *str, ExceptionSink *n_xsink);
       DLLLOCAL inline ~OraColumns() {
 	 OraColumn *w = head;
 	 while (w) {
 	    head = w->next;
+	    w->del(ds, xsink);
 	    delete w;
 	    w = head;
 	 }
@@ -220,6 +245,9 @@ class OraBindNode {
 	 next = NULL;
       }
       DLLLOCAL inline ~OraBindNode() {
+      }
+
+      DLLLOCAL void del(Datasource *ds, ExceptionSink *xsink) {
 	 if (bindtype == BN_PLACEHOLDER) {
 	    if (data.ph.name)
 	       free(data.ph.name);
@@ -227,10 +255,14 @@ class OraBindNode {
 	    // free buffer data if any
 	    if ((buftype == SQLT_STR
 		 || buftype == SQLT_LBI
-		 || buftype == SQLT_VBI
-		 || buftype == SQLT_LVB)
+		 || buftype == SQLT_VBI)
 		&& buf.ptr)
 	       free(buf.ptr);
+	    else if (buftype == SQLT_LVB) {
+	       OracleData *d_ora = (OracleData *)ds->getPrivateData();
+	       //printd(5, "freeing binary pointer for SQLT_LVB %p\n", val.ptr);
+	       ora_checkerr(d_ora->errhp, OCIRawResize(d_ora->envhp, d_ora->errhp, 0, (OCIRaw**)&buf.ptr), "OraBindNode::del() free binary buffer", ds, xsink);
+	    }
 	    else if (buftype == SQLT_RSET && buf.ptr)
 	       OCIHandleFree((OCIStmt *)buf.ptr, OCI_HTYPE_STMT);
 	    else if ((buftype == SQLT_BLOB || buftype ==SQLT_CLOB) && buf.ptr)
@@ -257,6 +289,7 @@ class OraBindGroup {
       OCIStmt *stmthp;
       Datasource *ds;
       bool hasOutput;
+      ExceptionSink *xsink;
 
       DLLLOCAL void parseOld(QoreHashNode *h, ExceptionSink *xsink);
       DLLLOCAL void parseQuery(const QoreListNode *args, ExceptionSink *xsink);
@@ -275,7 +308,7 @@ class OraBindGroup {
       DLLLOCAL int oci_exec(const char *who, ub4 iters, ExceptionSink *xsink);
 
    public:
-      DLLLOCAL OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreListNode *args, ExceptionSink *xsink);
+      DLLLOCAL OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreListNode *args, ExceptionSink *n_xsink);
       DLLLOCAL inline ~OraBindGroup() {
 	 // free OCI handle
 	 if (stmthp)
@@ -287,6 +320,7 @@ class OraBindGroup {
 	 OraBindNode *w = head;
 	 while (w) {
 	    head = w->next;
+	    w->del(ds, xsink);
 	    delete w;
 	    w = head;
 	 }

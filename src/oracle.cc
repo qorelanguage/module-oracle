@@ -54,19 +54,11 @@ DBIDriver *DBID_ORACLE = NULL;
 // maximum string size for an oracle number
 #define ORACLE_NUMBER_STR_LEN 30
 
-class OracleData {
-   public:
-      OCIEnv *envhp;
-      OCIError *errhp;
-      OCISvcCtx *svchp;
-      ub2 charsetid;
-};
-
 static int ora_checkerr(OCIError *errhp, sword status, const char *query_name, Datasource *ds, ExceptionSink *xsink) {
    text errbuf[512];
    sb4 errcode = 0;
 
-   //printd(5, "ora_checkerr(%08p, %d, %s, isEvent=%d)\n", errhp, status, query_name ? query_name : "none", xsink->isEvent());
+   //printd(5, "ora_checkerr(%p, %d, %s, isEvent=%d)\n", errhp, status, query_name ? query_name : "none", xsink->isEvent());
    switch (status) {
       case OCI_SUCCESS:
       case OCI_SUCCESS_WITH_INFO:
@@ -132,12 +124,14 @@ static int get_char_width(const QoreEncoding *enc, int num) {
 #endif
 }
 
-OraColumns::OraColumns(OCIStmt *stmthp, Datasource *ds, const char *str, ExceptionSink *xsink) {
+OraColumns::OraColumns(OCIStmt *stmthp, Datasource *n_ds, const char *str, ExceptionSink *n_xsink) {
    QORE_TRACE("OraColumns::OraColumns()");
 
    len = 0;
    head = tail = NULL;
 
+   ds = n_ds;
+   xsink = n_xsink;
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
    // retrieve results, if any
@@ -184,6 +178,8 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *ds, const char *str, Excepti
 static QoreListNode *ora_fetch_horizontal(OCIStmt *stmthp, Datasource *ds, ExceptionSink *xsink) {
    QoreListNode *l = NULL;
    // retrieve results from statement and return hash
+
+   OracleData *d_ora = (OracleData *)ds->getPrivateData();
    
    // setup column structure for output columns
    OraColumns columns(stmthp, ds, "ora_fetch_horizontal() (get params)", xsink);
@@ -195,11 +191,11 @@ static QoreListNode *ora_fetch_horizontal(OCIStmt *stmthp, Datasource *ds, Excep
       // setup temporary row to accept values
       columns.define(stmthp, ds, "ora_fetch_horizontal() (define)", xsink);
 
-      OracleData *d_ora = (OracleData *)ds->getPrivateData();
-
       // now finally fetch the data
       while (!xsink->isEvent()) {
 	 int status;
+
+	 //printd(5, "ora_fetch_horizontal(): l=%p, %d column(s) row %d\n", l, columns.size(), l->size());
 
 	 if ((status = OCIStmtFetch(stmthp, d_ora->errhp, 1, OCI_FETCH_NEXT, OCI_DEFAULT))) {
 	    if (status == OCI_NO_DATA)
@@ -210,7 +206,6 @@ static QoreListNode *ora_fetch_horizontal(OCIStmt *stmthp, Datasource *ds, Excep
 		  break;
 	    }
 	 }
-	 //printd(5, "ora_fetch_horizontal(): l=%08p, %d column(s), got row %d\n", l, columns.size(), l->size());
 
 	 // set up hash for row
 	 QoreHashNode *h = new QoreHashNode();
@@ -353,7 +348,7 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
 			 OCIDescriptorAlloc(d_ora->envhp, (dvoid **)&w->val.odt, OCI_DTYPE_TIMESTAMP, 0, NULL), str, ds, xsink);
 	    if (*xsink)
 	       return;
-	    //printd(5, "OraColumns::define() got TIMESTAMP handle %08p\n", w->val.odt);
+	    //printd(5, "OraColumns::define() got TIMESTAMP handle %p\n", w->val.odt);
 	    ora_checkerr(d_ora->errhp,
 			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.odt, sizeof(w->val.odt), SQLT_TIMESTAMP, &w->ind, 0, 0, OCI_DEFAULT), 
 			 str, ds, xsink);
@@ -365,7 +360,7 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
 			 OCIDescriptorAlloc(d_ora->envhp, (dvoid **)&w->val.oi, OCI_DTYPE_INTERVAL_YM, 0, NULL), str, ds, xsink);
 	    if (*xsink)
 	       return;
-	    //printd(5, "OraColumns::define() got TIMESTAMP handle %08p\n", w->val.odt);
+	    //printd(5, "OraColumns::define() got TIMESTAMP handle %p\n", w->val.odt);
 	    ora_checkerr(d_ora->errhp,
 			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.oi, sizeof(w->val.oi), SQLT_INTERVAL_YM, &w->ind, 0, 0, OCI_DEFAULT), 
 			 str, ds, xsink);
@@ -377,7 +372,7 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
 			 OCIDescriptorAlloc(d_ora->envhp, (dvoid **)&w->val.oi, OCI_DTYPE_INTERVAL_DS, 0, NULL), str, ds, xsink);
 	    if (*xsink)
 	       return;
-	    //printd(5, "OraColumns::define() got TIMESTAMP handle %08p\n", w->val.odt);
+	    //printd(5, "OraColumns::define() got TIMESTAMP handle %p\n", w->val.odt);
 	    ora_checkerr(d_ora->errhp,
 			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.oi, sizeof(w->val.oi), SQLT_INTERVAL_DS, &w->ind, 0, 0, OCI_DEFAULT), 
 			 str, ds, xsink);
@@ -385,13 +380,22 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
 
 	 // handle raw data
 	 case SQLT_BIN:
-	 case SQLT_LBI: {
-	    int size = w->maxsize + sizeof(int);
-	    w->val.ptr = malloc(size);
+	 case SQLT_LBI: 
+	 {
+	    //printd(5, "OraColumns::define() maxsize=%d\n", w->maxsize);
+	    int size = w->maxsize;
+	    if (!size)
+	       size = ORA_RAW_SIZE;
+
+	    w->val.ptr = 0;
 	    w->dtype = SQLT_LVB;
+	    if (ora_checkerr(d_ora->errhp, OCIRawResize(d_ora->envhp, d_ora->errhp, size, (OCIRaw**)&w->val.ptr), "OraColumns::define() setup binary buffer", ds, xsink))
+	       return;
+
 	    ora_checkerr(d_ora->errhp,
-			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, w->val.ptr, size, SQLT_LVB, &w->ind, 0, 0, OCI_DEFAULT), 
+			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, w->val.ptr, size + sizeof(int), SQLT_LVB, &w->ind, 0, 0, OCI_DEFAULT), 
 			 str, ds, xsink);
+
 	    break;
 	 }
 
@@ -401,7 +405,7 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
 	    ora_checkerr(d_ora->errhp, 
 			 OCIDescriptorAlloc(d_ora->envhp, &w->val.ptr, OCI_DTYPE_LOB, 0, NULL), str, ds, xsink);
 	    if (xsink->isEvent()) return;
-	    printd(5, "OraColumns::define() got LOB locator handle %08p\n", w->val.ptr);
+	    printd(5, "OraColumns::define() got LOB locator handle %p\n", w->val.ptr);
 	    ora_checkerr(d_ora->errhp,
 			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.ptr, 0, w->dtype, &w->ind, 0, 0, OCI_DEFAULT), 
 			 str, ds, xsink);
@@ -443,20 +447,20 @@ static DateTimeNode *convert_date_time(unsigned char *str) {
 }
 
 extern "C" sb4 read_clob_callback(void *sp, CONST dvoid *bufp, ub4 len, ub1 piece) {
-   printd(5, "read_clob_callback(%08p, %08p, %d, %d)\n", sp, bufp, len, piece);
+   printd(5, "read_clob_callback(%p, %p, %d, %d)\n", sp, bufp, len, piece);
    (reinterpret_cast<QoreStringNode *>(sp))->concat((char *)bufp, len);
    return OCI_CONTINUE;
 }
 
 extern "C" sb4 read_blob_callback(void *bp, CONST dvoid *bufp, ub4 len, ub1 piece) {
-   printd(5, "read_blob_callback(%08p, %08p, %d, %d)\n", bp, bufp, len, piece);
+   printd(5, "read_blob_callback(%p, %p, %d, %d)\n", bp, bufp, len, piece);
    ((BinaryNode *)bp)->append((char *)bufp, len);
    return OCI_CONTINUE;
 }
 
 AbstractQoreNode *get_oracle_timestamp(Datasource *ds, OCIDateTime *odt, ExceptionSink *xsink) {
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
-   //printd(5, "OraColumn::getValue() using TIMESTAMP handle %08p\n", val.odt);
+   //printd(5, "OraColumn::getValue() using TIMESTAMP handle %p\n", val.odt);
 
    sb2 year;
    ub1 month, day;
@@ -517,7 +521,7 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
 	 // get oracle data
 	 OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
-	 //printd(5, "OraColumn::getValue() using INTERVAL_YM handle %08p\n", val.oi);
+	 //printd(5, "OraColumn::getValue() using INTERVAL_YM handle %p\n", val.oi);
 
 	 sb4 year, month;
 	 ora_checkerr(d_ora->errhp, 
@@ -532,7 +536,7 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
 	 // get oracle data
 	 OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
-	 //printd(5, "OraColumn::getValue() using INTERVAL_DS handle %08p\n", val.oi);
+	 //printd(5, "OraColumn::getValue() using INTERVAL_DS handle %p\n", val.oi);
 
 	 sb4 day, hour, minute, second, microsecond;
 	 ora_checkerr(d_ora->errhp, 
@@ -556,7 +560,7 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
 	 // get oracle data
 	 OracleData *d_ora = (OracleData *)ds->getPrivateData();
 	 
-	 printd(5, "OraColumns::getValue() using LOB locator handle %08p\n", val.ptr);
+	 printd(5, "OraColumns::getValue() using LOB locator handle %p\n", val.ptr);
 	 
 	 // retrieve *LOB data
 	 void *buf = malloc(LOB_BLOCK_SIZE);
@@ -595,12 +599,14 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
    return NULL;
 }
 
-OraBindGroup::OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreListNode *args, ExceptionSink *xsink) {
+OraBindGroup::OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreListNode *args, ExceptionSink *n_xsink) {
    stmthp = NULL;
    hasOutput = false;
    head = tail = NULL;
    ds = ods;
    len = 0;
+
+   xsink = n_xsink;
 
    // create copy of string and convert encoding if necessary
    str = ostr->convertEncoding(ds->getQoreEncoding(), xsink);
@@ -608,7 +614,7 @@ OraBindGroup::OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreLi
       return;
 
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
-   printd(4, "OraBindGroup::OraBindGroup() ds=%08p, d_ora=%08p, SQL='%s', args=%d\n", ds, d_ora, str->getBuffer(), args ? args->size() : 0);
+   printd(4, "OraBindGroup::OraBindGroup() ds=%p, d_ora=%p, SQL='%s', args=%d\n", ds, d_ora, str->getBuffer(), args ? args->size() : 0);
 
    // process query string and setup bind value list
    parseQuery(args, xsink);
@@ -647,7 +653,7 @@ OraBindGroup::OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreLi
 }
 
 void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink) {
-   printd(5, "parseQuery() args=%08p str=%s\n", args, str->getBuffer());
+   printd(5, "parseQuery() args=%p str=%s\n", args, str->getBuffer());
 
    char quote = 0;
 
@@ -815,7 +821,7 @@ void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionS
 
    if (ntype == NT_BINARY) {
       const BinaryNode *b = reinterpret_cast<const BinaryNode *>(data.v.value);
-      printd(5, "OraBindNode::bindValue() BLOB ptr=%08p size=%d\n", b->getPtr(), b->size());
+      printd(5, "OraBindNode::bindValue() BLOB ptr=%p size=%d\n", b->getPtr(), b->size());
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, (void *)b->getPtr(), b->size(), SQLT_BIN, (dvoid *)NULL, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), 
 		   "OraBindNode::bindValue()", ds, xsink);      
       return;
@@ -865,7 +871,7 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
    OCIBind *bndp = NULL;
 
-   printd(5, "OraBindNode::bindPlaceholder(ds=%08p, pos=%d) type=%s, size=%d)\n", ds, pos, data.ph.type, data.ph.maxsize);
+   printd(5, "OraBindNode::bindPlaceholder(ds=%p, pos=%d) type=%s, size=%d)\n", ds, pos, data.ph.type, data.ph.maxsize);
 
    if (!strcmp(data.ph.type, "string")) {
       if (data.ph.maxsize < 0)
@@ -887,11 +893,11 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, buf.ptr, data.ph.maxsize + 1, SQLT_STR, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
    }
    else if (!strcmp(data.ph.type, "date")) {
-      printd(5, "oraBindNode::bindPlaceholder() this=%08p, DATE buftype=%d\n", this, SQLT_DATE);
+      printd(5, "oraBindNode::bindPlaceholder() this=%p, DATE buftype=%d\n", this, SQLT_DATE);
       buftype = SQLT_DATE;
       buf.odt = NULL;
       ora_checkerr(d_ora->errhp,
-		   OCIDescriptorAlloc(d_ora->envhp, (dvoid **)&buf.odt, OCI_DTYPE_TIMESTAMP, 0, NULL), "OraBindNode::bindPlaceholder()", ds, xsink);
+		   OCIDescriptorAlloc(d_ora->envhp, (dvoid **)&buf.odt, OCI_DTYPE_TIMESTAMP, 0, NULL), "OraBindNode::bindPlaceholder() allocate timestamp descriptor", ds, xsink);
       if (*xsink)
 	 return;
 
@@ -901,68 +907,107 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
 	 if (ora_checkerr(d_ora->errhp, 
 			  OCIDateTimeConstruct(d_ora->envhp, d_ora->errhp, buf.odt, (sb2)d->getYear(), (ub1)d->getMonth(), (ub1)d->getDay(),
 					       (ub1)d->getHour(), (ub1)d->getMinute(), (ub1)d->getSecond(),
-					       (ub4)(d->getMillisecond() * 1000), NULL, 0), "OraBindNode::bindPlaceholder() TIMESTAMP", ds, xsink))
+					       (ub4)(d->getMillisecond() * 1000), NULL, 0), "OraBindNode::bindPlaceholder() setup timestamp", ds, xsink))
 	    return;
       }
 
-      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.odt, 0, SQLT_TIMESTAMP, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
+      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.odt, 0, SQLT_TIMESTAMP, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() timestamp", ds, xsink);
    }
    else if (!strcmp(data.ph.type, "binary")) {
       buftype = SQLT_LVB;
-      data.ph.maxsize = ORA_RAW_SIZE;
-      buf.ptr = malloc(ORA_RAW_SIZE);
-      if (!buf.ptr) {
-	 xsink->outOfMemory();
-	 return;
+      buf.ptr = 0;
+
+      if (data.ph.value) {
+	 if (data.ph.value->getType() == NT_BINARY) {
+	    const BinaryNode *bin = reinterpret_cast<const BinaryNode *>(data.ph.value);
+	    // if too big, raise an exception (not likely to happen)
+	    if (bin->size() > 0x7fffffff) {
+	       xsink->raiseException("BIND-ERROR", "value passed for binding is %lld bytes long, which is too big to bind as a long binary value, maximum size is %d bytes", bin->size(), 0x7fffffff);
+	       return;
+	    }
+	    size_t size = bin->size() + sizeof(int);
+	    if (ORA_RAW_SIZE > size)
+	       size = ORA_RAW_SIZE;
+	    
+	    data.ph.maxsize = size;
+
+	    if (ora_checkerr(d_ora->errhp, OCIRawAssignBytes(d_ora->envhp, d_ora->errhp, (const ub1*)bin->getPtr(), bin->size(), (OCIRaw**)&buf.ptr), "OraBindNode::bindPlaceholder() bind binary value", ds, xsink)) {
+	       return;	    
+	    }
+	 }
+	 else {
+	    QoreStringValueHelper str(data.ph.value);
+	    // if too big, raise an exception (not likely to happen)
+	    if (str->strlen() > 0x7fffffff) {
+	       xsink->raiseException("BIND-ERROR", "value passed for binding is %lld bytes long, which is too big to bind as a long binary value, maximum size is %d bytes", str->strlen(), 0x7fffffff);
+	       return;
+	    }
+	    size_t size = str->strlen() + sizeof(int);
+	    if (ORA_RAW_SIZE > size)
+	       size = ORA_RAW_SIZE;
+	    
+	    data.ph.maxsize = size;
+
+	    if (ora_checkerr(d_ora->errhp, OCIRawAssignBytes(d_ora->envhp, d_ora->errhp, (const ub1*)str->getBuffer(), str->strlen(), (OCIRaw**)&buf.ptr), "OraBindNode::bindPlaceholder() bind binary value from string", ds, xsink))
+	       return;
+	 }
+      }
+      else {
+	 data.ph.maxsize = ORA_RAW_SIZE;
+	 buf.ptr = 0;
+
+	 if (ora_checkerr(d_ora->errhp, OCIRawResize(d_ora->envhp, d_ora->errhp, ORA_RAW_SIZE, (OCIRaw**)&buf.ptr), "OraBindNode::bindPlaceholder() setup binary placeholder", ds, xsink))
+	    return;
       }
 
-      // set varbin length to zero
-      ub4 *bs = (ub4 *)buf.ptr;
-      *bs = 0;
-
-      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, buf.ptr, ORA_RAW_SIZE, SQLT_LVB, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
+      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, buf.ptr, ORA_RAW_SIZE, SQLT_LVB, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() binary", ds, xsink);
    }
    else if (!strcmp(data.ph.type, "clob")) {
       buftype = SQLT_CLOB;
       buf.ptr = NULL;
 
-      ora_checkerr(d_ora->errhp, OCIDescriptorAlloc(d_ora->envhp, &buf.ptr, OCI_DTYPE_LOB, 0, NULL), "OraBindNode::bindPlaceholder()", ds, xsink);
+      if (ora_checkerr(d_ora->errhp, OCIDescriptorAlloc(d_ora->envhp, &buf.ptr, OCI_DTYPE_LOB, 0, NULL), "OraBindNode::bindPlaceholder() allocate clob descriptor", ds, xsink))
+	 return;
 
-      if (xsink->isEvent()) return;
-      printd(5, "bindPalceholder() got LOB locator handle %08p\n", buf.ptr);
-      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.ptr, 0, SQLT_CLOB, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
+      printd(5, "bindPalceholder() got LOB locator handle %p\n", buf.ptr);
+      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.ptr, 0, SQLT_CLOB, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() clob", ds, xsink);
    }
    else if (!strcmp(data.ph.type, "blob")) {
       buftype = SQLT_BLOB;
       buf.ptr = NULL;
 
-      ora_checkerr(d_ora->errhp, OCIDescriptorAlloc(d_ora->envhp, &buf.ptr, OCI_DTYPE_LOB, 0, NULL), "OraBindNode::bindPlaceholder()", ds, xsink);
+      ora_checkerr(d_ora->errhp, OCIDescriptorAlloc(d_ora->envhp, &buf.ptr, OCI_DTYPE_LOB, 0, NULL), "OraBindNode::bindPlaceholder() allocate blob descriptor", ds, xsink);
 
       if (xsink->isEvent()) return;
-      printd(5, "bindPalceholder() got LOB locator handle %08p\n", buf.ptr);
-      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.ptr, 0, SQLT_BLOB, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
+      printd(5, "bindPalceholder() got LOB locator handle %p\n", buf.ptr);
+      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.ptr, 0, SQLT_BLOB, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() blob", ds, xsink);
    }
    else if (!strcmp(data.ph.type, "integer")) {
       buftype = SQLT_INT;
+
+      buf.i8 = data.ph.value ? data.ph.value->getAsBigInt() : 0;
+      
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.i8, sizeof(int64), SQLT_INT, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
    }
    else if (!strcmp(data.ph.type, "float")) {
+      buf.f8 = data.ph.value ? data.ph.value->getAsFloat() : 0.0;
+
 #if defined(SQLT_BDOUBLE) && defined(USE_NEW_NUMERIC_TYPES)
       buftype = SQLT_BDOUBLE;
-      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.f8, sizeof(double), SQLT_BDOUBLE, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
+      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.f8, sizeof(double), SQLT_BDOUBLE, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() bdouble", ds, xsink);
 #else
       buftype = SQLT_FLT;
-      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.f8, sizeof(double), SQLT_FLT, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
+      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.f8, sizeof(double), SQLT_FLT, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() float", ds, xsink);
 #endif
    }
    else if (!strcmp(data.ph.type, "hash")) {
       buftype = SQLT_RSET;
 
       // allocate statement handle for result list
-      ora_checkerr(d_ora->errhp, OCIHandleAlloc(d_ora->envhp, (dvoid **)&buf.ptr, OCI_HTYPE_STMT, 0, 0), "OraBindNode::bindPlaceHolder()", ds, xsink);
+      ora_checkerr(d_ora->errhp, OCIHandleAlloc(d_ora->envhp, (dvoid **)&buf.ptr, OCI_HTYPE_STMT, 0, 0), "OraBindNode::bindPlaceHolder() allocate statement handle", ds, xsink);
 
       if (!xsink->isEvent())
-	 ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.ptr, 0, SQLT_RSET, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
+	 ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.ptr, 0, SQLT_RSET, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() result set", ds, xsink);
       else
 	 buf.ptr = NULL;
    }
@@ -1010,7 +1055,7 @@ AbstractQoreNode *OraBindNode::getValue(Datasource *ds, bool horizontal, Excepti
       // get oracle data
       OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
-      printd(5, "OraBindNode::getValue() using LOB locator handle %08p\n", buf.ptr);
+      printd(5, "OraBindNode::getValue() using LOB locator handle %p\n", buf.ptr);
 
       // retrieve *LOB data
       void *bbuf = malloc(LOB_BLOCK_SIZE);
@@ -1065,7 +1110,7 @@ int OraBindGroup::oci_exec(const char *who, ub4 iters, ExceptionSink *xsink) {
       if (ora_checkerr(d_ora->errhp, OCIAttrGet(d_ora->svchp, OCI_HTYPE_SVCCTX, &svrh, 0, OCI_ATTR_SERVER, d_ora->errhp), who, ds, xsink))
 	 return -1;
 
-      printd(5, "oci_exec() got server handle: %08p\n", svrh);
+      printd(5, "oci_exec() got server handle: %p\n", svrh);
 
       if (ora_checkerr(d_ora->errhp, OCIAttrGet(svrh, OCI_HTYPE_SERVER, (dvoid *)&server_status, 0, OCI_ATTR_SERVER_STATUS, d_ora->errhp), who, ds, xsink))
 	 return -1;
@@ -1217,7 +1262,7 @@ static AbstractQoreNode *oracle_select_rows(Datasource *ds, const QoreString *qs
 }
 
 static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
-   printd(5, "oracle_open() datasource %08p for DB=%s open\n", ds, ds->getDBName());
+   printd(5, "oracle_open() datasource %p for DB=%s open\n", ds, ds->getDBName());
 
    if (!ds->getUsername()) {
       xsink->raiseException("DATASOURCE-MISSING-USERNAME", "Datasource has an empty username parameter");
@@ -1237,7 +1282,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
    std::auto_ptr<OracleData> d_ora(new OracleData);
 
    // locking is done on the level above with the Datasource class
-   int oci_flags = OCI_DEFAULT|OCI_THREADED|OCI_NO_MUTEX;
+   int oci_flags = OCI_DEFAULT|OCI_THREADED|OCI_NO_MUTEX|OCI_OBJECT;
 
    const char *charset;
 
@@ -1334,7 +1379,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
       return -1;
    }
 
-   printd(5, "oracle_open() datasource %08p for DB=%s open (envhp=%08p)\n", ds, ds->getDBName(), d_ora->envhp);
+   printd(5, "oracle_open() datasource %p for DB=%s open (envhp=%p)\n", ds, ds->getDBName(), d_ora->envhp);
 
    ds->setPrivateData((void *)d_ora.release());
 
