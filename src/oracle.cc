@@ -895,12 +895,27 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
       if (*xsink)
 	 return;
 
+      if (data.ph.value) {
+	 DateTimeNodeValueHelper d(data.ph.value);
+
+	 if (ora_checkerr(d_ora->errhp, 
+			  OCIDateTimeConstruct(d_ora->envhp, d_ora->errhp, buf.odt, (sb2)d->getYear(), (ub1)d->getMonth(), (ub1)d->getDay(),
+					       (ub1)d->getHour(), (ub1)d->getMinute(), (ub1)d->getSecond(),
+					       (ub4)(d->getMillisecond() * 1000), NULL, 0), "OraBindNode::bindPlaceholder() TIMESTAMP", ds, xsink))
+	    return;
+      }
+
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.odt, 0, SQLT_TIMESTAMP, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder()", ds, xsink);
    }
    else if (!strcmp(data.ph.type, "binary")) {
       buftype = SQLT_LVB;
       data.ph.maxsize = ORA_RAW_SIZE;
       buf.ptr = malloc(ORA_RAW_SIZE);
+      if (!buf.ptr) {
+	 xsink->outOfMemory();
+	 return;
+      }
+
       // set varbin length to zero
       ub4 *bs = (ub4 *)buf.ptr;
       *bs = 0;
