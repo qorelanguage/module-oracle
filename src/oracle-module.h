@@ -3,7 +3,7 @@
 
   ORACLE integration to QORE
 
-  Copyright 2003 - 2008 David Nichols
+  Copyright 2003 - 2009 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,7 @@
 #define _QORE_ORACLE_MODULE_H
 
 QoreStringNode *oracle_module_init();
-void oracle_module_ns_init(class QoreNamespace *rns, class QoreNamespace *qns);
+void oracle_module_ns_init(QoreNamespace *rns, QoreNamespace *qns);
 void oracle_module_delete();
 
 #endif
