@@ -202,6 +202,15 @@ AC_ARG_WITH([oracle],
    , 
    [with_oracle=auto])
 
+if test -z "$ORACLE_INSTANT_CLIENT" -a -n "INSTANT_CLIENT"; then
+   ORACLE_INSTANT_CLIENT="$INSTANT_CLIENT"
+fi
+
+# set instant client variable for macports
+if test -z "$ORACLE_INSTANT_CLIENT" -a -n "$find_prefix" -a -d "$find_prefix/lib/oracle"; then
+   ORACLE_INSTANT_CLIENT="$find_prefix=/lib/oracle"
+fi
+
 if test "$with_oracle" = "auto"; then
    if test -z "$ORACLE_HOME" -a -z "$ORACLE_INSTANT_CLIENT" -a -d "/usr/lib/oracle"; then
       dir=`ls -rt /usr/lib/oracle|tail -1`

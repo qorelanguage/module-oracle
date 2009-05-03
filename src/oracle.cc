@@ -753,10 +753,15 @@ void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink) {
 	    quote = *p;
 	 else if (quote == (*p))
 	    quote = 0;
-	 p++;
+	 ++p;
+      }
+      // allow quoting of ':' and '%' characters
+      else if (!quote && (*p) == '\\' && (*(p+1) == ':' || *(p+1) == '%')) {
+	 str->splice(p - str->getBuffer(), 1, xsink);
+	 p += 2;
       }
       else
-	 p++;
+	 ++p;
    }
 }
 
