@@ -208,7 +208,12 @@ fi
 
 # set instant client variable for macports
 if test -z "$ORACLE_INSTANT_CLIENT" -a -n "$find_prefix" -a -d "$find_prefix/lib/oracle"; then
-   ORACLE_INSTANT_CLIENT="$find_prefix=/lib/oracle"
+   ORACLE_INSTANT_CLIENT="$find_prefix/lib/oracle"
+fi
+
+# check for macports instant client in default macports directory
+if test -z "$ORACLE_INSTANT_CLIENT" -a -d "/opt/local/lib/oracle"; then
+   ORACLE_INSTANT_CLIENT="/opt/local/lib/oracle"
 fi
 
 if test "$with_oracle" = "auto"; then
