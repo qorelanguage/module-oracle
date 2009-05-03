@@ -7,6 +7,8 @@ and function calls for types: string, binary, integer, float, date
 
 fixed binary binding and retrieving in stored procedure and function calls
 
+fixed backquoting ':' characters
+
 
 *************
 version 1.0.6
