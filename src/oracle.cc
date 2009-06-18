@@ -661,7 +661,7 @@ void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink) {
    unsigned index = 0;
    QoreString tmp(ds->getQoreEncoding());
    while (*p) {
-      if (!quote && (*p) == '%') { // found value marker
+      if (!quote && (*p) == '%' && (p == str->getBuffer() || !isalnum(*(p-1)))) { // found value marker
 	 int offset = p - str->getBuffer();
 	 const AbstractQoreNode *v = args ? args->retrieve_entry(index++) : NULL;
 

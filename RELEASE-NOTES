@@ -1,4 +1,13 @@
 *************
+version 1.0.8
+*************
+
+updated query parsing for '%*' placeholders to ignore '%' characters when they
+are preceded by an alphanumeric character in order to avoid having to use
+backslashes to escape them in PL/SQL code, for example
+
+
+*************
 version 1.0.7
 *************
 
