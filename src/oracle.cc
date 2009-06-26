@@ -1281,8 +1281,31 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
       xsink->raiseException("DATASOURCE-MISSING-DBNAME", "Datasource has an empty dbname parameter");
       return -1;
    }
+
+#ifdef QORE_HAS_DATASOURCE_PORT
+   int port = ds->getPort();
+#else
+   int port = 0;
+#endif
+
+   if (port && !ds->getHostName()) {
+      xsink->raiseException("DATASOURCE-MISSING-HOSTNAME", "port is set to %d, but no hostname is set; both hostname and port must be set to make a direct connection without TNS", port);
+      return -1;
+   }
+
+   if (!port && ds->getHostName()) {
+      xsink->raiseException("DATASOURCE-MISSING-PORT", "hostname is set to '%s', but no port is set; both hostname and port must be set to make a direct connection without TNS", ds->getHostName());
+      return -1;
+   }   
+
+   QoreString db;
+   if (port)
+      db.sprintf("//%s:%p/%s", ds->getHostName(), port, ds->getDBName());
+   else
+      db.concat(ds->getDBName());
+
    printd(5, "oracle_open(): user=%s pass=%s db=%s (oracle encoding=%s)\n",
-	  ds->getUsername(), ds->getPassword(), ds->getDBName(), ds->getDBEncoding() ? ds->getDBEncoding() : "(none)");
+	  ds->getUsername(), ds->getPassword(), db.getBuffer(), ds->getDBEncoding() ? ds->getDBEncoding() : "(none)");
 
    std::auto_ptr<OracleData> d_ora(new OracleData);
 
@@ -1376,7 +1399,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
    }
    //printd(5, "oracle_open() about to call OCILogon()\n");
    ora_checkerr(d_ora->errhp, 
-		OCILogon(d_ora->envhp, d_ora->errhp, &d_ora->svchp, (text *)ds->getUsername(), strlen(ds->getUsername()), (text *)ds->getPassword(), strlen(ds->getPassword()), (text *)ds->getDBName(), strlen(ds->getDBName())), 
+		OCILogon(d_ora->envhp, d_ora->errhp, &d_ora->svchp, (text *)ds->getUsername(), strlen(ds->getUsername()), (text *)ds->getPassword(), strlen(ds->getPassword()), (text *)db.getBuffer(), db.strlen()), 
 		"<open>", ds, xsink);
    if (xsink->isEvent()) {
       OCIHandleFree(d_ora->errhp, OCI_HTYPE_ERROR);
@@ -1384,7 +1407,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
       return -1;
    }
 
-   printd(5, "oracle_open() datasource %p for DB=%s open (envhp=%p)\n", ds, ds->getDBName(), d_ora->envhp);
+   printd(5, "oracle_open() datasource %p for DB=%s open (envhp=%p)\n", ds, db.getBuffer(), d_ora->envhp);
 
    ds->setPrivateData((void *)d_ora.release());
 
