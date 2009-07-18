@@ -2,13 +2,13 @@
 version 1.0.8
 *************
 
+when compiled with qore module API 0.7 or greater (qore >= 0.7.5), the module
+supports making direct connections without TNS by using the hostname and port
+set in the Datasource or DatasourcePool object
+
 updated query parsing for '%*' placeholders to ignore '%' characters when they
 are preceded by an alphanumeric character in order to avoid having to use
 backslashes to escape them in PL/SQL code, for example
-
-when compiled with qore module API 0.7 or greater, the module now supports
-making direct connections without TNS by using the hostname and port set in
-the Datasource or DatasourcePool object
 
 
 *************
