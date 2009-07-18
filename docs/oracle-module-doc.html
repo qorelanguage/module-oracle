@@ -570,17 +570,17 @@ You can reach me at: mailto:david_nichols@users.sourceforge.net</pre>
 [[Binding and Types]]
 </pre>
 </div>
-<div title="Introduction" modifier="DavidNichols" created="200808200719" modified="200809090857" changecount="48">
+<div title="Introduction" modifier="YourName" created="200808200719" modified="200907180608" changecount="50">
 <pre>The oracle module provides an Oracle driver to Qore's DBI system, allowing Qore programs to take access Oracle databases through the Qore's {{{Datasource}}} and {{{DatasourcePool}}} classes.
 
 This module is released under the [[LGPL 2.1|http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html]] and is tagged as such in the module's header (meaning it can be loaded unconditionally regardless of how the Qore library was initialized).
 
 Note that this documentation is based on [[TittldyWiki|http://www.tiddlywiki.com/]], a wiki entirely contained in a single web page.
 
-Example of creating an Oracle Datasource:
+Example of creating an Oracle Datasource (note that db_encoding, host, and port are optional - using the hostname and port allows connections to be established without TNS, without these parameters TNS is used):
 
 {{{
-$db = new Datasource(SQL::DSOracle, $user, $pass, $db, $charset);
+$db = new Datasource(SQL::DSOracle, $user, $pass, $db, $db_encoding, $host, $port);
 }}}
 
 This driver supports the following DBI capabilities: {{{DBI_CAP_TRANSACTION_MANAGEMENT}}}, {{{DBI_CAP_STORED_PROCEDURES}}}, {{{DBI_CAP_CHARSET_SUPPORT}}}, {{{DBI_CAP_LOB_SUPPORT}}}, {{{DBI_CAP_BIND_BY_VALUE}}}, {{{DBI_CAP_BIND_BY_PLACEHOLDER}}}.
