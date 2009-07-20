@@ -8,6 +8,10 @@
 %else
 %if 0%{?suse_version}
 
+%if 0%{?suse_version} == 1120
+%define dist .opensuse11_2
+%endif
+
 %if 0%{?suse_version} == 1110
 %define dist .opensuse11_1
 %endif
@@ -39,7 +43,7 @@
 %endif
 %endif
 
-# see if we can determine the distribution type                                                                                                                                                                  
+# see if we can determine the distribution type
 %if 0%{!?dist:1}
 %define rh_dist %(if [ -f /etc/redhat-release ];then cat /etc/redhat-release|sed "s/[^0-9.]*//"|cut -f1 -d.;fi)
 %if 0%{?rh_dist}
