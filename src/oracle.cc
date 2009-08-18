@@ -1134,8 +1134,11 @@ int OraBindGroup::oci_exec(const char *who, ub4 iters, ExceptionSink *xsink) {
 	 OCILogoff(d_ora->svchp, d_ora->errhp);
 
 	 printd(5, "oci_exec() about to execute OCILogon() for reconnect\n");
-	 if (ora_checkerr(d_ora->errhp, OCILogon(d_ora->envhp, d_ora->errhp, &d_ora->svchp, (text *)ds->getUsername(), strlen(ds->getUsername()), (text *)ds->getPassword(), strlen(ds->getPassword()), (text *)ds->getDBName(), strlen(ds->getDBName())), who, ds, xsink))
+	 if (ora_checkerr(d_ora->errhp, OCILogon(d_ora->envhp, d_ora->errhp, &d_ora->svchp, (text *)ds->getUsername(), strlen(ds->getUsername()), (text *)ds->getPassword(), strlen(ds->getPassword()), (text *)ds->getDBName(), strlen(ds->getDBName())), who, ds, xsink)) {
+	    // close datasource and remove private data
+	    ds->close();
 	    return -1;
+	 }
 
 	 printd(5, "oci_exec() returned from OCILogon() status=%d\n", status);
 	 status = OCIStmtExecute(d_ora->svchp, stmthp, d_ora->errhp, iters, 0, 0, 0, OCI_DEFAULT);
@@ -1425,7 +1428,7 @@ static int oracle_close(Datasource *ds) {
    OCIHandleFree(d_ora->errhp, OCI_HTYPE_ERROR);
    OCIHandleFree(d_ora->envhp, OCI_HTYPE_ENV);
    delete d_ora;
-   ds->setPrivateData(NULL);
+   ds->setPrivateData(0);
 
    return 0;
 }
