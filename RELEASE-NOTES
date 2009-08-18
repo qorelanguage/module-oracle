@@ -1,4 +1,12 @@
 *************
+version 1.0.9
+*************
+
+fixed auto-reconnect to mark the datasource as closed when auto-reconnect 
+fails; otherwise a crash can occur when the datasource is reused
+
+
+*************
 version 1.0.8
 *************
 
