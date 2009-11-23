@@ -570,7 +570,7 @@ You can reach me at: mailto:david_nichols@users.sourceforge.net</pre>
 [[Binding and Types]]
 </pre>
 </div>
-<div title="Introduction" modifier="YourName" created="200808200719" modified="200907180608" changecount="50">
+<div title="Introduction" modifier="DavidNichols" created="200808200719" modified="200911231218" changecount="51">
 <pre>The oracle module provides an Oracle driver to Qore's DBI system, allowing Qore programs to take access Oracle databases through the Qore's {{{Datasource}}} and {{{DatasourcePool}}} classes.
 
 This module is released under the [[LGPL 2.1|http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html]] and is tagged as such in the module's header (meaning it can be loaded unconditionally regardless of how the Qore library was initialized).
@@ -602,12 +602,12 @@ Note: There seems to be a bug in Oracle 9i and earlier in the streaming {{{OCILo
 [[Default Oracle to Qore Type Mappings]]
 [[Placeholder Type Mappings]]</pre>
 </div>
-<div title="Placeholder Type Mappings" modifier="DavidNichols" created="200809060750" modified="200809060752" changecount="17">
+<div title="Placeholder Type Mappings" modifier="DavidNichols" created="200809060750" modified="200911231000" changecount="18">
 <pre>&quot;Placeholder Type Mappings&quot;
 |!Argument|OCI Type|Description|h
 |{{{Type::Binary}}}|{{{SQLT_BIN}}}|For retrieving {{{RAW}}} data up to 65531 bytes in size.|
 |{{{SQL::BLOB}}}|{{{SQLT_BLOB}}}|For retrieving {{{BLOB}}} data. The {{{LOB}}} handle is used to read the entire {{{BLOB}}} content into a binary object.|
-|{{{SQL::CLOB}}}|{{{SQLT_CLOB}}}|For retrieving {{{CLOB}}} data. The {{{LOB handle is used to read the entire {{{CLOB}}} content into a Qore string.|
+|{{{SQL::CLOB}}}|{{{SQLT_CLOB}}}|For retrieving {{{CLOB}}} data. The {{{LOB}}} handle is used to read the entire {{{CLOB}}} content into a Qore string.|
 |{{{SQL::VARCHAR}}}|{{{SQLT_STR}}}|For retrieving character data ({{{VARCHAR}}}, etc). To specify a buffer size larger than 512 bytes, simply use the size in bytes as the argument.|
 |{{{Type::Int}}}|{{{SQLT_INT}}}|For retrieving integer numeric data up to 32 bits (for larger numbers or for non-integer numbers use {{{SQL::VARCHAR}}} or {{{Type::Float}}}.|
 |{{{Type::Float}}}|{{{SQLT_BDOUBLE}}}|For retrieving data in 64-bit floating point format.|
