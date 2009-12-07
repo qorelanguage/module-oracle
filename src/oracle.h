@@ -203,7 +203,7 @@ class OraColumns {
 	 return len;
       }
 
-      DLLLOCAL void define(OCIStmt *stmthp, Datasource *ds, const char *str, ExceptionSink *xsink);
+      DLLLOCAL void define(OCIStmt *stmthp, const char *str);
 };
 
 union ora_bind {
@@ -293,9 +293,8 @@ class OraBindGroup {
       bool hasOutput;
       ExceptionSink *xsink;
 
-      DLLLOCAL void parseOld(QoreHashNode *h, ExceptionSink *xsink);
-      DLLLOCAL void parseQuery(const QoreListNode *args, ExceptionSink *xsink);
-      DLLLOCAL QoreHashNode *getOutputHash(ExceptionSink *xsink);
+      DLLLOCAL void parseQuery(const QoreListNode *args);
+      DLLLOCAL QoreHashNode *getOutputHash();
 
       DLLLOCAL void add(OraBindNode *c) {
 	 len++;
@@ -307,7 +306,7 @@ class OraBindGroup {
       }
 
       // exec with auto-reconnect (if possible)
-      DLLLOCAL int oci_exec(const char *who, ub4 iters, ExceptionSink *xsink);
+      DLLLOCAL int oci_exec(const char *who, ub4 iters);
 
    public:
       DLLLOCAL OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreListNode *args, ExceptionSink *n_xsink);
@@ -339,9 +338,9 @@ class OraBindGroup {
 	 hasOutput = true;
       }
 
-      DLLLOCAL AbstractQoreNode *exec(ExceptionSink *xsink);
-      DLLLOCAL AbstractQoreNode *select(ExceptionSink *xsink);
-      DLLLOCAL AbstractQoreNode *selectRows(ExceptionSink *xsink);
+      DLLLOCAL AbstractQoreNode *exec();
+      DLLLOCAL AbstractQoreNode *select();
+      DLLLOCAL AbstractQoreNode *selectRows();
 };
 
 #endif
