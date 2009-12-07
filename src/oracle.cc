@@ -405,7 +405,7 @@ void OraColumns::define(OCIStmt *stmthp, Datasource *ds, const char *str, Except
 	    ora_checkerr(d_ora->errhp, 
 			 OCIDescriptorAlloc(d_ora->envhp, &w->val.ptr, OCI_DTYPE_LOB, 0, NULL), str, ds, xsink);
 	    if (xsink->isEvent()) return;
-	    printd(5, "OraColumns::define() got LOB locator handle %p\n", w->val.ptr);
+	    //printd(5, "OraColumns::define() got LOB locator handle %p\n", w->val.ptr);
 	    ora_checkerr(d_ora->errhp,
 			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.ptr, 0, w->dtype, &w->ind, 0, 0, OCI_DEFAULT), 
 			 str, ds, xsink);
@@ -974,7 +974,7 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
       if (ora_checkerr(d_ora->errhp, OCIDescriptorAlloc(d_ora->envhp, &buf.ptr, OCI_DTYPE_LOB, 0, NULL), "OraBindNode::bindPlaceholder() allocate clob descriptor", ds, xsink))
 	 return;
 
-      printd(5, "bindPalceholder() got LOB locator handle %p\n", buf.ptr);
+      printd(0, "OraBindNode::bindPlaceholder() got LOB locator handle %p\n", buf.ptr);
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.ptr, 0, SQLT_CLOB, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() clob", ds, xsink);
    }
    else if (!strcmp(data.ph.type, "blob")) {
@@ -1075,14 +1075,13 @@ AbstractQoreNode *OraBindNode::getValue(Datasource *ds, bool horizontal, Excepti
 	 rv = *xsink ? 0 : str.release();
       }
       else {
-	 BinaryNode *b = new BinaryNode();
+	 SimpleRefHolder<BinaryNode> b(new BinaryNode);
 	 // read LOB data in streaming callback mode
 	 ora_checkerr(d_ora->errhp,
 		      OCILobRead(d_ora->svchp, d_ora->errhp, (OCILobLocator *)buf.ptr, &amt, 1, bbuf, LOB_BLOCK_SIZE,
-				 b, read_blob_callback, (ub2)0, (ub1)0), "oraReadBLOBCallback()", ds, xsink);
-	 rv = b;    
+				 *b, read_blob_callback, (ub2)0, (ub1)0), "oraReadBLOBCallback()", ds, xsink);
+	 rv = *xsink ? 0 : b.release();    
       }
-      OCIDescriptorFree(buf.ptr, OCI_DTYPE_LOB);
       free(bbuf);
       return rv;
    }

@@ -1,3 +1,11 @@
+***********
+version 1.1
+***********
+
+fixed memory error in streaming c/blob retrieval (double free)
+tagged release as 1.1
+
+
 *************
 version 1.0.9
 *************

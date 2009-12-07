@@ -260,13 +260,15 @@ class OraBindNode {
 	       free(buf.ptr);
 	    else if (buftype == SQLT_LVB) {
 	       OracleData *d_ora = (OracleData *)ds->getPrivateData();
-	       //printd(5, "freeing binary pointer for SQLT_LVB %p\n", val.ptr);
+	       //printd(5, "freeing binary pointer for SQLT_LVB %p\n", buf.ptr);
 	       ora_checkerr(d_ora->errhp, OCIRawResize(d_ora->envhp, d_ora->errhp, 0, (OCIRaw**)&buf.ptr), "OraBindNode::del() free binary buffer", ds, xsink);
 	    }
 	    else if (buftype == SQLT_RSET && buf.ptr)
 	       OCIHandleFree((OCIStmt *)buf.ptr, OCI_HTYPE_STMT);
-	    else if ((buftype == SQLT_BLOB || buftype ==SQLT_CLOB) && buf.ptr)
+	    else if ((buftype == SQLT_BLOB || buftype == SQLT_CLOB) && buf.ptr) {
+	       //printd(5, "OraBindNode::del() freeing binary pointer for SQLT_*LOB %p\n", buf.ptr);
 	       OCIDescriptorFree(buf.ptr, OCI_DTYPE_LOB);
+	    }
 	    else if (buftype == SQLT_DATE && buf.odt)
 	       OCIDescriptorFree(buf.odt, OCI_DTYPE_TIMESTAMP);
 	 }
