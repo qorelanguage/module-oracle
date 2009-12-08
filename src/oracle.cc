@@ -55,25 +55,36 @@ DBIDriver *DBID_ORACLE = NULL;
 #define ORACLE_NUMBER_STR_LEN 30
 
 static int ora_checkerr(OCIError *errhp, sword status, const char *query_name, Datasource *ds, ExceptionSink *xsink) {
-   text errbuf[512];
    sb4 errcode = 0;
 
    //printd(5, "ora_checkerr(%p, %d, %s, isEvent=%d)\n", errhp, status, query_name ? query_name : "none", xsink->isEvent());
    switch (status) {
       case OCI_SUCCESS:
-      case OCI_SUCCESS_WITH_INFO:
+	 return 0;
+      case OCI_SUCCESS_WITH_INFO: {
+	 text errbuf[512];
+
+	 OCIErrorGet((dvoid *)errhp, (ub4) 1, (text *) NULL, &errcode, errbuf, (ub4) sizeof(errbuf), OCI_HTYPE_ERROR);
+	 printd(0, "WARNING: %s returned OCI_SUCCESS_WITH_INFO: %s\n", query_name ? query_name : "<unknown>", remove_trailing_newlines((char *)errbuf));
 	 // ignore SUCCESS_WITH_INFO codes
 	 return 0;
+      }
 
-      case OCI_ERROR:
+      case OCI_ERROR: {
+	 text errbuf[512];
+
 	 OCIErrorGet((dvoid *)errhp, (ub4) 1, (text *) NULL, &errcode, errbuf, (ub4) sizeof(errbuf), OCI_HTYPE_ERROR);
 	 if (query_name)
 	    xsink->raiseException("DBI:ORACLE:OCI-ERROR", "%s@%s: %s: %s", ds->getUsername(), ds->getDBName(), query_name, remove_trailing_newlines((char *)errbuf));
 	 else
 	    xsink->raiseException("DBI:ORACLE:OCI-ERROR", "%s@%s: %s", ds->getUsername(), ds->getDBName(), remove_trailing_newlines((char *)errbuf));
 	 break;
+      }
       case OCI_INVALID_HANDLE:
-	 xsink->raiseException("DBI:ORACLE:OCI-INVALID-HANDLE", "%s@%s: an invalid OCI handle was used", ds->getUsername(), ds->getDBName());
+	 if (query_name)
+	    xsink->raiseException("DBI:ORACLE:OCI-INVALID-HANDLE", "%s@%s: %s: an invalid OCI handle was used", ds->getUsername(), ds->getDBName(), query_name);
+	 else
+	    xsink->raiseException("DBI:ORACLE:OCI-INVALID-HANDLE", "%s@%s: an invalid OCI handle was used", ds->getUsername(), ds->getDBName());
 	 break;
       case OCI_NEED_DATA:
 	 xsink->raiseException("DBI:ORACLE:OCI-NEED-DATA", "Oracle OCI error");
@@ -637,8 +648,7 @@ OraBindGroup::OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreLi
 
    OraBindNode *w = head;
    int pos = 1;
-   while (w)
-   {
+   while (w) {
       if (w->bindtype == BN_PLACEHOLDER)
 	 w->bindPlaceholder(ds, stmthp, pos, xsink);
       else
@@ -650,6 +660,8 @@ OraBindGroup::OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreLi
       pos++;
       w = w->next;
    }
+
+   //printd(5, "OraBindGroup::OraBindGroup() bound %d position(s), statement handle: %p\n", pos - 1, stmthp);
 }
 
 void OraBindGroup::parseQuery(const QoreListNode *args) {
@@ -1104,7 +1116,7 @@ int OraBindGroup::oci_exec(const char *who, ub4 iters) {
 
    int status = OCIStmtExecute(d_ora->svchp, stmthp, d_ora->errhp, iters, 0, 0, 0, OCI_DEFAULT);
 
-   //printd(5, "oci_exec() status=%d (OCI_ERROR=%d)\n", status, OCI_ERROR);
+   //printd(5, "oci_exec() stmthp=%p status=%d (OCI_ERROR=%d)\n", stmthp, status, OCI_ERROR);
    if (status == OCI_ERROR) {
       // see if server is connected
       ub4 server_status = 0;
