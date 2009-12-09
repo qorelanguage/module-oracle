@@ -797,22 +797,59 @@ void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionS
       const QoreStringNode *bstr = reinterpret_cast<const QoreStringNode *>(data.v.value);
       buftype = SQLT_STR;
 
+      qore_size_t len;
+
       // convert to the db charset if necessary
-      if (bstr->getEncoding() != ds->getQoreEncoding())
-      {
+      if (bstr->getEncoding() != ds->getQoreEncoding()) {
 	 QoreString *nstr = bstr->QoreString::convertEncoding(ds->getQoreEncoding(), xsink);
 	 if (*xsink)
 	    return;
 	 // save temporary string for later deleting
 	 data.v.tstr = nstr;
 	 buf.ptr = (char *)nstr->getBuffer();
+	 len = nstr->strlen();
       }
-      else // bind value to buffer
+      else { // bind value to buffer
 	 buf.ptr = (char *)bstr->getBuffer();
-      
+	 len = bstr->strlen();
+      }
+
       // bind it
-      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, buf.ptr, bstr->strlen() + 1, SQLT_STR, (dvoid *)NULL, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), 
-		   "OraBindNode::bindValue()", ds, xsink);
+      if (len > CLOB_THRESHOLD) {
+	 //printd(5, "binding string %p len=%lld as CLOB\n", buf.ptr, len);
+	 // bind as a CLOB
+
+	 // allocate LOB descriptor
+	 if (ora_checkerr(d_ora->errhp,
+			  OCIDescriptorAlloc(d_ora->envhp, (dvoid **)&strlob, OCI_DTYPE_LOB, 0, NULL), 
+			  "OraBindNode::bindValue() alloc LOB descriptor", ds, xsink))
+	    return;
+
+	 // create temporary BLOB
+	 if (ora_checkerr(d_ora->errhp,
+			  OCILobCreateTemporary(d_ora->svchp, d_ora->errhp, strlob, OCI_DEFAULT, OCI_DEFAULT, OCI_TEMP_CLOB, FALSE, OCI_DURATION_SESSION),
+			  "OraBindNode::bindValue() create temporary CLOB", ds, xsink))
+	    return;
+
+	 clob_allocated = true;
+
+	 // write the buffer data into the CLOB
+	 ub4 amtp = len;
+	 if (ora_checkerr(d_ora->errhp,
+			  OCILobWrite (d_ora->svchp, d_ora->errhp, strlob, &amtp, 1, buf.ptr, len + 1, OCI_ONE_PIECE, 0, 0, d_ora->charsetid, SQLCS_IMPLICIT),
+			  "OraBindNode::bindValue() write CLOB", ds, xsink))
+	    return;
+
+	 ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &strlob, 0, SQLT_CLOB, (dvoid *)NULL, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), 
+			 "OraBindNode::bindValue()", ds, xsink);
+
+      }
+      else {	 
+	 // bind as a string
+	 ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, buf.ptr, len + 1, SQLT_STR, (dvoid *)NULL, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), 
+		      "OraBindNode::bindValue()", ds, xsink);
+      }
+
       return;
    }
 
@@ -1354,7 +1391,10 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
 	     charset, QCS_DEFAULT->getCode());
    }
 
-#ifdef HAVE_OCIENVNLSCREATE
+#ifndef HAVE_OCIENVNLSCREATE
+#error need to define HAVE_OCIENVNLSCREATE (with Oracle 9i+)
+#endif // HAVE_OCIENVNLSCREATE
+
    // get character set ID
    d_ora->charsetid = OCINlsCharSetNameToId(tmpenvhp, (oratext *)charset);
    // delete temporary environmental handle
@@ -1385,25 +1425,6 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
 	 return -1;
       }
    }
-
-#else // !HAVE_OCIENVNLSCREATE
-#error need to define HAVE_OCIENVNLSCREATE (with Oracle 9i+)
-/*
-   d_ora->charsetid = 0;
-   if (ds->getDBEncoding()) {
-      xsink->raiseException("DBI:ORACLE:NO_OCIENVCREATE", "compile-time options do not support Oracle character set specifications");
-      delete d_ora;
-      ds->setPrivateData(NULL);
-      return -1;
-   }
-# ifdef HAVE_OCIENVCREATE
-   OCIEnvCreate(&d_ora->envhp, oci_flags | OCI_NO_UCB, 0, 0, 0, 0, 0, 0);
-# else
-   OCIInitialize((ub4)oci_flags, 0, 0, 0, 0);
-   OCIEnvInit(&d_ora->envhp, (ub4) OCI_DEFAULT, 0, 0);
-# endif
-*/
-#endif // HAVE_OCIENVNLSCREATE
 
    if (OCIHandleAlloc(d_ora->envhp, (dvoid **) &d_ora->errhp, OCI_HTYPE_ERROR, 0, 0) != OCI_SUCCESS) {
       OCIHandleFree(d_ora->envhp, OCI_HTYPE_ENV);

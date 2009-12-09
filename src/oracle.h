@@ -44,6 +44,9 @@
 
 #define ORA_RAW_SIZE 65535
 
+// should be 32767
+#define CLOB_THRESHOLD 30000
+
 static int ora_checkerr(OCIError *errhp, sword status, const char *query_name, Datasource *ds, ExceptionSink *xsink);
 
 class OracleData {
@@ -227,15 +230,17 @@ class OraBindNode {
       union ora_value buf; // for bind buffers
       sb2 ind;             // NULL indicator for OCI calls
       OraBindNode *next;
+      OCILobLocator *strlob;
+      bool clob_allocated;
 
-      DLLLOCAL inline OraBindNode(const AbstractQoreNode *v) { // for value nodes
+      DLLLOCAL inline OraBindNode(const AbstractQoreNode *v) : strlob(0), clob_allocated(false) { // for value nodes
 	 bindtype = BN_VALUE;
 	 data.v.value = v;
 	 data.v.tstr = NULL;
 	 buftype = 0;
 	 next = NULL;
       }
-      DLLLOCAL inline OraBindNode(char *name, int size, const char *typ, const AbstractQoreNode *v) {
+      DLLLOCAL inline OraBindNode(char *name, int size, const char *typ, const AbstractQoreNode *v) : strlob(0), clob_allocated(false) {
 	 bindtype = BN_PLACEHOLDER;
 	 data.ph.name = name;
 	 data.ph.maxsize = size;
@@ -275,6 +280,18 @@ class OraBindNode {
 	 else {
 	    if (data.v.tstr)
 	       delete data.v.tstr;
+
+	    if (strlob) {
+	       if (clob_allocated) {
+		  OracleData *d_ora = (OracleData *)ds->getPrivateData();
+		  //printd(5, "deallocating temporary clob\n");
+		  ora_checkerr(d_ora->errhp,
+			       OCILobFreeTemporary(d_ora->svchp, d_ora->errhp, strlob),
+			       "OraBindNode::del() free temporary CLOB", ds, xsink);
+	       }
+	       //printd(5, "freeing clob descriptor\n");
+	       OCIDescriptorFree(strlob, OCI_DTYPE_LOB);
+	    }
 	 }
       }
 
