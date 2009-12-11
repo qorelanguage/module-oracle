@@ -126,7 +126,7 @@ static int oracle_rollback(Datasource *ds, ExceptionSink *xsink) {
 }
 
 static int get_char_width(const QoreEncoding *enc, int num) {
-#if QORE_VERSION_CODE >= 007001
+#if QORE_VERSION_CODE >= 7001
    return num * enc->getMaxCharWidth();
 #else
    // qore < 0.7.1 did not have the QoreEncoding::getMaxCharWidth() call, so we assume character width = 1
