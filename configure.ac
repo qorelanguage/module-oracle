@@ -233,13 +233,15 @@ if test -z "$ORACLE_INSTANT_CLIENT" -a -n "INSTANT_CLIENT"; then
 fi
 
 # set instant client variable for macports
-if test -z "$ORACLE_INSTANT_CLIENT" -a -n "$find_prefix" -a -f "$find_prefix/lib/oracle/libclntsh.$SHLIB_SUFFIX"; then
-   ORACLE_INSTANT_CLIENT="$find_prefix/lib/oracle"
-fi
-
-# check for macports instant client in default macports directory
-if test -z "$ORACLE_INSTANT_CLIENT" -a -f "/opt/local/lib/oracle/libclntsh.$SHLIB_SUFFIX"; then
-   ORACLE_INSTANT_CLIENT="/opt/local/lib/oracle"
+if test -z "$ORACLE_INSTANT_CLIENT" -a -z "$ORACLE_HOME" -a "$with_oracle" = "auto"; then
+   if test -n "$find_prefix" -a -f "$find_prefix/lib/oracle/libclntsh.$SHLIB_SUFFIX"; then
+      ORACLE_INSTANT_CLIENT="$find_prefix/lib/oracle"
+   elif test -f "$find_prefix/lib/oracle/libclntsh.$SHLIB_SUFFIX"; then
+      ORACLE_INSTANT_CLIENT="$find_prefix/lib/oracle"
+   # else check for macports instant client in default macports directory
+   elif test -f "/opt/local/lib/oracle/libclntsh.$SHLIB_SUFFIX"; then
+      ORACLE_INSTANT_CLIENT="/opt/local/lib/oracle"
+   fi
 fi
 
 if test "$with_oracle" = "auto"; then
