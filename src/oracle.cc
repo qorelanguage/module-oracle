@@ -1350,7 +1350,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
 
    QoreString db;
    if (port)
-      db.sprintf("//%s:%p/%s", ds->getHostName(), port, ds->getDBName());
+      db.sprintf("//%s:%d/%s", ds->getHostName(), port, ds->getDBName());
    else
       db.concat(ds->getDBName());
 
