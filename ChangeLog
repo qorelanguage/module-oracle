@@ -1,371 +1,1259 @@
+2009-12-19 23:28  david_nichols
+
+	* RELEASE-NOTES:
+	  updated
+	  release
+	  notes
+
+2009-12-17 19:16  subik
+
+	* src/oracle.cc:
+	  fixed:
+	  unable
+	  to
+	  connect
+	  to
+	  oracle
+	  without
+	  TNSNAMES
+	  (hostname:port
+	  used)
+
+2009-12-15 12:05  david_nichols
+
+	* configure.ac:
+	  minor
+	  configure
+	  fixes
+	  for
+	  detecting
+	  oracle
+	  installation
+
+2009-12-11 19:34  david_nichols
+
+	* src/oracle.cc:
+	  fixed
+	  not
+	  to
+	  use
+	  octal
+	  comparison
+
+2009-12-09 16:52  david_nichols
+
+	* RELEASE-NOTES,
+	  src/oracle.cc,
+	  src/oracle.h:
+	  bind
+	  character
+	  values
+	  greater
+	  than
+	  30K
+	  bytes
+	  long
+	  as
+	  a
+	  CLOB
+
+2009-12-09 12:58  david_nichols
+
+	* configure.ac:
+	  fixed
+	  all
+	  modules
+	  to
+	  use
+	  decimal
+	  comparisons
+	  with
+	  the
+	  qore
+	  version
+	  string
+	  instead
+	  of
+	  octal
+	  so
+	  that
+	  they
+	  will
+	  still
+	  compile
+	  with
+	  qore
+	  v0.8.0
+	  and
+	  up...
+
+2009-12-08 10:36  david_nichols
+
+	* RELEASE-NOTES,
+	  src/oracle.cc:
+	  print
+	  a warning statement
+	  if
+	  debugging
+	  is
+	  enabled
+	  if
+	  OCI_SUCCESS_WITH_INFO
+	  is
+	  returned
+	  by
+	  Oracle
+
+2009-12-07 16:48  david_nichols
+
+	* src/oracle.cc,
+	  src/oracle.h:
+	  cleaned
+	  up
+	  some
+	  internal
+	  interfaces
+	  and
+	  removed
+	  debugging
+	  statement
+
+2009-12-07 14:10  david_nichols
+
+	* RELEASE-NOTES,
+	  configure.ac,
+	  qore-oracle-module.spec,
+	  src/oracle.cc,
+	  src/oracle.h:
+	  fixed
+	  memory
+	  error
+	  in
+	  streaming
+	  c/blob
+	  retrieval
+	  (double
+	  free);
+	  tagged
+	  release
+	  as
+	  1.1
+
+2009-11-23 12:19  david_nichols
+
+	* docs/oracle-module-doc.html:
+	  corrected
+	  typos
+	  in
+	  docs
+
+2009-11-22 06:03  david_nichols
+
+	* configure.ac:
+	  updated
+	  configure
+	  to
+	  assume
+	  64-bit
+	  build
+	  if
+	  host_cpu
+	  =
+	  "amd64"
+	  
+
+2009-11-06 15:17  david_nichols
+
+	* ChangeLog:
+	  fixed
+	  bad
+	  formatting
+	  in
+	  changelog
+
 2009-11-06 15:14  david_nichols
 
-	* ChangeLog: updated changelog
+	* ChangeLog:
+	  updated
+	  changelog
 
 2009-10-30 08:22  david_nichols
 
-	* configure.ac: updated all module configure scripts to use gnutar
-	  on darwin to avoid picking up OSX resource files in source
+	* configure.ac:
+	  updated
+	  all
+	  module
+	  configure
+	  scripts
+	  to
+	  use
+	  gnutar
+	  on
+	  darwin
+	  to
+	  avoid
+	  picking
+	  up
+	  OSX
+	  resource
+	  files
+	  in
+	  source
 	  releases
 
 2009-10-26 14:43  david_nichols
 
-	* ChangeLog: udpated changelog
+	* ChangeLog:
+	  udpated
+	  changelog
 
 2009-09-21 10:35  david_nichols
 
-	* configure.ac: updated configure to set 64-bit compile mode by
-	  default on snow leaopard with i386
+	* configure.ac:
+	  updated
+	  configure
+	  to
+	  set
+	  64-bit
+	  compile
+	  mode
+	  by
+	  default
+	  on
+	  snow
+	  leaopard
+	  with
+	  i386
 
 2009-09-10 06:49  david_nichols
 
-	* configure.ac: updated configure.ac to properly compile in 32-bit
-	  mode on OSX snow leopard (10.6)
+	* configure.ac:
+	  updated
+	  configure.ac
+	  to
+	  properly
+	  compile
+	  in
+	  32-bit
+	  mode
+	  on
+	  OSX
+	  snow
+	  leopard
+	  (10.6)
 
 2009-08-18 11:18  david_nichols
 
-	* RELEASE-NOTES, configure.ac, qore-oracle-module.spec: updated
-	  version to 1.0.9; updated release notes
+	* RELEASE-NOTES,
+	  configure.ac,
+	  qore-oracle-module.spec:
+	  updated
+	  version
+	  to
+	  1.0.9;
+	  updated
+	  release
+	  notes
 
 2009-08-18 11:18  david_nichols
 
-	* src/oracle.cc: fixed auto-reconnect to mark the datasource as
-	  closed when auto-reconnect
-	  fails; otherwise a crash can occur when the datasource is reused
+	* src/oracle.cc:
+	  fixed
+	  auto-reconnect
+	  to
+	  mark
+	  the
+	  datasource
+	  as
+	  closed
+	  when
+	  auto-reconnect fails;
+	  otherwise
+	  a
+	  crash
+	  can
+	  occur
+	  when
+	  the
+	  datasource
+	  is
+	  reused
 
 2009-07-20 13:16  david_nichols
 
-	* configure.ac, qore-oracle-module.spec, reconf.sh: added opensuse
-	  11.2 detection to spec file, fixed rhel detection in spec files,
-	  updated configure.ac to work with older versions of autotools
+	* configure.ac,
+	  qore-oracle-module.spec,
+	  reconf.sh:
+	  added
+	  opensuse
+	  11.2
+	  detection
+	  to
+	  spec
+	  file,
+	  fixed
+	  rhel
+	  detection
+	  in
+	  spec
+	  files,
+	  updated
+	  configure.ac
+	  to
+	  work
+	  with
+	  older
+	  versions
+	  of
+	  autotools
 
 2009-07-20 12:53  david_nichols
 
-	* qore-oracle-module.spec: fixed rhel distribution detection
+	* qore-oracle-module.spec:
+	  fixed
+	  rhel
+	  distribution
+	  detection
 
 2009-07-18 07:44  david_nichols
 
-	* qore-oracle-module.spec: fixed setting %dist
+	* qore-oracle-module.spec:
+	  fixed
+	  setting
+	  %dist
 
 2009-07-18 07:28  david_nichols
 
-	* configure.ac, qore-oracle-module.spec: fixes to compile with
-	  older autotools and to detect rhel versions
+	* configure.ac,
+	  qore-oracle-module.spec:
+	  fixes
+	  to
+	  compile
+	  with
+	  older
+	  autotools
+	  and
+	  to
+	  detect
+	  rhel
+	  versions
 
 2009-07-18 06:16  david_nichols
 
-	* RELEASE-NOTES: minor updates
+	* RELEASE-NOTES:
+	  minor
+	  updates
 
 2009-07-18 06:09  david_nichols
 
-	* ChangeLog, RELEASE-NOTES, docs/oracle-module-doc.html: updated
-	  release notes and docs for 1.0.8 release
+	* ChangeLog,
+	  RELEASE-NOTES,
+	  docs/oracle-module-doc.html:
+	  updated
+	  release
+	  notes
+	  and
+	  docs
+	  for
+	  1.0.8
+	  release
 
 2009-07-01 15:43  david_nichols
 
-	* src/oracle.cc: updated web site home page in modules' url
+	* src/oracle.cc:
+	  updated
+	  web
+	  site
+	  home
+	  page
+	  in
+	  modules'
+	  url
 
 2009-06-26 06:04  david_nichols
 
-	* configure.ac, qore-oracle-module.spec, src/oracle.cc: implemented
-	  support for direct connections without TNS by using the hostname
-	  and port set in the Datasource object
+	* configure.ac,
+	  qore-oracle-module.spec,
+	  src/oracle.cc:
+	  implemented
+	  support
+	  for
+	  direct
+	  connections
+	  without
+	  TNS
+	  by
+	  using
+	  the
+	  hostname
+	  and
+	  port
+	  set
+	  in
+	  the
+	  Datasource
+	  object
 
 2009-06-18 07:19  david_nichols
 
-	* RELEASE-NOTES, configure.ac, qore-oracle-module.spec,
-	  src/oracle.cc: updated release to 1.0.8
-	  updated query parsing for '%*' placeholders to ignore '%'
-	  characters when they
-	  are preceded by an alphanumeric character in order to avoid
-	  having to use
-	  backslashes to escape them in PL/SQL code, for example
+	* RELEASE-NOTES,
+	  configure.ac,
+	  qore-oracle-module.spec,
+	  src/oracle.cc:
+	  updated
+	  release
+	  to
+	  1.0.8 updated
+	  query
+	  parsing
+	  for
+	  '%*'
+	  placeholders
+	  to
+	  ignore
+	  '%'
+	  characters
+	  when
+	  they are
+	  preceded
+	  by
+	  an
+	  alphanumeric
+	  character
+	  in
+	  order
+	  to
+	  avoid
+	  having
+	  to
+	  use backslashes
+	  to
+	  escape
+	  them
+	  in
+	  PL/SQL
+	  code,
+	  for
+	  example
 
 2009-06-08 08:38  david_nichols
 
-	* qore-oracle-module.spec: fixed qore module dir detection
+	* qore-oracle-module.spec:
+	  fixed
+	  qore
+	  module
+	  dir
+	  detection
 
 2009-05-29 07:10  david_nichols
 
-	* qore-oracle-module.spec: fixed typo in sles version detection
+	* qore-oracle-module.spec:
+	  fixed
+	  typo
+	  in
+	  sles
+	  version
+	  detection
 
 2009-05-03 16:52  david_nichols
 
-	* configure.ac: fixed oracle detection
+	* configure.ac:
+	  fixed
+	  oracle
+	  detection
 
 2009-05-03 16:48  david_nichols
 
-	* ChangeLog: updated changelog
+	* ChangeLog:
+	  updated
+	  changelog
 
 2009-05-03 16:47  david_nichols
 
-	* RELEASE-NOTES: updated release notes
+	* RELEASE-NOTES:
+	  updated
+	  release
+	  notes
 
 2009-05-03 16:46  david_nichols
 
-	* configure.ac: macports compile fixes
+	* configure.ac:
+	  macports
+	  compile
+	  fixes
 
 2009-05-03 16:41  david_nichols
 
-	* configure.ac, src/oracle.cc: fix for quoting : characters and for
-	  building with macports
+	* configure.ac,
+	  src/oracle.cc:
+	  fix
+	  for
+	  quoting
+	  :
+	  characters
+	  and
+	  for
+	  building
+	  with
+	  macports
 
 2009-04-20 06:53  david_nichols
 
-	* configure.ac: readded config_macro_dir
+	* configure.ac:
+	  readded
+	  config_macro_dir
 
 2009-04-17 13:48  david_nichols
 
-	* configure.ac, reconf.sh: do not reference macro dir from
+	* configure.ac,
+	  reconf.sh:
+	  do
+	  not
+	  reference
+	  macro
+	  dir
+	  from
 	  configure.ac
 
 2009-04-10 08:54  david_nichols
 
-	* RELEASE-NOTES: fixed release label
+	* RELEASE-NOTES:
+	  fixed
+	  release
+	  label
 
 2009-04-10 06:45  david_nichols
 
-	* src/oracle-module.h, src/oracle.cc: cosmetic updates to copyright
-	  line (2008->2009)
+	* src/oracle-module.h,
+	  src/oracle.cc:
+	  cosmetic
+	  updates
+	  to
+	  copyright
+	  line
+	  (2008->2009)
 
 2009-04-07 09:52  david_nichols
 
-	* RELEASE-NOTES, src/oracle.cc, src/oracle.h: updated to allow
-	  input and output variables to be bound for stored procedure
-	  and function calls for types: string, binary, integer, float,
-	  date
-	  
-	  fixed binary binding and retrieving in stored procedure and
-	  function calls
+	* RELEASE-NOTES,
+	  src/oracle.cc,
+	  src/oracle.h:
+	  updated to
+	  allow
+	  input
+	  and
+	  output
+	  variables
+	  to
+	  be
+	  bound for
+	  stored
+	  procedure and
+	  function
+	  calls
+	  for
+	  types:
+	  string,
+	  binary,
+	  integer,
+	  float,
+	  date fixed
+	  binary
+	  binding
+	  and
+	  retrieving
+	  in
+	  stored
+	  procedure
+	  and
+	  function
+	  calls
 
 2009-04-07 06:41  david_nichols
 
-	* src/oracle.cc: implemented binding timestamp/date-time values as
-	  in-out parameters
+	* src/oracle.cc:
+	  implemented
+	  binding
+	  timestamp/date-time
+	  values
+	  as
+	  in-out
+	  parameters
 
 2009-04-06 15:23  david_nichols
 
-	* configure.ac, qore-oracle-module.spec, src/oracle.cc,
-	  src/oracle.h: updated to v1.0.7 - updated binding by placeholder
-	  to also take an optional value for strings
+	* configure.ac,
+	  qore-oracle-module.spec,
+	  src/oracle.cc,
+	  src/oracle.h:
+	  updated
+	  to
+	  v1.0.7
+	  -
+	  updated
+	  binding
+	  by
+	  placeholder
+	  to
+	  also
+	  take
+	  an
+	  optional
+	  value
+	  for
+	  strings
 
 2009-04-03 07:54  david_nichols
 
-	* ChangeLog: updated changelog
+	* ChangeLog:
+	  updated
+	  changelog
 
 2009-03-25 16:09  david_nichols
 
-	* RELEASE-NOTES, src/oracle.cc: fixed a bug calculating memory for
-	  character buffers; memory was calculated as the square of the
-	  memory actually needed
+	* RELEASE-NOTES,
+	  src/oracle.cc:
+	  fixed
+	  a bug
+	  calculating memory
+	  for
+	  character
+	  buffers;
+	  memory
+	  was
+	  calculated
+	  as
+	  the
+	  square
+	  of
+	  the
+	  memory
+	  actually
+	  needed
 
 2009-03-24 17:28  david_nichols
 
-	* src/oracle.cc, src/oracle.h: fixed returning result sets to honor
-	  "horizontal" or "vertical" data structure preferences
+	* src/oracle.cc,
+	  src/oracle.h:
+	  fixed
+	  returning
+	  result
+	  sets
+	  to
+	  honor
+	  "horizontal"
+	  or
+	  "vertical"
+	  data
+	  structure
+	  preferences
 
 2009-03-24 09:20  david_nichols
 
-	* RELEASE-NOTES, configure.ac, qore-oracle-module.spec,
-	  src/oracle.cc, src/oracle.h: updated to allow result sets and
-	  nested tabled to be returned directly; updated release to version
+	* RELEASE-NOTES,
+	  configure.ac,
+	  qore-oracle-module.spec,
+	  src/oracle.cc,
+	  src/oracle.h:
+	  updated
+	  to
+	  allow
+	  result
+	  sets
+	  and
+	  nested
+	  tabled
+	  to
+	  be
+	  returned
+	  directly;
+	  updated
+	  release
+	  to
+	  version
 	  1.0.6
 
 2009-02-04 09:42  david_nichols
 
-	* src/oracle.cc: corrected a typo
+	* src/oracle.cc:
+	  corrected
+	  a
+	  typo
 
 2009-02-04 09:14  david_nichols
 
-	* RELEASE-NOTES: fixed exception string with invalid handle errors
+	* RELEASE-NOTES:
+	  fixed
+	  exception
+	  string
+	  with
+	  invalid
+	  handle
+	  errors
 
 2009-02-04 09:12  david_nichols
 
-	* configure.ac, qore-oracle-module.spec, src/oracle.cc: updated
-	  version to 1.0.5 for next release; fixed a bug in handling
-	  invalid
-	  handle error messages
+	* configure.ac,
+	  qore-oracle-module.spec,
+	  src/oracle.cc:
+	  updated
+	  version
+	  to
+	  1.0.5
+	  for
+	  next
+	  release;
+	  fixed
+	  a
+	  bug
+	  in
+	  handling
+	  invalid handle
+	  error
+	  messages
 
 2009-01-20 09:20  david_nichols
 
-	* RELEASE-NOTES, configure.ac: fixed instant client detection from
-	  32-bit rpms in configure (again)
+	* RELEASE-NOTES,
+	  configure.ac:
+	  fixed
+	  instant
+	  client
+	  detection
+	  from
+	  32-bit
+	  rpms
+	  in
+	  configure
+	  (again)
 
 2009-01-08 18:43  david_nichols
 
-	* qore-oracle-module.spec: simplified spec files a little
+	* qore-oracle-module.spec:
+	  simplified
+	  spec
+	  files
+	  a
+	  little
 
 2009-01-08 15:13  david_nichols
 
-	* qore-oracle-module.spec: commented-out additional "Source0" line
-	  so that packages will build on Fedora 10 (OBS)
+	* qore-oracle-module.spec:
+	  commented-out
+	  additional
+	  "Source0"
+	  line
+	  so
+	  that
+	  packages
+	  will
+	  build
+	  on
+	  Fedora
+	  10
+	  (OBS)
 
 2009-01-08 14:44  david_nichols
 
-	* reconf.sh: updated reconf.sh to look for glibtoolize as well as
+	* reconf.sh:
+	  updated reconf.sh
+	  to
+	  look
+	  for
+	  glibtoolize
+	  as
+	  well
+	  as
 	  libtoolize
 
 2009-01-07 13:02  david_nichols
 
-	* Makefile.am, RELEASE-NOTES, configure.ac, ltmain.sh,
-	  qore-oracle-module.spec, reconf.sh: upadted reconf.sh to use
-	  libtoolize to generate ltmain.sh
+	* Makefile.am,
+	  RELEASE-NOTES,
+	  configure.ac,
+	  ltmain.sh,
+	  qore-oracle-module.spec,
+	  reconf.sh:
+	  upadted
+	  reconf.sh
+	  to
+	  use
+	  libtoolize
+	  to
+	  generate
+	  ltmain.sh
 
 2008-12-04 09:54  david_nichols
 
-	* RELEASE-NOTES, configure.ac, qore-oracle-module.spec,
-	  src/oracle.cc: made default to use SQLT_FLT bindings because
-	  using SQLT_BDOUBLE with Oracle
-	  9i or earlier will not work; incremented release to 1.0.3
+	* RELEASE-NOTES,
+	  configure.ac,
+	  qore-oracle-module.spec,
+	  src/oracle.cc:
+	  made
+	  default
+	  to
+	  use
+	  SQLT_FLT
+	  bindings
+	  because
+	  using
+	  SQLT_BDOUBLE
+	  with
+	  Oracle 9i
+	  or
+	  earlier
+	  will
+	  not
+	  work;
+	  incremented
+	  release
+	  to
+	  1.0.3
 
 2008-11-28 17:28  david_nichols
 
-	* qore-oracle-module.spec: fixed typo in spec file
+	* qore-oracle-module.spec:
+	  fixed
+	  typo
+	  in
+	  spec
+	  file
 
 2008-11-28 17:26  david_nichols
 
-	* RELEASE-NOTES, configure.ac, qore-oracle-module.spec: fixed
-	  detection of Oracle instant client installed from 32-bit RPMs;
-	  updated to version 1.0.2
+	* RELEASE-NOTES,
+	  configure.ac,
+	  qore-oracle-module.spec:
+	  fixed
+	  detection
+	  of
+	  Oracle
+	  instant
+	  client
+	  installed
+	  from
+	  32-bit
+	  RPMs;
+	  updated
+	  to
+	  version
+	  1.0.2
 
 2008-11-03 14:17  david_nichols
 
-	* ChangeLog, src/oracle-module.h, src/oracle.cc: make module
-	  version reflect package version
+	* ChangeLog,
+	  src/oracle-module.h,
+	  src/oracle.cc:
+	  make
+	  module
+	  version
+	  reflect
+	  package
+	  version
 
 2008-10-30 17:20  david_nichols
 
-	* qore-oracle-module.spec: various fixes
+	* qore-oracle-module.spec:
+	  various
+	  fixes
 
 2008-10-30 10:55  david_nichols
 
-	* README: qore 0.7.1 is minimum required version for compilation
+	* README:
+	  qore
+	  0.7.1
+	  is
+	  minimum
+	  required
+	  version
+	  for
+	  compilation
 
 2008-10-30 10:55  david_nichols
 
-	* configure.ac, qore-oracle-module.spec, src/Makefile.am: update to
-	  new qore module api handling
+	* configure.ac,
+	  qore-oracle-module.spec,
+	  src/Makefile.am:
+	  update
+	  to
+	  new
+	  qore
+	  module
+	  api
+	  handling
 
 2008-10-20 19:57  david_nichols
 
-	* qore-oracle-module.spec: fixed spec file to allow for future qore
-	  module api versions
+	* qore-oracle-module.spec:
+	  fixed
+	  spec
+	  file
+	  to
+	  allow
+	  for
+	  future
+	  qore
+	  module
+	  api
+	  versions
 
 2008-10-20 19:49  david_nichols
 
-	* qore-oracle-module.spec: update module spec file to handle future
-	  qore module api versions
+	* qore-oracle-module.spec:
+	  update
+	  module
+	  spec
+	  file
+	  to
+	  handle
+	  future
+	  qore
+	  module
+	  api
+	  versions
 
 2008-10-20 12:03  david_nichols
 
-	* ChangeLog: updated changelog
+	* ChangeLog:
+	  updated
+	  changelog
 
 2008-10-20 12:02  david_nichols
 
-	* Makefile.am, qore-oracle-module.spec: added release notes to tar
-	  and rpms
+	* Makefile.am,
+	  qore-oracle-module.spec:
+	  added
+	  release
+	  notes
+	  to
+	  tar
+	  and
+	  rpms
 
 2008-10-20 12:00  david_nichols
 
-	* RELEASE-NOTES: added release notes file
+	* RELEASE-NOTES:
+	  added
+	  release
+	  notes
+	  file
 
 2008-10-18 07:18  david_nichols
 
-	* ChangeLog: updated changelog
+	* ChangeLog:
+	  updated
+	  changelog
 
 2008-10-17 17:14  david_nichols
 
-	* src/oracle.cc, src/oracle.h: updated oracle binding to manually
-	  calculate the buffer size for string binds using the number of
-	  characters in the column * the maximum width of the target
-	  character encoding - it seems that in the case where the oracle
-	  server's character encoding is a single/byte encoding and binding
-	  to a multi-byte encoding (such as UTF8 or "al32utf8"), then
-	  oracle reports the maxumum buffer size needed for such columns as
-	  equal to the character length, however it should be actually 4
-	  times larger (in the case of al32utf8)
+	* src/oracle.cc,
+	  src/oracle.h:
+	  updated
+	  oracle
+	  binding
+	  to
+	  manually
+	  calculate
+	  the
+	  buffer
+	  size
+	  for
+	  string
+	  binds
+	  using
+	  the
+	  number
+	  of
+	  characters
+	  in
+	  the
+	  column
+	  *
+	  the
+	  maximum
+	  width
+	  of
+	  the
+	  target
+	  character
+	  encoding
+	  -
+	  it
+	  seems
+	  that
+	  in
+	  the
+	  case
+	  where
+	  the
+	  oracle
+	  server's
+	  character
+	  encoding
+	  is
+	  a
+	  single/byte
+	  encoding
+	  and
+	  binding
+	  to
+	  a
+	  multi-byte
+	  encoding
+	  (such
+	  as
+	  UTF8
+	  or
+	  "al32utf8"),
+	  then
+	  oracle
+	  reports
+	  the
+	  maxumum
+	  buffer
+	  size
+	  needed
+	  for
+	  such
+	  columns
+	  as
+	  equal
+	  to
+	  the
+	  character
+	  length,
+	  however
+	  it
+	  should
+	  be
+	  actually
+	  4
+	  times
+	  larger
+	  (in
+	  the
+	  case
+	  of
+	  al32utf8)
 
 2008-10-17 07:01  david_nichols
 
-	* configure.ac, qore-oracle-module.spec: updated to version 1.0.1
+	* configure.ac,
+	  qore-oracle-module.spec:
+	  updated
+	  to
+	  version
+	  1.0.1
 
 2008-10-17 06:59  david_nichols
 
-	* src/oracle.cc: bind fixes, disabled debugging statements
+	* src/oracle.cc:
+	  bind
+	  fixes,
+	  disabled
+	  debugging
+	  statements
 
 2008-10-17 06:41  david_nichols
 
-	* configure.ac: fixed typo
+	* configure.ac:
+	  fixed
+	  typo
 
 2008-10-17 06:38  david_nichols
 
-	* configure.ac, src/oracle.cc, src/oracle.h: updated string binding
-	  to bind number of bytes according to the number of characters in
-	  the column * number of bytes per character in the target
-	  character encoding
+	* configure.ac,
+	  src/oracle.cc,
+	  src/oracle.h:
+	  updated
+	  string
+	  binding
+	  to
+	  bind
+	  number
+	  of
+	  bytes
+	  according
+	  to
+	  the
+	  number
+	  of
+	  characters
+	  in
+	  the
+	  column
+	  *
+	  number
+	  of
+	  bytes
+	  per
+	  character
+	  in
+	  the
+	  target
+	  character
+	  encoding
 
 2008-10-11 07:29  david_nichols
 
-	* ChangeLog: updated changelog
+	* ChangeLog:
+	  updated
+	  changelog
 
 2008-10-09 08:19  david_nichols
 
-	* ChangeLog: udpated changelog
+	* ChangeLog:
+	  udpated
+	  changelog
 
 2008-10-09 08:16  david_nichols
 
-	* configure.ac, src/oracle.cc, src/oracle.h: fixed compile for
-	  oracle 9i, fixed configure for hpux itanium to default to 64-bit
+	* configure.ac,
+	  src/oracle.cc,
+	  src/oracle.h:
+	  fixed
+	  compile
+	  for
+	  oracle
+	  9i,
+	  fixed
+	  configure
+	  for
+	  hpux
+	  itanium
+	  to
+	  default
+	  to
+	  64-bit
 
 2008-10-08 20:16  david_nichols
 
-	* qore-oracle-module.spec, src/Makefile.am: spec file and module
-	  build fixes using prefix=/usr and make install
+	* qore-oracle-module.spec,
+	  src/Makefile.am:
+	  spec
+	  file
+	  and
+	  module
+	  build
+	  fixes
+	  using
+	  prefix=/usr
+	  and
+	  make
+	  install
 	  DESTDIR=$RPM_BUILD_ROOT
 
 2008-10-07 05:09  david_nichols
 
-	* ChangeLog: updated changelog
+	* ChangeLog:
+	  updated
+	  changelog
 
 2008-10-06 20:14  david_nichols
 
-	* ChangeLog, configure.ac: fixed oracle detection on osx and hpux
-	  parisc, updated changelog
+	* ChangeLog,
+	  configure.ac:
+	  fixed
+	  oracle
+	  detection
+	  on
+	  osx
+	  and
+	  hpux
+	  parisc,
+	  updated
+	  changelog
+	  
 
 2008-09-23 08:37  david_nichols
 
-	* README, configure.ac: updated configure to detect oracle 11g
+	* README,
+	  configure.ac:
+	  updated
+	  configure
+	  to
+	  detect
+	  oracle
+	  11g
 	  properly
 
 2008-09-09 09:11  david_nichols
 
-	* docs/oracle-module-doc.html: updated docs
+	* docs/oracle-module-doc.html:
+	  updated
+	  docs
 
 2008-09-09 07:13  david_nichols
 
-	* ChangeLog, docs/oracle-module-doc.html: updated docs and
+	* ChangeLog,
+	  docs/oracle-module-doc.html:
+	  updated
+	  docs
+	  and
 	  ChangeLog
 
 2008-09-08 18:05  david_nichols
 
-	* configure, configure.ac: fixed configure when oracle is not found
+	* configure,
+	  configure.ac:
+	  fixed
+	  configure
+	  when
+	  oracle
+	  is
+	  not
+	  found
 
 2008-09-06 08:10  david_nichols
 
-	* docs/oracle-module-doc.html: added note on OciLobRead() bug in
-	  ORacle 9i
+	* docs/oracle-module-doc.html:
+	  added
+	  note
+	  on
+	  OciLobRead()
+	  bug
+	  in
+	  ORacle
+	  9i
 
 2008-09-06 08:08  david_nichols
 
-	* Makefile.am, README, docs, docs/oracle-module-doc.html,
-	  qore-oracle-module.spec: added oracle documentation
+	* Makefile.am,
+	  README,
+	  docs,
+	  docs/oracle-module-doc.html,
+	  qore-oracle-module.spec:
+	  added
+	  oracle
+	  documentation
 
 2008-09-04 16:36  david_nichols
 
-	* ., AUTHORS, COPYING, ChangeLog, INSTALL, Makefile.am, NEWS,
-	  README, configure, configure.ac, ltmain.sh, m4,
-	  m4/acx_pthread.m4, qore-oracle-module.spec, reconf.sh, src,
-	  src/Makefile.am, src/oracle-config.h, src/oracle-module.h,
-	  src/oracle.cc, src/oracle.h, test, test/db-test.q: initial oracle
-	  module import
+	* .,
+	  AUTHORS,
+	  COPYING,
+	  ChangeLog,
+	  INSTALL,
+	  Makefile.am,
+	  NEWS,
+	  README,
+	  configure,
+	  configure.ac,
+	  ltmain.sh,
+	  m4,
+	  m4/acx_pthread.m4,
+	  qore-oracle-module.spec,
+	  reconf.sh,
+	  src,
+	  src/Makefile.am,
+	  src/oracle-config.h,
+	  src/oracle-module.h,
+	  src/oracle.cc,
+	  src/oracle.h,
+	  test,
+	  test/db-test.q:
+	  initial
+	  oracle
+	  module
+	  import
 
