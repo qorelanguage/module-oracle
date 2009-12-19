@@ -6,6 +6,7 @@ fixed memory error in streaming c/blob retrieval (double free)
 print a warning statement if debugging is enabled if OCI_SUCCESS_WITH_INFO is
 returned by Oracle
 bind character values greater than 30K bytes long as a CLOB
+fixed a bug setting the port number for direct connections witout TNS
 
 
 *************
