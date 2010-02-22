@@ -308,6 +308,7 @@ class OraBindGroup {
       OCIStmt *stmthp;
       Datasource *ds;
       bool hasOutput;
+      bool binding;
       ExceptionSink *xsink;
 
       DLLLOCAL void parseQuery(const QoreListNode *args);
@@ -326,7 +327,7 @@ class OraBindGroup {
       DLLLOCAL int oci_exec(const char *who, ub4 iters);
 
    public:
-      DLLLOCAL OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreListNode *args, ExceptionSink *n_xsink);
+      DLLLOCAL OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreListNode *args, ExceptionSink *n_xsink, bool doBinding=true);
       DLLLOCAL inline ~OraBindGroup() {
 	 // free OCI handle
 	 if (stmthp)

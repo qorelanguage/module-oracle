@@ -610,7 +610,9 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
    return NULL;
 }
 
-OraBindGroup::OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreListNode *args, ExceptionSink *n_xsink) {
+OraBindGroup::OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreListNode *args, ExceptionSink *n_xsink, bool doBinding)
+     : binding(doBinding)
+{
    stmthp = NULL;
    hasOutput = false;
    head = tail = NULL;
@@ -628,7 +630,8 @@ OraBindGroup::OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreLi
    printd(4, "OraBindGroup::OraBindGroup() ds=%p, d_ora=%p, SQL='%s', args=%d\n", ds, d_ora, str->getBuffer(), args ? args->size() : 0);
 
    // process query string and setup bind value list
-   parseQuery(args);
+   if (binding)
+       parseQuery(args);
 
    if (xsink->isEvent())
       return;
@@ -636,6 +639,7 @@ OraBindGroup::OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreLi
    ora_checkerr(d_ora->errhp, 
 		OCIHandleAlloc(d_ora->envhp, (dvoid **)&stmthp, OCI_HTYPE_STMT, 0, 0), 
 		"OraBindGroup::OraBindGroup():hndl", ds, xsink);
+
    if (xsink->isEvent())
       return;
 
@@ -645,6 +649,9 @@ OraBindGroup::OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreLi
 
    if (xsink->isEvent())
       return;
+
+   if (!binding)
+       return;
 
    OraBindNode *w = head;
    int pos = 1;
@@ -1153,7 +1160,7 @@ int OraBindGroup::oci_exec(const char *who, ub4 iters) {
 
    int status = OCIStmtExecute(d_ora->svchp, stmthp, d_ora->errhp, iters, 0, 0, 0, OCI_DEFAULT);
 
-   //printd(5, "oci_exec() stmthp=%p status=%d (OCI_ERROR=%d)\n", stmthp, status, OCI_ERROR);
+   printd(5, "oci_exec() stmthp=%p status=%d (OCI_ERROR=%d)\n", stmthp, status, OCI_ERROR);
    if (status == OCI_ERROR) {
       // see if server is connected
       ub4 server_status = 0;
@@ -1297,6 +1304,17 @@ static AbstractQoreNode *oracle_exec(Datasource *ds, const QoreString *qstr, con
 
    return bg.exec();
 }
+
+#ifdef _QORE_HAS_DBI_EXECRAW
+static AbstractQoreNode *oracle_execRaw(Datasource *ds, const QoreString *qstr, ExceptionSink *xsink) {
+   OraBindGroup bg(ds, qstr, 0, xsink, false);
+
+   if (xsink->isException())
+      return NULL;
+
+   return bg.exec();
+}
+#endif
 
 static AbstractQoreNode *oracle_select(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink) {
    OraBindGroup bg(ds, qstr, args, xsink);
@@ -1507,6 +1525,9 @@ QoreStringNode *oracle_module_init() {
    methods.add(QDBI_METHOD_SELECT, oracle_select);
    methods.add(QDBI_METHOD_SELECT_ROWS, oracle_select_rows);
    methods.add(QDBI_METHOD_EXEC, oracle_exec);
+#ifdef _QORE_HAS_DBI_EXECRAW
+   methods.add(QDBI_METHOD_EXECRAW, oracle_execRaw);
+#endif   
    methods.add(QDBI_METHOD_COMMIT, oracle_commit);
    methods.add(QDBI_METHOD_ROLLBACK, oracle_rollback);
    methods.add(QDBI_METHOD_GET_SERVER_VERSION, oracle_get_server_version);
