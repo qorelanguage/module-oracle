@@ -859,9 +859,9 @@ int OraBindNode::setDateDescriptor(Datasource *ds, OracleData *d_ora, const Date
       return -1;   
 #else
    if (ora_checkerr(d_ora->errhp, 
-		    OCIDateTimeConstruct (d_ora->envhp, d_ora->errhp, buf.odt, (sb2)d->getYear(), (ub1)d->getMonth(), (ub1)d->getDay(),
-					  (ub1)d->getHour(), (ub1)d->getMinute(), (ub1)d->getSecond(),
-					  (ub4)(d->getMillisecond() * 1000), NULL, 0), "OraBindNode::setDateDescriptor()", ds, xsink))
+		    OCIDateTimeConstruct (d_ora->envhp, d_ora->errhp, buf.odt, (sb2)d.getYear(), (ub1)d.getMonth(), (ub1)d.getDay(),
+					  (ub1)d.getHour(), (ub1)d.getMinute(), (ub1)d.getSecond(),
+					  (ub4)(d.getMillisecond() * 1000), NULL, 0), "OraBindNode::setDateDescriptor()", ds, xsink))
       return -1;
 #endif
    return 0;
