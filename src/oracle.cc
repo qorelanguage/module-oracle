@@ -46,8 +46,27 @@ DLLEXPORT qore_module_ns_init_t qore_module_ns_init = oracle_module_ns_init;
 DLLEXPORT qore_module_delete_t qore_module_delete = oracle_module_delete;
 DLLEXPORT qore_license_t qore_module_license = QL_LGPL;
 
+// timestamp binding type
+#ifdef _QORE_HAS_TIME_ZONES
+#define QORE_SQLT_TIMESTAMP SQLT_TIMESTAMP_TZ
+#else
+#define QORE_SQLT_TIMESTAMP SQLT_TIMESTAMP
+#endif
+
+#ifdef _QORE_HAS_EXEC_RAW
+#define ORA_DBI_CAP_HAS_EXEC_RAW DBI_CAP_HAS_EXEC_RAW
+#else
+#define ORA_DBI_CAP_HAS_EXEC_RAW 0
+#endif
+
+#ifdef _QORE_HAS_TIME_ZONES
+#define ORA_DBI_CAP_TIME_ZONE_SUPPORT DBI_CAP_TIME_ZONE_SUPPORT
+#else
+#define ORA_DBI_CAP_TIME_ZONE_SUPPORT 0
+#endif
+
 // capabilities of this driver
-#define DBI_ORACLE_CAPS (DBI_CAP_TRANSACTION_MANAGEMENT | DBI_CAP_STORED_PROCEDURES | DBI_CAP_CHARSET_SUPPORT | DBI_CAP_LOB_SUPPORT | DBI_CAP_BIND_BY_VALUE | DBI_CAP_BIND_BY_PLACEHOLDER)
+#define DBI_ORACLE_CAPS (DBI_CAP_TRANSACTION_MANAGEMENT | DBI_CAP_STORED_PROCEDURES | DBI_CAP_CHARSET_SUPPORT | DBI_CAP_LOB_SUPPORT | DBI_CAP_BIND_BY_VALUE | DBI_CAP_BIND_BY_PLACEHOLDER | ORA_DBI_CAP_HAS_EXEC_RAW | ORA_DBI_CAP_TIME_ZONE_SUPPORT)
 
 DBIDriver *DBID_ORACLE = NULL;
 
@@ -361,7 +380,7 @@ void OraColumns::define(OCIStmt *stmthp, const char *str) {
 	       return;
 	    //printd(5, "OraColumns::define() got TIMESTAMP handle %p\n", w->val.odt);
 	    ora_checkerr(d_ora->errhp,
-			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.odt, sizeof(w->val.odt), SQLT_TIMESTAMP, &w->ind, 0, 0, OCI_DEFAULT), 
+			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.odt, sizeof(w->val.odt), QORE_SQLT_TIMESTAMP, &w->ind, 0, 0, OCI_DEFAULT), 
 			 str, ds, xsink);
 	    break;
 
@@ -453,7 +472,7 @@ static DateTimeNode *convert_date_time(unsigned char *str) {
    else
       year = (str[0] - 100) * 100 + (str[1] - 100);
 
-   //printd(5, "convert_date_time(): %d %d = %04d-%02d-%02d %02d:%02d:%02d\n", str[0], str[1], dt->year, dt->month, dt->day, dt->hour, dt->minute, dt->second);
+   //printd(5, "convert_date_time(): %d %d = %04d-%02d-%02d %02d:%02d:%02d\n", str[0], str[1], year, str[2], str[3], str[4] - 1, str[5] - 1, str[6] - 1);
    return new DateTimeNode(year, str[2], str[3], str[4] - 1, str[5] - 1, str[6] - 1);
 }
 
@@ -469,7 +488,7 @@ extern "C" sb4 read_blob_callback(void *bp, CONST dvoid *bufp, ub4 len, ub1 piec
    return OCI_CONTINUE;
 }
 
-AbstractQoreNode *get_oracle_timestamp(Datasource *ds, OCIDateTime *odt, ExceptionSink *xsink) {
+DateTimeNode *get_oracle_timestamp(bool get_tz, Datasource *ds, OCIDateTime *odt, ExceptionSink *xsink) {
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
    //printd(5, "OraColumn::getValue() using TIMESTAMP handle %p\n", val.odt);
 
@@ -480,7 +499,7 @@ AbstractQoreNode *get_oracle_timestamp(Datasource *ds, OCIDateTime *odt, Excepti
 		"OCIDateTimeGetDate()", ds, xsink);
 
    if (*xsink)
-      return NULL;
+      return 0;
 
    ub1 hour, minute, second;
    ub4 us; // microseconds
@@ -488,9 +507,26 @@ AbstractQoreNode *get_oracle_timestamp(Datasource *ds, OCIDateTime *odt, Excepti
 		OCIDateTimeGetTime(d_ora->envhp, d_ora->errhp, odt, &hour, &minute, &second, &us),
 		"OCIDateTimeGetTime()", ds, xsink);
    if (*xsink)
-      return NULL;
+      return 0;
 
+#ifdef _QORE_HAS_TIME_ZONES
+   const AbstractQoreZoneInfo *zone;
+   if (!get_tz)
+      zone = currentTZ();
+   else {
+      // try to get tmie zone from date value
+      // time zone offset, hour and minute
+      sb1 oh = 0, om = 0;
+      sword err = OCIDateTimeGetTimeZoneOffset(d_ora->envhp, d_ora->errhp, odt, &oh, &om);
+      //printd(5, "err=%d, oh=%d, om=%d\n", err, oh, om);
+
+      // no time zone info, assume local time
+      zone = (err == OCI_ERROR) ? currentTZ() : findCreateOffsetZone(oh * 3600 + om * 60);
+   }
+   return DateTimeNode::makeAbsolute(zone, year, month, day, hour, minute, second, us);
+#else
    return new DateTimeNode(year, month, day, hour, minute, second, us / 1000);
+#endif
 }
 
 AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, ExceptionSink *xsink) {
@@ -523,10 +559,12 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
 	 return convert_date_time(val.date);
 
       case SQLT_TIMESTAMP:
+      case SQLT_DATE:
+	 return get_oracle_timestamp(false, ds, val.odt, xsink);
+
       case SQLT_TIMESTAMP_TZ:
       case SQLT_TIMESTAMP_LTZ:
-      case SQLT_DATE:
-	 return get_oracle_timestamp(ds, val.odt, xsink);
+	 return get_oracle_timestamp(true, ds, val.odt, xsink);
 
       case SQLT_INTERVAL_YM: {
 	 // get oracle data
@@ -553,9 +591,15 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
 	 ora_checkerr(d_ora->errhp, 
 		      OCIIntervalGetDaySecond(d_ora->envhp, d_ora->errhp, &day, &hour, &minute, &second, &microsecond, val.oi),
 		      "OCIIntervalGetDaySecond()", ds, xsink);
-	 
-	 return (*xsink ? NULL :
-		 new DateTimeNode(0, 0, day, hour, minute, second, microsecond / 1000, true));
+#ifdef _QORE_HAS_TIME_ZONES
+	 return *xsink 
+	    ? NULL 
+	    : DateTimeNode::makeRelative(0, 0, day, hour, minute, second, microsecond);
+#else
+	 return *xsink
+	    ? NULL :
+	    new DateTimeNode(0, 0, day, hour, minute, second, microsecond / 1000, true);
+#endif
       }
 
       case SQLT_LVB: {
@@ -784,9 +828,47 @@ void OraBindGroup::parseQuery(const QoreListNode *args) {
    }
 }
 
+int OraBindNode::setupDateDescriptor(Datasource *ds, OracleData *d_ora, ExceptionSink *xsink) {
+   buftype = SQLT_DATE;
+   buf.odt = NULL;
+   if (ora_checkerr(d_ora->errhp,
+		    OCIDescriptorAlloc(d_ora->envhp, (dvoid **)&buf.odt, OCI_DTYPE_TIMESTAMP, 0, NULL), "OraBindNode::bindValue() TIMESTAMP", ds, xsink))
+      return -1;
+   return 0;
+}
+
+int OraBindNode::bindDate(Datasource *ds, OracleData *d_ora, OCIStmt *stmthp, int pos, ExceptionSink *xsink) {
+   // bind it
+   if (ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.odt, 0, QORE_SQLT_TIMESTAMP, (dvoid *)NULL, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), 
+		    "OraBindNode::bindDate()", ds, xsink))
+      return -1;
+   
+   return 0;
+}
+
+int OraBindNode::setDateDescriptor(Datasource *ds, OracleData *d_ora, const DateTime &d, ExceptionSink *xsink) {
+#ifdef _QORE_HAS_TIME_ZONES
+   // get broken-down time information in the current time zone
+   qore_tm info;
+   d.getInfo(currentTZ(), info);
+
+   if (ora_checkerr(d_ora->errhp, 
+		    OCIDateTimeConstruct (d_ora->envhp, d_ora->errhp, buf.odt, (sb2)info.year, (ub1)info.month, (ub1)info.day,
+					  (ub1)info.hour, (ub1)info.minute, (ub1)info.second, (ub4)info.us, NULL, 0), 
+		    "OraBindNode::setDateDescriptor()", ds, xsink))
+      return -1;   
+#else
+   if (ora_checkerr(d_ora->errhp, 
+		    OCIDateTimeConstruct (d_ora->envhp, d_ora->errhp, buf.odt, (sb2)d->getYear(), (ub1)d->getMonth(), (ub1)d->getDay(),
+					  (ub1)d->getHour(), (ub1)d->getMinute(), (ub1)d->getSecond(),
+					  (ub4)(d->getMillisecond() * 1000), NULL, 0), "OraBindNode::setDateDescriptor()", ds, xsink))
+      return -1;
+#endif
+   return 0;
+}
+
 void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionSink *xsink) {
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
-   OCIBind *bndp = NULL;
    ind = 0;
 
    //printd(5, "OraBindNode::bindValue() type=%s\n", data.v.value ? data.v.value->getTypeName() : "NOTHING");
@@ -862,21 +944,14 @@ void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionS
 
    if (ntype == NT_DATE) {
       const DateTimeNode *d = reinterpret_cast<const DateTimeNode *>(data.v.value);
-      buftype = SQLT_DATE;
-      buf.odt = NULL;
-      ora_checkerr(d_ora->errhp,
-		   OCIDescriptorAlloc(d_ora->envhp, (dvoid **)&buf.odt, OCI_DTYPE_TIMESTAMP, 0, NULL), "OraBindNode::bindValue() TIMESTAMP", ds, xsink);
-      if (!*xsink) {
-	 ora_checkerr(d_ora->errhp, 
-		      OCIDateTimeConstruct (d_ora->envhp, d_ora->errhp, buf.odt, (sb2)d->getYear(), (ub1)d->getMonth(), (ub1)d->getDay(),
-					    (ub1)d->getHour(), (ub1)d->getMinute(), (ub1)d->getSecond(),
-					    (ub4)(d->getMillisecond() * 1000), NULL, 0), "OraBindNode::bindValue() TIMESTAMP", ds, xsink);
-	 
-	 // bind it
-	 ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.odt, 0, SQLT_TIMESTAMP, (dvoid *)NULL, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), 
-		      "OraBindNode::bindValue()", ds, xsink);
-	 
-      }
+
+      if (setupDateDescriptor(ds, d_ora, xsink))
+	 return;
+
+      if (setDateDescriptor(ds, d_ora, *d, xsink))
+	 return;
+
+      bindDate(ds, d_ora, stmthp, pos, xsink);
       return;
    }
 
@@ -930,7 +1005,6 @@ void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionS
 
 void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionSink *xsink) {
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
-   OCIBind *bndp = NULL;
 
    printd(5, "OraBindNode::bindPlaceholder(ds=%p, pos=%d) type=%s, size=%d)\n", ds, pos, data.ph.type, data.ph.maxsize);
 
@@ -955,6 +1029,7 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
    }
    else if (!strcmp(data.ph.type, "date")) {
       printd(5, "oraBindNode::bindPlaceholder() this=%p, DATE buftype=%d\n", this, SQLT_DATE);
+
       buftype = SQLT_DATE;
       buf.odt = NULL;
       ora_checkerr(d_ora->errhp,
@@ -965,14 +1040,21 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
       if (data.ph.value) {
 	 DateTimeNodeValueHelper d(data.ph.value);
 
+	 if (setDateDescriptor(ds, d_ora, *(*d), xsink))
+	    return;
+
+	 /*
 	 if (ora_checkerr(d_ora->errhp, 
 			  OCIDateTimeConstruct(d_ora->envhp, d_ora->errhp, buf.odt, (sb2)d->getYear(), (ub1)d->getMonth(), (ub1)d->getDay(),
 					       (ub1)d->getHour(), (ub1)d->getMinute(), (ub1)d->getSecond(),
 					       (ub4)(d->getMillisecond() * 1000), NULL, 0), "OraBindNode::bindPlaceholder() setup timestamp", ds, xsink))
 	    return;
+	 */
       }
 
-      ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.odt, 0, SQLT_TIMESTAMP, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() timestamp", ds, xsink);
+      //ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.odt, 0, QORE_SQLT_TIMESTAMP, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() timestamp", ds, xsink);
+      if (bindDate(ds, d_ora, stmthp, pos, xsink))
+	 return;
    }
    else if (!strcmp(data.ph.type, "binary")) {
       buftype = SQLT_LVB;
@@ -1093,7 +1175,7 @@ AbstractQoreNode *OraBindNode::getValue(Datasource *ds, bool horizontal, Excepti
    else if (buftype == SQLT_DAT)
       return convert_date_time(buf.date);
    else if (buftype == SQLT_DATE)
-      return get_oracle_timestamp(ds, buf.odt, xsink);
+      return get_oracle_timestamp(true, ds, buf.odt, xsink);
    else if (buftype == SQLT_INT)
       return new QoreBigIntNode(buf.i8);
 #ifdef SQLT_BDOUBLE

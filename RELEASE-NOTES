@@ -1,4 +1,12 @@
 ***********
+version 1.2
+***********
+
+when compiled against qore >= 0.8.0, the driver supports Datasource::execRaw()
+and time zones in Qore date/time values
+
+
+***********
 version 1.1
 ***********
 
