@@ -1154,8 +1154,10 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
       else
 	 buf.ptr = NULL;
    }
-   else
+   else {
+      //printd(0, "OraBindNode::bindPlaceholder(ds=%p, pos=%d) type=%s, size=%d)\n", ds, pos, data.ph.type, data.ph.maxsize);
       xsink->raiseException("DBI-EXEC-EXCEPTION", "type '%s' is not supported for SQL binding", data.ph.type);
+   }
 }
 
 AbstractQoreNode *OraBindNode::getValue(Datasource *ds, bool horizontal, ExceptionSink *xsink) {
