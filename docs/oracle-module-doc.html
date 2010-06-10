@@ -547,14 +547,14 @@ hash: (3 members)
 <pre>David Nichols is the author of the [[Qore programming language|http://qoretechnologies.com/qore]] and of this xmlsec module.
 You can reach me at: mailto:david_nichols@users.sourceforge.net</pre>
 </div>
-<div title="Default Oracle to Qore Type Mappings" modifier="DavidNichols" created="200809060731" modified="200809071812" changecount="19">
+<div title="Default Oracle to Qore Type Mappings" modifier="DavidNichols" created="200809060731" modified="201006101205" changecount="20">
 <pre>''Default Oracle to Qore Type Mappings''
 |!Oracle Column Type|!Qore Type|!Notes|h
 |{{{REAL, FLOAT, DOUBLE PRECISION, BINARY_FLOAT, BINARY_DOUBLE}}}|{{{Type::Float}}}|direct conversion|
 |{{{DATE}}}|{{{Type::Date}}}|direct conversion|
-|{{{TIMESTAMP}}}|{{{Type::Date}}} (absolute)|microseconds are converted to milliseconds, some precision may be lost|
-|{{{TIMESTAMP WITH TIME ZONE}}}|{{{Type::Date}}} (absolute)|time zone information is ignored and as microseconds are converted to milliseconds, some precision may be lost|
-|{{{TIMESTAMP WITH LOCAL TIME ZONE}}}|{{{Type::Date}}} (absolute)|time zone information is ignored and as microseconds are converted to milliseconds, some precision may be lost|
+|{{{TIMESTAMP}}}|{{{Type::Date}}} (absolute)|when compiled with qore 0.8.0+, microseconds are maintained|
+|{{{TIMESTAMP WITH TIME ZONE}}}|{{{Type::Date}}} (absolute)|when compiled with qore 0.8.0+, time zone information and microseconds are maintained|
+|{{{TIMESTAMP WITH LOCAL TIME ZONE}}}|{{{Type::Date}}} (absolute)|when compiled with qore 0.8.0+, time zone information and microseconds are maintained|
 |{{{INTERVAL YEAR TO MONTH}}}|{{{Type::Date}}} (relative)|direct conversion to a relative date|
 |{{{INTERVAL DAY TO SECOND}}}|{{{Type::Date}}} (relative)|direct conversion to a relative date|
 |{{{SMALLINT, INTEGER}}}|{{{Type::Int}}}|direct conversion|

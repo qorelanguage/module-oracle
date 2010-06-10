@@ -2,8 +2,10 @@
 version 1.2
 ***********
 
-when compiled against qore >= 0.8.0, the driver supports Datasource::execRaw()
-and time zones in Qore date/time values
+when compiled against qore >= 0.8.0, the driver supports:
+* Datasource::execRaw(), DatasourcePool::execRaw()
+* time zones in date/time values (binding and retrieving)
+* time resolution to the microsecond (binding and retrieving)
 
 
 ***********
