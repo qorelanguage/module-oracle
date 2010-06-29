@@ -51,7 +51,7 @@ Requires: qore-module-api-%{module_api}
 %description
 Oracle DBI driver module for the Qore Programming Language. The Oracle driver is
 character set aware, supports multithreading, transaction management, stored
-prodedure and function execution, etc.
+procedure and function execution, etc.
 
 
 %if 0%{?suse_version}
