@@ -1,4 +1,13 @@
 ***********
+version 1.3
+***********
+
+fixed a bug setting and reading time zone information from TIMESTAMP WITH TIME
+ZONE and TIMESTAMP WITH LOCAL TIME ZONE columns
+fixed a bug reading and setting fractional seconds
+
+
+***********
 version 1.2
 ***********
 

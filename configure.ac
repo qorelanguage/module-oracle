@@ -1,8 +1,8 @@
 # Process this file with autoconf to produce a configure script.
 
 # AC_PREREQ(2.59)
-AC_INIT([qore-oracle-module], [1.2],
-        [David Nichols <nicholsman@gmail.com>],
+AC_INIT([qore-oracle-module], [1.3],
+        [David Nichols <david@qore.org>],
         [qore-oracle-module])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADER([config.h])
@@ -259,15 +259,28 @@ if test -z "$ORACLE_INSTANT_CLIENT" -a -z "$ORACLE_HOME" -a "$with_oracle" = "au
 fi
 
 if test "$with_oracle" = "auto"; then
-   if test -z "$ORACLE_HOME" -a -z "$ORACLE_INSTANT_CLIENT" -a -d "/usr/lib/oracle"; then
+   if test -z "$ORACLE_HOME" -a -z "$ORACLE_INSTANT_CLIENT" -a \( -d "/usr/lib/oracle" -o -d "/usr/lib64/oracle" \); then
+      AC_MSG_CHECKING([Oracle Instant Client])
       dir=`ls -rt /usr/lib/oracle|tail -1`
-      if test "$enable_64bit" = yes; then
-      	 dir="/usr/lib/oracle/$dir/client64"
-      else
-	 dir="/usr/lib/oracle/$dir/client"
+      if test -n "$dir"; then
+      	 dir=/usr/lib/oracle/$dir
       fi
-      if test -d "$dir"; then\
-      	 ORACLE_INSTANT_CLIENT="$dir"
+      if test -z "$dir" -a "$enable_64bit" = yes; then
+      	 dir=`ls -rt /usr/lib64/oracle|tail -1`
+	 if test -n "$dir"; then
+	    dir=/usr/lib64/oracle/$dir
+	 fi
+      fi
+      if test -n "$dir"; then
+      	 if test "$enable_64bit" = yes -a -d "$dir/client64"; then
+      	    dir="$dir/client64"
+	 else
+	    dir="$dir/client"
+	 fi
+      fi
+      if test -d "$dir"; then
+         ORACLE_INSTANT_CLIENT="$dir"
+	 AC_MSG_RESULT([$dir])
       fi
    fi
    if test -n "$ORACLE_HOME" -o -n "$ORACLE_INSTANT_CLIENT" -o "$with_oracle_instant_client"; then

@@ -1,5 +1,5 @@
 oracle module for Qore
-version 1.0.1 by David Nichols
+by David Nichols
 
 Requires qore 0.7.1 and oracle 9i+ headers and libraries to build (or instant client - see BUILD AND INSTALL below)
 
