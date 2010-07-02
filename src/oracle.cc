@@ -852,16 +852,17 @@ int OraBindNode::setDateDescriptor(Datasource *ds, OracleData *d_ora, const Date
    qore_tm info;
    d.getInfo(currentTZ(), info);
 
+   //printd(5, "OraBindNode::setDateDescriptor(year=%d, month=%d, day=%d, hour=%d, minute=%d, second=%d, us=%d)\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us);
    if (ora_checkerr(d_ora->errhp, 
-		    OCIDateTimeConstruct (d_ora->envhp, d_ora->errhp, buf.odt, (sb2)info.year, (ub1)info.month, (ub1)info.day,
-					  (ub1)info.hour, (ub1)info.minute, (ub1)info.second, (ub4)info.us, NULL, 0), 
+		    OCIDateTimeConstruct(d_ora->envhp, d_ora->errhp, buf.odt, (sb2)info.year, (ub1)info.month, (ub1)info.day,
+					 (ub1)info.hour, (ub1)info.minute, (ub1)info.second, (ub4)info.us, NULL, 0), 
 		    "OraBindNode::setDateDescriptor()", ds, xsink))
       return -1;   
 #else
    if (ora_checkerr(d_ora->errhp, 
-		    OCIDateTimeConstruct (d_ora->envhp, d_ora->errhp, buf.odt, (sb2)d.getYear(), (ub1)d.getMonth(), (ub1)d.getDay(),
-					  (ub1)d.getHour(), (ub1)d.getMinute(), (ub1)d.getSecond(),
-					  (ub4)(d.getMillisecond() * 1000), NULL, 0), "OraBindNode::setDateDescriptor()", ds, xsink))
+		    OCIDateTimeConstruct(d_ora->envhp, d_ora->errhp, buf.odt, (sb2)d.getYear(), (ub1)d.getMonth(), (ub1)d.getDay(),
+					 (ub1)d.getHour(), (ub1)d.getMinute(), (ub1)d.getSecond(),
+					 (ub4)(d.getMillisecond() * 1000), NULL, 0), "OraBindNode::setDateDescriptor()", ds, xsink))
       return -1;
 #endif
    return 0;
