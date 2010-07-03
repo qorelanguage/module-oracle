@@ -522,7 +522,7 @@ DateTimeNode *get_oracle_timestamp(bool get_tz, Datasource *ds, OCIDateTime *odt
       sb1 oh = 0, om = 0;
       sword err = OCIDateTimeGetTimeZoneOffset(d_ora->envhp, d_ora->errhp, odt, &oh, &om);
       if (err == OCI_SUCCESS) {
-	 int se = oh * 3600 + om * 60;
+	 //int se = oh * 3600 + om * 60;
 	 //printd(5, "err=%d, oh=%d, om=%d, se=%d\n", err, (int)oh, (int)om, se);
 	 zone = findCreateOffsetZone(oh * 3600 + om * 60);
       }
