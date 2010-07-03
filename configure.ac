@@ -261,13 +261,15 @@ fi
 if test "$with_oracle" = "auto"; then
    if test -z "$ORACLE_HOME" -a -z "$ORACLE_INSTANT_CLIENT" -a \( -d "/usr/lib/oracle" -o -d "/usr/lib64/oracle" \); then
       AC_MSG_CHECKING([Oracle Instant Client])
-      dir=`ls -rt /usr/lib/oracle|tail -1`
+      dir=`ls -rt /usr/lib/oracle 2>/dev/null|tail -1`
       if test -n "$dir"; then
+         oicv=$dir
       	 dir=/usr/lib/oracle/$dir
       fi
       if test -z "$dir" -a "$enable_64bit" = yes; then
-      	 dir=`ls -rt /usr/lib64/oracle|tail -1`
+      	 dir=`ls -rt /usr/lib64/oracle 2>/dev/null|tail -1`
 	 if test -n "$dir"; then
+	    oicv=$dir
 	    dir=/usr/lib64/oracle/$dir
 	 fi
       fi
@@ -357,7 +359,7 @@ if test -n "$with_oracle_instant_client"; then
       elif test -d "/usr/include/oracle"; then
 	 # see if oracle includes are in /usr/include/oracle/<ver>/client*/
       	 dir=`ls -rt /usr/include/oracle|tail -1`
-	 if test "$enable_64bit" = yes; then
+	 if test "$enable_64bit" = yes -a -d /usr/include/oracle/$dir/client64; then
 	    dir="/usr/include/oracle/$dir/client64"
 	 else
 	    dir="/usr/include/oracle/$dir/client"

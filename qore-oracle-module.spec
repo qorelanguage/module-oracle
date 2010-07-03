@@ -45,6 +45,8 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: gcc-c++
 BuildRequires: qore-devel
 BuildRequires: qore
+BuildRequires: oracle-instantclient
+BuildRequires: oracle-instantclient-devel
 Requires: /usr/bin/env
 Requires: qore-module-api-%{module_api}
 
