@@ -391,7 +391,7 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
     OCI_Coll * obj = OCI_CollCreate(info);
     OCI_Column *col = OCI_TypeInfoGetColumn(info, 1);
         
-    const char * cname = OCI_GetColumnName(col);
+//     const char * cname = OCI_GetColumnName(col);
 //     printf("Binding attribute: %s\n", cname);
     OCI_Elem * e = OCI_ElemCreate(info);
     
