@@ -26,9 +26,14 @@
 
 #include "../config.h"
 #include "oracle-config.h"
+#include "oracleobject.h"
 #include <qore/Qore.h>
 
 #include <oci.h>
+
+
+#define ORACLE_OBJECT "OracleObject"
+#define ORACLE_COLLECTION "OracleCollection"
 
 // with 10g on Linux the streaming *lob callback function would 
 // never get more than 1024 bytes of data at a time, however with a 9i
@@ -49,13 +54,24 @@
 
 static int ora_checkerr(OCIError *errhp, sword status, const char *query_name, Datasource *ds, ExceptionSink *xsink);
 
+DateTimeNode *get_oracle_timestamp(bool get_tz, Datasource *ds, OCIDateTime *odt, ExceptionSink *xsink);
+
+
 class OracleData {
 public:
    OCIEnv *envhp;
    OCIError *errhp;
    OCISvcCtx *svchp;
    ub2 charsetid;
+   // "fake" connection for OCILIB stuff
+   OCI_Connection *ocilib_cn;
 };
+
+//! Support defines to enumerate SQLT_NTY subtype for ORACLE_OBJECT and ORACLE_COLLECTION
+#define SQLT_NTY_NONE 0
+#define SQLT_NTY_OBJECT 1
+#define SQLT_NTY_COLLECTION 2
+
 
 // FIXME: do not hardcode byte widths - could be incorrect on some platforms
 union ora_value {
@@ -66,6 +82,10 @@ union ora_value {
    double f8;
    OCIDateTime *odt;
    OCIInterval *oi;
+   //! named type: object
+   OCI_Object * oraObj;
+   //! named type: collection
+   OCI_Coll * oraColl;
 };
 
 class OraColumn {
@@ -76,6 +96,8 @@ public:
    OCIDefine *defp;     // define handle
    sb2 ind;             // indicator value
    ub2 charlen;
+   //! distinguish the SQLT_NTY subtype
+   int subdtype;
 
    union ora_value val;
 
@@ -89,6 +111,7 @@ public:
       maxsize = ms;
       dtype = dt;
       charlen = n_charlen;
+      subdtype = SQLT_NTY_NONE;
 
       defp = NULL;
 
@@ -96,9 +119,10 @@ public:
    }
 
    DLLLOCAL void del(Datasource *ds, ExceptionSink *xsink) {
+//        printf("DLLLOCAL void del(Datasource *ds, ExceptionSink *xsink)\n");
       free(name);
       if (defp) {
-	 //printd(5, "freeing type %d\n", dtype);
+// 	 printd(0, "freeing type %d\n", dtype);
 	 switch (dtype) {
 	    case SQLT_INT:
 	    case SQLT_UIN:
@@ -153,6 +177,18 @@ public:
 	       ora_checkerr(d_ora->errhp, OCIRawResize(d_ora->envhp, d_ora->errhp, 0, (OCIRaw**)&val.ptr), "OraColumns::del() free binary buffer", ds, xsink);
 	       break;
 	    }
+	    
+            case SQLT_NTY:
+//                 printf("Deleting object (OraColumn) val.oraObj: %p, val.oraColl: %p\n", val.oraObj, val.oraColl);
+                // objects are allocated in bind-methods and it has to be freed in any case
+                if (subdtype == SQLT_NTY_OBJECT)
+                    OCI_ObjectFree(val.oraObj);
+                else if (subdtype == SQLT_NTY_COLLECTION)
+                    OCI_CollFree(val.oraColl);
+                else
+                    // TODO/FIXME: check the accessibility
+                    assert(0);
+                break;
 
 	    default:	  // for all columns where data must be allocated
 	       if (val.ptr)
@@ -197,7 +233,7 @@ public:
       tail = c;
 
       // printd(5, "column: '%s'\n", c->name);
-      printd(5, "OraColumns::add() %2d name='%s' (max %d) type=%d\n", size(), c->name, c->maxsize, dtype);
+//       printd(5, "OraColumns::add() %2d name='%s' (max %d) type=%d\n", size(), c->name, c->maxsize, dtype);
    }
    DLLLOCAL inline OraColumn *getHead() {
       return head;
@@ -227,6 +263,8 @@ public:
    int bindtype;
    union ora_bind data;
    ub2 buftype;
+   //! distinguish the SQLT_NTY subtype
+   int bufsubtype;
    union ora_value buf; // for bind buffers
    sb2 ind;             // NULL indicator for OCI calls
    OraBindNode *next;
@@ -239,6 +277,7 @@ public:
       data.v.value = v;
       data.v.tstr = NULL;
       buftype = 0;
+      bufsubtype = SQLT_NTY_NONE;
       next = NULL;
    }
    DLLLOCAL inline OraBindNode(char *name, int size, const char *typ, const AbstractQoreNode *v) : strlob(0), clob_allocated(false), bndp(0) {
@@ -248,12 +287,14 @@ public:
       data.ph.type = typ;
       data.ph.value = v;
       buftype = 0;
+      bufsubtype = SQLT_NTY_NONE;
       next = NULL;
    }
    DLLLOCAL inline ~OraBindNode() {
    }
 
    DLLLOCAL void del(Datasource *ds, ExceptionSink *xsink) {
+//        printf("DLLLOCAL void OraBindNode::del(Datasource *ds, ExceptionSink *xsink) %d\n", bindtype == BN_PLACEHOLDER);
       if (bindtype == BN_PLACEHOLDER) {
 	 if (data.ph.name)
 	    free(data.ph.name);
@@ -277,6 +318,17 @@ public:
 	 }
 	 else if (buftype == SQLT_DATE && buf.odt)
 	    OCIDescriptorFree(buf.odt, OCI_DTYPE_TIMESTAMP);
+         else if (buftype == SQLT_NTY) {
+//             printf("Deleting object (OraBindNode BN_PLACEHOLDER) buf.oraObj: %p, buf.oraColl: %p\n", buf.oraObj, buf.oraColl);
+            // objects are allocated in bind-methods - placeholder and it has to be freed in any case
+            if (bufsubtype == SQLT_NTY_OBJECT)
+                OCI_ObjectFree(buf.oraObj);
+            else if (bufsubtype == SQLT_NTY_COLLECTION)
+                OCI_CollFree(buf.oraColl);
+            else
+                // TODO/FIXME: check the accessibility
+                assert(0);
+         }
       }
       else {
 	 if (data.v.tstr)
@@ -293,6 +345,15 @@ public:
 	    //printd(5, "freeing clob descriptor\n");
 	    OCIDescriptorFree(strlob, OCI_DTYPE_LOB);
 	 }
+         else if (buftype == SQLT_NTY) {
+//             printf("Deleting object (OraBindNode IN value) buf.oraObj: %p, buf.oraColl: %p (type: %d (obj=1,coll=2,err=0))\n", buf.oraObj, buf.oraColl, bufsubtype);
+            if (bufsubtype == SQLT_NTY_OBJECT)
+                OCI_ObjectFree(buf.oraObj);
+            else if (bufsubtype == SQLT_NTY_COLLECTION)
+                OCI_CollFree(buf.oraColl);
+            else
+                assert(0); // TODO/FIXME: check the accessibility
+         }
       }
    }
 
@@ -354,12 +415,12 @@ public:
    DLLLOCAL inline void add(const AbstractQoreNode *v) {
       OraBindNode *c = new OraBindNode(v);
       add(c);
-      printd(5, "OraBindGroup::add()\n");
+//       printd(5, "OraBindGroup::add()\n");
    }
    DLLLOCAL inline void add(char *name, int size, const char *type, const AbstractQoreNode *val) {
       OraBindNode *c = new OraBindNode(name, size, type, val);
       add(c);
-      printd(5, "OraBindGroup::add()\n");
+//       printd(5, "OraBindGroup::add()\n");
       hasOutput = true;
    }
 
