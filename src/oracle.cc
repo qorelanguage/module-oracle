@@ -176,11 +176,11 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *n_ds, const char *str, Excep
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
    // retrieve results, if any
-   //OCIParam *parmp;
-   void *parmp;
+   OCIParam *parmp;
+//    void *parmp;
 
    // get columns in output
-   while (OCIParamGet(stmthp, OCI_HTYPE_STMT, d_ora->errhp, &parmp, size() + 1) == OCI_SUCCESS) {
+   while (OCIParamGet(stmthp, OCI_HTYPE_STMT, d_ora->errhp, (void**)&parmp, size() + 1) == OCI_SUCCESS) {
       ub2 dtype;
       text *col_name;
       int col_name_len;
@@ -209,7 +209,16 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *n_ds, const char *str, Excep
 		   str, ds, xsink);
       if (xsink->isEvent()) return;
 
-      //printd(5, "OraColumns::OraColumns() column %s: type=%d char_len=%d size=%d (SQLT_STR=%d)\n", col_name, dtype, col_char_len, col_max_size, SQLT_STR);
+//       printd(5, "OraColumns::OraColumns() column %s: type=%d char_len=%d size=%d (SQLT_STR=%d)\n", col_name, dtype, col_char_len, col_max_size, SQLT_STR);
+      printd(0, "OraColumns::OraColumns() column %s: type=%d char_len=%d size=%d (SQLT_NTY=%d)\n", col_name, dtype, col_char_len, col_max_size, SQLT_NTY);
+      if (dtype == SQLT_NTY) {
+          OCITypeCode tc = 0;
+          ora_checkerr(d_ora->errhp,
+                       OCIAttrGet(parmp, OCI_DTYPE_PARAM, &tc, 0, OCI_ATTR_TYPECODE, d_ora->errhp),
+                       str, ds, xsink);
+          printd(0, "OraColumns::OraColumns() SQLT_NTY type=%d (OCI_TYPECODE_OBJECT=%d, OCI_TYPECODE_NAMEDCOLLECTION=%d)\n", tc, OCI_TYPECODE_OBJECT, OCI_TYPECODE_NAMEDCOLLECTION);
+          if (xsink->isEvent()) return;
+      }
 
       add((char *)col_name, col_name_len, col_max_size, dtype, col_char_len);
    }
@@ -658,6 +667,8 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
 
       case SQLT_RSET:
 	 return horizontal ? (AbstractQoreNode*)ora_fetch_horizontal((OCIStmt *)val.ptr, ds, xsink) : (AbstractQoreNode*)ora_fetch((OCIStmt *)val.ptr, ds, xsink);
+         
+      case SQLT_NTY:
 
       default:
 	 //printd(5, "type=%d\n", dtype);

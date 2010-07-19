@@ -24,6 +24,15 @@ printf("retval: %N\n", $r1);
 $db.rollback();
 
 
+printf("\nOBJECT direct insert\n");
+my $rins = $db.exec("insert into t_object_test values (%v, %v)",
+                 1, bindOracleObject("OMQTEST.TEST_tab_OBJECT", $obj));
+printf("rins: %N\n", $rins);
+
+printf("\nOBJECT direct select\n");
+my $rsel = $db.select("select * from t_object_test");
+printf("rsel: %N\n", $rsel);
+
 
 printf("\nCOLLECTION IN varchar2\n");
 my list $col = 'foo', 'bar',NULL, NOTHING, "the end";
