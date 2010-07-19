@@ -66,8 +66,8 @@ OCI_Object* objPlaceholderQore(OracleData * d_ora, const QoreStringNode * h, Exc
 
 OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * xsink)
 {
-    QoreNodeAsStringHelper str(h, FMT_NONE, xsink);
-    printf("hash= %s\n", str->getBuffer());
+//     QoreNodeAsStringHelper str(h, FMT_NONE, xsink);
+//     printf("hash= %s\n", str->getBuffer());
 
     // TODO/FIXME: chech if it's really object-like hash
     const QoreHashNode * th = reinterpret_cast<const QoreHashNode*>(h->getKeyValue("^values^"));
@@ -91,7 +91,7 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
         bool e;
         const AbstractQoreNode * val = th->getKeyValueExistence(key, e, xsink);
         
-        qore_type_t ntype = val->getType();
+//         qore_type_t ntype = val->getType();
         
         // TODO/FIXME: faster?
         if (dynamic_cast<const QoreNullNode*>(val) || dynamic_cast<const QoreNothingNode*>(val)) {
@@ -166,20 +166,25 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
 
             case SQLT_CLOB:
             case SQLT_BLOB: {
-                OCI_Lob * l = OCI_ObjectGetLob(obj, cname);
+//                 OCI_Lob * l = OCI_ObjectGetLob(obj, cname);
+                OCI_Lob * l;
+                qore_type_t ntype = val->getType();
                 if (ntype == NT_BINARY) {
+                    l = OCI_LobCreate(d->ocilib_cn, OCI_BLOB);
                     const BinaryNode * bn = reinterpret_cast<const BinaryNode*>(val);
                     unsigned int size = bn->size();
                     OCI_LobWrite2(l, (void*)bn->getPtr(), &size, &size);
                 }
                 else {
                     // clobs
+                    l = OCI_LobCreate(d->ocilib_cn, OCI_CLOB);
                     QoreStringNodeValueHelper str(val);
                     unsigned int size = str->length();
                     unsigned int sizelen = str->strlen();
                     OCI_LobWrite2(l, (void*)str->getBuffer(), &size, &sizelen);
                 }
-//                 OCI_ObjectSetLob(obj, cname, l);
+                OCI_ObjectSetLob(obj, cname, l);
+                OCI_LobFree(l);
                 break;
             }
 
@@ -320,8 +325,27 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
                 // cusror
 
             case SQLT_CLOB:
-                break;
             case SQLT_BLOB: {
+                OCI_Lob * l = OCI_ObjectGetLob(obj, cname);
+                // The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
+                uint len = OCI_LobGetLength(l);
+                void *buf = malloc(len);
+                OCI_LobRead2(l, buf, &len, &len);
+
+                if (OCI_LobGetType(l) == OCI_BLOB) {
+                    SimpleRefHolder<BinaryNode> b(new BinaryNode());
+                    b->append(buf, len);
+                    rv->setKeyValue(cname, b.release(), xsink);
+                }
+                else {
+                    // clobs
+                    QoreStringNodeHolder str(new QoreStringNode(ds->getQoreEncoding()));
+                    str->concat((const char*)buf, len);
+                    rv->setKeyValue(cname, str.release(), xsink);
+
+                }
+                free(buf);
+                OCI_LobFree(l);
                 break;
             }
 
@@ -379,8 +403,8 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
 
 OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * xsink)
 {
-    QoreNodeAsStringHelper str(h, FMT_NONE, xsink);
-    printf("hash= %s\n", str->getBuffer());
+//     QoreNodeAsStringHelper str(h, FMT_NONE, xsink);
+//     printf("hash= %s\n", str->getBuffer());
 
     // TODO/FIXME: chech if it's really collection-like list
     const QoreListNode * th = reinterpret_cast<const QoreListNode*>(h->getKeyValue("^values^"));
@@ -472,24 +496,28 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
 //             case SQLT_CUR:
                 // cusror
 
-//             case SQLT_CLOB:
-//             case SQLT_BLOB: {
-//                 OCI_Lob * l = OCI_ObjectGetLob(obj, cname);
-//                 if (ntype == NT_BINARY) {
-//                     const BinaryNode * bn = reinterpret_cast<const BinaryNode*>(val);
-//                     unsigned int size = bn->size();
-//                     OCI_LobWrite2(l, (void*)bn->getPtr(), &size, &size);
-//                 }
-//                 else {
-//                     // clobs
-//                     QoreStringNodeValueHelper str(val);
-//                     unsigned int size = str->length();
-//                     unsigned int sizelen = str->strlen();
-//                     OCI_LobWrite2(l, (void*)str->getBuffer(), &size, &sizelen);
-//                 }
-// //                 OCI_ObjectSetLob(obj, cname, l);
-//                 break;
-//             }
+            case SQLT_CLOB:
+            case SQLT_BLOB: {
+                OCI_Lob * l;
+                qore_type_t ntype = val->getType();
+                if (ntype == NT_BINARY) {
+                    l = OCI_LobCreate(d->ocilib_cn, OCI_BLOB);
+                    const BinaryNode * bn = reinterpret_cast<const BinaryNode*>(val);
+                    unsigned int size = bn->size();
+                    OCI_LobWrite2(l, (void*)bn->getPtr(), &size, &size);
+                }
+                else {
+                    // clobs
+                    l = OCI_LobCreate(d->ocilib_cn, OCI_CLOB);
+                    QoreStringNodeValueHelper str(val);
+                    unsigned int size = str->length();
+                    unsigned int sizelen = str->strlen();
+                    OCI_LobWrite2(l, (void*)str->getBuffer(), &size, &sizelen);
+                }
+                OCI_ElemSetLob(e, l);
+                OCI_LobFree(l);
+                break;
+            }
 
 //             case SQLT_BFILE:
                 // bfile
