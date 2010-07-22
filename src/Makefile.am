@@ -13,7 +13,6 @@ ORACLE_SOURCES = oracle.cc oracleobject.cpp \
 	ocilib/string.c \
 	ocilib/timestamp.c \
 	ocilib/collection.c \
-	ocilib/connpool.c \
 	ocilib/element.c \
 	ocilib/file.c \
 	ocilib/hash.c \
@@ -31,6 +30,7 @@ ORACLE_SOURCES = oracle.cc oracleobject.cpp \
 	ocilib/list.c \
 	ocilib/memory.c \
 	ocilib/object.c \
+	ocilib/pool.c \
 	ocilib/statement.c \
 	ocilib/ref.c \
 	ocilib/threadkey.c \

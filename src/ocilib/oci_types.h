@@ -47,7 +47,7 @@
 */
 
 /* ------------------------------------------------------------------------ *
- * $Id: oci_types.h, v 3.6.0 2010-05-14 20:21 Vincent Rogier $
+ * $Id: oci_types.h, v 3.7.0 2010-07-20 17:45 Vincent Rogier $
  * ------------------------------------------------------------------------ */
 
 #ifndef OCILIB_OCI_TYPES_H_INCLUDED 
@@ -303,11 +303,13 @@ typedef void (*lgenfp_t)( void );
 # define boolean int
 #endif 
 
-// #ifdef sparc
-// # define SIZE_TMAXVAL SB4MAXVAL               
-// #else
-// # define SIZE_TMAXVAL UB4MAXVAL              
-// #endif 
+#ifndef SIZE_TMAXVAL
+#ifdef sparc
+# define SIZE_TMAXVAL SB4MAXVAL               
+#else
+# define SIZE_TMAXVAL UB4MAXVAL              
+#endif 
+#endif
 
 #define MINSIZE_TMAXVAL (size_t)4294967295
 

@@ -29,7 +29,7 @@
 */
 
 /* ------------------------------------------------------------------------ *
- * $Id: string.c, v 3.6.0 2010-05-14 20:21 Vincent Rogier $
+ * $Id: string.c, v 3.7.0 2010-07-20 17:45 Vincent Rogier $
  * ------------------------------------------------------------------------ */
 
 #include "ocilib_internal.h"
@@ -703,9 +703,9 @@ boolean OCI_StringToStringPtr(OCIString **str, OCIError *err, void *value,
     wcstombs((char *) *buf, (dtext *) value, olen + OCI_CVT_CHAR);
 
     ostr = *buf;
-   
+    
 #else
-
+    
     osize  = -1;
     ostr   = OCI_GetInputDataString(value, &osize);
 
