@@ -7,3 +7,7 @@ as object (
 )
 /
 
+
+CREATE OR REPLACE TYPE test_tab_coll as table of number
+/
+

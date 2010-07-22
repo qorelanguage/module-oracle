@@ -44,6 +44,7 @@ begin
     c := col_test(
             dbms_random.string('l', 10),
             dbms_random.string('l', 100),
+            null,
             dbms_random.string('l', 1)
             );
 end get_coll;
@@ -68,6 +69,7 @@ begin
     c := col_test_num(
             trunc(100*dbms_random.value),
             trunc(100*dbms_random.value),
+            null,
             trunc(100*dbms_random.value)
             );
 end get_coll_num;
@@ -92,6 +94,7 @@ begin
     c := col_test_clob(
             dbms_random.string('l', 1000),
             dbms_random.string('l', 1000),
+            null,
             dbms_random.string('l', 1000)
             );
 end get_coll_clob;
@@ -205,4 +208,3 @@ end get_coll_clob;
 --
 end qore_test;
 /
-

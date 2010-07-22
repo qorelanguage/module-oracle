@@ -56,9 +56,8 @@ void ocilib_err_handler(OCI_Error *err)
            );
 };
 
-OCI_Object* objPlaceholderQore(OracleData * d_ora, const QoreStringNode * h, ExceptionSink *xsink)
+OCI_Object* objPlaceholderQore(OracleData * d_ora, const char * tname, ExceptionSink *xsink)
 {
-    const char * tname = h->getBuffer();
     OCI_TypeInfo * info = OCI_TypeInfoGet(d_ora->ocilib_cn, tname, OCI_TIF_TYPE);
     OCI_Object * obj = OCI_ObjectCreate(d_ora->ocilib_cn, info);
     return obj;
@@ -66,9 +65,12 @@ OCI_Object* objPlaceholderQore(OracleData * d_ora, const QoreStringNode * h, Exc
 
 OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * xsink)
 {
-//     QoreNodeAsStringHelper str(h, FMT_NONE, xsink);
-//     printf("hash= %s\n", str->getBuffer());
-
+     QoreNodeAsStringHelper str(h, FMT_NONE, xsink);
+     printf("hash= %s\n", str->getBuffer());
+QoreNodeAsStringHelper str1(h->getKeyValue("^oratype^"), FMT_NONE, xsink);
+printf("sart\n");
+printf("oratype= %s \n", str1->getBuffer());
+printf("end\n");
     // TODO/FIXME: chech if it's really object-like hash
     const QoreHashNode * th = reinterpret_cast<const QoreHashNode*>(h->getKeyValue("^values^"));
     const char * tname = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("^oratype^"))->getBuffer();
@@ -257,6 +259,11 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
         OCI_Column *col = OCI_TypeInfoGetColumn(obj->typinf, i);
         
         const char * cname = OCI_GetColumnName(col);
+        
+        if (OCI_ObjectIsNull(obj, cname)) {
+            rv->setKeyValue(cname, null(), xsink);
+            continue;
+        }
 
         switch (col->ocode)
         {
@@ -595,6 +602,11 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
 
         e = OCI_CollGetAt(obj, i);
 
+        if (OCI_ElemIsNull(e)) {
+            rv->set_entry(rv->size(), null(), xsink);
+            continue;
+        }
+
         switch (col->ocode)
         {
             case SQLT_LNG: // long
@@ -661,11 +673,29 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
 //             case SQLT_CUR:
                 // cusror
 
-//             case SQLT_CLOB:
-//                 break;
-//             case SQLT_BLOB: {
-//                 break;
-//             }
+            case SQLT_CLOB:
+            case SQLT_BLOB: {
+                OCI_Lob * l = OCI_ElemGetLob(e);
+                // The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
+                uint len = OCI_LobGetLength(l);
+                void *buf = malloc(len);
+                OCI_LobRead2(l, buf, &len, &len);
+
+                if (OCI_LobGetType(l) == OCI_BLOB) {
+                    SimpleRefHolder<BinaryNode> b(new BinaryNode());
+                    b->append(buf, len);
+                    rv->set_entry(rv->size(), b.release(), xsink);
+                }
+                else {
+                    // clobs
+                    QoreStringNodeHolder str(new QoreStringNode(ds->getQoreEncoding()));
+                    str->concat((const char*)buf, len);
+                    rv->set_entry(rv->size(), str.release(), xsink);
+                }
+                free(buf);
+                OCI_LobFree(l);
+                break;
+            }
 
 //             case SQLT_BFILE:
                 // bfile
@@ -709,7 +739,7 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
                 break;
 
             default:
-                xsink->raiseException("BIND-COLLECTION-ERROR", "unknown datatype to fetch as an attribute: %s", col->typinf->name);
+                xsink->raiseException("BIND-COLLECTION-ERROR", "unknown datatype to fetch as an attribute: %d (define SQLT_...)", col->ocode);
                 return 0;
         } // switch
         
@@ -718,9 +748,8 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
     return rv;
 }
 
-OCI_Coll* collPlaceholderQore(OracleData * d_ora, const QoreStringNode * h, ExceptionSink *xsink)
+OCI_Coll* collPlaceholderQore(OracleData * d_ora, const char * tname, ExceptionSink *xsink)
 {
-    const char * tname = h->getBuffer();
     OCI_TypeInfo * info = OCI_TypeInfoGet(d_ora->ocilib_cn, tname, OCI_TIF_TYPE);
     OCI_Coll * obj = OCI_CollCreate(info);
     return obj;

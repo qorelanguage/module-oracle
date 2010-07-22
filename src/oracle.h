@@ -98,12 +98,13 @@ public:
    ub2 charlen;
    //! distinguish the SQLT_NTY subtype
    int subdtype;
+   QoreString subdtypename;
 
    union ora_value val;
 
    OraColumn *next;
 
-   DLLLOCAL inline OraColumn(const char *n, int len, int ms, ub2 dt, ub2 n_charlen) {
+   DLLLOCAL inline OraColumn(const char *n, int len, int ms, ub2 dt, ub2 n_charlen, int subdt=SQLT_NTY_NONE, QoreString subdttn="") {
       name = (char *)malloc(sizeof(char) * (len + 1));
       strncpy(name, n, len);
       name[len] = '\0';
@@ -111,7 +112,8 @@ public:
       maxsize = ms;
       dtype = dt;
       charlen = n_charlen;
-      subdtype = SQLT_NTY_NONE;
+      subdtype = subdt;
+      subdtypename = subdttn;
 
       defp = NULL;
 
@@ -222,9 +224,9 @@ public:
 	 w = head;
       }
    }
-   DLLLOCAL inline void add(const char *name, int nlen, int maxsize, ub2 dtype, ub2 char_len) {
+   DLLLOCAL inline void add(const char *name, int nlen, int maxsize, ub2 dtype, ub2 char_len, int subtype=SQLT_NTY_NONE, QoreString subdtn="") {
       len++;
-      OraColumn *c = new OraColumn(name, nlen, maxsize, dtype, char_len);
+      OraColumn *c = new OraColumn(name, nlen, maxsize, dtype, char_len, subtype, subdtn);
 
       if (!tail)
 	 head = c;

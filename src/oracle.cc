@@ -212,12 +212,38 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *n_ds, const char *str, Excep
 //       printd(5, "OraColumns::OraColumns() column %s: type=%d char_len=%d size=%d (SQLT_STR=%d)\n", col_name, dtype, col_char_len, col_max_size, SQLT_STR);
       printd(0, "OraColumns::OraColumns() column %s: type=%d char_len=%d size=%d (SQLT_NTY=%d)\n", col_name, dtype, col_char_len, col_max_size, SQLT_NTY);
       if (dtype == SQLT_NTY) {
-          OCITypeCode tc = 0;
-          ora_checkerr(d_ora->errhp,
-                       OCIAttrGet(parmp, OCI_DTYPE_PARAM, &tc, 0, OCI_ATTR_TYPECODE, d_ora->errhp),
+          char * tname; // type name
+          char * sname; // schema name
+
+          ora_checkerr(d_ora->errhp, 
+                       OCIAttrGet(parmp, OCI_DTYPE_PARAM, &sname, 0, OCI_ATTR_SCHEMA_NAME, d_ora->errhp), 
                        str, ds, xsink);
-          printd(0, "OraColumns::OraColumns() SQLT_NTY type=%d (OCI_TYPECODE_OBJECT=%d, OCI_TYPECODE_NAMEDCOLLECTION=%d)\n", tc, OCI_TYPECODE_OBJECT, OCI_TYPECODE_NAMEDCOLLECTION);
           if (xsink->isEvent()) return;
+
+          ora_checkerr(d_ora->errhp, 
+                       OCIAttrGet(parmp, OCI_DTYPE_PARAM, &tname, 0, OCI_ATTR_TYPE_NAME, d_ora->errhp), 
+                       str, ds, xsink);
+          if (xsink->isEvent()) return;
+
+          printd(0, "OraColumns::OraColumns() SQLT_NTY type=%s.%s\n", sname, tname);
+          QoreString s;
+          s.concat(sname);
+          s.concat(".");
+          s.concat(tname);
+
+          OCI_TypeInfo * info = OCI_TypeInfoGet(d_ora->ocilib_cn, s.getBuffer(), OCI_TIF_TYPE);
+
+          printd(0, "OraColumns::OraColumns() ccode %d\n", info->ccode);
+          // This is some kind of black magic - I'm not sure if it's sufficient
+          // object/collection resolution method.
+          int dsubtype = info->ccode ? SQLT_NTY_COLLECTION : SQLT_NTY_OBJECT;
+          add((char *)col_name, col_name_len, col_max_size, dtype, col_char_len, dsubtype, s);
+          continue;
+      }
+      if (dtype == SQLT_NCO) {
+          // WTF is the NAMED COLLECTION in this case?! What's different from SQLT_NTY?
+          printd(0, "OraColumns::OraColumns() SQLT_NCO - something is wrong. But what is SQLT_NCO???\n");
+          assert(0);
       }
 
       add((char *)col_name, col_name_len, col_max_size, dtype, col_char_len);
@@ -344,6 +370,7 @@ static QoreHashNode *ora_fetch(OCIStmt *stmthp, Datasource *ds, ExceptionSink *x
 
 void OraColumns::define(OCIStmt *stmthp, const char *str) {
    //QORE_TRACE("OraColumne::define()");
+   printd(0, "OraColumne::define()\n");
 
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
@@ -471,6 +498,49 @@ void OraColumns::define(OCIStmt *stmthp, const char *str) {
 			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.ptr, 0, w->dtype, &w->ind, 0, 0, OCI_DEFAULT), 
 			 str, ds, xsink);
 	    break;
+
+     case SQLT_NTY: {
+            // TODO/FIXME: how to get info if it's real NULL?
+            // w->ind is not affected in the OCIDefineByPos for SQLT_NTY
+            w->ind = 0;
+            if (w->subdtype == SQLT_NTY_OBJECT) {
+                w->val.oraObj = objPlaceholderQore(d_ora, w->subdtypename.getBuffer(), xsink);
+                ora_checkerr(d_ora->errhp,
+                             OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1,
+                                            0, 0,
+                                            w->dtype, &w->ind, 0, 0, OCI_DEFAULT),
+                             str, ds, xsink);
+                ora_checkerr(d_ora->errhp,
+                             OCIDefineObject((OCIDefine *) w->defp,
+                                             d_ora->errhp,
+                                             w->val.oraObj->typinf->tdo,
+                                             (void **) &w->val.oraObj->handle,
+                                             (ub4   *) NULL,
+                                             (void **) 0,
+                                             (ub4   *) NULL),
+                             str, ds, xsink);
+            } else if (w->subdtype == SQLT_NTY_COLLECTION) {
+                w->val.oraColl = collPlaceholderQore(d_ora, w->subdtypename.getBuffer(), xsink);
+                ora_checkerr(d_ora->errhp,
+                             OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1,
+                                            0, 0,
+                                            w->dtype, &w->ind, 0, 0, OCI_DEFAULT),
+                             str, ds, xsink);
+                ora_checkerr(d_ora->errhp,
+                             OCIDefineObject((OCIDefine *) w->defp,
+                                             d_ora->errhp,
+                                             w->val.oraColl->typinf->tdo,
+                                             (void **) &w->val.oraColl->handle,
+                                             (ub4   *) NULL,
+                                             (void **) 0, //def->buf.inds,
+                                             (ub4   *) NULL),
+                             str, ds, xsink);
+            } else {
+                assert(0); // TODO/FIXME: error?
+            }
+        break;
+        }
+        
 
 	 default: // treated as a string
 	    if (w->charlen) w->maxsize = get_char_width(ds->getQoreEncoding(), w->charlen); 
@@ -668,7 +738,19 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
       case SQLT_RSET:
 	 return horizontal ? (AbstractQoreNode*)ora_fetch_horizontal((OCIStmt *)val.ptr, ds, xsink) : (AbstractQoreNode*)ora_fetch((OCIStmt *)val.ptr, ds, xsink);
          
-      case SQLT_NTY:
+      case SQLT_NTY: {
+          if (subdtype == SQLT_NTY_OBJECT) {
+              return objToQore(val.oraObj, ds, xsink);
+          }
+          else if (subdtype == SQLT_NTY_COLLECTION) {
+              return collToQore(val.oraColl, ds, xsink);
+          }
+          else {
+              xsink->raiseException("NAMED-TYPE-FETCH-ERROR", "Unknown NTY to fetch Oracle object or collection");
+              return 0;
+          }
+          break;
+      }
 
       default:
 	 //printd(5, "type=%d\n", dtype);
@@ -1262,7 +1344,7 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
    else if (!strcmp(data.ph.type, ORACLE_OBJECT)) {
        const QoreStringNode * h = reinterpret_cast<const QoreStringNode*>(data.ph.value);
 
-       buf.oraObj = objPlaceholderQore(d_ora, h, xsink);
+       buf.oraObj = objPlaceholderQore(d_ora, h->getBuffer(), xsink);
        bufsubtype = SQLT_NTY_OBJECT;
        buftype = SQLT_NTY;
 
@@ -1282,7 +1364,7 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
    else if (!strcmp(data.ph.type, ORACLE_COLLECTION)) {
        const QoreStringNode * h = reinterpret_cast<const QoreStringNode*>(data.ph.value);
 
-       buf.oraColl = collPlaceholderQore(d_ora, h, xsink);
+       buf.oraColl = collPlaceholderQore(d_ora, h->getBuffer(), xsink);
        bufsubtype = SQLT_NTY_COLLECTION;
        buftype = SQLT_NTY;
 

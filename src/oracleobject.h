@@ -38,7 +38,7 @@ OCI_Object* objBindQore(OracleData * d,
                         elsewhere. The instance has to be freed in any case.
  */
 OCI_Object* objPlaceholderQore(OracleData * d_ora,
-                               const QoreStringNode * h,
+                               const char * tname,
                                ExceptionSink *xsink);
 
 /*! Convert an Oracle Object into Qore Hash node.
@@ -77,7 +77,7 @@ OCI_Coll* collBindQore(OracleData * d,
                         elsewhere. The instance has to be freed in any case.
  */
 OCI_Coll* collPlaceholderQore(OracleData * d_ora,
-                              const QoreStringNode * h,
+                              const char * tname,
                               ExceptionSink *xsink);
 
 /*! Convert an Oracle Collection into Qore List node.
@@ -124,5 +124,6 @@ DLLEXPORT AbstractQoreNode * f_oracle_collection(const QoreListNode *params, Exc
     "value" : string node - type name
  */
 DLLEXPORT AbstractQoreNode * f_oracle_collection_placeholder(const QoreListNode *params, ExceptionSink *xsink);
+
 
 #endif

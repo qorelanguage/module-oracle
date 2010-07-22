@@ -25,12 +25,19 @@ $db.rollback();
 
 
 printf("\nOBJECT direct insert\n");
-my $rins = $db.exec("insert into t_object_test values (%v, %v)",
-                 1, bindOracleObject("OMQTEST.TEST_tab_OBJECT", $obj));
-printf("rins: %N\n", $rins);
+{
+    on_success $db.commit();
+    on_error $db.rollback();
+    my $rins = $db.exec("insert into t_object_test values (%v, %v, %v)",
+                        1,
+                        bindOracleObject("OMQTEST.TEST_tab_OBJECT", $obj),
+                        bindOracleCollection("TEST_tab_coll", (2, 213,NULL, NOTHING, 666,))
+                       );
+    printf("rins: %N\n", $rins);
+}
 
 printf("\nOBJECT direct select\n");
-my $rsel = $db.select("select * from t_object_test");
+my $rsel = $db.select("select * from t_object_test where rownum < 5");
 printf("rsel: %N\n", $rsel);
 
 
