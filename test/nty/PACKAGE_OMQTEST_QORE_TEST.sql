@@ -40,7 +40,14 @@ procedure get_coll_clob (
     c out col_test_clob
 );
 
+-- date collection test
+procedure do_coll_date (
+    c in col_test_date,
+    retval out varchar2
+);
+procedure get_coll_date (
+    c out col_test_date
+);
 
 end qore_test;
 /
-

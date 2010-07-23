@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY qore_test
+CREATE OR REPLACE PACKAGE BODY         qore_test 
 is
 
 procedure do_obj (
@@ -10,7 +10,8 @@ begin
     retval := o.a_number || '-'
            || o.a_text || '-'
            || o.a_textc || '-'
-           || o.a_clob;
+           || o.a_clob
+           || o.a_date;
 end do_obj;
 
 procedure get_obj (
@@ -21,7 +22,11 @@ begin
     o := test_object(a_text => dbms_random.string('l', 10),
                      a_number => dbms_random.value(1, 999),
                      a_textc => dbms_random.string('l', 10),
-                     a_clob => dbms_random.string('l', 1000));
+                     a_clob => dbms_random.string('l', 1000),
+                     a_date => sysdate,
+                     a_tstamp => current_timestamp,
+                     a_tstamp_tz => current_timestamp
+                     );
 end get_obj;
 
 procedure do_coll (
@@ -98,6 +103,31 @@ begin
             dbms_random.string('l', 1000)
             );
 end get_coll_clob;
+
+procedure do_coll_date (
+    c in col_test_date,
+    retval out varchar2
+)
+is
+begin
+    retval := '|';
+    for i in 1 .. c.count loop
+        retval := retval || i || '=' || c(i) ||'|';
+    end loop;
+end do_coll_date;
+
+procedure get_coll_date (
+    c out col_test_date
+)
+is
+begin
+    c := col_test_date(
+            sysdate-100,
+            sysdate,
+            null,
+            sysdate+1
+            );
+end get_coll_date;
 
 --procedure get_records (
 --    cnt in number,

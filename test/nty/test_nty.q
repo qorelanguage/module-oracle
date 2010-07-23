@@ -10,6 +10,9 @@ my hash $obj = ("A_TEXT": "1",
                 "A_NUM_1": 1,
                 "A_TEXTC" : "foo bar",
                 "A_CLOB" : "lorem ipsum clob sir amet",
+                "A_DATE" : now_ms(),
+                "A_TSTAMP" : now_ms(),
+                "A_TSTAMP_TZ" : now_ms()
                 );
 
 my $r = $db.exec("begin qore_test.do_obj(%v, :retval); end;",
@@ -77,4 +80,17 @@ $db.rollback();
 printf("\nCOLLECTION OUT clob\n");
 my $r2 = $db.exec("begin qore_test.get_coll_clob(:retval); end;", placeholderOracleCollection("COL_TEST_clob"));
 printf("retval: %N\n", $r2);
+$db.rollback();
+
+
+printf("\nCOLLECTION IN date\n");
+my list $cold = now(), now_ms(), NULL, NOTHING, now()+10;
+my $d = $db.exec("begin qore_test.do_coll_date(%v, :retval); end;",
+                 bindOracleCollection("COL_TEST_date", $cold));
+printf("collection: %N\n", $d);
+$db.rollback();
+
+printf("\nCOLLECTION OUT date\n");
+my $r3 = $db.exec("begin qore_test.get_coll_date(:retval); end;", placeholderOracleCollection("COL_TEST_date"));
+printf("retval: %N\n", $r3);
 $db.rollback();

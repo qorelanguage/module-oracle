@@ -65,12 +65,11 @@ OCI_Object* objPlaceholderQore(OracleData * d_ora, const char * tname, Exception
 
 OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * xsink)
 {
-     QoreNodeAsStringHelper str(h, FMT_NONE, xsink);
-     printf("hash= %s\n", str->getBuffer());
-QoreNodeAsStringHelper str1(h->getKeyValue("^oratype^"), FMT_NONE, xsink);
-printf("sart\n");
-printf("oratype= %s \n", str1->getBuffer());
-printf("end\n");
+//     QoreNodeAsStringHelper str(h, FMT_NONE, xsink);
+//     printf("hash= %s\n", str->getBuffer());
+//     QoreNodeAsStringHelper str1(h->getKeyValue("^oratype^"), FMT_NONE, xsink);
+//     printf("oratype= %s \n", str1->getBuffer());
+
     // TODO/FIXME: chech if it's really object-like hash
     const QoreHashNode * th = reinterpret_cast<const QoreHashNode*>(h->getKeyValue("^values^"));
     const char * tname = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("^oratype^"))->getBuffer();
@@ -133,24 +132,69 @@ printf("end\n");
             case SQLT_IBFLOAT:
             case SQLT_BDOUBLE:
             case SQLT_IBDOUBLE:
+#endif
                 // float
                 OCI_ObjectSetDouble(obj, cname, val->getAsFloat());
                 break;
-#endif
 
             case SQLT_DAT:
             case SQLT_ODT:
-            case SQLT_DATE: {
+            case SQLT_DATE: 
+#if OCI_VERSION_COMPILE >= OCI_9_0
+            case SQLT_TIMESTAMP:
+            case SQLT_TIMESTAMP_TZ:
+            case SQLT_TIMESTAMP_LTZ:
+            case SQLT_INTERVAL_YM:
+            case SQLT_INTERVAL_DS:
+#endif
+            {
                 // date
-                const DateTimeNode * d = reinterpret_cast<const DateTimeNode*>(val);
-                OCI_Date *dt = OCI_ObjectGetDate(obj, cname);
-                // TODO/FIXME: tzone? propably OCI_Date from string...
-                OCI_DateSetDateTime(dt, d->getYear(), d->getMonth(), d->getDay(),
-                                        d->getHour(), d->getMinute(), d->getSecond());
-//                 OCI_ObjectSetdate(obj, cname, dt);
+                const DateTimeNode * dn = reinterpret_cast<const DateTimeNode*>(val);
+                if (col->type == OCI_CDT_TIMESTAMP) {
+                    OCI_Timestamp *dt = OCI_TimestampCreate(d->ocilib_cn, OCI_TIMESTAMP);
+                    OCI_TimestampConstruct(dt,
+                                           dn->getYear(), dn->getMonth(), dn->getDay(),
+                                           dn->getHour(), dn->getMinute(), dn->getSecond(),
+                                           (dn->getMillisecond() * 1000000),
+                                           0 // no TZ here
+                                           );
+                    OCI_ObjectSetTimestamp(obj, cname, dt);
+                    OCI_TimestampFree(dt);
+                }
+                else if (col->type == OCI_CDT_DATETIME) {
+                    OCI_Date * dt = OCI_DateCreate(d->ocilib_cn);
+                    OCI_DateSetDateTime(dt,
+                                        dn->getYear(), dn->getMonth(), dn->getDay(),
+                                        dn->getHour(), dn->getMinute(), dn->getSecond()
+                                       );
+                    OCI_ObjectSetDate(obj, cname, dt);
+                    OCI_DateFree(dt);
+                }
+                // intervals
+                else if (col->type == OCI_CDT_INTERVAL) {
+                    OCI_Interval * dt;
+                    if (col->ocode == SQLT_INTERVAL_YM) {
+                        dt = OCI_IntervalCreate(d->ocilib_cn, OCI_INTERVAL_YM);
+                        OCI_IntervalSetYearMonth(dt, dn->getYear(), dn->getMonth());
+                        OCI_ObjectSetInterval(obj, cname, dt);
+                    }
+                    else  {
+                        // SQLT_INTERVAL_DS
+                        dt = OCI_IntervalCreate(d->ocilib_cn, OCI_INTERVAL_DS);
+                        OCI_IntervalSetDaySecond(dt,
+                                                 dn->getDay(),
+                                                 dn->getHour(), dn->getMinute(), dn->getSecond(),
+                                                 (dn->getMillisecond() * 1000000)
+                                                );
+                        OCI_ObjectSetInterval(obj, cname, dt);
+                    }
+                    OCI_IntervalFree(dt);
+                }
+                else
+                    assert(0); // TODO/FIXME: xsink?
                 break;
             }
-                
+
 
 //             case SQLT_RDD:
 //             case SQLT_RID:
@@ -195,31 +239,6 @@ printf("end\n");
 
 //             case SQLT_CFILE:
                 // cfile
-
-
-// #if OCI_VERSION_COMPILE >= OCI_9_0
-// 
-//             case SQLT_TIMESTAMP:
-// 
-// //             return MT("TIMESTAMP");
-// 
-//             case SQLT_TIMESTAMP_TZ:
-// 
-// //             return MT("TIMESTAMP WITH TIME ZONE");
-// 
-//             case SQLT_TIMESTAMP_LTZ:
-// 
-// //             return MT("TIMESTAMP WITH LOCAL TIME ZONE");
-// 
-//             case SQLT_INTERVAL_YM:
-// 
-// //             return MT("INTERVAL YEAR TO MONTH");
-// 
-//             case SQLT_INTERVAL_DS:
-// 
-// //             return MT("INTERVAL DAY TO SECOND");
-// 
-// #endif
 
 //             case SQLT_REF:
                 // ref
@@ -296,26 +315,61 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
             case SQLT_IBFLOAT:
             case SQLT_BDOUBLE:
             case SQLT_IBDOUBLE:
+#endif
                 // float
                 rv->setKeyValue(cname, new QoreFloatNode(OCI_ObjectGetDouble(obj, cname)), xsink);
                 break;
-#endif
+
 
             case SQLT_DAT:
+            case SQLT_ODT:
+            case SQLT_DATE: 
+#if OCI_VERSION_COMPILE >= OCI_9_0
             case SQLT_TIMESTAMP:
-            case SQLT_DATE: {
-                OCI_Timestamp * dt = OCI_ObjectGetTimeStamp(obj, cname);
-                rv->setKeyValue(cname, get_oracle_timestamp(false, ds, dt->handle, xsink), xsink);
+            case SQLT_TIMESTAMP_TZ:
+            case SQLT_TIMESTAMP_LTZ:
+            case SQLT_INTERVAL_YM:
+            case SQLT_INTERVAL_DS:
+#endif
+            {
+                // timestamps-like dates
+                if (col->type == OCI_CDT_TIMESTAMP) {
+                    OCI_Timestamp * dt = OCI_ObjectGetTimeStamp(obj, cname);
+                    // only SQLT_TIMESTAMP gets the default TZ
+                    rv->setKeyValue(cname, get_oracle_timestamp(col->ocode != SQLT_TIMESTAMP, ds, dt->handle, xsink), xsink);
+                }
+                // pure DATE like
+                else if (col->type == OCI_CDT_DATETIME) {
+                    OCI_Date * dt = OCI_ObjectGetDate(obj, cname);
+                    int y, m, d, h, mi, s;
+                    OCI_DateGetDateTime(dt, &y, &m, &d, &h, &mi, &s);
+                    DateTimeNode * dn = new DateTimeNode(y, m, d, h, mi, s);
+                    rv->setKeyValue(cname, dn, xsink);
+                }
+                // intervals
+                else if (col->type == OCI_CDT_INTERVAL) {
+                    OCI_Interval * dt = OCI_ObjectGetInterval(obj, cname);
+                    if (col->ocode == SQLT_INTERVAL_YM) {
+                        int y, m;
+                        OCI_IntervalGetYearMonth(dt, &y, &m);
+                        rv->setKeyValue(cname, new DateTimeNode(y, m, 0, 0, 0, 0, 0, true), xsink);
+                    }
+                    else  {
+                        // SQLT_INTERVAL_DS
+                        int d, h, mi, s, fs;
+                        OCI_IntervalGetDaySecond(dt, &d, &h, &mi, &s, &fs);
+#ifdef _QORE_HAS_TIME_ZONES
+                        rv->setKeyValue(cname, DateTimeNode::makeRelative(0, 0, d, h, mi, s, fs / 1000), xsink);
+#else
+                        rv->setKeyValue(cname, new DateTimeNode(0, 0,  d, h, mi, s, fs / 1000000, true), xsink);
+#endif
+                    }
+                }
+                else
+                    assert(0); // TODO/FIXME: xsink?
                 break;
             }
 
-            case SQLT_TIMESTAMP_TZ:
-            case SQLT_TIMESTAMP_LTZ: {
-                OCI_Timestamp * dt = OCI_ObjectGetTimeStamp(obj, cname);
-                rv->setKeyValue(cname, get_oracle_timestamp(true, ds, dt->handle, xsink), xsink);
-                break;
-            }
-                
 
 //             case SQLT_RDD:
 //             case SQLT_RID:
@@ -361,31 +415,6 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
 
 //             case SQLT_CFILE:
                 // cfile
-
-
-// #if OCI_VERSION_COMPILE >= OCI_9_0
-// 
-//             case SQLT_TIMESTAMP:
-// 
-// //             return MT("TIMESTAMP");
-// 
-//             case SQLT_TIMESTAMP_TZ:
-// 
-// //             return MT("TIMESTAMP WITH TIME ZONE");
-// 
-//             case SQLT_TIMESTAMP_LTZ:
-// 
-// //             return MT("TIMESTAMP WITH LOCAL TIME ZONE");
-// 
-//             case SQLT_INTERVAL_YM:
-// 
-// //             return MT("INTERVAL YEAR TO MONTH");
-// 
-//             case SQLT_INTERVAL_DS:
-// 
-// //             return MT("INTERVAL DAY TO SECOND");
-// 
-// #endif
 
 //             case SQLT_REF:
                 // ref
@@ -470,23 +499,69 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
             case SQLT_IBFLOAT:
             case SQLT_BDOUBLE:
             case SQLT_IBDOUBLE:
+#endif
                 // float
                 OCI_ElemSetDouble(e, val->getAsFloat());
                 break;
-#endif
 
-//             case SQLT_DAT:
-//             case SQLT_ODT:
-//             case SQLT_DATE: {
-//                 // date
-//                 const DateTimeNode * d = reinterpret_cast<const DateTimeNode*>(val);
-//                 OCI_Date *dt = OCI_ObjectGetDate(obj, cname);
-//                 // TODO/FIXME: tzone? propably OCI_Date from string...
-//                 OCI_DateSetDateTime(dt, d->getYear(), d->getMonth(), d->getDay(),
-//                                         d->getHour(), d->getMinute(), d->getSecond());
-// //                 OCI_ObjectSetdate(obj, cname, dt);
-//                 break;
-//             }
+
+            case SQLT_DAT:
+            case SQLT_ODT:
+            case SQLT_DATE: 
+#if OCI_VERSION_COMPILE >= OCI_9_0
+            case SQLT_TIMESTAMP:
+            case SQLT_TIMESTAMP_TZ:
+            case SQLT_TIMESTAMP_LTZ:
+            case SQLT_INTERVAL_YM:
+            case SQLT_INTERVAL_DS:
+#endif
+            {
+                // date
+                const DateTimeNode * dn = reinterpret_cast<const DateTimeNode*>(val);
+                if (col->type == OCI_CDT_TIMESTAMP) {
+                    OCI_Timestamp *dt = OCI_TimestampCreate(d->ocilib_cn, OCI_TIMESTAMP);
+                    OCI_TimestampConstruct(dt,
+                                           dn->getYear(), dn->getMonth(), dn->getDay(),
+                                           dn->getHour(), dn->getMinute(), dn->getSecond(),
+                                           (dn->getMillisecond() * 1000000),
+                                           0 // no TZ here
+                                           );
+                    OCI_ElemSetTimestamp(e, dt);
+                    OCI_TimestampFree(dt);
+                }
+                else if (col->type == OCI_CDT_DATETIME) {
+                    OCI_Date * dt = OCI_DateCreate(d->ocilib_cn);
+                    OCI_DateSetDateTime(dt,
+                                        dn->getYear(), dn->getMonth(), dn->getDay(),
+                                        dn->getHour(), dn->getMinute(), dn->getSecond()
+                                       );
+                    OCI_ElemSetDate(e, dt);
+                    OCI_DateFree(dt);
+                }
+                // intervals
+                else if (col->type == OCI_CDT_INTERVAL) {
+                    OCI_Interval * dt;
+                    if (col->ocode == SQLT_INTERVAL_YM) {
+                        dt = OCI_IntervalCreate(d->ocilib_cn, OCI_INTERVAL_YM);
+                        OCI_IntervalSetYearMonth(dt, dn->getYear(), dn->getMonth());
+                        OCI_ElemSetInterval(e, dt);
+                    }
+                    else  {
+                        // SQLT_INTERVAL_DS
+                        dt = OCI_IntervalCreate(d->ocilib_cn, OCI_INTERVAL_DS);
+                        OCI_IntervalSetDaySecond(dt,
+                                                 dn->getDay(),
+                                                 dn->getHour(), dn->getMinute(), dn->getSecond(),
+                                                 (dn->getMillisecond() * 1000000)
+                                                );
+                        OCI_ElemSetInterval(e, dt);
+                    }
+                    OCI_IntervalFree(dt);
+                }
+                else
+                    assert(0); // TODO/FIXME: xsink?
+                break;
+            }
                 
 
 //             case SQLT_RDD:
@@ -531,31 +606,6 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
 
 //             case SQLT_CFILE:
                 // cfile
-
-
-// #if OCI_VERSION_COMPILE >= OCI_9_0
-// 
-//             case SQLT_TIMESTAMP:
-// 
-// //             return MT("TIMESTAMP");
-// 
-//             case SQLT_TIMESTAMP_TZ:
-// 
-// //             return MT("TIMESTAMP WITH TIME ZONE");
-// 
-//             case SQLT_TIMESTAMP_LTZ:
-// 
-// //             return MT("TIMESTAMP WITH LOCAL TIME ZONE");
-// 
-//             case SQLT_INTERVAL_YM:
-// 
-// //             return MT("INTERVAL YEAR TO MONTH");
-// 
-//             case SQLT_INTERVAL_DS:
-// 
-// //             return MT("INTERVAL DAY TO SECOND");
-// 
-// #endif
 
 //             case SQLT_REF:
                 // ref
@@ -638,25 +688,59 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
             case SQLT_IBFLOAT:
             case SQLT_BDOUBLE:
             case SQLT_IBDOUBLE:
+#endif
                 // float
                 rv->set_entry(rv->size(), new QoreFloatNode(OCI_ElemGetDouble(e)), xsink);
                 break;
-#endif
 
-//             case SQLT_DAT:
-//             case SQLT_TIMESTAMP:
-//             case SQLT_DATE: {
-//                 OCI_Timestamp * dt = OCI_ObjectGetTimeStamp(obj, cname);
-//                 rv->set_entry(rv->size(), get_oracle_timestamp(false, ds, dt->handle, xsink), xsink);
-//                 break;
-//             }
-// 
-//             case SQLT_TIMESTAMP_TZ:
-//             case SQLT_TIMESTAMP_LTZ: {
-//                 OCI_Timestamp * dt = OCI_ObjectGetTimeStamp(obj, cname);
-//                 rv->set_entry(rv->size(), get_oracle_timestamp(true, ds, dt->handle, xsink), xsink);
-//                 break;
-//             }
+            case SQLT_DAT:
+            case SQLT_ODT:
+            case SQLT_DATE: 
+#if OCI_VERSION_COMPILE >= OCI_9_0
+            case SQLT_TIMESTAMP:
+            case SQLT_TIMESTAMP_TZ:
+            case SQLT_TIMESTAMP_LTZ:
+            case SQLT_INTERVAL_YM:
+            case SQLT_INTERVAL_DS:
+#endif
+            {
+                // timestamps-like dates
+                if (col->type == OCI_CDT_TIMESTAMP) {
+                    OCI_Timestamp * dt = OCI_ElemGetTimeStamp(e);
+                    // only SQLT_TIMESTAMP gets the default TZ
+                    rv->set_entry(rv->size(), get_oracle_timestamp(col->ocode != SQLT_TIMESTAMP, ds, dt->handle, xsink), xsink);
+                }
+                // pure DATE like
+                else if (col->type == OCI_CDT_DATETIME) {
+                    OCI_Date * dt = OCI_ElemGetDate(e);
+                    int y, m, d, h, mi, s;
+                    OCI_DateGetDateTime(dt, &y, &m, &d, &h, &mi, &s);
+                    DateTimeNode * dn = new DateTimeNode(y, m, d, h, mi, s);
+                    rv->set_entry(rv->size(), dn, xsink);
+                }
+                // intervals
+                else if (col->type == OCI_CDT_INTERVAL) {
+                    OCI_Interval * dt = OCI_ElemGetInterval(e);
+                    if (col->ocode == SQLT_INTERVAL_YM) {
+                        int y, m;
+                        OCI_IntervalGetYearMonth(dt, &y, &m);
+                        rv->set_entry(rv->size(), new DateTimeNode(y, m, 0, 0, 0, 0, 0, true), xsink);
+                    }
+                    else  {
+                        // SQLT_INTERVAL_DS
+                        int d, h, mi, s, fs;
+                        OCI_IntervalGetDaySecond(dt, &d, &h, &mi, &s, &fs);
+#ifdef _QORE_HAS_TIME_ZONES
+                        rv->set_entry(rv->size(), DateTimeNode::makeRelative(0, 0, d, h, mi, s, fs / 1000), xsink);
+#else
+                        rv->set_entry(rv->size(), new DateTimeNode(0, 0,  d, h, mi, s, fs / 1000000, true), xsink);
+#endif
+                    }
+                }
+                else
+                    assert(0); // TODO/FIXME: xsink?
+                break;
+            }
                 
 
 //             case SQLT_RDD:
@@ -702,31 +786,6 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
 
 //             case SQLT_CFILE:
                 // cfile
-
-
-// #if OCI_VERSION_COMPILE >= OCI_9_0
-// 
-//             case SQLT_TIMESTAMP:
-// 
-// //             return MT("TIMESTAMP");
-// 
-//             case SQLT_TIMESTAMP_TZ:
-// 
-// //             return MT("TIMESTAMP WITH TIME ZONE");
-// 
-//             case SQLT_TIMESTAMP_LTZ:
-// 
-// //             return MT("TIMESTAMP WITH LOCAL TIME ZONE");
-// 
-//             case SQLT_INTERVAL_YM:
-// 
-// //             return MT("INTERVAL YEAR TO MONTH");
-// 
-//             case SQLT_INTERVAL_DS:
-// 
-// //             return MT("INTERVAL DAY TO SECOND");
-// 
-// #endif
 
 //             case SQLT_REF:
                 // ref

@@ -1815,7 +1815,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
    d_ora->ocilib_cn->fmt_date = 0;  /* date string format for conversion */
    d_ora->ocilib_cn->fmt_num = 0;   /* numeric string format for conversion */
    d_ora->ocilib_cn->ver_str=0;   /* string  server version*/
-   d_ora->ocilib_cn->ver_num=0;   /* numeric server version */
+   d_ora->ocilib_cn->ver_num = OCILib.version_runtime;   /* numeric server version */
    d_ora->ocilib_cn->trace=0;     /* trace information */
 
    ds->setPrivateData((void *)d_ora.release());
