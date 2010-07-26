@@ -7,6 +7,9 @@ as object (
 --    a_num_1 number(4,5),
     a_textc char(10),
     a_clob clob,
+    a_date date,
+    a_tstamp timestamp,
+    a_tstamp_tz timestamp with time zone,
 --    a_object test_object,
 --    a_table qore_test.t_table_rowtype%type,
     
