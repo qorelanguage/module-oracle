@@ -56,6 +56,28 @@ void ocilib_err_handler(OCI_Error *err)
            );
 };
 
+
+// return NTY object type - ORACLE_COLLECTION or ORACLE_OBJECT
+// should be called id it's sure it's a NTY (after ntyCheckType()
+// and/or in SQLT_NTY cases
+const char * ntyHashType(const QoreHashNode * n) {
+    const QoreStringNode * s = reinterpret_cast<const QoreStringNode*>(n->getKeyValue("type"));
+    return s->getBuffer();
+}
+
+// check if is the hash really oracle NTY object
+bool ntyCheckType(const char * tname, const QoreHashNode * n) {
+    const QoreStringNode *s;
+    s = dynamic_cast<const QoreStringNode*>(n->getKeyValue("type"));
+    if (!s)
+        return false;
+    s = dynamic_cast<const QoreStringNode*>(n->getKeyValue("^oratype^"));
+    if (!s)
+        return false;
+    const char * givenName = ntyHashType(n);
+    return strcmp(givenName, tname) != 0;
+}
+
 OCI_Object* objPlaceholderQore(OracleData * d_ora, const char * tname, ExceptionSink *xsink)
 {
     OCI_TypeInfo * info = OCI_TypeInfoGet(d_ora->ocilib_cn, tname, OCI_TIF_TYPE);
@@ -65,12 +87,15 @@ OCI_Object* objPlaceholderQore(OracleData * d_ora, const char * tname, Exception
 
 OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * xsink)
 {
-//     QoreNodeAsStringHelper str(h, FMT_NONE, xsink);
-//     printf("hash= %s\n", str->getBuffer());
-//     QoreNodeAsStringHelper str1(h->getKeyValue("^oratype^"), FMT_NONE, xsink);
-//     printf("oratype= %s \n", str1->getBuffer());
+//     QoreNodeAsStringHelper str(h, 1, xsink);
+//     printf("obj hash= %s\n", str->getBuffer());
 
-    // TODO/FIXME: chech if it's really object-like hash
+    if (!ntyCheckType(ORACLE_OBJECT, h)) {
+        xsink->raiseException("BIND-ORACLE-OBJECT-ERROR",
+                              "Hash is not passed with bindOracleObject()");
+        return 0;
+    }
+
     const QoreHashNode * th = reinterpret_cast<const QoreHashNode*>(h->getKeyValue("^values^"));
     const char * tname = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("^oratype^"))->getBuffer();
     
@@ -85,7 +110,7 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
         const char * cname = OCI_GetColumnName(col);
 //         printf("Binding attribute: %s (%d/%d)\n", cname, i, n);
         if (! th->existsKey(cname)) {
-            xsink->raiseException("BIND-ORACLE-OBJECT-ERROR", "Key %s does not exists in the object hash", cname);
+            xsink->raiseException("BIND-ORACLE-OBJECT-ERROR", "Key %s (case sensitive) does not exists in the object hash", cname);
             return obj;
         }
         /*const*/ QoreString * key = new QoreString(cname);
@@ -252,8 +277,19 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
                     xsink->raiseException("BIND-OBJECT-ERROR", "Object type: '%s' has to be passed as an Oracle Object", col->typinf->name);
                     return obj;
                 }
-                // object
-                OCI_ObjectSetObject(obj, cname, objBindQore(d, n, xsink));
+                const char * t = ntyHashType(n);
+                if (!strcmp(t, ORACLE_OBJECT)) {
+                    OCI_Object * o = objBindQore(d, n, xsink);
+                    OCI_ObjectSetObject(obj, cname, o);
+                    OCI_ObjectFree(o);
+                }
+                else if (!strcmp(t, ORACLE_COLLECTION)) {
+                    OCI_Coll * o = collBindQore(d, n, xsink);
+                    OCI_ObjectSetColl(obj, cname, o);
+                    OCI_CollFree(o);
+                }
+                else
+                    assert(0); // TODO/FIXME
                 break;
             }
 
@@ -336,6 +372,7 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
                 if (col->type == OCI_CDT_TIMESTAMP) {
                     OCI_Timestamp * dt = OCI_ObjectGetTimeStamp(obj, cname);
                     // only SQLT_TIMESTAMP gets the default TZ
+//                     assert(0);
                     rv->setKeyValue(cname, get_oracle_timestamp(col->ocode != SQLT_TIMESTAMP, ds, dt->handle, xsink), xsink);
                 }
                 // pure DATE like
@@ -423,7 +460,13 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
             case SQLT_PNTY:
 #endif
             case SQLT_NTY:
-                rv->setKeyValue(cname, objToQore(OCI_ObjectGetObject(obj, cname), ds, xsink), xsink);
+                if (col->typinf->ccode) {
+                    // collection
+                    rv->setKeyValue(cname, collToQore(OCI_ObjectGetColl(obj, cname), ds, xsink), xsink);
+                } else {
+                    // object
+                    rv->setKeyValue(cname, objToQore(OCI_ObjectGetObject(obj, cname), ds, xsink), xsink);
+                }
                 break;
 
             default:
@@ -439,10 +482,15 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
 
 OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * xsink)
 {
-//     QoreNodeAsStringHelper str(h, FMT_NONE, xsink);
+//     QoreNodeAsStringHelper str(h, 1, xsink);
 //     printf("hash= %s\n", str->getBuffer());
 
-    // TODO/FIXME: chech if it's really collection-like list
+    if (!ntyCheckType(ORACLE_COLLECTION, h)) {
+        xsink->raiseException("BIND-ORACLE-COLLECTION-ERROR",
+                              "List is not passed with bindOracleCollection()");
+        return 0;
+    }
+    
     const QoreListNode * th = reinterpret_cast<const QoreListNode*>(h->getKeyValue("^values^"));
     const char * tname = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("^oratype^"))->getBuffer();
     
@@ -464,7 +512,7 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
             OCI_CollAppend(obj, e);
             continue;
         }
-        
+
         switch (col->ocode)
         {
             case SQLT_LNG: // long
@@ -616,11 +664,23 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
             case SQLT_NTY: {
                 const QoreHashNode * n = dynamic_cast<const QoreHashNode *>(val);
                 if (!n) {
-                    xsink->raiseException("BIND-COLLECTION-ERROR", "Object type: '%s' has to be passed as an Oracle Object", col->typinf->name);
+                    xsink->raiseException("BIND-COLLECTION-ERROR", "Object type: '%s' has to be passed as an Oracle Collection", col->typinf->name);
                     return obj;
                 }
-                // object
-                OCI_ElemSetObject(e, objBindQore(d, n, xsink));
+                const char * t = ntyHashType(n);
+                if (!strcmp(t, ORACLE_OBJECT)) {
+                    OCI_Object * o = objBindQore(d, n, xsink);
+                    OCI_ElemSetObject(e, o);
+                    OCI_ObjectFree(o);
+                }
+                else if (!strcmp(t, ORACLE_COLLECTION)) {
+                    OCI_Coll * o = collBindQore(d, n, xsink);
+                    OCI_ElemSetColl(e, o);
+                    OCI_CollFree(o);
+                }
+                else
+                    assert(0); // TODO/FIXME
+
                 break;
             }
 
@@ -794,7 +854,13 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
             case SQLT_PNTY:
 #endif
             case SQLT_NTY:
-                rv->set_entry(rv->size(), objToQore(OCI_ElemGetObject(e), ds, xsink), xsink);
+                if (col->typinf->ccode) {
+                    // collection
+                    rv->set_entry(rv->size(), collToQore(OCI_ElemGetColl(e), ds, xsink), xsink);
+                } else {
+                    // object
+                    rv->set_entry(rv->size(), objToQore(OCI_ElemGetObject(e), ds, xsink), xsink);
+                }
                 break;
 
             default:

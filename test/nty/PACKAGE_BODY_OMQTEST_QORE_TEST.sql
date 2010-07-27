@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY         qore_test 
+CREATE OR REPLACE PACKAGE BODY         qore_test     
 is
 
 procedure do_obj (
@@ -10,22 +10,37 @@ begin
     retval := o.a_number || '-'
            || o.a_text || '-'
            || o.a_textc || '-'
-           || o.a_clob
+           || o.a_clob || '-'
            || o.a_date;
+--null;
 end do_obj;
+
+procedure get_obj_2 (
+    o out test_object_2
+)
+is
+begin
+    o := test_object_2(text2 => dbms_random.string('l', 10),
+                     number2 => dbms_random.value(1, 999)
+                     );
+end get_obj_2;
 
 procedure get_obj (
     o out test_object
 )
 is
+    tmp_o2 test_object_2;
 begin
+    dbms_random.seed( dbms_random.value(1, 999) );
+    get_obj_2(tmp_o2);
     o := test_object(a_text => dbms_random.string('l', 10),
                      a_number => dbms_random.value(1, 999),
                      a_textc => dbms_random.string('l', 10),
                      a_clob => dbms_random.string('l', 1000),
                      a_date => sysdate,
-                     a_tstamp => current_timestamp,
-                     a_tstamp_tz => current_timestamp
+--                     , a_tstamp => current_timestamp
+--                     , a_tstamp_tz => current_timestamp
+                     a_object => tmp_o2
                      );
 end get_obj;
 
@@ -128,6 +143,114 @@ begin
             sysdate+1
             );
 end get_coll_date;
+
+procedure do_coll_obj (
+    c in col_test_obj,
+    retval out varchar2
+)
+is
+    tmpstr varchar2(200);
+begin
+    retval := '|';
+    for i in 1 .. c.count loop
+        do_obj(c(i), tmpstr);
+        retval := retval || i || '=' || tmpstr ||'|';
+    end loop;
+end do_coll_obj;
+
+procedure get_coll_obj (
+    c out col_test_obj
+)
+is
+    tmp1 test_object;
+    tmp2 test_object;
+    tmp3 test_object;
+begin
+    get_obj(tmp1);
+    get_obj(tmp2);
+    get_obj(tmp3);
+    c := col_test_obj(
+            tmp1,
+            null,
+            tmp2,
+            tmp3
+            );
+end get_coll_obj;
+
+procedure do_coll_coll_str (
+    c in col_test_coll_str,
+    retval out varchar2
+)
+is
+    tmp col_test;
+begin
+    for i in 1 .. c.count loop
+        retval := retval || chr(10); 
+        if c(i) is null then
+            retval := retval || '{NULL}';
+            continue;
+        end if;
+        tmp := c(i);
+        for j in 1 .. tmp.count loop
+            retval := retval || j || '=' || tmp(j) ||'|';
+        end loop;
+    end loop;
+end do_coll_coll_str;
+
+procedure get_coll_coll_str (
+    c out col_test_coll_str
+)
+is
+    tmp1 col_test;
+    tmp2 col_test;
+    tmp3 col_test;
+begin
+    get_coll(tmp1);
+    get_coll(tmp2);
+    get_coll(tmp3);
+    c := col_test_coll_str(
+            tmp1,
+            null,
+            tmp2,
+            tmp3
+            );
+end get_coll_coll_str;
+
+procedure do_coll_coll_obj (
+    c in col_test_coll_obj,
+    retval out varchar2
+)
+is
+    tmpstr varchar2(2000);
+begin
+    for i in 1 .. c.count loop
+        if c(i) is null then
+            tmpstr := '{NULL}';
+        else
+            do_coll_obj(c(i), tmpstr);
+        end if;
+        retval := retval || chr(10) || tmpstr; 
+    end loop;
+end do_coll_coll_obj;
+
+procedure get_coll_coll_obj (
+    c out col_test_coll_obj
+)
+is
+    tmp1 col_test_obj;
+    tmp2 col_test_obj;
+    tmp3 col_test_obj;
+begin
+    get_coll_obj(tmp1);
+    get_coll_obj(tmp2);
+    get_coll_obj(tmp3);
+    c := col_test_coll_obj(
+            tmp1,
+            null,
+            tmp2,
+            tmp3
+            );
+end get_coll_coll_obj;
 
 --procedure get_records (
 --    cnt in number,

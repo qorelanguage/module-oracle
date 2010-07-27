@@ -589,7 +589,7 @@ boolean OCI_API OCI_ObjectAssign(OCI_Object *obj, OCI_Object *obj_src)
     OCI_CHECK_PTR(OCI_IPC_OBJECT, obj,     FALSE);
     OCI_CHECK_PTR(OCI_IPC_OBJECT, obj_src, FALSE);
 
-    OCI_CHECK_COMPAT(obj->con, obj->typinf == obj_src->typinf, FALSE);
+    OCI_CHECK_COMPAT(obj->con, obj->typinf->tdo == obj_src->typinf->tdo, FALSE);
 
     OCI_CALL2
     (

@@ -210,7 +210,7 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *n_ds, const char *str, Excep
       if (xsink->isEvent()) return;
 
 //       printd(5, "OraColumns::OraColumns() column %s: type=%d char_len=%d size=%d (SQLT_STR=%d)\n", col_name, dtype, col_char_len, col_max_size, SQLT_STR);
-      printd(0, "OraColumns::OraColumns() column %s: type=%d char_len=%d size=%d (SQLT_NTY=%d)\n", col_name, dtype, col_char_len, col_max_size, SQLT_NTY);
+//       printd(0, "OraColumns::OraColumns() column %s: type=%d char_len=%d size=%d (SQLT_NTY=%d)\n", col_name, dtype, col_char_len, col_max_size, SQLT_NTY);
       if (dtype == SQLT_NTY) {
           char * tname; // type name
           char * sname; // schema name
@@ -225,7 +225,7 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *n_ds, const char *str, Excep
                        str, ds, xsink);
           if (xsink->isEvent()) return;
 
-          printd(0, "OraColumns::OraColumns() SQLT_NTY type=%s.%s\n", sname, tname);
+//           printd(0, "OraColumns::OraColumns() SQLT_NTY type=%s.%s\n", sname, tname);
           QoreString s;
           s.concat(sname);
           s.concat(".");
@@ -233,7 +233,7 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *n_ds, const char *str, Excep
 
           OCI_TypeInfo * info = OCI_TypeInfoGet(d_ora->ocilib_cn, s.getBuffer(), OCI_TIF_TYPE);
 
-          printd(0, "OraColumns::OraColumns() ccode %d\n", info->ccode);
+//           printd(0, "OraColumns::OraColumns() ccode %d\n", info->ccode);
           // This is some kind of black magic - I'm not sure if it's sufficient
           // object/collection resolution method.
           int dsubtype = info->ccode ? SQLT_NTY_COLLECTION : SQLT_NTY_OBJECT;
@@ -1353,6 +1353,7 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
                                  pos, 0, 0, SQLT_NTY,
                                  &ind, (ub2 *)0, (ub2 *)0, (ub4)0, (ub4 *)0, OCI_DEFAULT),
                     "OraBindNode::bindPalceholder() object OCIBindByPos", ds, xsink);
+//     assert(0);
        ora_checkerr(d_ora->errhp, 
                     OCIBindObject(bndp, d_ora->errhp,
                                  buf.oraObj->typinf->tdo, &buf.oraObj->handle, 0,
@@ -1372,13 +1373,13 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
                     OCIBindByPos(stmthp, &bndp, d_ora->errhp,
                                  pos, 0, 0, SQLT_NTY,
                                  &ind, (ub2 *)0, (ub2 *)0, (ub4)0, (ub4 *)0, OCI_DEFAULT),
-                    "OraBindNode::bindPalceholder() object OCIBindByPos", ds, xsink);
+                    "OraBindNode::bindPalceholder() collection OCIBindByPos", ds, xsink);
        ora_checkerr(d_ora->errhp, 
                     OCIBindObject(bndp, d_ora->errhp,
                                  buf.oraColl->typinf->tdo, (void**)&buf.oraColl->handle, 0,
                                  0, 0 // NULL struct
                                  ),
-                    "OraBindNode::bindValue() OCIBindObject", ds, xsink);
+                    "OraBindNode::bindValue() OCIBindObject collection", ds, xsink);
 //         assert(0);
    }
    else {
