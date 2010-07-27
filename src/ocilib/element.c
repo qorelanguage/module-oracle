@@ -29,7 +29,7 @@
 */
 
 /* ------------------------------------------------------------------------ *
- * $Id: element.c, v 3.7.0 2010-07-20 17:45 Vincent Rogier $
+ * $Id: element.c, v 3.7.0 2010-07-27 18:36 Vincent Rogier $
  * ------------------------------------------------------------------------ */
 
 #include "ocilib_internal.h"
@@ -122,7 +122,7 @@ OCI_Elem * OCI_ElemInit(OCI_Connection *con, OCI_Elem **pelem, void *handle,
 
 boolean OCI_ElemSetNullIndicator(OCI_Elem *elem, OCIInd value)
 {
-    boolean res = FALSE;
+    boolean res = TRUE;
 
     if (elem->typinf->cols[0].type == OCI_CDT_OBJECT)
     {
@@ -135,7 +135,8 @@ boolean OCI_ElemSetNullIndicator(OCI_Elem *elem, OCIInd value)
     }
     else
     {
-        *elem->pind  = value;
+        if (elem->pind != NULL)
+            *elem->pind  = value;
     }
 
     return res;
@@ -480,10 +481,10 @@ OCI_Date * OCI_API  OCI_ElemGetDate(OCI_Elem *elem)
     return date;
 }
 /* ------------------------------------------------------------------------ *
- * OCI_ElemGetTimeStamp
+ * OCI_ElemGetTimestamp
  * ------------------------------------------------------------------------ */
 
-OCI_Timestamp * OCI_API  OCI_ElemGetTimeStamp(OCI_Elem *elem)
+OCI_Timestamp * OCI_API  OCI_ElemGetTimestamp(OCI_Elem *elem)
 {
     boolean res = TRUE;
     OCI_Timestamp *tmsp = NULL;

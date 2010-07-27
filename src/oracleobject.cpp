@@ -370,7 +370,7 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
             {
                 // timestamps-like dates
                 if (col->type == OCI_CDT_TIMESTAMP) {
-                    OCI_Timestamp * dt = OCI_ObjectGetTimeStamp(obj, cname);
+                    OCI_Timestamp * dt = OCI_ObjectGetTimestamp(obj, cname);
                     // only SQLT_TIMESTAMP gets the default TZ
 //                     assert(0);
                     rv->setKeyValue(cname, get_oracle_timestamp(col->ocode != SQLT_TIMESTAMP, ds, dt->handle, xsink), xsink);
@@ -766,7 +766,7 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
             {
                 // timestamps-like dates
                 if (col->type == OCI_CDT_TIMESTAMP) {
-                    OCI_Timestamp * dt = OCI_ElemGetTimeStamp(e);
+                    OCI_Timestamp * dt = OCI_ElemGetTimestamp(e);
                     // only SQLT_TIMESTAMP gets the default TZ
                     rv->set_entry(rv->size(), get_oracle_timestamp(col->ocode != SQLT_TIMESTAMP, ds, dt->handle, xsink), xsink);
                 }
