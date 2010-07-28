@@ -188,8 +188,7 @@ public:
                 else if (subdtype == SQLT_NTY_COLLECTION)
                     OCI_CollFree(val.oraColl);
                 else
-                    // TODO/FIXME: check the accessibility
-                    assert(0);
+                    xsink->raiseException("FREE-NTY-ERROR", "An attempt to free unknown NTY type");
                 break;
 
 	    default:	  // for all columns where data must be allocated
@@ -328,8 +327,7 @@ public:
             else if (bufsubtype == SQLT_NTY_COLLECTION)
                 OCI_CollFree(buf.oraColl);
             else
-                // TODO/FIXME: check the accessibility
-                assert(0);
+                xsink->raiseException("FREE-NTY-ERROR", "An attempt to free unknown NTY type (BN_PLACEHOLDER)");
          }
       }
       else {
@@ -354,7 +352,7 @@ public:
             else if (bufsubtype == SQLT_NTY_COLLECTION)
                 OCI_CollFree(buf.oraColl);
             else
-                assert(0); // TODO/FIXME: check the accessibility
+                xsink->raiseException("FREE-NTY-ERROR", "An attempt to free unknown NTY type (BN_VALUE)");
          }
       }
    }

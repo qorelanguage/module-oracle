@@ -370,7 +370,7 @@ static QoreHashNode *ora_fetch(OCIStmt *stmthp, Datasource *ds, ExceptionSink *x
 
 void OraColumns::define(OCIStmt *stmthp, const char *str) {
    //QORE_TRACE("OraColumne::define()");
-   printd(0, "OraColumne::define()\n");
+//    printd(0, "OraColumne::define()\n");
 
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
@@ -536,7 +536,8 @@ void OraColumns::define(OCIStmt *stmthp, const char *str) {
                                              (ub4   *) NULL),
                              str, ds, xsink);
             } else {
-                assert(0); // TODO/FIXME: error?
+                xsink->raiseException("DEFINE-NTY-ERROR", "An attempt to define unknown NTY type");
+                return;
             }
         break;
         }
@@ -1142,7 +1143,7 @@ void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionS
            bufsubtype = SQLT_NTY_OBJECT;
            buftype = SQLT_NTY;
            buf.oraObj = objBindQore(d_ora, h, xsink);
-           if (*xsink)
+           if (*xsink || !buf.oraObj)
                return;
 
            ora_checkerr(d_ora->errhp, 
@@ -1164,7 +1165,7 @@ void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionS
            bufsubtype = SQLT_NTY_COLLECTION;
            buftype = SQLT_NTY;
            buf.oraColl = collBindQore(d_ora, h, xsink);
-           if (*xsink)
+           if (*xsink || !buf.oraColl)
                return;
 
            ora_checkerr(d_ora->errhp, 
@@ -1812,7 +1813,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
    d_ora->ocilib_cn->mode=0;      /* session mode */
    d_ora->ocilib_cn->cstate = 0;    /* connection state */
    d_ora->ocilib_cn->usrdata=0;   /* user data */
-   // TODO/FIXME:
+
    d_ora->ocilib_cn->fmt_date = 0;  /* date string format for conversion */
    d_ora->ocilib_cn->fmt_num = 0;   /* numeric string format for conversion */
    d_ora->ocilib_cn->ver_str=0;   /* string  server version*/

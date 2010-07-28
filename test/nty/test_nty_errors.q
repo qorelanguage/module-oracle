@@ -51,3 +51,31 @@ try {
 catch ($ex) {
     printf("%N\n", $ex);
 }
+
+
+try {
+    printf("\nCollection is not bound correctly\n");
+    my list $col = 'foo', 'bar',NULL, NOTHING, "the end";
+
+    my $r = $db.exec("begin qore_test.do_coll(%v, :retval); end;",
+                     $col, # missing bindOracleObject
+                     Type::String);
+    printf("result: %N\n", $r);
+    $db.rollback();
+}
+catch ($ex) {
+    printf("%N\n", $ex);
+}
+
+
+try {
+    printf("\Collection (sub/internal) is not bound correctly\n");
+    my list $colcs = ( ( "foo", "bar" ),  );
+    my $dcs = $db.exec("begin qore_test.do_coll_coll_str(%v, :retval); end;",
+                     bindOracleCollection("COL_TEST_coll_str", $colcs));
+    printf("collection: %N\n", $dcs);
+    $db.rollback();
+}
+catch ($ex) {
+    printf("%N\n", $ex);
+}
