@@ -41,6 +41,7 @@ printf("\nOBJECT direct insert\n");
 }
 
 printf("\nOBJECT direct select\n");
-my $rsel = $db.select("select * from t_object_test where rownum < 5");
+# my $rsel = $db.select("select * from t_object_test where rownum < 5");
+my $rsel = $db.select("select t.* from t_object_test t");
 printf("rsel: %N\n", $rsel);
 

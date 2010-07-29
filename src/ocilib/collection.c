@@ -79,6 +79,16 @@ OCI_Coll * OCI_CollInit(OCI_Connection *con, OCI_Coll **pcoll, void *handle,
                               typinf->tdo, (void *) NULL, OCI_DURATION_SESSION,
                               TRUE, (dvoid **) &coll->handle)
             )
+            
+            OCI_CALL2
+            (
+                res, con,
+
+                OCIObjectGetInd(OCILib.env, con->err,
+                                (dvoid *) coll->handle,
+                                (dvoid **) &coll->tab_ind)
+            )
+
         }
         else
             coll->hstate = OCI_OBJECT_FETCHED_CLEAN;
@@ -460,3 +470,24 @@ boolean OCI_API OCI_CollClear(OCI_Coll *coll)
     return res;
 }
 
+
+/* ------------------------------------------------------------------------ *
+ * OCI_CollGetStruct
+ * ------------------------------------------------------------------------ */
+
+boolean OCI_API OCI_CollGetStruct(OCI_Coll *obj, void **pp_struct,
+                                    void** pp_ind)
+{
+    OCI_CHECK_PTR(OCI_IPC_OBJECT, obj, FALSE);
+
+    OCI_RESULT(TRUE);
+
+    *pp_struct = (void *) obj->handle;
+
+    if (pp_ind)
+        *pp_ind = (void *) obj->tab_ind;
+
+    OCI_RESULT(TRUE);
+
+    return TRUE;
+}

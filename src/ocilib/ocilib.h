@@ -12298,6 +12298,14 @@ OCI_EXPORT boolean OCI_API OCI_ObjectGetStruct
     void ** pp_ind
 );
 
+
+OCI_EXPORT boolean OCI_API OCI_CollGetStruct
+(
+    OCI_Coll *obj,
+    void **pp_struct,
+    void** pp_ind
+);
+
 /**
  * @brief
  * Create a local Ref instance

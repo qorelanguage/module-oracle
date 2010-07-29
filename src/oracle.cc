@@ -500,10 +500,11 @@ void OraColumns::define(OCIStmt *stmthp, const char *str) {
 	    break;
 
      case SQLT_NTY: {
-            // TODO/FIXME: how to get info if it's real NULL?
-            // w->ind is not affected in the OCIDefineByPos for SQLT_NTY
+            // w->ind is not affected in the OCIDefineByPos for SQLT_NTY. But set it to 0.
+            // Real NULL is handled in getValue() for NTY.
             w->ind = 0;
             if (w->subdtype == SQLT_NTY_OBJECT) {
+
                 w->val.oraObj = objPlaceholderQore(d_ora, w->subdtypename.getBuffer(), xsink);
                 ora_checkerr(d_ora->errhp,
                              OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1,
@@ -516,10 +517,12 @@ void OraColumns::define(OCIStmt *stmthp, const char *str) {
                                              w->val.oraObj->typinf->tdo,
                                              (void **) &w->val.oraObj->handle,
                                              (ub4   *) NULL,
-                                             (void **) 0,
+                                             (void **) &w->val.oraObj->tab_ind,
                                              (ub4   *) NULL),
                              str, ds, xsink);
+
             } else if (w->subdtype == SQLT_NTY_COLLECTION) {
+
                 w->val.oraColl = collPlaceholderQore(d_ora, w->subdtypename.getBuffer(), xsink);
                 ora_checkerr(d_ora->errhp,
                              OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1,
@@ -532,15 +535,16 @@ void OraColumns::define(OCIStmt *stmthp, const char *str) {
                                              w->val.oraColl->typinf->tdo,
                                              (void **) &w->val.oraColl->handle,
                                              (ub4   *) NULL,
-                                             (void **) 0, //def->buf.inds,
+                                             (void **) &w->val.oraColl->tab_ind,
                                              (ub4   *) NULL),
                              str, ds, xsink);
+
             } else {
                 xsink->raiseException("DEFINE-NTY-ERROR", "An attempt to define unknown NTY type");
                 return;
             }
-        break;
-        }
+            break;
+        } // SQLT_NTY
         
 
 	 default: // treated as a string
@@ -740,10 +744,25 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
 	 return horizontal ? (AbstractQoreNode*)ora_fetch_horizontal((OCIStmt *)val.ptr, ds, xsink) : (AbstractQoreNode*)ora_fetch((OCIStmt *)val.ptr, ds, xsink);
          
       case SQLT_NTY: {
+          // Real (atomic) null handling is quite tricky here.
+          // pp_ind and pp_struct are unknown C structs taken from
+          // the OCI NTY object where we know only the pp_ind's first
+          // member "_atomic". It holds info about NULL value of the
+          // whole object. The rest content of those structs is ignored.
+          // (It took ages to get those info from the docs :/)
+          OCIInd * pp_ind = NULL; // obtain NULL info
+          void * pp_struct = NULL; // used only for call. No usage for its value
+
           if (subdtype == SQLT_NTY_OBJECT) {
+              OCI_ObjectGetStruct(val.oraObj, (void**)&pp_struct, (void**)&pp_ind);
+              if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
+                  return null();
               return objToQore(val.oraObj, ds, xsink);
           }
           else if (subdtype == SQLT_NTY_COLLECTION) {
+              OCI_CollGetStruct(val.oraColl, (void**)&pp_struct, (void**)&pp_ind);
+              if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
+                  return null();
               return collToQore(val.oraColl, ds, xsink);
           }
           else {
@@ -751,7 +770,7 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
               return 0;
           }
           break;
-      }
+      } // SQLT_NTY
 
       default:
 	 //printd(5, "type=%d\n", dtype);

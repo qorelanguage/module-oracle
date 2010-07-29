@@ -604,6 +604,7 @@ struct OCI_Coll
     OCI_Connection    *con;      /* pointer to connection object */
     OCI_TypeInfo      *typinf;   /* pointer to type info object */
     OCI_Elem          *elem;     /* item object */
+    sb2              *tab_ind;  /* indicators for root instance */
 };
 
 /*
