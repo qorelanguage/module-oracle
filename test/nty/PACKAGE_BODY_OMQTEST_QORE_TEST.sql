@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY         qore_test     
+CREATE OR REPLACE PACKAGE BODY         qore_test       
 is
 
 procedure do_obj (
@@ -43,6 +43,36 @@ begin
                      a_object => tmp_o2
                      );
 end get_obj;
+
+procedure do_obj_timestamp (
+    o in test_object_timestamp,
+    retval out varchar2
+)
+is
+begin
+    retval := o.a_date || '|'
+           || o.a_tstamp || '|'
+           || o.a_tstamp_tz || '|'
+--           || o.a_int_ym || '|'
+--           || o.a_int_ds
+            ;
+--null;
+end do_obj_timestamp;
+
+
+procedure get_obj_timestamp (
+    o out test_object_timestamp
+)
+is
+begin
+    o := test_object_timestamp(
+                     a_date => sysdate,
+                     a_tstamp => current_timestamp,
+                     a_tstamp_tz => current_timestamp,
+                     a_int_ym => INTERVAL '11' MONTH,
+                     a_int_ds => INTERVAL '333' SECOND
+                     );
+end get_obj_timestamp;
 
 procedure do_coll (
     c in col_test,
@@ -130,6 +160,31 @@ begin
         retval := retval || i || '=' || c(i) ||'|';
     end loop;
 end do_coll_date;
+
+procedure get_coll_timestamp_tz (
+    c out col_test_timestamp_tz
+)
+is
+begin
+    c := col_test_timestamp_tz(
+            sysdate-100,
+            current_timestamp,
+            null,
+            current_timestamp+1
+            );
+end get_coll_timestamp_tz;
+
+procedure do_coll_timestamp_tz (
+    c in col_test_timestamp_tz,
+    retval out varchar2
+)
+is
+begin
+    retval := '|';
+    for i in 1 .. c.count loop
+        retval := retval || i || '=' || c(i) ||'|';
+    end loop;
+end do_coll_timestamp_tz;
 
 procedure get_coll_date (
     c out col_test_date
@@ -252,73 +307,78 @@ begin
             );
 end get_coll_coll_obj;
 
---procedure get_records (
---    cnt in number,
---    tab out t_table_record
---    )
---is
---begin
---    --
---    if cnt < 1 then
---        raise_application_error(-20001, 'CNT has to be greater than 0');
---    end if;
---    --
---    for i in 1 .. cnt loop
---        tab(i).num := dbms_random.value(1,100);
---        tab(i).var := dbms_random.string('P', 20);
---    end loop;
---    --
---end get_records;
---
---procedure do_records (
---    tab in t_table_record,
---    cnt out number
---)
---is
---begin
---    --
---    for i in tab.first .. tab.last loop
---        dbms_output.put_line('num=' || to_char(tab(i).num) || chr(9)
---                             || 'var=' || tab(i).var);
---    end loop;
---    --
---    cnt := tab.count;
---    --
---end do_records;
---
---
---procedure get_rowtypes (
---    cnt in number,
---    tab out t_table_rowtype
---    )
---is
---begin
---    --
---    if cnt < 1 then
---        raise_application_error(-20001, 'CNT has to be greater than 0');
---    end if;
---    --
---    open user_objs;
---    fetch user_objs bulk collect into tab limit cnt;
---    close user_objs;
---    --
---end get_rowtypes;
---
---procedure do_rowtypes (
---    tab in t_table_rowtype,
---    cnt out number
---)
---is
---begin
---    --
---    for i in tab.first .. tab.last loop
---        dbms_output.put_line(tab(i).object_name || chr(9)
---                             || tab(i).object_type);
---    end loop;
---    --
---    cnt := tab.count;
---    --
---end do_rowtypes;
+
+/*
+ * PL/SQL types **********************************************
+ */
+
+procedure get_records (
+    cnt in number,
+    tab out t_table_record
+    )
+is
+begin
+    --
+    if cnt < 1 then
+        raise_application_error(-20001, 'CNT has to be greater than 0');
+    end if;
+    --
+    for i in 1 .. cnt loop
+        tab(i).num := dbms_random.value(1,100);
+        tab(i).var := dbms_random.string('P', 20);
+    end loop;
+    --
+end get_records;
+
+procedure do_records (
+    tab in t_table_record,
+    cnt out number
+)
+is
+begin
+    --
+    for i in tab.first .. tab.last loop
+        dbms_output.put_line('num=' || to_char(tab(i).num) || chr(9)
+                             || 'var=' || tab(i).var);
+    end loop;
+    --
+    cnt := tab.count;
+    --
+end do_records;
+
+
+procedure get_rowtypes (
+    cnt in number,
+    tab out t_table_rowtype
+    )
+is
+begin
+    --
+    if cnt < 1 then
+        raise_application_error(-20001, 'CNT has to be greater than 0');
+    end if;
+    --
+    open user_objs;
+    fetch user_objs bulk collect into tab limit cnt;
+    close user_objs;
+    --
+end get_rowtypes;
+
+procedure do_rowtypes (
+    tab in t_table_rowtype,
+    cnt out number
+)
+is
+begin
+    --
+    for i in tab.first .. tab.last loop
+        dbms_output.put_line(tab(i).object_name || chr(9)
+                             || tab(i).object_type);
+    end loop;
+    --
+    cnt := tab.count;
+    --
+end do_rowtypes;
 --
 --
 --procedure get_objects (

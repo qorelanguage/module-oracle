@@ -8,3 +8,5 @@ CREATE OR REPLACE TYPE col_test_coll_str as table of col_test
 /
 CREATE OR REPLACE TYPE col_test_obj  as table of test_object
 /
+CREATE OR REPLACE TYPE col_test_timestamp_tz as table of timestamp with time zone
+/

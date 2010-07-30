@@ -79,3 +79,23 @@ try {
 catch ($ex) {
     printf("%N\n", $ex);
 }
+
+printf("OBJECT IN\n");
+my hash $obj = (
+                "A_DATE" : now_ms(),
+                "A_TSTAMP" : now_ms(),
+                "A_TSTAMP_TZ" : now_ms(),
+                "A_INT_YM" : now_ms(),
+                "A_INT_DS" : now_ms(),
+                );
+
+my $r = $db.exec("begin qore_test.do_obj_timestamp(%v, :retval); end;",
+                 bindOracleObject("OMQTEST.TEST_OBJECT_TIMESTAMP", $obj),
+                 Type::String);
+printf("object: %N\n", $r);
+$db.rollback();
+
+printf("\nOBJECT OUT\n");
+my $r1 = $db.exec("begin qore_test.get_obj_timestamp(:retval); end;", placeholderOracleObject("TEST_OBJECT_TIMESTAMP"));
+printf("retval: %N\n", $r1);
+$db.rollback();

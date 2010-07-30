@@ -111,3 +111,16 @@ printf("\nCOLLECTION OUT objects collections\n");
 my $r5 = $db.exec("begin qore_test.get_coll_coll_obj(:retval); end;", placeholderOracleCollection("COL_TEST_coll_obj"));
 printf("retval: %N\n", $r5);
 $db.rollback();
+
+
+printf("\nCOLLECTION IN timestamp\n");
+my list $colt = now(), now_ms(), NULL, NOTHING, now()+10;
+my $d = $db.exec("begin qore_test.do_coll_timestamp_tz(%v, :retval); end;",
+                 bindOracleCollection("COL_TEST_timestamp_tz", $colt));
+printf("collection: %N\n", $d);
+$db.rollback();
+
+printf("\nCOLLECTION OUT timestamp\n");
+my $r4 = $db.exec("begin qore_test.get_coll_timestamp_tz(:retval); end;", placeholderOracleCollection("COL_TEST_timestamp_tz"));
+printf("retval: %N\n", $r4);
+$db.rollback();

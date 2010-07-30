@@ -469,25 +469,3 @@ boolean OCI_API OCI_CollClear(OCI_Coll *coll)
 
     return res;
 }
-
-
-/* ------------------------------------------------------------------------ *
- * OCI_CollGetStruct
- * ------------------------------------------------------------------------ */
-
-boolean OCI_API OCI_CollGetStruct(OCI_Coll *obj, void **pp_struct,
-                                    void** pp_ind)
-{
-    OCI_CHECK_PTR(OCI_IPC_OBJECT, obj, FALSE);
-
-    OCI_RESULT(TRUE);
-
-    *pp_struct = (void *) obj->handle;
-
-    if (pp_ind)
-        *pp_ind = (void *) obj->tab_ind;
-
-    OCI_RESULT(TRUE);
-
-    return TRUE;
-}

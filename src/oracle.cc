@@ -589,6 +589,7 @@ DateTimeNode *get_oracle_timestamp(bool get_tz, Datasource *ds, OCIDateTime *odt
 
    sb2 year;
    ub1 month, day;
+
    ora_checkerr(d_ora->errhp, 
 		OCIDateTimeGetDate(d_ora->envhp, d_ora->errhp, odt, &year, &month, &day),
 		"OCIDateTimeGetDate()", ds, xsink);
@@ -1474,14 +1475,24 @@ AbstractQoreNode *OraBindNode::getValue(Datasource *ds, bool horizontal, Excepti
       return rv;
    }
    else if (buftype == SQLT_NTY) {
-//        bufsubtype = SQLT_NTY_OBJECT;
-//        printf("bufsubtype %d\n", bufsubtype);
-       if (bufsubtype == SQLT_NTY_OBJECT)
-           return objToQore(buf.oraObj, ds, xsink);
-       else if (bufsubtype == SQLT_NTY_COLLECTION)
-           return collToQore(buf.oraColl, ds, xsink);
-       else
-           xsink->raiseException("NAMED-TYPE-PLACEHOLDER-ERROR", "Placeholder is not initilaized as a Oracle object or collection");
+      // See comment in OraColumn::getValue() case SQLT_NTY
+      OCIInd * pp_ind = NULL; // obtain NULL info
+      void * pp_struct = NULL; // used only for call. No usage for its value
+
+      if (bufsubtype == SQLT_NTY_OBJECT) {
+          OCI_ObjectGetStruct(buf.oraObj, (void**)&pp_struct, (void**)&pp_ind);
+          if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
+              return null();
+          return objToQore(buf.oraObj, ds, xsink);
+      }
+      else if (bufsubtype == SQLT_NTY_COLLECTION) {
+          OCI_CollGetStruct(buf.oraColl, (void**)&pp_struct, (void**)&pp_ind);
+          if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
+              return null();
+          return collToQore(buf.oraColl, ds, xsink);
+      }
+      else
+          xsink->raiseException("NAMED-TYPE-PLACEHOLDER-ERROR", "Placeholder is not initilaized as a Oracle object or collection");
    }
    return 0;
 }

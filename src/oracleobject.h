@@ -12,6 +12,21 @@ class OracleData;
  */
 void ocilib_err_handler(OCI_Error *err);
 
+/*! OCI_ObjectGetStruct-like function for collections. It has no reason
+    to go to OCILIB. We are using it only for our mixed OCI/OCILIB environment.
+    \note It's used only to get atomic null for collections.
+    \param obj OCI_Coll instance
+    \param pp_struct a struct with OCI values pointer
+    \param pp_ind a NULL struct
+    \retval bool true on success
+ */
+boolean OCI_CollGetStruct
+(
+    OCI_Coll *obj,
+    void **pp_struct,
+    void** pp_ind
+);
+
 
 /* Oracle Named Types - Objects
  */

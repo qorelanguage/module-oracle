@@ -82,6 +82,8 @@ OCI_Elem * OCI_ElemInit(OCI_Connection *con, OCI_Elem **pelem, void *handle,
                 break;
 
             case OCI_CDT_TEXT:
+            case OCI_CDT_TIMESTAMP:
+            case OCI_CDT_INTERVAL:
             case OCI_CDT_RAW:
             case OCI_CDT_LOB:
             case OCI_CDT_FILE:

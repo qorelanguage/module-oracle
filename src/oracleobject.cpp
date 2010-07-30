@@ -56,12 +56,42 @@ void ocilib_err_handler(OCI_Error *err)
            );
 };
 
+/* ------------------------------------------------------------------------ *
+ * OCI_CollGetStruct
+ * ------------------------------------------------------------------------ */
+#include "ocilib_internal.h"
+boolean OCI_API OCI_CollGetStruct(OCI_Coll *obj, void **pp_struct,
+                                    void** pp_ind)
+{
+    OCI_CHECK_PTR(OCI_IPC_OBJECT, obj, FALSE);
 
+    OCI_RESULT(TRUE);
+
+    *pp_struct = (void *) obj->handle;
+
+    if (pp_ind)
+        *pp_ind = (void *) obj->tab_ind;
+
+    OCI_RESULT(TRUE);
+
+    return TRUE;
+}
 // return NTY object type - ORACLE_COLLECTION or ORACLE_OBJECT
 // should be called id it's sure it's a NTY (after ntyCheckType()
 // and/or in SQLT_NTY cases
 const char * ntyHashType(const QoreHashNode * n) {
-    const QoreStringNode * s = reinterpret_cast<const QoreStringNode*>(n->getKeyValue("type"));
+    if (!n)
+        return 0;
+
+    bool valid;
+    const AbstractQoreNode * node = n->getKeyValueExistence("type", valid);
+    if (!valid) {
+        return 0;
+    }
+    const QoreStringNode * s = reinterpret_cast<const QoreStringNode*>(node);
+    if (!s) {
+        return 0;
+    }
     return s->getBuffer();
 }
 
@@ -78,9 +108,10 @@ bool ntyCheckType(const char * tname, const QoreHashNode * n) {
 //         printf("ntyCheckType() ^oratype^ %p\n", s);
         return false;
     }
+//     printf("ntyCheckType() ^oratype^ %s\n", s->getBuffer());
     const char * givenName = ntyHashType(n);
-//     printf("ntyCheckType() strcmp(givenName, tname) != 0 => %d\n", strcmp(givenName, tname) != 0);
-    return strcmp(givenName, tname) == 0;
+//     printf("ntyCheckType(%s, %s) strcmp(givenName, tname) != 0 => %d\n", givenName, tname, strcmp(givenName, tname) != 0);
+    return givenName && (strcmp(givenName, tname) == 0);
 }
 
 OCI_Object* objPlaceholderQore(OracleData * d_ora, const char * tname, ExceptionSink *xsink)
@@ -180,7 +211,7 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
                 // date
                 const DateTimeNode * dn = reinterpret_cast<const DateTimeNode*>(val);
                 if (col->type == OCI_CDT_TIMESTAMP) {
-                    OCI_Timestamp *dt = OCI_TimestampCreate(d->ocilib_cn, OCI_TIMESTAMP);
+                    OCI_Timestamp * dt = OCI_TimestampCreate(d->ocilib_cn, col->subtype);
                     OCI_TimestampConstruct(dt,
                                            dn->getYear(), dn->getMonth(), dn->getDay(),
                                            dn->getHour(), dn->getMinute(), dn->getSecond(),
@@ -279,18 +310,14 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
 #endif
             case SQLT_NTY: {
                 const QoreHashNode * n = dynamic_cast<const QoreHashNode *>(val);
-                if (!n || (n && (!ntyCheckType(ORACLE_OBJECT, h) || !ntyCheckType(ORACLE_COLLECTION, h)))) {
-                    xsink->raiseException("BIND-OBJECT-ERROR", "Object type: '%s' has to be passed as an Oracle Object", col->typinf->name);
-                    return obj;
-                }
                 const char * t = ntyHashType(n);
-                if (!strcmp(t, ORACLE_OBJECT)) {
+                if (t && !strcmp(t, ORACLE_OBJECT)) {
                     
                     OCI_Object * o = objBindQore(d, n, xsink);
                     OCI_ObjectSetObject(obj, cname, o);
                     OCI_ObjectFree(o);
                 }
-                else if (!strcmp(t, ORACLE_COLLECTION)) {
+                else if (t && !strcmp(t, ORACLE_COLLECTION)) {
                     OCI_Coll * o = collBindQore(d, n, xsink);
                     OCI_ObjectSetColl(obj, cname, o);
                     OCI_CollFree(o);
@@ -303,7 +330,7 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
             }
 
             default:
-                xsink->raiseException("BIND-OBJECT-ERROR", "unknown datatype to bind as an attribute: %s", col->typinf->name);
+                xsink->raiseException("BIND-OBJECT-ERROR", "unknown datatype to bind as an attribute (unsupported): %s", cname);
                 return obj;
         } // switch
 
@@ -481,7 +508,7 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
                 break;
 
             default:
-                xsink->raiseException("BIND-OBJECT-ERROR", "unknown datatype to fetch as an attribute: %s", col->typinf->name);
+                xsink->raiseException("BIND-OBJECT-ERROR", "unknown datatype to fetch as an attribute (unsupported): %s", col->typinf->name);
                 return 0;
         } // switch
 
@@ -577,7 +604,7 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
                 // date
                 const DateTimeNode * dn = reinterpret_cast<const DateTimeNode*>(val);
                 if (col->type == OCI_CDT_TIMESTAMP) {
-                    OCI_Timestamp *dt = OCI_TimestampCreate(d->ocilib_cn, OCI_TIMESTAMP);
+                    OCI_Timestamp *dt = OCI_TimestampCreate(d->ocilib_cn, col->subtype);
                     OCI_TimestampConstruct(dt,
                                            dn->getYear(), dn->getMonth(), dn->getDay(),
                                            dn->getHour(), dn->getMinute(), dn->getSecond(),
@@ -675,17 +702,13 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
 #endif
             case SQLT_NTY: {
                 const QoreHashNode * n = dynamic_cast<const QoreHashNode *>(val);
-                if (!n || (n && (!ntyCheckType(ORACLE_OBJECT, h) || !ntyCheckType(ORACLE_COLLECTION, h)))) {
-                    xsink->raiseException("BIND-COLLECTION-ERROR", "Object type: '%s' has to be passed as an Oracle Collection", col->typinf->name);
-                    return obj;
-                }
                 const char * t = ntyHashType(n);
-                if (!strcmp(t, ORACLE_OBJECT)) {
+                if (t && !strcmp(t, ORACLE_OBJECT)) {
                     OCI_Object * o = objBindQore(d, n, xsink);
                     OCI_ElemSetObject(e, o);
                     OCI_ObjectFree(o);
                 }
-                else if (!strcmp(t, ORACLE_COLLECTION)) {
+                else if (t && !strcmp(t, ORACLE_COLLECTION)) {
                     OCI_Coll * o = collBindQore(d, n, xsink);
                     OCI_ElemSetColl(e, o);
                     OCI_CollFree(o);
@@ -699,7 +722,7 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
             }
 
             default:
-                xsink->raiseException("BIND-COLLECTION-ERROR", "unknown datatype to bind as an attribute: %s", col->typinf->name);
+                xsink->raiseException("BIND-COLLECTION-ERROR", "unknown datatype to bind as an attribute (unsupported): %s", col->typinf->name);
         } // switch
         
         if (*xsink)
