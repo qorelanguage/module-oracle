@@ -619,12 +619,83 @@ The {{{Datasource::getClientVersion()}}} returns a hash giving version informati
 
 Note: There seems to be a bug in Oracle 9i and earlier in the streaming {{{OCILobRead()}}} function, where the LOB buffer must be at least twice as big as the LOB data to be read. This bug does not affect versions of the Qore oracle module linked with Oracle 10g libraries.</pre>
 </div>
-<div title="MainMenu" modifier="DavidNichols" created="200808200730" modified="200809060801" changecount="29">
+<div title="MainMenu" modifier="PetrVanek" created="200808200730" modified="201008121110" changecount="30">
 <pre>[[Introduction]]
 [[Binding and Types]]
 [[Binding By Value]]
 [[Default Oracle to Qore Type Mappings]]
-[[Placeholder Type Mappings]]</pre>
+[[Placeholder Type Mappings]]
+[[Named Types]]</pre>
+</div>
+<div title="Named Types" creator="YourName" modifier="YourName" created="201008121108" changecount="1">
+<pre>Qore Oracle driver supports Oracle objects and collections (NTY in the following text).
+
+Special initialization of the driver is mandatory to use NTY in Qore scripts:
+
+{{{
+%requires oracle
+}}}
+
+This statement imports additional functions for NTY binding and fetching.
+
+
+|!Function|!Description|h
+|{{{hash bindOracleObject ( string $typename, hash $value )}}}|Binds a Qore [[value]] as a Object type [[value]]. Hash keys are object attributes. Returned hash is used in the driver only.|
+|{{{hash placeholderOracleObject ( string $typename )}}}|Allows to fetch Object type [[typename]]. The returned hash is plain Qore hash with keys set as a object's attributes.|
+|{{{hash bindOracleCollection ( string $typename, list $value )}}}|Binds [[value]] as a Collection [[typename]]. Returned hash is used in the driver only.|
+|{{{list placeholderOracleCollection ( string $typename )}}}|Allows to fetch Collection [[typename]]. The returned list is plain Qore list of values with collection's type.|
+
+Type names ([[strings]]) are case insensitive.
+
+Key names in [[value]] hashes are case sensitive and should follow Oracle uppercase naming convention. Keys which are not found in the keys-attribute mappings are silently ignored. If there is a missing key for any attribute an exception is thrown.
+
+Functions are able to be nested so there can be for example list (collection) of objects and vice versa:
+
+Sample named types defined in the DB:
+{{{
+CREATE OR REPLACE TYPE test_object
+    AUTHID current_user AS OBJECT
+(
+    attr_num number,
+    attr_varchar varchar2(20)
+);
+CREATE OR REPLACE TYPE test_collection IS TABLE OF test_object;
+}}}
+
+Example of binding NTY:
+{{{
+my hash $obj1 = ( &quot;ATTR_NUM&quot; : 1, &quot;ATTR_VARCHAR&quot; : &quot;lorem ipsum&quot; );
+my hash $obj2 = ( &quot;ATTR_NUM&quot; : 2, &quot;ATTR_VARCHAR&quot; : &quot;dolor sir amet&quot; );
+my list $l = ( bindOracleObject('test_object', $obj1),
+               bindOracleObject('test_object', $obj2) );
+$db.exec(&quot;begin test_pkg.foo(%v); end;&quot;, bindOracleCollection('test_collection', $l));
+}}}
+
+Example of fetching NTY:
+{{{
+my $res = $db.exec(&quot;begin test_pkg.get_obj(:retval); end;&quot;,
+  	               placeholderOracleObject(&quot;TEST_OBJECT&quot;));
+printf(&quot;%N\n&quot;, $res);
+
+# will print out
+hash: (
+    &quot;ATTR_NUM&quot; : 5,
+    &quot;ATTR_VARCHAR&quot; : &quot;foobar!&quot;
+)
+}}}
+
+
+''Known Issues''
+
+Oracle Metalink Bug #3604465 - bind named type by placeholder can cause ORA-21525 (attribute number or (collection element at index) %s violated its constraints) if the object contains numbers with size constraint. An example:
+{{{
+TYPE a_object AS OBJECT (
+  my_num1 number(3), -- it will cause ORA-21525
+  my_num2 number     -- it will work
+)
+}}}
+Unfotunately it cannot be fixed in the Qore driver, it's a bug in the underlying Qracle C Interface (OCI) library.
+</pre>
 </div>
 <div title="Placeholder Type Mappings" modifier="DavidNichols" created="200809060750" modified="200911231000" changecount="18">
 <pre>&quot;Placeholder Type Mappings&quot;
