@@ -34,7 +34,7 @@
 
 Summary: Oracle DBI module for Qore
 Name: qore-oracle-module
-Version: 1.3
+Version: 2.0
 Release: 1%{dist}
 License: LGPL
 Group: Development/Languages
@@ -85,6 +85,9 @@ rm -rf $RPM_BUILD_ROOT
 %doc COPYING README RELEASE-NOTES ChangeLog AUTHORS test/db-test.q docs/oracle-module-doc.html
 
 %changelog
+* Tue Aug 3 2010 David Nichols <david@qore.org>
+- updated to version 2.0
+
 * Thu Jul 2 2010 David Nichols <david@qore.org>
 - updated to version 1.3
 

@@ -65,6 +65,14 @@ public:
    ub2 charsetid;
    // "fake" connection for OCILIB stuff
    OCI_Connection *ocilib_cn;
+
+   DLLLOCAL OracleData() : envhp(0), errhp(0), svchp(0), ocilib_cn(0) {
+   }
+
+   DLLLOCAL ~OracleData() {
+      // c++ will ignore "delete NULL;"
+      delete ocilib_cn;
+   }
 };
 
 //! Support defines to enumerate SQLT_NTY subtype for ORACLE_OBJECT and ORACLE_COLLECTION

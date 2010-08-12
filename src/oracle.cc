@@ -1872,15 +1872,10 @@ static int oracle_close(Datasource *ds) {
 
    OCI_Cleanup();
 
-   if (d_ora->ocilib_cn)
-       delete d_ora->ocilib_cn;
-
    delete d_ora;
 
    ds->setPrivateData(0);
 
-   
-      
    return 0;
 }
 
