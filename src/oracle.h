@@ -31,6 +31,7 @@
 
 #include <oci.h>
 
+#include "ocilib_types.h"
 
 #define ORACLE_OBJECT "OracleObject"
 #define ORACLE_COLLECTION "OracleCollection"
