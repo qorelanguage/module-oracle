@@ -29,7 +29,7 @@
 */
 
 /* ------------------------------------------------------------------------ *
- * $Id: statement.c, v 3.7.0 2010-07-20 17:45 Vincent Rogier $
+ * $Id: statement.c, v 3.7.1 2010-07-30 13:09 Vincent Rogier $
  * ------------------------------------------------------------------------ */
 
 #include "ocilib_internal.h"
@@ -472,6 +472,7 @@ boolean OCI_BindData(OCI_Statement *stmt, void *data, ub4 size,
     boolean reused   = FALSE;
     ub4 *pnbelem     = NULL;
     int index        = 0;
+    size_t nballoc   = (size_t) nbelem;
 
     /* check index if necessary */
 
@@ -581,9 +582,14 @@ boolean OCI_BindData(OCI_Statement *stmt, void *data, ub4 size,
         {
             nbelem   = stmt->nb_iters;
             is_array = stmt->bind_array;
-
-            if (nbelem < stmt->nb_iters_init)
-                nbelem = stmt->nb_iters_init;
+        }
+    }
+    
+    if (res == TRUE)
+    {
+        if (nballoc < stmt->nb_iters_init) 
+        {
+             nballoc = (size_t) stmt->nb_iters_init;
         }
     }
 
@@ -619,7 +625,7 @@ boolean OCI_BindData(OCI_Statement *stmt, void *data, ub4 size,
         if (bnd->buf.inds == NULL)
         {
             bnd->buf.inds = (void *) OCI_MemAlloc(OCI_IPC_INDICATOR_ARRAY,
-                                                  sizeof(sb2), (size_t) nbelem, 
+                                                  sizeof(sb2), nballoc, 
                                                   TRUE);
         }
 
@@ -633,7 +639,7 @@ boolean OCI_BindData(OCI_Statement *stmt, void *data, ub4 size,
         if ((type == OCI_CDT_OBJECT) && (bnd->buf.obj_inds == NULL))
         {
             bnd->buf.obj_inds = (void *) OCI_MemAlloc(OCI_IPC_INDICATOR_ARRAY,
-                                                      sizeof(void *), (size_t) nbelem, 
+                                                      sizeof(void *), nballoc, 
                                                       TRUE);
 
             res = (bnd->buf.obj_inds != NULL);
@@ -654,7 +660,7 @@ boolean OCI_BindData(OCI_Statement *stmt, void *data, ub4 size,
             if (bnd->plrcds == NULL)
             {
                 bnd->plrcds = (ub2 *) OCI_MemAlloc(OCI_IPC_PLS_RCODE_ARRAY,
-                                                   sizeof(ub2), (size_t) nbelem, 
+                                                   sizeof(ub2), nballoc, 
                                                    TRUE);
             }
 
@@ -692,7 +698,7 @@ boolean OCI_BindData(OCI_Statement *stmt, void *data, ub4 size,
                 {
                     bnd->buf.data = (void **) OCI_MemAlloc(OCI_IPC_BUFF_ARRAY, 
                                                            (size_t) size,
-                                                           (size_t) nbelem,
+                                                           (size_t) nballoc,
                                                            TRUE);
                 }
 
@@ -710,7 +716,7 @@ boolean OCI_BindData(OCI_Statement *stmt, void *data, ub4 size,
         if (bnd->buf.lens == NULL)
         {
             bnd->buf.lens = (void *) OCI_MemAlloc(OCI_IPC_LEN_ARRAY, sizeof(ub2),
-                                                  (size_t) nbelem, TRUE);
+                                                  nballoc, TRUE);
         }
 
         res = (bnd->buf.lens != NULL);
@@ -890,6 +896,10 @@ boolean OCI_BindData(OCI_Statement *stmt, void *data, ub4 size,
 
     }
 /*
+    this call was removed in v3.6.0
+
+    It will be restored in future version, but need more testing on all 
+    builds
     if (bnd->type == OCI_CDT_TEXT)
     {
         OCI_CALL1
@@ -1386,6 +1396,8 @@ boolean OCI_StatementClose(OCI_Statement *stmt)
 
 boolean OCI_BatchErrorClear(OCI_Statement *stmt)
 {
+    boolean res = FALSE;
+
     if (stmt->batch != NULL)
     {
         /* free internal array of OCI_Errors */
@@ -1395,9 +1407,11 @@ boolean OCI_BatchErrorClear(OCI_Statement *stmt)
         /* free batch structure */
 
         OCI_FREE(stmt->batch);
+
+        res = TRUE;
     }
 
-    return TRUE;
+    return res;
 }
 
 /* ------------------------------------------------------------------------ *
@@ -3092,7 +3106,7 @@ boolean OCI_API OCI_SetBindMode(OCI_Statement *stmt, unsigned int mode)
 
 unsigned int OCI_API OCI_GetBindMode(OCI_Statement *stmt)
 {
-    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, 0);
+    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, OCI_UNKNOWN);
 
     OCI_RESULT(TRUE);
 
@@ -3121,7 +3135,7 @@ boolean OCI_API OCI_SetBindAllocation(OCI_Statement *stmt, unsigned int mode)
 
 unsigned int OCI_API OCI_GetBindAllocation(OCI_Statement *stmt)
 {
-    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, 0);
+    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, OCI_UNKNOWN);
 
     OCI_RESULT(TRUE);
 
@@ -3291,7 +3305,7 @@ boolean OCI_API OCI_SetLongMode(OCI_Statement *stmt, unsigned int mode)
 
 unsigned int OCI_API OCI_GetLongMode(OCI_Statement *stmt)
 {
-    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, 0);
+    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, OCI_UNKNOWN);
 
     OCI_RESULT(TRUE);
 
@@ -3304,7 +3318,7 @@ unsigned int OCI_API OCI_GetLongMode(OCI_Statement *stmt)
 
 OCI_Connection * OCI_API OCI_StatementGetConnection(OCI_Statement *stmt)
 {
-    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, 0);
+    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, NULL);
 
     OCI_RESULT(TRUE);
 
@@ -3346,7 +3360,7 @@ unsigned int OCI_API OCI_GetAffectedRows(OCI_Statement *stmt)
     boolean res = TRUE;
     ub4 count   = 0;
 
-    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt,  FALSE);
+    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt,  0);
 
     OCI_CALL1
     (
@@ -3398,8 +3412,8 @@ OCI_Bind * OCI_API OCI_GetBind2(OCI_Statement *stmt, const mtext *name)
     OCI_Bind *bnd = NULL;
     int index     = -1;
 
-    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, FALSE);
-    OCI_CHECK_PTR(OCI_IPC_STRING, name, FALSE);
+    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, NULL);
+    OCI_CHECK_PTR(OCI_IPC_STRING, name, NULL);
 
     index =  OCI_BindGetIndex(stmt, name);
 
@@ -3473,7 +3487,7 @@ OCI_Error * OCI_API OCI_GetBatchError(OCI_Statement *stmt)
 {
     OCI_Error *err = NULL;
 
-    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, OCI_UNKNOWN);
+    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, NULL);
 
     if (stmt->batch != NULL)
     {

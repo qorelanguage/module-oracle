@@ -1173,7 +1173,7 @@ void OraBindNode::bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionS
                         "OraBindNode::bindValue() object OCIBindByPos", ds, xsink);
            ora_checkerr(d_ora->errhp, 
                         OCIBindObject(bndp, d_ora->errhp,
-                                     buf.oraObj->typinf->tdo, &buf.oraObj->handle, 0,
+                                     buf.oraObj->typinf->tdo, (void**)&buf.oraObj->handle, 0,
                                      0, 0 // NULL struct
                                      ),
                         "OraBindNode::bindValue() OCIBindObject", ds, xsink);
@@ -1374,14 +1374,12 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
                                  pos, 0, 0, SQLT_NTY,
                                  &ind, (ub2 *)0, (ub2 *)0, (ub4)0, (ub4 *)0, OCI_DEFAULT),
                     "OraBindNode::bindPalceholder() object OCIBindByPos", ds, xsink);
-//     assert(0);
        ora_checkerr(d_ora->errhp, 
                     OCIBindObject(bndp, d_ora->errhp,
-                                 buf.oraObj->typinf->tdo, &buf.oraObj->handle, 0,
+                                 buf.oraObj->typinf->tdo, (void**)&buf.oraObj->handle, 0,
                                  0, 0 // NULL struct
                                  ),
-                    "OraBindNode::bindValue() OCIBindObject", ds, xsink);
-//         assert(0);
+                    "OraBindNode::bindPalceholder() OCIBindObject", ds, xsink);
    }
    else if (!strcmp(data.ph.type, ORACLE_COLLECTION)) {
        const QoreStringNode * h = reinterpret_cast<const QoreStringNode*>(data.ph.value);
@@ -1400,7 +1398,7 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
                                  buf.oraColl->typinf->tdo, (void**)&buf.oraColl->handle, 0,
                                  0, 0 // NULL struct
                                  ),
-                    "OraBindNode::bindValue() OCIBindObject collection", ds, xsink);
+                    "OraBindNode::bindPalceholder() OCIBindObject collection", ds, xsink);
 //         assert(0);
    }
    else {
@@ -1509,8 +1507,8 @@ QoreHashNode *OraBindGroup::getOutputHash() {
 }
 
 int OraBindGroup::oci_exec(const char *who, ub4 iters) {
-   OracleData *d_ora = (OracleData *)ds->getPrivateData();
-
+   OracleData *d_ora = (OracleData *)ds->getPrivateData();    
+// assert(0);
    int status = OCIStmtExecute(d_ora->svchp, stmthp, d_ora->errhp, iters, 0, 0, 0, OCI_DEFAULT);
 // assert(0);
 //    printd(0, "oci_exec() stmthp=%p status=%d (OCI_ERROR=%d)\n", stmthp, status, OCI_ERROR);
@@ -1837,6 +1835,14 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
    d_ora->ocilib_cn->pool=0;      /* pointer to connection pool parent */
    d_ora->ocilib_cn->svopt=0;     /* Pointer to server output object */
    d_ora->ocilib_cn->svr=0;       /* OCI server handle */
+
+   /* OCI session handle */
+//    ora_checkerr(d_ora->errhp, 
+//                 OCI_HandleAlloc((dvoid *) OCILib.env,
+//                                                   (dvoid **) (void *) &d_ora->ocilib_cn->ses,
+//                                                   (ub4) OCI_HTYPE_SESSION,
+//                                                   (size_t) 0, (dvoid **) NULL),
+//                 "oracle_open OCI_HTYPE_SESSION", ds, xsink);
    d_ora->ocilib_cn->ses=0;       /* OCI session handle */
    d_ora->ocilib_cn->autocom=false;   /* auto commit mode */
    d_ora->ocilib_cn->nb_files=0;  /* number of OCI_File opened by the connection */
