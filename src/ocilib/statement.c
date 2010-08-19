@@ -796,8 +796,6 @@ boolean OCI_BindData(OCI_Statement *stmt, void *data, ub4 size,
                              bnd->plrcds, (ub4) (is_pltbl == TRUE ? nbelem : 0),
                              pnbelem, exec_mode)
             )
-
-	    printd(0, "OCI_BindData() OCIBindByPos data=0x%x size=%ld\n", bnd->buf.data, bnd->size);
         }
         else
         {
@@ -818,8 +816,6 @@ boolean OCI_BindData(OCI_Statement *stmt, void *data, ub4 size,
                               pnbelem, exec_mode)
             )
 
-	    printd(0, "OCI_BindData() OCIBindByName data=0x%x size=%ld\n", bnd->buf.data, bnd->size);
-
             OCI_ReleaseMetaString(ostr);
         }
 
@@ -835,9 +831,6 @@ boolean OCI_BindData(OCI_Statement *stmt, void *data, ub4 size,
                               (ub4 *) bnd->buf.inds)
 
             )
-
-	    printd(0, "OCI_BindData() OCIBindObject data=0x%x size=%ld tdo=0x%x\n", bnd->buf.data, bnd->size, typinf->tdo);
-
         }
 
         if (mode == OCI_BIND_OUTPUT)
