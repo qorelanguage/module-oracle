@@ -2,7 +2,6 @@
 #include "oracle.h"
 #include "ocilib_types.h"
 
-
 DLLEXPORT AbstractQoreNode * f_oracle_object(const QoreListNode *params, ExceptionSink *xsink) {
     const QoreStringNode * tname = HARD_QORE_STRING(params, 0);
     const QoreHashNode * values = HARD_QORE_HASH(params, 1);
@@ -43,8 +42,7 @@ DLLEXPORT AbstractQoreNode * f_oracle_collection_placeholder(const QoreListNode 
     return h;
 }
 
-void ocilib_err_handler(OCI_Error *err)
-{
+void ocilib_err_handler(OCI_Error *err) {
     // TODO/FIXME: xsink handling here.
     printf(     "internal OCILIB error:\n"
                 "  code  : ORA-%05i\n"
@@ -60,9 +58,7 @@ void ocilib_err_handler(OCI_Error *err)
  * OCI_CollGetStruct
  * ------------------------------------------------------------------------ */
 #include "ocilib_internal.h"
-boolean OCI_API OCI_CollGetStruct(OCI_Coll *obj, void **pp_struct,
-                                    void** pp_ind)
-{
+boolean OCI_API OCI_CollGetStruct(OCI_Coll *obj, void **pp_struct, void** pp_ind) {
     OCI_CHECK_PTR(OCI_IPC_OBJECT, obj, FALSE);
 
     OCI_RESULT(TRUE);
@@ -114,15 +110,20 @@ bool ntyCheckType(const char * tname, const QoreHashNode * n) {
     return givenName && (strcmp(givenName, tname) == 0);
 }
 
-OCI_Object* objPlaceholderQore(OracleData * d_ora, const char * tname, ExceptionSink *xsink)
-{
+OCI_Object* objPlaceholderQore(OracleData * d_ora, const char * tname, ExceptionSink *xsink) {
     OCI_TypeInfo * info = OCI_TypeInfoGet(d_ora->ocilib_cn, tname, OCI_TIF_TYPE);
+    if (!info) {
+       if (!*xsink)
+	  xsink->raiseException("ORACLE-OBJECT-ERROR", "could not get type info for object type '%s'", tname);
+       return 0;
+    }
     OCI_Object * obj = OCI_ObjectCreate(d_ora->ocilib_cn, info);
+    if (!obj && !*xsink)
+       xsink->raiseException("ORACLE-OBJECT-ERROR", "could not create placeholder buffer for object type '%s'", tname);
     return obj;
 }
 
-OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * xsink)
-{
+OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * xsink) {
 //     QoreNodeAsStringHelper str(h, 1, xsink);
 //     printf("obj hash= %s\n", str->getBuffer());
 

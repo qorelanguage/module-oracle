@@ -78,8 +78,6 @@ DLLEXPORT qore_license_t qore_module_license = QL_LGPL;
 // capabilities of this driver
 #define DBI_ORACLE_CAPS (DBI_CAP_TRANSACTION_MANAGEMENT | DBI_CAP_STORED_PROCEDURES | DBI_CAP_CHARSET_SUPPORT | DBI_CAP_LOB_SUPPORT | DBI_CAP_BIND_BY_VALUE | DBI_CAP_BIND_BY_PLACEHOLDER | ORA_DBI_CAP_HAS_EXECRAW | ORA_DBI_CAP_TIME_ZONE_SUPPORT)
 
-
-
 DBIDriver *DBID_ORACLE = NULL;
 
 // maximum string size for an oracle number
@@ -506,6 +504,9 @@ void OraColumns::define(OCIStmt *stmthp, const char *str) {
             if (w->subdtype == SQLT_NTY_OBJECT) {
 
                 w->val.oraObj = objPlaceholderQore(d_ora, w->subdtypename.getBuffer(), xsink);
+		if (*xsink)
+		   return;
+
                 ora_checkerr(d_ora->errhp,
                              OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1,
                                             0, 0,
@@ -784,8 +785,7 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
 }
 
 OraBindGroup::OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreListNode *args, ExceptionSink *n_xsink, bool doBinding)
-     : binding(doBinding)
-{
+     : binding(doBinding) {
    stmthp = NULL;
    hasOutput = false;
    head = tail = NULL;
@@ -1365,21 +1365,27 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
    else if (!strcmp(data.ph.type, ORACLE_OBJECT)) {
        const QoreStringNode * h = reinterpret_cast<const QoreStringNode*>(data.ph.value);
 
-       buf.oraObj = objPlaceholderQore(d_ora, h->getBuffer(), xsink);
        bufsubtype = SQLT_NTY_OBJECT;
        buftype = SQLT_NTY;
 
+       buf.oraObj = objPlaceholderQore(d_ora, h->getBuffer(), xsink);
+       if (*xsink)
+	  return;
+
        ora_checkerr(d_ora->errhp, 
                     OCIBindByPos(stmthp, &bndp, d_ora->errhp,
-                                 pos, 0, 0, SQLT_NTY,
+                                 pos, 0, 0, SQLT_NTY, //(void *)&buf.oraObj->handle, sizeof(void *), SQLT_NTY,
                                  &ind, (ub2 *)0, (ub2 *)0, (ub4)0, (ub4 *)0, OCI_DEFAULT),
-                    "OraBindNode::bindPalceholder() object OCIBindByPos", ds, xsink);
+                    "OraBindNode::bindPlaceholder() object OCIBindByPos", ds, xsink);
+
        ora_checkerr(d_ora->errhp, 
                     OCIBindObject(bndp, d_ora->errhp,
-                                 buf.oraObj->typinf->tdo, (void**)&buf.oraObj->handle, 0,
-                                 0, 0 // NULL struct
+				  buf.oraObj->typinf->tdo, (void**)&buf.oraObj->handle, 0,
+				  0, 0 // NULL struct
                                  ),
-                    "OraBindNode::bindPalceholder() OCIBindObject", ds, xsink);
+                    "OraBindNode::bindPlaceholder() OCIBindObject", ds, xsink);
+
+       //printd(0, "OraBindNode::bindValue() object '%s' tdo=0x%x handle=0x%x\n", h->getBuffer(), buf.oraObj->typinf->tdo, buf.oraObj->handle);
    }
    else if (!strcmp(data.ph.type, ORACLE_COLLECTION)) {
        const QoreStringNode * h = reinterpret_cast<const QoreStringNode*>(data.ph.value);
