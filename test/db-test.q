@@ -14,6 +14,7 @@ const opts =
       "host"    : "H,host=s",
       "pass"    : "p,pass=s",
       "db"      : "d,db=s",
+      "port"    : "P,port=s",
       "user"    : "u,user=s",
       "type"    : "t,type=s",
       "enc"     : "e,encoding=s",
@@ -28,6 +29,7 @@ sub usage()
  -u,--user=ARG      set username
  -p,--pass=ARG      set password
  -d,--db=ARG        set database name
+ -P,--port=ARG      set database port
  -e,--encoding=ARG  set database character set encoding (i.e. \"utf8\")
  -H,--host=ARG      set hostname (for MySQL and PostgreSQL connections)
  -t,--type          set database driver (default mysql)
@@ -457,6 +459,8 @@ sub getDS()
     my $ds = new Datasource($o.type, $o.user, $o.pass, $o.db, $o.enc);
     if (strlen($o.host))
 	$ds.setHostName($o.host);
+    if (strlen($o.port))
+        $ds.setPort($o.port);
     return $ds;
 }
 
