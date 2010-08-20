@@ -67,6 +67,8 @@ public:
    // "fake" connection for OCILIB stuff
    OCI_Connection *ocilib_cn;
 
+   OCI_Library ocilib;
+
    DLLLOCAL OracleData() : envhp(0), errhp(0), svchp(0), ocilib_cn(0) {
    }
 

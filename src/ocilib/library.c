@@ -455,6 +455,12 @@ void OCI_SetStatus(boolean res)
 boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const mtext *lib_path,
                                unsigned int mode)
 {
+   return OCI_Initialize2(&OCILib, d_ora_env, err_handler, lib_path, mode);
+}
+
+boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_ERROR err_handler, const mtext *lib_path,
+                               unsigned int mode)
+{
     boolean res  = TRUE;
     ub4 oci_mode = OCI_ENV_MODE | OCI_OBJECT;
 
@@ -468,17 +474,17 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
 
     /* check if it was already initialized */
 
-    if (OCILib.loaded == TRUE)
+    if (pOCILib->loaded == TRUE)
         return TRUE;
 
-    memset(&OCILib, 0, sizeof(OCI_Library));
+    memset(pOCILib, 0, sizeof(OCI_Library));
 
-    OCILib.error_handler      = err_handler;
+    pOCILib->error_handler      = err_handler;
 
-    OCILib.version_compile    = OCI_VERSION_COMPILE;
-    OCILib.version_runtime    = OCI_VERSION_RUNTIME;
+    pOCILib->version_compile    = OCI_VERSION_COMPILE;
+    pOCILib->version_runtime    = OCI_VERSION_RUNTIME;
 
-    OCILib.env_mode           = mode;
+    pOCILib->env_mode           = mode;
 
 #ifdef OCI_CHARSET_ANSI
    
@@ -496,7 +502,7 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
             for (str = nls_lang; *str != 0; str++)
                 *str = (char) toupper(*str);
            
-            OCILib.nls_utf8 = (strstr(nls_lang, "UTF8") != NULL);
+            pOCILib->nls_utf8 = (strstr(nls_lang, "UTF8") != NULL);
         }
     }
 
@@ -508,13 +514,13 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
 
   #if defined(OCI_BIG_UINT_ENABLED)
 
-    OCILib.use_lob_ub8 = TRUE;
+    pOCILib->use_lob_ub8 = TRUE;
 
   #endif
 
   #if defined(OCI_STMT_SCROLLABLE_READONLY)
   
-    OCILib.use_scrollable_cursors = TRUE;
+    pOCILib->use_scrollable_cursors = TRUE;
 
   #endif
 
@@ -546,9 +552,9 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
 
     strncat(path, OCI_DL_ANSI_NAME, sizeof(path) - len);
 
-    OCILib.lib_handle = LIB_OPEN(path);
+    pOCILib->lib_handle = LIB_OPEN(path);
 
-    if (OCILib.lib_handle != NULL)
+    if (pOCILib->lib_handle != NULL)
     {
 
         /* Now loading all symbols - no check is performed on each function,
@@ -556,484 +562,484 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
            Oracle and compatible library ...
         */
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIEnvCreate", OCIEnvCreate,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIEnvCreate", OCIEnvCreate,
                    OCIENVCREATE);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIServerAttach", OCIServerAttach,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIServerAttach", OCIServerAttach,
                    OCISERVERATTACH);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIServerDetach", OCIServerDetach,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIServerDetach", OCIServerDetach,
                    OCISERVERDETACH);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIHandleAlloc", OCIHandleAlloc,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIHandleAlloc", OCIHandleAlloc,
                    OCIHANDLEALLOC);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIHandleFree",  OCIHandleFree,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIHandleFree",  OCIHandleFree,
                    OCIHANDLEFREE);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDescriptorAlloc", OCIDescriptorAlloc,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDescriptorAlloc", OCIDescriptorAlloc,
                    OCIDESCRIPTORALLOC);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDescriptorFree", OCIDescriptorFree,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDescriptorFree", OCIDescriptorFree,
                    OCIDESCRIPTORFREE);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIAttrSet", OCIAttrSet,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIAttrSet", OCIAttrSet,
                    OCIATTRSET);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIAttrGet", OCIAttrGet,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIAttrGet", OCIAttrGet,
                    OCIATTRGET);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIParamSet", OCIParamSet,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIParamSet", OCIParamSet,
                    OCIPARAMSET);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIParamGet", OCIParamGet,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIParamGet", OCIParamGet,
                    OCIPARAMGET);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCISessionBegin", OCISessionBegin,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCISessionBegin", OCISessionBegin,
                    OCISESSIONBEGIN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCISessionEnd", OCISessionEnd,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCISessionEnd", OCISessionEnd,
                    OCISESSIONEND);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIPasswordChange", OCIPasswordChange,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIPasswordChange", OCIPasswordChange,
                    OCIPASSWORDCHANGE);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCITransStart", OCITransStart,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCITransStart", OCITransStart,
                    OCITRANSSTART);
-        LIB_SYMBOL(OCILib.lib_handle, "OCITransDetach", OCITransDetach,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCITransDetach", OCITransDetach,
                    OCITRANSDETACH);
-        LIB_SYMBOL(OCILib.lib_handle, "OCITransPrepare", OCITransPrepare,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCITransPrepare", OCITransPrepare,
                    OCITRANSPREPARE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCITransForget", OCITransForget,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCITransForget", OCITransForget,
                    OCITRANSFORGET);
-        LIB_SYMBOL(OCILib.lib_handle, "OCITransCommit", OCITransCommit,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCITransCommit", OCITransCommit,
                    OCITRANSCOMMIT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCITransRollback", OCITransRollback,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCITransRollback", OCITransRollback,
                    OCITRANSROLLBACK);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIErrorGet",  OCIErrorGet,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIErrorGet",  OCIErrorGet,
                    OCIERRORGET);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIServerVersion", OCIServerVersion,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIServerVersion", OCIServerVersion,
                    OCISERVERVERSION);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIBreak", OCIBreak,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIBreak", OCIBreak,
                    OCIBREAK);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIBindByPos", OCIBindByPos,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIBindByPos", OCIBindByPos,
                    OCIBINDBYPOS);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIBindByName", OCIBindByName,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIBindByName", OCIBindByName,
                    OCIBINDBYNAME);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIBindDynamic", OCIBindDynamic,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIBindDynamic", OCIBindDynamic,
                    OCIBINDDYNAMIC);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIBindObject", OCIBindObject,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIBindObject", OCIBindObject,
                    OCIBINDOBJECT);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDefineByPos", OCIDefineByPos,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDefineByPos", OCIDefineByPos,
                    OCIDEFINEBYPOS);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDefineObject", OCIDefineObject,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDefineObject", OCIDefineObject,
                    OCIDEFINEOBJECT);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIStmtPrepare", OCIStmtPrepare,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIStmtPrepare", OCIStmtPrepare,
                    OCISTMTPREPARE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIStmtExecute", OCIStmtExecute,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIStmtExecute", OCIStmtExecute,
                    OCISTMTEXECUTE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIStmtFetch", OCIStmtFetch,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIStmtFetch", OCIStmtFetch,
                    OCISTMTFETCH);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIStmtFetch2", OCIStmtFetch2,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIStmtFetch2", OCIStmtFetch2,
                    OCISTMTFETCH2);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIStmtGetPieceInfo", OCIStmtGetPieceInfo,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIStmtGetPieceInfo", OCIStmtGetPieceInfo,
                    OCISTMTGETPIECEINFO);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIStmtSetPieceInfo", OCIStmtSetPieceInfo,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIStmtSetPieceInfo", OCIStmtSetPieceInfo,
                    OCISTMTSETPIECEINFO);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobCreateTemporary", OCILobCreateTemporary,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobCreateTemporary", OCILobCreateTemporary,
                    OCILOBCREATETEMPORARY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobFreeTemporary", OCILobFreeTemporary,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobFreeTemporary", OCILobFreeTemporary,
                    OCILOBFREETEMPORARY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobIsTemporary", OCILobIsTemporary,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobIsTemporary", OCILobIsTemporary,
                    OCILOBISTEMPORARY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobRead", OCILobRead,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobRead", OCILobRead,
                    OCILOBREAD);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobWrite", OCILobWrite,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobWrite", OCILobWrite,
                    OCILOBWRITE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobCopy", OCILobCopy,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobCopy", OCILobCopy,
                    OCILOBCOPY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobTrim", OCILobTrim,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobTrim", OCILobTrim,
                    OCILOBTRIM);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobErase", OCILobErase,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobErase", OCILobErase,
                    OCILOBERASE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobAppend", OCILobAppend,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobAppend", OCILobAppend,
                    OCILOBAPPEND);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobGetLength", OCILobGetLength,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobGetLength", OCILobGetLength,
                    OCILOBGETLENGTH);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobGetChunkSize", OCILobGetChunkSize,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobGetChunkSize", OCILobGetChunkSize,
                    OCILOBGETCHUNKSIZE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobOpen", OCILobOpen,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobOpen", OCILobOpen,
                    OCILOBOPEN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobClose", OCILobClose,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobClose", OCILobClose,
                    OCILOBCLOSE);
 
   #ifdef ORAXB8_DEFINED
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobCopy2", OCILobCopy2,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobCopy2", OCILobCopy2,
                    OCILOBCOPY2);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobErase2", OCILobErase2,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobErase2", OCILobErase2,
                    OCILOBERASE2);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobGetLength2", OCILobGetLength2,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobGetLength2", OCILobGetLength2,
                    OCILOBGETLENGTH2);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobLoadFromFile2", OCILobLoadFromFile2,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobLoadFromFile2", OCILobLoadFromFile2,
                    OCILOBLOADFROMFILE2);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobRead2", OCILobRead2,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobRead2", OCILobRead2,
                    OCILOBREAD2);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobTrim2", OCILobTrim2,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobTrim2", OCILobTrim2,
                    OCILOBTRIM2);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobWrite2", OCILobWrite2,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobWrite2", OCILobWrite2,
                    OCILOBWRITE2);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobWriteAppend2", OCILobWriteAppend2,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobWriteAppend2", OCILobWriteAppend2,
                    OCILOBWRITEAPPEND2);
 
   #endif
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobFileOpen", OCILobFileOpen,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobFileOpen", OCILobFileOpen,
                    OCILOBFILEOPEN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobFileClose", OCILobFileClose,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobFileClose", OCILobFileClose,
                    OCILOBFILECLOSE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobFileCloseAll", OCILobFileCloseAll,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobFileCloseAll", OCILobFileCloseAll,
                    OCILOBFILECLOSEALL);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobFileIsOpen", OCILobFileIsOpen,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobFileIsOpen", OCILobFileIsOpen,
                    OCILOBFILEISOPEN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobFileExists", OCILobFileExists,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobFileExists", OCILobFileExists,
                    OCILOBFILEEXISTS);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobFileGetName", OCILobFileGetName,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobFileGetName", OCILobFileGetName,
                    OCILOBFIELGETNAME);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobFileSetName", OCILobFileSetName,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobFileSetName", OCILobFileSetName,
                    OCILOBFILESETNAME);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobLoadFromFile", OCILobLoadFromFile,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobLoadFromFile", OCILobLoadFromFile,
                    OCILOBLOADFROMFILE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobWriteAppend", OCILobWriteAppend,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobWriteAppend", OCILobWriteAppend,
                    OCILOBWRITEAPPEND);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobIsEqual", OCILobIsEqual,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobIsEqual", OCILobIsEqual,
                    OCILOBISEQUAL);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobAssign", OCILobAssign,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobAssign", OCILobAssign,
                    OCILOBASSIGN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobLocatorAssign", OCILobLocatorAssign,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobLocatorAssign", OCILobLocatorAssign,
                    OCILOBLOCATORASSIGN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobFlushBuffer", OCILobFlushBuffer,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobFlushBuffer", OCILobFlushBuffer,
                    OCILOBFLUSHBUFFER);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobGetStorageLimit", OCILobGetStorageLimit,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobGetStorageLimit", OCILobGetStorageLimit,
                    OCILOBGETSTORAGELIMIT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobEnableBuffering", OCILobEnableBuffering,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobEnableBuffering", OCILobEnableBuffering,
                    OCILOBENABLEBUFFERING);
-        LIB_SYMBOL(OCILib.lib_handle, "OCILobDisableBuffering", OCILobDisableBuffering,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCILobDisableBuffering", OCILobDisableBuffering,
                    OCILOBDISABLEBUFFERING);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateAssign", OCIDateAssign,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateAssign", OCIDateAssign,
                    OCIDATEASSIGN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateToText", OCIDateToText,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateToText", OCIDateToText,
                    OCIDATETOTEXT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateFromText", OCIDateFromText,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateFromText", OCIDateFromText,
                    OCIDATEFROMTEXT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateCompare", OCIDateCompare,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateCompare", OCIDateCompare,
                    OCIDATECOMPARE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateAddMonths", OCIDateAddMonths,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateAddMonths", OCIDateAddMonths,
                    OCIDATEADDMONTHS);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateAddDays", OCIDateAddDays,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateAddDays", OCIDateAddDays,
                    OCIDATEADDDAYS);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateLastDay", OCIDateLastDay,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateLastDay", OCIDateLastDay,
                    OCIDATELASTDAY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateDaysBetween", OCIDateDaysBetween,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateDaysBetween", OCIDateDaysBetween,
                    OCIDATEDAYSBETWEEN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateZoneToZone", OCIDateZoneToZone,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateZoneToZone", OCIDateZoneToZone,
                    OCIDATEZONETOZONE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateNextDay", OCIDateNextDay,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateNextDay", OCIDateNextDay,
                    OCIDATENEXTDAY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateCheck", OCIDateCheck,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateCheck", OCIDateCheck,
                    OCIDATECHECK);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateSysDate", OCIDateSysDate,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateSysDate", OCIDateSysDate,
                    OCIDATESYSDATE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDescribeAny", OCIDescribeAny,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDescribeAny", OCIDescribeAny,
                    OCIDESCRIBEANY);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIntervalAssign", OCIIntervalAssign,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIntervalAssign", OCIIntervalAssign,
                    OCIINTERVALASSIGN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIntervalCheck", OCIIntervalCheck,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIntervalCheck", OCIIntervalCheck,
                    OCIINTERVALCHECK);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIntervalCompare", OCIIntervalCompare,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIntervalCompare", OCIIntervalCompare,
                    OCIINTERVALCOMPARE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIntervalFromText", OCIIntervalFromText,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIntervalFromText", OCIIntervalFromText,
                    OCIINTERVALFROMTEXT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIntervalToText", OCIIntervalToText,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIntervalToText", OCIIntervalToText,
                    OCIINTERVALTOTEXT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIntervalFromTZ", OCIIntervalFromTZ,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIntervalFromTZ", OCIIntervalFromTZ,
                    OCIINTERVALFROMTZ);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIntervalGetDaySecond", OCIIntervalGetDaySecond,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIntervalGetDaySecond", OCIIntervalGetDaySecond,
                    OCIINTERVALGETDAYSECOND);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIntervalGetYearMonth", OCIIntervalGetYearMonth,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIntervalGetYearMonth", OCIIntervalGetYearMonth,
                    OCIINTERVALGETYEARMONTH);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIntervalSetDaySecond", OCIIntervalSetDaySecond,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIntervalSetDaySecond", OCIIntervalSetDaySecond,
                    OCIINTERVALSETDAYSECOND);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIntervalSetYearMonth", OCIIntervalSetYearMonth,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIntervalSetYearMonth", OCIIntervalSetYearMonth,
                    OCIINTERVALSETYEARMONTH);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIntervalSubtract", OCIIntervalSubtract,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIntervalSubtract", OCIIntervalSubtract,
                    OCIINTERVALSUBTRACT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIntervalAdd", OCIIntervalAdd,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIntervalAdd", OCIIntervalAdd,
                    OCIINTERVALADD);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeAssign", OCIDateTimeAssign,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeAssign", OCIDateTimeAssign,
                    OCIDATETIMEASSIGN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeCheck", OCIDateTimeCheck,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeCheck", OCIDateTimeCheck,
                    OCIDATETIMECHECK);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeCompare", OCIDateTimeCompare,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeCompare", OCIDateTimeCompare,
                    OCIDATETIMECOMPARE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeConstruct", OCIDateTimeConstruct,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeConstruct", OCIDateTimeConstruct,
                    OCIDATETIMECONSTRUCT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeConvert", OCIDateTimeConvert,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeConvert", OCIDateTimeConvert,
                    OCIDATETIMECONVERT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeFromArray", OCIDateTimeFromArray,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeFromArray", OCIDateTimeFromArray,
                    OCIDATETIMEFROMARRAY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeToArray", OCIDateTimeToArray,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeToArray", OCIDateTimeToArray,
                    OCIDATETIMETOARRAY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeFromText", OCIDateTimeFromText,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeFromText", OCIDateTimeFromText,
                    OCIDATETIMEFROMTEXT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeToText", OCIDateTimeToText,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeToText", OCIDateTimeToText,
                    OCIDATETIMETOTEXT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeGetDate", OCIDateTimeGetDate,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeGetDate", OCIDateTimeGetDate,
                    OCIDATETIMEGETDATE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeGetTime", OCIDateTimeGetTime,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeGetTime", OCIDateTimeGetTime,
                    OCIDATETIMEGETTIME);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeGetTimeZoneName", OCIDateTimeGetTimeZoneName,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeGetTimeZoneName", OCIDateTimeGetTimeZoneName,
                    OCIDATETIMEGETTIMEZONENAME);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeGetTimeZoneOffset", OCIDateTimeGetTimeZoneOffset,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeGetTimeZoneOffset", OCIDateTimeGetTimeZoneOffset,
                    OCIDATETIMEGETTIMEZONEOFFSET);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeIntervalAdd", OCIDateTimeIntervalAdd,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeIntervalAdd", OCIDateTimeIntervalAdd,
                    OCIDATETIMEINTERVALADD);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeIntervalSub", OCIDateTimeIntervalSub,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeIntervalSub", OCIDateTimeIntervalSub,
                    OCIDATETIMEINTERVALSUB);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeSubtract", OCIDateTimeSubtract,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeSubtract", OCIDateTimeSubtract,
                    OCIDATETIMESUBTRACT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDateTimeSysTimeStamp", OCIDateTimeSysTimeStamp,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDateTimeSysTimeStamp", OCIDateTimeSysTimeStamp,
                    OCIDATETIMESYSTIMESTAMP);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCITypeByName", OCITypeByName,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCITypeByName", OCITypeByName,
                    OCITYPEBYNAME);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCINumberToInt", OCINumberToInt,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCINumberToInt", OCINumberToInt,
                    OCINUMBERTOINT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCINumberFromInt", OCINumberFromInt,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCINumberFromInt", OCINumberFromInt,
                    OCINUMBERFROMINT);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCINumberToReal", OCINumberToReal,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCINumberToReal", OCINumberToReal,
                    OCINUMBERTOREAL);
-        LIB_SYMBOL(OCILib.lib_handle, "OCINumberFromReal", OCINumberFromReal,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCINumberFromReal", OCINumberFromReal,
                    OCINUMBERFROMREAL);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCINumberToText", OCINumberToText,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCINumberToText", OCINumberToText,
                    OCINUMBERTOTEXT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCINumberFromText", OCINumberFromText,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCINumberFromText", OCINumberFromText,
                    OCINUMBERFROMTEXT);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIStringPtr", OCIStringPtr,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIStringPtr", OCIStringPtr,
                    OCISTRINGPTR);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIStringAssignText", OCIStringAssignText,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIStringAssignText", OCIStringAssignText,
                    OCISTRINGASSIGNTEXT);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIRawPtr", OCIRawPtr,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIRawPtr", OCIRawPtr,
                    OCIRAWPTR);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIRawAssignBytes", OCIRawAssignBytes,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIRawAssignBytes", OCIRawAssignBytes,
                    OCIRAWASSIGNBYTES);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIRawAllocSize", OCIRawAllocSize,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIRawAllocSize", OCIRawAllocSize,
                    OCIRAWALLOCSIZE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIRawSize", OCIRawSize,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIRawSize", OCIRawSize,
                    OCIRAWSIZE);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIObjectNew", OCIObjectNew,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIObjectNew", OCIObjectNew,
                    OCIOBJECTNEW);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIObjectFree", OCIObjectFree,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIObjectFree", OCIObjectFree,
                    OCIOBJECTFREE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIObjectSetAttr", OCIObjectSetAttr,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIObjectSetAttr", OCIObjectSetAttr,
                    OCIOBJECTSETATTR);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIObjectGetAttr", OCIObjectGetAttr,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIObjectGetAttr", OCIObjectGetAttr,
                    OCIOBJECTGETATTR);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIObjectPin", OCIObjectPin,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIObjectPin", OCIObjectPin,
                    OCIOBJECTPIN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIObjectUnpin", OCIObjectUnpin,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIObjectUnpin", OCIObjectUnpin,
                    OCIOBJECTUNPIN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIObjectCopy", OCIObjectCopy,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIObjectCopy", OCIObjectCopy,
                    OCIOBJECTCOPY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIObjectGetObjectRef", OCIObjectGetObjectRef,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIObjectGetObjectRef", OCIObjectGetObjectRef,
                    OCIOBJECTGETOBJECTREF);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIObjectGetProperty", OCIObjectGetProperty,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIObjectGetProperty", OCIObjectGetProperty,
                    OCIOBJECTGETPROPERTY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIObjectGetInd", OCIObjectGetInd,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIObjectGetInd", OCIObjectGetInd,
                    OCIOBJECTGETIND);
 
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIRefAssign", OCIRefAssign,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIRefAssign", OCIRefAssign,
                    OCIREFASSIGN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIRefIsNull", OCIRefIsNull,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIRefIsNull", OCIRefIsNull,
                    OCIREFISNULL);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIRefClear", OCIRefClear,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIRefClear", OCIRefClear,
                    OCIREFCLEAR);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIRefToHex", OCIRefToHex,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIRefToHex", OCIRefToHex,
                    OCIREFTOHEX);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIRefHexSize", OCIRefHexSize,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIRefHexSize", OCIRefHexSize,
                    OCIREFHEXSIZE);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIArrayDescriptorAlloc", OCIArrayDescriptorAlloc,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIArrayDescriptorAlloc", OCIArrayDescriptorAlloc,
                    OCIARRAYDESCRIPTORALLOC);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIArrayDescriptorFree", OCIArrayDescriptorFree,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIArrayDescriptorFree", OCIArrayDescriptorFree,
                    OCIARRAYDESCRIPTORFREE);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIClientVersion", OCIClientVersion,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIClientVersion", OCIClientVersion,
                    OCICLIENTVERSION);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadProcessInit", OCIThreadProcessInit,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadProcessInit", OCIThreadProcessInit,
                    OCITHREADPROCESSINIT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadInit", OCIThreadInit,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadInit", OCIThreadInit,
                    OCITHREADINIT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadTerm", OCIThreadTerm,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadTerm", OCIThreadTerm,
                    OCITHREADTERM);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadIdInit", OCIThreadIdInit,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadIdInit", OCIThreadIdInit,
                    OCITHREADIDINIT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadIdDestroy", OCIThreadIdDestroy,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadIdDestroy", OCIThreadIdDestroy,
                    OCITHREADIDDESTROY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadHndInit", OCIThreadHndInit,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadHndInit", OCIThreadHndInit,
                    OCITHREADHNDINIT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadHndDestroy", OCIThreadHndDestroy,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadHndDestroy", OCIThreadHndDestroy,
                    OCITHREADHNDDESTROY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadCreate", OCIThreadCreate,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadCreate", OCIThreadCreate,
                    OCITHREADCREATE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadJoin", OCIThreadJoin,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadJoin", OCIThreadJoin,
                    OCITHREADJOIN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadClose", OCIThreadClose,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadClose", OCIThreadClose,
                    OCITHREADCLOSE);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadMutexInit", OCIThreadMutexInit,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadMutexInit", OCIThreadMutexInit,
                    OCITHREADMUTEXINIT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadMutexDestroy", OCIThreadMutexDestroy,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadMutexDestroy", OCIThreadMutexDestroy,
                    OCITHREADMUTEXDESTROY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadMutexAcquire", OCIThreadMutexAcquire,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadMutexAcquire", OCIThreadMutexAcquire,
                    OCITHREADMUTEXACQUIRE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadMutexRelease", OCIThreadMutexRelease,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadMutexRelease", OCIThreadMutexRelease,
                    OCITHREADMUTEXRELEASE);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadKeyInit", OCIThreadKeyInit,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadKeyInit", OCIThreadKeyInit,
                    OCITHREADKEYINIT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadKeyDestroy", OCIThreadKeyDestroy,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadKeyDestroy", OCIThreadKeyDestroy,
                    OCITHREADKEYDESTROY);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadKeySet", OCIThreadKeySet,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadKeySet", OCIThreadKeySet,
                    OCITHREADKEYSET);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIThreadKeyGet", OCIThreadKeyGet,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadKeyGet", OCIThreadKeyGet,
                    OCITHREADKEYGET);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIConnectionPoolCreate", OCIConnectionPoolCreate,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIConnectionPoolCreate", OCIConnectionPoolCreate,
                    OCICONNECTIONPOOLCREATE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIConnectionPoolDestroy", OCIConnectionPoolDestroy,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIConnectionPoolDestroy", OCIConnectionPoolDestroy,
                    OCICONNECTIONPOOLDESTROY);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCISessionPoolCreate", OCISessionPoolCreate,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCISessionPoolCreate", OCISessionPoolCreate,
                    OCISESSIONPOOLCREATE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCISessionPoolDestroy", OCISessionPoolDestroy,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCISessionPoolDestroy", OCISessionPoolDestroy,
                    OCISESSIONPOOLDESTROY);
     
-        LIB_SYMBOL(OCILib.lib_handle, "OCISessionGet", OCISessionGet,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCISessionGet", OCISessionGet,
                    OCISESSIONGET);
-        LIB_SYMBOL(OCILib.lib_handle, "OCISessionRelease", OCISessionRelease,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCISessionRelease", OCISessionRelease,
                    OCISESSIONRELEASE);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCICollSize", OCICollSize,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCICollSize", OCICollSize,
                    OCICOLLSIZE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCICollMax", OCICollMax,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCICollMax", OCICollMax,
                    OCICOLLMAX);
-        LIB_SYMBOL(OCILib.lib_handle, "OCICollGetElem", OCICollGetElem,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCICollGetElem", OCICollGetElem,
                    OCICOLLGETITEM);
-        LIB_SYMBOL(OCILib.lib_handle, "OCICollAssignElem", OCICollAssignElem,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCICollAssignElem", OCICollAssignElem,
                    OCICOLLASSIGNELEM);
-        LIB_SYMBOL(OCILib.lib_handle, "OCICollAssign", OCICollAssign,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCICollAssign", OCICollAssign,
                    OCICOLLASSIGN);
-        LIB_SYMBOL(OCILib.lib_handle, "OCICollAppend", OCICollAppend,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCICollAppend", OCICollAppend,
                    OCICOLLAPPEND);
-        LIB_SYMBOL(OCILib.lib_handle, "OCICollTrim", OCICollTrim,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCICollTrim", OCICollTrim,
                    OCICOLLTRIM);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIterCreate", OCIIterCreate,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIterCreate", OCIIterCreate,
                    OCIITERCREATE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIterDelete", OCIIterDelete,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIterDelete", OCIIterDelete,
                    OCIITERDELETE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIterInit", OCIIterInit,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIterInit", OCIIterInit,
                    OCIITERINIT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIterNext", OCIIterNext,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIterNext", OCIIterNext,
                    OCIITERNEXT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIIterPrev", OCIIterPrev,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIIterPrev", OCIIterPrev,
                    OCIITERPREV);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDirPathAbort", OCIDirPathAbort,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDirPathAbort", OCIDirPathAbort,
                    OCIDIRPATHABORT);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDirPathDataSave", OCIDirPathDataSave,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDirPathDataSave", OCIDirPathDataSave,
                    OCIDIRPATHDATASAVE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDirPathFinish", OCIDirPathFinish,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDirPathFinish", OCIDirPathFinish,
                    OCIDIRPATHFINISH);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDirPathPrepare", OCIDirPathPrepare,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDirPathPrepare", OCIDirPathPrepare,
                    OCIDIRPATHPREPARE);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDirPathLoadStream", OCIDirPathLoadStream,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDirPathLoadStream", OCIDirPathLoadStream,
                    OCIDIRPATHLOADSTREAM);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDirPathColArrayEntrySet", OCIDirPathColArrayEntrySet,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDirPathColArrayEntrySet", OCIDirPathColArrayEntrySet,
                    OCIDIRPATHCOLARRAYENTRYSET);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDirPathColArrayReset", OCIDirPathColArrayReset,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDirPathColArrayReset", OCIDirPathColArrayReset,
                    OCIDIRPATHCOLARRAYRESET);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDirPathColArrayToStream", OCIDirPathColArrayToStream,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDirPathColArrayToStream", OCIDirPathColArrayToStream,
                    OCIDIRPATHCOLARRAYTOSTREAM);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDirPathStreamReset", OCIDirPathStreamReset,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDirPathStreamReset", OCIDirPathStreamReset,
                    OCIDIRPATHSTREAMRESET);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDirPathFlushRow", OCIDirPathFlushRow,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDirPathFlushRow", OCIDirPathFlushRow,
                    OCIDIRPATHFLUSHROW);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCICacheFree", OCICacheFree,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCICacheFree", OCICacheFree,
                    OCICACHEFREE);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDBStartup", OCIDBStartup,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDBStartup", OCIDBStartup,
                    OCIDBSTARTUP);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIDBShutdown", OCIDBShutdown,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIDBShutdown", OCIDBShutdown,
                    OCIDBSHUTDOWN);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCIStmtPrepare2", OCIStmtPrepare2,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIStmtPrepare2", OCIStmtPrepare2,
                    OCISTMTPREPARE2);
-        LIB_SYMBOL(OCILib.lib_handle, "OCIStmtRelease", OCIStmtRelease,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCIStmtRelease", OCIStmtRelease,
                    OCISTMTRELEASE);
 
-        LIB_SYMBOL(OCILib.lib_handle, "OCISubscriptionRegister", OCISubscriptionRegister,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCISubscriptionRegister", OCISubscriptionRegister,
                    OCISUBSCRIPTIONREGISTER);
-        LIB_SYMBOL(OCILib.lib_handle, "OCISubscriptionUnRegister", OCISubscriptionUnRegister,
+        LIB_SYMBOL(pOCILib->lib_handle, "OCISubscriptionUnRegister", OCISubscriptionUnRegister,
                    OCISUBSCRIPTIONUNREGISTER);
 
         /* API Version checking */
 
         if (OCIArrayDescriptorFree != NULL)
         {
-            OCILib.version_runtime = OCI_11_1;
+            pOCILib->version_runtime = OCI_11_1;
         }
         else if (OCIClientVersion != NULL)
         {
-            OCILib.version_runtime = OCI_10_2;
+            pOCILib->version_runtime = OCI_10_2;
         }
         else if (OCILobWrite2 != NULL)
         {
-            OCILib.version_runtime = OCI_10_1;
+            pOCILib->version_runtime = OCI_10_1;
         }
         else if (OCIStmtPrepare2  != NULL)
         {
-            OCILib.version_runtime = OCI_9_2;
+            pOCILib->version_runtime = OCI_9_2;
         }
         else if (OCIDateTimeGetTimeZoneName != NULL)
         {
-            OCILib.version_runtime = OCI_9_0;
+            pOCILib->version_runtime = OCI_9_0;
         }
         else if (OCIThreadProcessInit != NULL)
         {
-            OCILib.version_runtime = OCI_8_1;
+            pOCILib->version_runtime = OCI_8_1;
         }
         else if (OCIEnvCreate != NULL)
         {
-            OCILib.version_runtime = OCI_8_0;
+            pOCILib->version_runtime = OCI_8_0;
         }
         else
         {
-            LIB_CLOSE(OCILib.lib_handle);
+            LIB_CLOSE(pOCILib->lib_handle);
 
             OCI_ExceptionLoadingSymbols();
 
@@ -1052,18 +1058,18 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
 
   #if defined(OCI_BIG_UINT_ENABLED)
 
-        if ((OCILib.version_runtime >= OCI_10_1) && (OCILobCopy2 != NULL))
+        if ((pOCILib->version_runtime >= OCI_10_1) && (OCILobCopy2 != NULL))
         {
-            OCILib.use_lob_ub8 = TRUE;
+            pOCILib->use_lob_ub8 = TRUE;
         }
 
   #endif
 
   #if defined(OCI_STMT_SCROLLABLE_READONLY)
 
-        if ((OCILib.version_runtime >= OCI_9_0) && (OCIStmtFetch2 != NULL))
+        if ((pOCILib->version_runtime >= OCI_9_0) && (OCIStmtFetch2 != NULL))
         {
-            OCILib.use_scrollable_cursors = TRUE;
+            pOCILib->use_scrollable_cursors = TRUE;
         }
 
   #endif
@@ -1076,7 +1082,7 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
 
     /* Oracle 8i does not support full Unicode mode */
 
-    if ((res == TRUE) && (OCILib.version_runtime < OCI_9_0))
+    if ((res == TRUE) && (pOCILib->version_runtime < OCI_9_0))
     {
         OCI_ExceptionNotAvailable(NULL, OCI_FEATURE_WIDE_USERDATA);
 
@@ -1099,9 +1105,9 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
 
        /* create environment on success */
 
-       OCILib.env = d_ora_env;
+       pOCILib->env = d_ora_env;
  
-//         res = res && (OCI_SUCCESS == OCIEnvCreate(&OCILib.env, oci_mode,
+//         res = res && (OCI_SUCCESS == OCIEnvCreate(&pOCILib->env, oci_mode,
 //                                                   (dvoid *) NULL, NULL, NULL, NULL,
 //                                                   (size_t) 0, (dvoid **) NULL));
 
@@ -1112,8 +1118,8 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
 
         /*  allocate error handle */
 
-        res = res && (OCI_SUCCESS == OCI_HandleAlloc((dvoid *) OCILib.env,
-                                                     (dvoid **) (void *) &OCILib.err,
+        res = res && (OCI_SUCCESS == OCI_HandleAlloc((dvoid *) pOCILib->env,
+                                                     (dvoid **) (void *) &pOCILib->err,
                                                      (ub4) OCI_HTYPE_ERROR,
                                                      (size_t) 0, (dvoid **) NULL));
     }
@@ -1126,20 +1132,20 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
         {
             OCIThreadProcessInit();
 
-            res = (OCI_SUCCESS == OCIThreadInit(OCILib.env, OCILib.err));
+            res = (OCI_SUCCESS == OCIThreadInit(pOCILib->env, pOCILib->err));
         }
 
         /* create thread key for thread errors */
 
-        OCILib.key_errs  = OCI_ThreadKeyCreateInternal((POCI_THREADKEYDEST) OCI_ErrorFree);
+        pOCILib->key_errs  = OCI_ThreadKeyCreateInternal((POCI_THREADKEYDEST) OCI_ErrorFree);
     
         /* allocate connections internal list */
 
         if (res == TRUE)
         {
-            OCILib.cons  = OCI_ListCreate(OCI_IPC_CONNECTION);
+            pOCILib->cons  = OCI_ListCreate(OCI_IPC_CONNECTION);
 
-            res = (OCILib.cons != NULL);
+            res = (pOCILib->cons != NULL);
         }
 
         /* allocate pools internal list */
@@ -1147,9 +1153,9 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
         if (res == TRUE)
         {
 
-            OCILib.pools = OCI_ListCreate(OCI_IPC_POOL);
+            pOCILib->pools = OCI_ListCreate(OCI_IPC_POOL);
 
-            res = (OCILib.pools != NULL);
+            res = (pOCILib->pools != NULL);
         }
 
 #if OCI_VERSION_COMPILE >= OCI_10_2
@@ -1159,23 +1165,23 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
         if (res == TRUE)
         {
 
-            OCILib.subs = OCI_ListCreate(OCI_IPC_NOTIFY);
+            pOCILib->subs = OCI_ListCreate(OCI_IPC_NOTIFY);
 
-            res = (OCILib.subs != NULL);
+            res = (pOCILib->subs != NULL);
         }
 #endif 
 
         if (res == TRUE)
         {
 
-            OCILib.arrs = OCI_ListCreate(OCI_IPC_ARRAY);
+            pOCILib->arrs = OCI_ListCreate(OCI_IPC_ARRAY);
 
-            res = (OCILib.arrs != NULL);
+            res = (pOCILib->arrs != NULL);
         }
     }
 
     if (res == TRUE)
-        OCILib.loaded = TRUE;
+        pOCILib->loaded = TRUE;
 
     return res;
 }
@@ -1186,41 +1192,46 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
 
 boolean OCI_API OCI_Cleanup(void)
 {
+   return OCI_Cleanup2(&OCILib);
+}
+
+boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
+{
     boolean res = TRUE;
 
     /* free all subscriptions */
 
-    OCI_ListForEach(OCILib.subs, (boolean (*)(void *)) OCI_SubscriptionClose);
-    OCI_ListClear(OCILib.subs);
+    OCI_ListForEach(pOCILib->subs, (boolean (*)(void *)) OCI_SubscriptionClose);
+    OCI_ListClear(pOCILib->subs);
 
     /* free all connections */
 
-    OCI_ListForEach(OCILib.cons, (boolean (*)(void *)) OCI_ConnectionClose);
-    OCI_ListClear(OCILib.cons);
+    OCI_ListForEach(pOCILib->cons, (boolean (*)(void *)) OCI_ConnectionClose);
+    OCI_ListClear(pOCILib->cons);
 
     /* free all pools */
 
-    OCI_ListForEach(OCILib.pools, (boolean (*)(void *)) OCI_PoolClose);
-    OCI_ListClear(OCILib.pools);
+    OCI_ListForEach(pOCILib->pools, (boolean (*)(void *)) OCI_PoolClose);
+    OCI_ListClear(pOCILib->pools);
 
     /* free all arrays */
 
-    OCI_ListForEach(OCILib.arrs, (boolean (*)(void *)) OCI_ArrayClose);
-    OCI_ListClear(OCILib.arrs);
+    OCI_ListForEach(pOCILib->arrs, (boolean (*)(void *)) OCI_ArrayClose);
+    OCI_ListClear(pOCILib->arrs);
 
     /* free objects */
 
     OCI_KeyMapFree();
 
-    OCI_ListFree(OCILib.cons);
-    OCI_ListFree(OCILib.pools);
-    OCI_ListFree(OCILib.subs);
-    OCI_ListFree(OCILib.arrs);
+    OCI_ListFree(pOCILib->cons);
+    OCI_ListFree(pOCILib->pools);
+    OCI_ListFree(pOCILib->subs);
+    OCI_ListFree(pOCILib->arrs);
 
-    OCILib.cons    = NULL;
-    OCILib.pools   = NULL;
-    OCILib.subs    = NULL;
-    OCILib.key_map = NULL;
+    pOCILib->cons    = NULL;
+    pOCILib->pools   = NULL;
+    pOCILib->subs    = NULL;
+    pOCILib->key_map = NULL;
 
     /* finalize OCIThread object support */
 
@@ -1228,20 +1239,20 @@ boolean OCI_API OCI_Cleanup(void)
     {
         OCI_CALL0
         (
-            res, OCILib.err,
+            res, pOCILib->err,
 
-            OCIThreadTerm(OCILib.env, OCILib.err)
+            OCIThreadTerm(pOCILib->env, pOCILib->err)
         )
     }
 
     /* free error thread key */
 
-    if (OCILib.key_errs != NULL)
+    if (pOCILib->key_errs != NULL)
     {
-        OCI_ThreadKey *key = OCILib.key_errs;
+        OCI_ThreadKey *key = pOCILib->key_errs;
         OCI_Error *err     = OCI_ErrorGet(FALSE, FALSE);
 
-        OCILib.key_errs = NULL;
+        pOCILib->key_errs = NULL;
 
         OCI_ErrorFree(err);
         OCI_ThreadKeySet(key, NULL);
@@ -1250,49 +1261,49 @@ boolean OCI_API OCI_Cleanup(void)
 
     /* set unloaded flag */
 
-    OCILib.loaded = FALSE;
+    pOCILib->loaded = FALSE;
 
     /* close error handle */
 
-    if (OCILib.err != NULL)
-       OCI_HandleFree(OCILib.err, OCI_HTYPE_ERROR);
+    if (pOCILib->err != NULL)
+       OCI_HandleFree(pOCILib->err, OCI_HTYPE_ERROR);
 
     /* close environment handle
        => direct OCIHandleFree() because this handle was not allocated
        with OCI_HandleAlloc()
     */
 
-    if (OCILib.env != NULL)
-        OCIHandleFree(OCILib.env, OCI_HTYPE_ENV);
+    if (pOCILib->env != NULL)
+        OCIHandleFree(pOCILib->env, OCI_HTYPE_ENV);
 
 #ifdef OCI_IMPORT_RUNTIME
 
-    if (OCILib.lib_handle != NULL)
-        LIB_CLOSE(OCILib.lib_handle);
+    if (pOCILib->lib_handle != NULL)
+        LIB_CLOSE(pOCILib->lib_handle);
 
 #endif
 
     /* checks for not freed handles */
 
-    if (OCILib.nb_hndlp > 0)
+    if (pOCILib->nb_hndlp > 0)
     {
-        OCI_ExceptionUnfreedData(OCI_HDLE_HANDLE, OCILib.nb_hndlp);
+        OCI_ExceptionUnfreedData(OCI_HDLE_HANDLE, pOCILib->nb_hndlp);
         res = FALSE;
     }
 
    /* checks for not freed descriptors */
 
-    if (OCILib.nb_descp > 0)
+    if (pOCILib->nb_descp > 0)
     {
-        OCI_ExceptionUnfreedData(OCI_HDLE_DESCRIPTOR, OCILib.nb_descp);
+        OCI_ExceptionUnfreedData(OCI_HDLE_DESCRIPTOR, pOCILib->nb_descp);
         res = FALSE;
     }
 
     /* checks for not freed objects */
 
-    if (OCILib.nb_objinst > 0)
+    if (pOCILib->nb_objinst > 0)
     {
-        OCI_ExceptionUnfreedData(OCI_HDLE_OBJECT, OCILib.nb_objinst);
+        OCI_ExceptionUnfreedData(OCI_HDLE_OBJECT, pOCILib->nb_objinst);
         res = FALSE;
     }
 
@@ -1310,6 +1321,11 @@ unsigned int OCI_API OCI_GetOCICompileVersion(void)
     return (unsigned int) OCILib.version_compile;
 }
 
+unsigned int OCI_API OCI_GetOCICompileVersion2(OCI_Library *pOCILib)
+{
+    return (unsigned int) pOCILib->version_compile;
+}
+
 /* ------------------------------------------------------------------------ *
  * OCI_GetOCIRuntimeVersion
  * ------------------------------------------------------------------------ */
@@ -1317,6 +1333,11 @@ unsigned int OCI_API OCI_GetOCICompileVersion(void)
 unsigned int OCI_API OCI_GetOCIRuntimeVersion(void)
 {
     return (unsigned int) OCILib.version_runtime;
+}
+
+unsigned int OCI_API OCI_GetOCIRuntimeVersion2(OCI_Library *pOCILib)
+{
+    return (unsigned int) pOCILib->version_runtime;
 }
 
 /* ------------------------------------------------------------------------ *
@@ -1352,9 +1373,14 @@ unsigned int OCI_API OCI_GetCharsetUserData(void)
 
 OCI_Error * OCI_API OCI_GetLastError(void)
 {
+   return OCI_GetLastError2(&OCILib);
+}
+
+OCI_Error * OCI_API OCI_GetLastError2(OCI_Library *pOCILib)
+{
     OCI_Error *err = NULL;
 
-    if ((OCILib.loaded == FALSE) || (OCI_LIB_CONTEXT))
+    if ((pOCILib->loaded == FALSE) || (OCI_LIB_CONTEXT))
     {
         err = OCI_ErrorGet(TRUE, FALSE);
 
@@ -1374,7 +1400,12 @@ OCI_Error * OCI_API OCI_GetLastError(void)
 
 void OCI_API OCI_EnableWarnings(boolean value)
 {
-    OCILib.warnings_on = value;
+   OCILib.warnings_on = value;
+}
+
+void OCI_API OCI_EnableWarnings2(OCI_Library *pOCILib, boolean value)
+{
+    pOCILib->warnings_on = value;
 }
 
 /* ------------------------------------------------------------------------ *
@@ -1383,7 +1414,12 @@ void OCI_API OCI_EnableWarnings(boolean value)
 
 void OCI_API OCI_SetErrorHandler(POCI_ERROR handler)
 {
-    OCILib.error_handler = handler;
+   OCILib.error_handler = handler;
+}
+
+void OCI_API OCI_SetErrorHandler2(OCI_Library *pOCILib, POCI_ERROR handler)
+{
+    pOCILib->error_handler = handler;
 }
 
 /* ------------------------------------------------------------------------ *
@@ -1391,6 +1427,14 @@ void OCI_API OCI_SetErrorHandler(POCI_ERROR handler)
  * ------------------------------------------------------------------------ */
 
 boolean OCI_API OCI_DatabaseStartup(const mtext *db,  const mtext *user,
+                                    const mtext *pwd, unsigned int sess_mode,
+                                    unsigned int start_mode, unsigned int start_flag,
+                                    const mtext *spfile)
+{
+   return OCI_DatabaseStartup2(&OCILib, db, user, pwd, sess_mode, start_mode, start_flag, spfile);
+}
+
+boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  const mtext *user,
                                     const mtext *pwd, unsigned int sess_mode,
                                     unsigned int start_mode, unsigned int start_flag,
                                     const mtext *spfile)
@@ -1419,7 +1463,7 @@ boolean OCI_API OCI_DatabaseStartup(const mtext *db,  const mtext *user,
 
                 /* allocate admin handle */
 
-                res = (OCI_SUCCESS == OCI_HandleAlloc((dvoid *) OCILib.env,
+                res = (OCI_SUCCESS == OCI_HandleAlloc((dvoid *) pOCILib->env,
                                                       (dvoid **) (void *) &adm,
                                                       (ub4) OCI_HTYPE_ADMIN,
                                                       (size_t) 0, (dvoid **) NULL));
@@ -1454,7 +1498,7 @@ boolean OCI_API OCI_DatabaseStartup(const mtext *db,  const mtext *user,
 
             if (adm != NULL)
             {
-                OCI_HandleFree(OCILib.err, OCI_HTYPE_ADMIN);
+                OCI_HandleFree(pOCILib->err, OCI_HTYPE_ADMIN);
             }
 
             /* disconnect */

@@ -72,6 +72,12 @@ boolean OCI_TypeInfoClose(OCI_TypeInfo *typinf)
 OCI_TypeInfo * OCI_API OCI_TypeInfoGet(OCI_Connection *con, const mtext *name, 
                                        unsigned int type)
 {
+   return OCI_TypeInfoGet2(&OCILib, con, name, type);
+}
+
+OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *con, const mtext *name, 
+					unsigned int type)
+{
     OCI_TypeInfo *typinf = NULL;
     OCI_Item     *item   = NULL;
     OCIDescribe *dschp   = NULL;
@@ -177,7 +183,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet(OCI_Connection *con, const mtext *name,
             typinf->schema      = mtsdup(obj_schema);
             typinf->struct_size = 0;
 
-            res = (OCI_SUCCESS == OCI_HandleAlloc(OCILib.env,
+            res = (OCI_SUCCESS == OCI_HandleAlloc(pOCILib->env,
                                                   (dvoid **) (void *) &dschp, 
                                                   OCI_HTYPE_DESCRIBE, (size_t) 0, 
                                                   (dvoid **) NULL));
@@ -203,7 +209,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet(OCI_Connection *con, const mtext *name,
                 (
                     res, con, 
                     
-                    OCITypeByName(OCILib.env, con->err, con->cxt,
+                    OCITypeByName(pOCILib->env, con->err, con->cxt,
                                  (text *) ostr1, (ub4) osize1, 
                                  (text *) ostr2, (ub4) osize2, 
                                  (text *) NULL, (ub4) 0, 

@@ -183,6 +183,13 @@ OCI_Object * OCI_ObjectInit(OCI_Connection *con, OCI_Object **pobj,
                             void *handle, OCI_TypeInfo *typinf,
                             OCI_Object *parent, int index, boolean reset)
 {
+   return OCI_ObjectInit(&OBILib, con, pobj, handle, typinf, parent, index, reset);
+}
+
+OCI_Object * OCI_ObjectInit2(OCI_Library *pOCILib, OCI_Connection *con, OCI_Object **pobj,
+			     void *handle, OCI_TypeInfo *typinf,
+			     OCI_Object *parent, int index, boolean reset)
+{
     OCI_Object * obj = NULL;
     boolean res      = TRUE;
 
@@ -228,7 +235,7 @@ OCI_Object * OCI_ObjectInit(OCI_Connection *con, OCI_Object **pobj,
             (
                 res, obj->con,
 
-                OCI_ObjectNew(OCILib.env,  con->err, con->cxt,
+                OCI_ObjectNew(pOCILib->env,  con->err, con->cxt,
                               (OCITypeCode) SQLT_NTY, obj->typinf->tdo,
                               (dvoid *) NULL,
                               (OCIDuration) OCI_DURATION_SESSION,
@@ -254,7 +261,7 @@ OCI_Object * OCI_ObjectInit(OCI_Connection *con, OCI_Object **pobj,
 
             if (parent == NULL)
             {
-                OCIObjectGetProperty(OCILib.env, con->err, obj->handle,
+                OCIObjectGetProperty(pOCILib->env, con->err, obj->handle,
                                      (OCIObjectPropId) OCI_OBJECTPROP_LIFETIME,
                                      (void *) &obj->type, &size);
             }
@@ -272,7 +279,7 @@ OCI_Object * OCI_ObjectInit(OCI_Connection *con, OCI_Object **pobj,
                 (
                     res, obj->con,
 
-                    OCIObjectGetInd(OCILib.env, obj->con->err,
+                    OCIObjectGetInd(pOCILib->env, obj->con->err,
                                     (dvoid *) obj->handle,
                                     (dvoid **) &obj->tab_ind)
                 )
@@ -501,6 +508,11 @@ boolean OCI_ObjectGetNumber(OCI_Object *obj, const mtext *attr, void *value,
 
 OCI_Object * OCI_API OCI_ObjectCreate(OCI_Connection *con, OCI_TypeInfo *typinf)
 {
+   return OCI_ObjectCreate2(&OCILib, con, typinf);
+}
+
+OCI_Object * OCI_API OCI_ObjectCreate2(OCI_Library *pOCILib, OCI_Connection *con, OCI_TypeInfo *typinf)
+{
     OCI_Object *obj = NULL;
 
     OCI_CHECK_INITIALIZED(NULL);
@@ -508,7 +520,7 @@ OCI_Object * OCI_API OCI_ObjectCreate(OCI_Connection *con, OCI_TypeInfo *typinf)
     OCI_CHECK_PTR(OCI_IPC_CONNECTION, con, NULL);
     OCI_CHECK_PTR(OCI_IPC_TYPE_INFO, typinf, NULL);
 
-    obj = OCI_ObjectInit(con, &obj, NULL, typinf, NULL, -1, TRUE);
+    obj = OCI_ObjectInit2(pOCILib, con, &obj, NULL, typinf, NULL, -1, TRUE);
 
     OCI_RESULT(obj != NULL);
 
@@ -538,7 +550,7 @@ boolean OCI_API OCI_ObjectFree(OCI_Object *obj)
     if ((obj->hstate == OCI_OBJECT_ALLOCATED      ) ||
         (obj->hstate == OCI_OBJECT_ALLOCATED_ARRAY))
     {
-        OCI_OCIObjectFree(OCILib.env, obj->con->err,  obj->handle,
+        OCI_OCIObjectFree(pOCILib->env, obj->con->err,  obj->handle,
                           OCI_OBJECTFREE_NONULL);
     }
 
@@ -603,7 +615,7 @@ boolean OCI_API OCI_ObjectAssign(OCI_Object *obj, OCI_Object *obj_src)
     (
         res, obj->con,
 
-        OCIObjectCopy(OCILib.env, obj->con->err, obj->con->cxt,
+        OCIObjectCopy(pOCILib->env, obj->con->err, obj->con->cxt,
                       obj_src->handle, (obj_src->tab_ind + obj_src->idx_ind),
                       obj->handle, (obj->tab_ind + obj->idx_ind),
                       obj->typinf->tdo, OCI_DURATION_SESSION, OCI_DEFAULT)
@@ -761,12 +773,12 @@ int OCI_API OCI_ObjectGetRaw(OCI_Object *obj, const mtext *attr, void *buffer,
 
         if ((value != NULL) && (*ind != OCI_IND_NULL))
         {
-           raw_len = OCIRawSize(OCILib.env, *value);
+           raw_len = OCIRawSize(pOCILib->env, *value);
 
             if (len > raw_len)
                 len = raw_len;
 
-            memcpy(buffer, OCIRawPtr(OCILib.env, *value), (size_t) len);
+            memcpy(buffer, OCIRawPtr(pOCILib->env, *value), (size_t) len);
         }
     }
 
@@ -913,6 +925,11 @@ OCI_Coll * OCI_API OCI_ObjectGetColl(OCI_Object *obj, const mtext *attr)
 
 OCI_Object * OCI_API OCI_ObjectGetObject(OCI_Object *obj, const mtext *attr)
 {
+   return OCI_ObjectGetObject2(&OCILib, obj, attr);
+}
+
+OCI_Object * OCI_API OCI_ObjectGetObject2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr)
+{
     OCI_Object *obj2 = NULL;
     boolean res      = TRUE;
     int index        = OCI_ObjectGetAttrIndex(obj, attr, OCI_CDT_OBJECT);
@@ -926,7 +943,7 @@ OCI_Object * OCI_API OCI_ObjectGetObject(OCI_Object *obj, const mtext *attr)
 
         if ((value != NULL) && (*ind != OCI_IND_NULL))
         {
-            obj2 = OCI_ObjectInit(obj->con, (OCI_Object **) &obj->objs[index],
+	   obj2 = OCI_ObjectInit2(pOCILib, obj->con, (OCI_Object **) &obj->objs[index],
                                   value, obj->typinf->cols[index].typinf,
                                   obj, index, FALSE);
 
@@ -1175,7 +1192,7 @@ boolean OCI_API OCI_ObjectSetRaw(OCI_Object *obj, const mtext *attr,
             (
                 res, obj->con,
 
-                OCIRawAssignBytes(OCILib.env, obj->con->err, (ub1*) value,
+                OCIRawAssignBytes(pOCILib->env, obj->con->err, (ub1*) value,
                                   len, data)
             )
 
@@ -1258,7 +1275,7 @@ boolean OCI_API OCI_ObjectSetTimestamp(OCI_Object *obj, const mtext *attr,
             (
                 res, obj->con,
 
-                OCIDateTimeAssign((dvoid *) OCILib.env, obj->con->err,
+                OCIDateTimeAssign((dvoid *) pOCILib->env, obj->con->err,
                                   value->handle, *data)
             )
 
@@ -1279,6 +1296,12 @@ boolean OCI_API OCI_ObjectSetTimestamp(OCI_Object *obj, const mtext *attr,
  * ------------------------------------------------------------------------ */
 
 boolean OCI_API OCI_ObjectSetInterval(OCI_Object *obj, const mtext *attr,
+                                      OCI_Interval *value)
+{
+   return OCI_ObjectSetInterval2(&OCILib, obj, attr, value);
+}
+
+boolean OCI_API OCI_ObjectSetInterval2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr,
                                       OCI_Interval *value)
 {
     boolean res = TRUE;
@@ -1302,7 +1325,7 @@ boolean OCI_API OCI_ObjectSetInterval(OCI_Object *obj, const mtext *attr,
             (
                 res, obj->con,
 
-                OCIIntervalAssign((dvoid *) OCILib.env, obj->con->err,
+                OCIIntervalAssign((dvoid *) pOCILib->env, obj->con->err,
                                   value->handle, *data)
             )
 
@@ -1325,6 +1348,12 @@ boolean OCI_API OCI_ObjectSetInterval(OCI_Object *obj, const mtext *attr,
 boolean OCI_API OCI_ObjectSetColl(OCI_Object *obj, const mtext *attr,
                                   OCI_Coll *value)
 {
+   return OCI_ObjectSetColl2(&OCILib, obj, attr, value);
+}
+
+boolean OCI_API OCI_ObjectSetColl2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr,
+                                  OCI_Coll *value)
+{
     boolean res = TRUE;
 
     if (value == NULL)
@@ -1344,7 +1373,7 @@ boolean OCI_API OCI_ObjectSetColl(OCI_Object *obj, const mtext *attr,
             (
                 res, obj->con,
 
-                OCICollAssign(OCILib.env, obj->con->err, value->handle, *data)
+                OCICollAssign(pOCILib->env, obj->con->err, value->handle, *data)
             )
 
             if (res == TRUE)
@@ -1362,6 +1391,12 @@ boolean OCI_API OCI_ObjectSetColl(OCI_Object *obj, const mtext *attr,
  * ------------------------------------------------------------------------ */
 
 boolean OCI_API OCI_ObjectSetObject(OCI_Object *obj, const mtext *attr,
+                                    OCI_Object *value)
+{
+   return OCI_ObjectSetObject2(&OCILib, obj, attr, value);
+}
+
+boolean OCI_API OCI_ObjectSetObject2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr,
                                     OCI_Object *value)
 {
     boolean res = TRUE;
@@ -1383,7 +1418,7 @@ boolean OCI_API OCI_ObjectSetObject(OCI_Object *obj, const mtext *attr,
             (
                 res, obj->con,
 
-                OCIObjectCopy(OCILib.env, obj->con->err, obj->con->cxt,
+                OCIObjectCopy(pOCILib->env, obj->con->err, obj->con->cxt,
                               value->handle, (value->tab_ind + value->idx_ind),
                               data, ind, obj->typinf->cols[index].typinf->tdo,
                               OCI_DURATION_SESSION, OCI_DEFAULT)
@@ -1485,6 +1520,11 @@ boolean OCI_API OCI_ObjectSetFile(OCI_Object *obj, const mtext *attr,
 
 boolean OCI_API OCI_ObjectSetRef(OCI_Object *obj, const mtext *attr, OCI_Ref *value)
 {
+   return OCI_ObjectSetRef2(&OCILib, obj, attr, value);
+}
+
+boolean OCI_API OCI_ObjectSetRef2(OCILib *pOCILib, OCI_Object *obj, const mtext *attr, OCI_Ref *value)
+{
     boolean res = FALSE;
 
     if (value == NULL)
@@ -1504,7 +1544,7 @@ boolean OCI_API OCI_ObjectSetRef(OCI_Object *obj, const mtext *attr, OCI_Ref *va
             (
                 res, obj->con,
 
-                OCIRefAssign(OCILib.env, obj->con->err, value->handle, data)
+                OCIRefAssign(pOCILib->env, obj->con->err, value->handle, data)
             )
 
             if (res == TRUE)
@@ -1610,6 +1650,11 @@ unsigned int OCI_API OCI_ObjectGetType(OCI_Object *obj)
 
 boolean OCI_API OCI_ObjectGetSelfRef(OCI_Object *obj, OCI_Ref *ref)
 {
+   return OCI_ObjectGetSelfRef2(&OCILib, obj, ref);
+}
+
+boolean OCI_API OCI_ObjectGetSelfRef2(OCILib *pOCILib, OCI_Object *obj, OCI_Ref *ref)
+{
     boolean res = TRUE;
 
     OCI_CHECK_PTR(OCI_IPC_OBJECT, obj, FALSE);
@@ -1621,7 +1666,7 @@ boolean OCI_API OCI_ObjectGetSelfRef(OCI_Object *obj, OCI_Ref *ref)
     (
         res, obj->con,
 
-        OCIObjectGetObjectRef(OCILib.env, obj->con->err, obj->handle, ref->handle)
+        OCIObjectGetObjectRef(pOCILib->env, obj->con->err, obj->handle, ref->handle)
     )
 
     if (res == TRUE)

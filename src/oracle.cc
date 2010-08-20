@@ -229,7 +229,7 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *n_ds, const char *str, Excep
           s.concat(".");
           s.concat(tname);
 
-          OCI_TypeInfo * info = OCI_TypeInfoGet(d_ora->ocilib_cn, s.getBuffer(), OCI_TIF_TYPE);
+          OCI_TypeInfo * info = OCI_TypeInfoGet2(&d_ora->ocilib, d_ora->ocilib_cn, s.getBuffer(), OCI_TIF_TYPE);
 
 //           printd(0, "OraColumns::OraColumns() ccode %d\n", info->ccode);
           // This is some kind of black magic - I'm not sure if it's sufficient
@@ -1790,6 +1790,8 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
       return -1;
    }
 
+   //printd(0, "oracle_open() ds=%p allocated envhp=%p\n", ds, d_ora->envhp);
+
    // map the Oracle character set to a qore character set
    if (need_to_set_charset) {
       // map Oracle character encoding name to QORE/OS character encoding name
@@ -1820,7 +1822,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
 
 //    printd(5, "oracle_open() datasource %p for DB=%s open (envhp=%p)\n", ds, db.getBuffer(), d_ora->envhp);
    
-   if (!OCI_Initialize(d_ora->envhp, ocilib_err_handler, NULL, OCI_ENV_DEFAULT)) {
+   if (!OCI_Initialize2(&d_ora->ocilib, d_ora->envhp, ocilib_err_handler, NULL, OCI_ENV_DEFAULT)) {
        xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate OCILIB support handlers");
        return -1;
    }
@@ -1859,7 +1861,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
    d_ora->ocilib_cn->fmt_date = 0;  /* date string format for conversion */
    d_ora->ocilib_cn->fmt_num = 0;   /* numeric string format for conversion */
    d_ora->ocilib_cn->ver_str=0;   /* string  server version*/
-   d_ora->ocilib_cn->ver_num = OCILib.version_runtime;   /* numeric server version */
+   d_ora->ocilib_cn->ver_num = d_ora->ocilib.version_runtime;   /* numeric server version */
    d_ora->ocilib_cn->trace=0;     /* trace information */
 
    ds->setPrivateData((void *)d_ora.release());
@@ -1872,6 +1874,8 @@ static int oracle_close(Datasource *ds) {
 
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
+   //printd(0, "oracle_close() ds=%p envhp=%p ocilib envhp=%p\n", ds, d_ora->envhp, OCILib.env);
+
 //    printd(0, "oracle_close(): connection to %s closed.\n", ds->getDBName());
 //    printd(0, "oracle_close(): ptr: %p\n", d_ora);
 //    printd(0, "oracle_close(): d_ora->svchp, d_ora->errhp: %p, %p\n", d_ora->svchp, d_ora->errhp);
@@ -1882,7 +1886,7 @@ static int oracle_close(Datasource *ds) {
     OCI_ListForEach(d_ora->ocilib_cn->tinfs, (boolean (*)(void *)) OCI_TypeInfoClose);
     OCI_ListFree(d_ora->ocilib_cn->tinfs);
 
-   OCI_Cleanup();
+   OCI_Cleanup2(&d_ora->ocilib);
 
    delete d_ora;
 

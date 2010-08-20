@@ -809,5 +809,26 @@ typedef struct OCI_SQLCmdInfo OCI_SQLCmdInfo;
 extern OCI_Library OCILib;
 extern OCI_SQLCmdInfo SQLCmds[];
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+OCI_EXPORT OCI_Error * OCI_API OCI_GetLastError2(OCI_Library *pOCILib);
+OCI_EXPORT boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_ERROR err_handler, const mtext *lib_path, unsigned int mode);
+OCI_EXPORT boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib);
+OCI_EXPORT OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *con, const mtext *name, unsigned int type);
+OCI_EXPORT OCI_Object * OCI_ObjectInit2(OCI_Library *pOCILib, OCI_Connection *con, OCI_Object **pobj, void *handle, OCI_TypeInfo *typinf, OCI_Object *parent, int index, boolean reset);
+OCI_EXPORT boolean OCI_API OCI_ObjectSetRef2(OCILib *pOCILib, OCI_Object *obj, const mtext *attr, OCI_Ref *value);
+OCI_EXPORT boolean OCI_API OCI_ObjectGetSelfRef2(OCILib *pOCILib, OCI_Object *obj, OCI_Ref *ref);
+OCI_EXPORT boolean OCI_API OCI_ObjectSetObject2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, OCI_Object *value);
+OCI_EXPORT boolean OCI_API OCI_ObjectSetColl2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, OCI_Coll *value);
+OCI_EXPORT boolean OCI_API OCI_ObjectSetInterval2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, OCI_Interval *value);
+OCI_EXPORT OCI_Object * OCI_API OCI_ObjectCreate2(OCI_Library *pOCILib, OCI_Connection *con, OCI_TypeInfo *typinf);
+OCI_EXPORT OCI_Object * OCI_API OCI_ObjectGetObject2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* OCILIB_OCILIB_TYPES_H_INCLUDED */
 
