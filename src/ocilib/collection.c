@@ -179,6 +179,34 @@ boolean OCI_API OCI_CollFree2(OCI_Library *pOCILib, OCI_Coll *coll)
 }
 
 /* ------------------------------------------------------------------------ *
+ * OCI_CollGetSize
+ * ------------------------------------------------------------------------ */
+
+unsigned int OCI_API OCI_CollGetSize(OCI_Coll *coll)
+{
+    return OCI_CollGetSize2(&OCILib, coll);
+}
+
+unsigned int OCI_API OCI_CollGetSize2(OCI_Library *pOCILib, OCI_Coll *coll)
+{
+    boolean res = TRUE;
+    sb4 size    = 0;
+
+    OCI_CHECK_PTR(OCI_IPC_COLLECTION, coll, 0);
+
+    OCI_CALL2
+    (
+        res, coll->con,
+
+        OCICollSize(pOCILib->env, coll->con->err, coll->handle, &size)
+    )
+
+    OCI_RESULT(res);
+
+    return (unsigned int) size;
+}
+
+/* ------------------------------------------------------------------------ *
  * OCI_CollGetAt
  * ------------------------------------------------------------------------ */
 

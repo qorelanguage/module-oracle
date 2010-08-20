@@ -196,37 +196,6 @@ boolean OCI_API OCI_LobFree(OCI_Lob *lob)
 }
 
 /* ------------------------------------------------------------------------ *
- * OCI_LobArrayCreate
- * ------------------------------------------------------------------------ */
-
-OCI_Lob ** OCI_API OCI_LobArrayCreate(OCI_Connection *con, unsigned int type,
-                                      unsigned int nbelem)
-{
-    OCI_Array  *arr  = NULL;
-    OCI_Lob   **lobs = NULL;
-
-    arr = OCI_ArrayCreate(con, nbelem, OCI_CDT_LOB, type, 
-                          sizeof(OCILobLocator *), sizeof(OCI_Lob), 
-                          OCI_DTYPE_LOB, NULL);
-
-    if (arr != NULL)
-    {
-        lobs = (OCI_Lob **) arr->tab_obj;
-    }
-
-    return lobs;
-}
-
-/* ------------------------------------------------------------------------ *
- * OCI_LobArrayFree
- * ------------------------------------------------------------------------ */
-
-boolean OCI_API OCI_LobArrayFree(OCI_Lob **lobs)
-{
-    return OCI_ArrayFreeFromHandles((void **) lobs);
-}
-
-/* ------------------------------------------------------------------------ *
  * OCI_LobGetType
  * ------------------------------------------------------------------------ */
 
@@ -1093,6 +1062,34 @@ boolean OCI_API OCI_LobAppendLob(OCI_Lob *lob, OCI_Lob *lob_src)
     OCI_RESULT(res);
 
     return res;
+}
+
+/* ------------------------------------------------------------------------ *
+ * OCI_LobIsTemporary
+ * ------------------------------------------------------------------------ */
+
+boolean OCI_API OCI_LobIsTemporary(OCI_Lob *lob)
+{
+    return OCI_LobIsTemporary2(&OCILib, lob);
+}
+
+boolean OCI_API OCI_LobIsTemporary2(OCI_Library *pOCILib, OCI_Lob *lob)
+{
+    boolean value = FALSE;
+    boolean res   = TRUE;
+
+    OCI_CHECK_PTR(OCI_IPC_LOB, lob, FALSE);
+
+    OCI_CALL2
+    (
+        res, lob->con,
+
+        OCILobIsTemporary(OCILib.env, lob->con->err, lob->handle, &value)
+    )
+
+    OCI_RESULT(res);
+
+    return value;
 }
 
 /* ------------------------------------------------------------------------ *

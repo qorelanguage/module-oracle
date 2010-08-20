@@ -863,6 +863,8 @@ OCI_EXPORT boolean OCI_API OCI_IntervalSetYearMonth2(OCI_Library *pOCILib, OCI_I
 OCI_EXPORT OCI_Interval * OCI_API OCI_ObjectGetInterval2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr);
 OCI_EXPORT OCI_Interval * OCI_API OCI_ElemGetInterval2(OCI_Library *pOCILib, OCI_Elem *elem);
 OCI_EXPORT boolean OCI_API OCI_ElemSetInterval2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Interval *value);
+OCI_EXPORT unsigned int OCI_API OCI_CollGetSize2(OCI_Library *pOCILib, OCI_Coll *coll);
+OCI_EXPORT boolean OCI_API OCI_LobIsTemporary2(OCI_Library *pOCILib, OCI_Lob *lob);
 
 #ifdef __cplusplus
 }
