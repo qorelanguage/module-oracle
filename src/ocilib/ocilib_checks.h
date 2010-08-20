@@ -480,6 +480,13 @@
             OCI_ExceptionNotInitialized();                                     \
             return ret;                                                        \
         }
+#define OCI_CHECK_INITIALIZED2(ret)                                             \
+                                                                               \
+        if (pOCILib->loaded == FALSE)                                            \
+        {                                                                      \
+            OCI_ExceptionNotInitialized();                                     \
+            return ret;                                                        \
+        }
 
 /**
  * @brief 

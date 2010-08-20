@@ -754,18 +754,19 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
           // (It took ages to get those info from the docs :/)
           OCIInd * pp_ind = NULL; // obtain NULL info
           void * pp_struct = NULL; // used only for call. No usage for its value
+          OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
           if (subdtype == SQLT_NTY_OBJECT) {
               OCI_ObjectGetStruct(val.oraObj, (void**)&pp_struct, (void**)&pp_ind);
               if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
                   return null();
-              return objToQore(val.oraObj, ds, xsink);
+              return objToQore(d_ora, val.oraObj, ds, xsink);
           }
           else if (subdtype == SQLT_NTY_COLLECTION) {
               OCI_CollGetStruct(val.oraColl, (void**)&pp_struct, (void**)&pp_ind);
               if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
                   return null();
-              return collToQore(val.oraColl, ds, xsink);
+              return collToQore(d_ora, val.oraColl, ds, xsink);
           }
           else {
               xsink->raiseException("NAMED-TYPE-FETCH-ERROR", "Unknown NTY to fetch Oracle object or collection");
@@ -1482,18 +1483,19 @@ AbstractQoreNode *OraBindNode::getValue(Datasource *ds, bool horizontal, Excepti
       // See comment in OraColumn::getValue() case SQLT_NTY
       OCIInd * pp_ind = NULL; // obtain NULL info
       void * pp_struct = NULL; // used only for call. No usage for its value
+      OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
       if (bufsubtype == SQLT_NTY_OBJECT) {
           OCI_ObjectGetStruct(buf.oraObj, (void**)&pp_struct, (void**)&pp_ind);
           if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
               return null();
-          return objToQore(buf.oraObj, ds, xsink);
+          return objToQore(d_ora, buf.oraObj, ds, xsink);
       }
       else if (bufsubtype == SQLT_NTY_COLLECTION) {
           OCI_CollGetStruct(buf.oraColl, (void**)&pp_struct, (void**)&pp_ind);
           if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
               return null();
-          return collToQore(buf.oraColl, ds, xsink);
+          return collToQore(d_ora, buf.oraColl, ds, xsink);
       }
       else
           xsink->raiseException("NAMED-TYPE-PLACEHOLDER-ERROR", "Placeholder is not initilaized as a Oracle object or collection");

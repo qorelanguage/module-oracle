@@ -1137,7 +1137,7 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_E
 
         /* create thread key for thread errors */
 
-        pOCILib->key_errs  = OCI_ThreadKeyCreateInternal((POCI_THREADKEYDEST) OCI_ErrorFree);
+//         pOCILib->key_errs  = OCI_ThreadKeyCreateInternal((POCI_THREADKEYDEST) OCI_ErrorFree);
     
         /* allocate connections internal list */
 
@@ -1201,22 +1201,22 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
 
     /* free all subscriptions */
 
-    OCI_ListForEach(pOCILib->subs, (boolean (*)(void *)) OCI_SubscriptionClose);
+//     OCI_ListForEach(pOCILib->subs, (boolean (*)(void *)) OCI_SubscriptionClose);
     OCI_ListClear(pOCILib->subs);
 
     /* free all connections */
 
-    OCI_ListForEach(pOCILib->cons, (boolean (*)(void *)) OCI_ConnectionClose);
+//     OCI_ListForEach(pOCILib->cons, (boolean (*)(void *)) OCI_ConnectionClose);
     OCI_ListClear(pOCILib->cons);
 
     /* free all pools */
 
-    OCI_ListForEach(pOCILib->pools, (boolean (*)(void *)) OCI_PoolClose);
+//     OCI_ListForEach(pOCILib->pools, (boolean (*)(void *)) OCI_PoolClose);
     OCI_ListClear(pOCILib->pools);
 
     /* free all arrays */
 
-    OCI_ListForEach(pOCILib->arrs, (boolean (*)(void *)) OCI_ArrayClose);
+//     OCI_ListForEach(pOCILib->arrs, (boolean (*)(void *)) OCI_ArrayClose);
     OCI_ListClear(pOCILib->arrs);
 
     /* free objects */

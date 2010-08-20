@@ -49,101 +49,12 @@ extern "C"
 
 
 /* ------------------------------------------------------------------------ *
- * array.c
- * ------------------------------------------------------------------------ */
-
-boolean OCI_ArrayInit
-(
-    OCI_Array *arr,
-    OCI_TypeInfo *typinf
-);
-
-boolean OCI_ArrayCleanup
-(
-    OCI_Array *arr
-);
-
-OCI_Array * OCI_ArrayCreate
-(
-    OCI_Connection *con,
-    unsigned int nb_elem,
-    unsigned int elem_type,
-    unsigned int elem_subtype,
-    unsigned int elem_size,
-    unsigned int struct_size,
-    unsigned int handle_type,
-    OCI_TypeInfo *typinf
-);
-
-boolean OCI_ArrayClose
-(
-    OCI_Array *arr
-);
-
-boolean OCI_ArrayFreeFromHandles
-(
-    void ** handles
-);
-
-/* ------------------------------------------------------------------------ *
- * bind.c
- * ------------------------------------------------------------------------ */
-
-boolean OCI_BindFree
-(
-    OCI_Bind *bnd
-);
-
-boolean OCI_BindAllocData
-(
-    OCI_Bind *bnd
-);
-
-/* ------------------------------------------------------------------------ *
- * callback.c
- * ------------------------------------------------------------------------ */
-
-sb4 OCI_ProcInBind
-(
-    dvoid *ictxp,
-    OCIBind *bindp,
-    ub4 iter,
-    ub4 index,
-    dvoid **bufpp,
-    ub4 *alenp,
-    ub1 *piecep,
-    dvoid **indp
-);
-
-sb4 OCI_ProcOutBind
-(
-    dvoid *octxp,
-    OCIBind *bindp,
-    ub4 iter,
-    ub4 index,
-    dvoid **bufpp,
-    ub4 **alenp,
-    ub1 *piecep,
-    void **indp,
-    ub2 **rcodep
-);
-
-ub4 OCI_ProcNotify
-(
-    void *ctx,
-    OCISubscription *subscrhp,
-    void *payload,
-    ub4 paylen,
-    void *desc,
-    ub4 mode
-);
-
-/* ------------------------------------------------------------------------ *
  * collection.c
  * ------------------------------------------------------------------------ */
 
 OCI_Coll * OCI_CollInit
 (
+    OCI_Library *pOCILib,
     OCI_Connection *con,
     OCI_Coll **pcoll,
     void *handle,
@@ -170,50 +81,6 @@ boolean OCI_ColumnDescribe
     int ptype
 );
 
-/* ------------------------------------------------------------------------ *
- * connection.c
- * ------------------------------------------------------------------------ */
-
-OCI_Connection * OCI_ConnectionAllocate
-(
-    OCI_Pool    *pool,
-    const mtext *db,
-    const mtext *user,
-    const mtext *pwd,
-    unsigned int mode
-);
-
-boolean OCI_ConnectionDeallocate
-(
-    OCI_Connection *con
-);
-
-boolean OCI_ConnectionAttach
-(
-    OCI_Connection *con
-);
-
-boolean OCI_ConnectionLogon
-(
-    OCI_Connection *con,
-    const mtext *password,
-    const mtext *tag
-);
-
-boolean OCI_ConnectionDetach
-(
-    OCI_Connection *con
-);
-
-boolean OCI_ConnectionLogOff
-(
-    OCI_Connection *con
-);
-
-boolean OCI_ConnectionClose
-(
-    OCI_Connection *con
-);
 
 /* ------------------------------------------------------------------------ *
  * date.c
@@ -228,51 +95,6 @@ OCI_Date * OCI_DateInit
     boolean ansi
 );
 
-/* ------------------------------------------------------------------------ *
- * define.c
- * ------------------------------------------------------------------------ */
-
-OCI_Define * OCI_GetDefine
-(
-    OCI_Resultset *rs,
-    unsigned int index
-);
-
-int OCI_GetDefineIndex
-(
-    OCI_Resultset *rs,
-    const mtext *name
-);
-
-boolean OCI_DefineGetNumber
-(
-    OCI_Resultset *rs,
-    unsigned int index,
-    void *value,
-    uword type,
-    uword size
-);
-
-boolean OCI_DefineAlloc
-(
-    OCI_Define *def
-);
-
-boolean OCI_DefineDef
-(
-    OCI_Define *def
-);
-
-void *  OCI_DefineGetData
-(
-    OCI_Define *def
-);
-
-boolean OCI_DefineRequestBuffer
-(
-    OCI_Define *def,
-    unsigned int size
-);
 
 /* ------------------------------------------------------------------------ *
  * element.c
@@ -332,15 +154,6 @@ OCI_Error * OCI_ErrorGet
 OCI_Error * OCI_ErrorCreate
 (
     void
-);
-
-/* ------------------------------------------------------------------------ *
- * event.c
- * ------------------------------------------------------------------------ */
-
-boolean OCI_EventReset
-(
-    OCI_Event *event
 );
 
 /* ------------------------------------------------------------------------ *
@@ -489,34 +302,6 @@ void OCI_ExceptionDirPathState
 void OCI_ExceptionOCIEnvironment(void);
 
 
-/* ------------------------------------------------------------------------ *
- * file.c
- * ------------------------------------------------------------------------ */
-
-OCI_File * OCI_FileInit
-(
-    OCI_Connection *con,
-    OCI_File **pfile,
-    OCILobLocator *handle,
-    ub4 type
-);
-
-boolean OCI_FileGetInfo
-(
-    OCI_File *file
- );
-
-/* ------------------------------------------------------------------------ *
- * format.c
- * ------------------------------------------------------------------------ */
-
-int OCI_ParseSqlFmt
-(
-    OCI_Statement *stmt,
-    mtext *buffer,
-    const mtext *format,
-    va_list *pargs
-);
 
 /* ------------------------------------------------------------------------ *
  * hash.c
@@ -542,6 +327,7 @@ boolean OCI_HashAdd
 
 OCI_Interval  * OCI_IntervalInit
 (
+    OCI_Library *pOCILib,
     OCI_Connection *con,
     OCI_Interval **pitv,
     OCIInterval *buffer,
@@ -613,6 +399,7 @@ boolean OCI_ListRemove
 
 OCI_Lob * OCI_LobInit
 (
+    OCI_Library *pOCILib,
     OCI_Connection *con,
     OCI_Lob **plob,
     OCILobLocator *handle,
@@ -726,11 +513,6 @@ sword OCI_OCIObjectFree
 );
 
 
-/* ------------------------------------------------------------------------ *
- * mutex.c
- * ------------------------------------------------------------------------ */
-
-OCI_Mutex * OCI_MutexCreateInternal(void);
 
 /* ------------------------------------------------------------------------ *
  * number.c
@@ -801,6 +583,7 @@ ub2 OCI_ObjectGetIndOffset
 
 OCI_Object * OCI_ObjectInit
 (
+    OCI_Library *pOCILib,
     OCI_Connection *con,
     OCI_Object **pobj,
     void *handle,
@@ -843,170 +626,6 @@ boolean OCI_ObjectGetNumber
     const mtext *attr,
     void *value,
     uword size, uword flag
-);
-
-/* ------------------------------------------------------------------------ *
- * pool.c
- * ------------------------------------------------------------------------ */
-
-boolean OCI_PoolClose
-(
-    OCI_Pool *pool
-);
-/* ------------------------------------------------------------------------ *
- * ref.c
- * ------------------------------------------------------------------------ */
-
-OCI_Ref * OCI_RefInit
-(
-    OCI_Connection *con,
-    OCI_TypeInfo *typeinf,
-    OCI_Ref **pref,
-    void *handle
-);
-
-boolean OCI_RefPin
-(
-    OCI_Ref *ref
-);
-
-boolean OCI_RefUnpin
-(
-    OCI_Ref *ref
-);
-
-/* ------------------------------------------------------------------------ *
- * resultset.c
- * ------------------------------------------------------------------------ */
-
-OCI_Resultset * OCI_ResultsetCreate
-(
-    OCI_Statement *stmt,
-    int size
-);
-
-boolean OCI_ResultsetInit
-(
-    OCI_Resultset *rs
-);
-
-boolean OCI_ResultsetFree
-(
-    OCI_Resultset *rs
-);
-
-boolean OCI_FetchPieces
-(
-    OCI_Resultset *rs
-);
-
-boolean OCI_FetchData
-(
-    OCI_Resultset *rs,
-    int mode,
-    int offset,
-    boolean *err
-);
-
-boolean OCI_FetchCustom
-(
-    OCI_Resultset *rs,
-    int mode,
-    int offset,
-    boolean *err
-);
-
-#ifdef OCI_CHECK_DATASTRINGS
-
-boolean OCI_ResultsetExpandStrings
-(
-    OCI_Resultset *rs
-);
-
-#endif
-
-size_t OCI_ResultsetGetStructSize
-(
-    OCI_Resultset *rs
-);
-
-size_t OCI_ResultsetGetAttrSize
-(
-    OCI_Resultset *rs, 
-    unsigned int index
-);
-
-/* ------------------------------------------------------------------------ *
- * statement.c
- * ------------------------------------------------------------------------ */
-
-boolean OCI_BindFreeAll
-(
-    OCI_Statement *stmt
-);
-
-boolean OCI_BindCheck
-(
-    OCI_Statement *stmt
-);
-
-boolean OCI_BindReset
-(
-    OCI_Statement *stmt
-);
-
-boolean OCI_BindData
-(
-    OCI_Statement *stmt,
-    void *data,
-    ub4 size,
-    const mtext *name,
-    ub1 type,
-    unsigned int code,
-    unsigned int mode,
-    unsigned int subtype,
-    OCI_TypeInfo *typinf,
-    unsigned int nbelem
-);
-
-int OCI_BindGetIndex
-(
-    OCI_Statement *stmt,
-    const mtext *name
-);
-
-boolean OCI_FetchIntoUserVariables
-(
-    OCI_Statement *stmt,
-    va_list args
-);
-
-boolean OCI_StatementReset
-(
-    OCI_Statement *stmt
-);
-
-boolean OCI_StatementClose
-(
-    OCI_Statement *stmt
-);
-
-OCI_Statement * OCI_StatementInit
-(
-    OCI_Connection *con,
-    OCI_Statement **pstmt,
-    OCIStmt *handle,
-    OCI_Define *def
-);
-
-boolean OCI_BatchErrorClear
-(
-    OCI_Statement *stmt
-);
-
-boolean OCI_BatchErrorInit
-(
-    OCI_Statement *stmt
 );
 
 
@@ -1114,6 +733,7 @@ int OCI_StringUTF8Length
 
 void * OCI_StringFromStringPtr
 (
+    OCI_Library *pOCILib,
     OCIString *str,
     void ** buf,
     int *buflen
@@ -1121,6 +741,7 @@ void * OCI_StringFromStringPtr
 
 boolean OCI_StringToStringPtr
 (
+    OCI_Library *pOCILib,
     OCIString **str,
     OCIError *err,
     void *value,
@@ -1129,73 +750,16 @@ boolean OCI_StringToStringPtr
 );
 
 /* ------------------------------------------------------------------------ *
- * subscription.c
- * ------------------------------------------------------------------------ */
-
-boolean OCI_SubscriptionClose
-(
-    OCI_Subscription *sub
-);
-
-boolean OCI_SubscriptionDetachConnection
-(
-    OCI_Connection *con
-);
-
-/* ------------------------------------------------------------------------ *
- * thread.c
- * ------------------------------------------------------------------------ */
-
-void OCI_ThreadProc
-(
-    dvoid *arg
-);
-
-/* ------------------------------------------------------------------------ *
- * threadkey.c
- * ------------------------------------------------------------------------ */
-
-OCI_ThreadKey * OCI_ThreadKeyCreateInternal
-(
-    POCI_THREADKEYDEST destfunc
-);
-
-boolean OCI_ThreadKeyFree
-(
-    OCI_ThreadKey *key
-);
-
-boolean OCI_ThreadKeySet
-(
-    OCI_ThreadKey *key,
-    void *value
-);
-
-boolean OCI_ThreadKeyGet
-(
-    OCI_ThreadKey* key,
-    void **value
-);
-
-/* ------------------------------------------------------------------------ *
  * timestamp.c
  * ------------------------------------------------------------------------ */
 
 OCI_Timestamp * OCI_TimestampInit
 (
+    OCI_Library *pOCILib,
     OCI_Connection *con,
     OCI_Timestamp **ptmsp,
     OCIDateTime *buffer,
     ub4 type
-);
-
-/* ------------------------------------------------------------------------ *
- * transaction.c
- * ------------------------------------------------------------------------ */
-
-boolean OCI_TransactionClose
-(
-    OCI_Transaction * trans
 );
 
 /* ------------------------------------------------------------------------ *

@@ -556,7 +556,7 @@ void OCI_ReleaseDataString(void *str)
  * OCI_StringFromStringPtr
  * ------------------------------------------------------------------------ */
 
-void * OCI_StringFromStringPtr(OCIString *str, void **buf, int *buflen)
+void * OCI_StringFromStringPtr(OCI_Library *pOCILib, OCIString *str, void **buf, int *buflen)
 {
     void *tmp = NULL;
     void *ret = NULL;  
@@ -569,7 +569,7 @@ void * OCI_StringFromStringPtr(OCIString *str, void **buf, int *buflen)
     OCI_CHECK(buf    == NULL, NULL);
     OCI_CHECK(buflen == NULL, NULL);
 
-    tmp = OCIStringPtr(OCILib.env, str);
+    tmp = OCIStringPtr(pOCILib->env, str);
 
     if (tmp != NULL)
     {
@@ -655,7 +655,7 @@ void * OCI_StringFromStringPtr(OCIString *str, void **buf, int *buflen)
  * OCI_StringFromStringPtr
  * ------------------------------------------------------------------------ */
 
-boolean OCI_StringToStringPtr(OCIString **str, OCIError *err, void *value, 
+boolean OCI_StringToStringPtr(OCI_Library *pOCILib, OCIString **str, OCIError *err, void *value, 
                               void **buf, int *buflen)
 {
     boolean res = TRUE;
@@ -715,7 +715,7 @@ boolean OCI_StringToStringPtr(OCIString **str, OCIError *err, void *value,
     (
         res, err, 
 
-        OCIStringAssignText(OCILib.env, err, (oratext *) ostr, (ub4) osize, str)
+        OCIStringAssignText(pOCILib->env, err, (oratext *) ostr, (ub4) osize, str)
     )
 
 #ifndef OCI_CHARSET_MIXED

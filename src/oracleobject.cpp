@@ -111,13 +111,13 @@ bool ntyCheckType(const char * tname, const QoreHashNode * n) {
 }
 
 OCI_Object* objPlaceholderQore(OracleData * d_ora, const char * tname, ExceptionSink *xsink) {
-    OCI_TypeInfo * info = OCI_TypeInfoGet(d_ora->ocilib_cn, tname, OCI_TIF_TYPE);
+    OCI_TypeInfo * info = OCI_TypeInfoGet2(&d_ora->ocilib, d_ora->ocilib_cn, tname, OCI_TIF_TYPE);
     if (!info) {
        if (!*xsink)
 	  xsink->raiseException("ORACLE-OBJECT-ERROR", "could not get type info for object type '%s'", tname);
        return 0;
     }
-    OCI_Object * obj = OCI_ObjectCreate(d_ora->ocilib_cn, info);
+    OCI_Object * obj = OCI_ObjectCreate2(&d_ora->ocilib, d_ora->ocilib_cn, info);
     if (!obj && !*xsink)
        xsink->raiseException("ORACLE-OBJECT-ERROR", "could not create placeholder buffer for object type '%s'", tname);
     return obj;
@@ -136,9 +136,9 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
     const QoreHashNode * th = reinterpret_cast<const QoreHashNode*>(h->getKeyValue("^values^"));
     const char * tname = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("^oratype^"))->getBuffer();
     
-    OCI_TypeInfo * info = OCI_TypeInfoGet(d->ocilib_cn, tname, OCI_TIF_TYPE);
-    OCI_Object * obj = OCI_ObjectCreate(d->ocilib_cn, info);
-    
+    OCI_TypeInfo * info = OCI_TypeInfoGet2(&d->ocilib, d->ocilib_cn, tname, OCI_TIF_TYPE);
+    OCI_Object * obj = OCI_ObjectCreate2(&d->ocilib, d->ocilib_cn, info);
+
     int n = OCI_TypeInfoGetColumnCount(info);
     for (int i = 1; i <= n; ++i) {
         
@@ -170,7 +170,7 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
             case SQLT_CHR: {
                 // strings
                 QoreStringNodeValueHelper str(val);
-                OCI_ObjectSetString(obj, cname, str->getBuffer());
+                OCI_ObjectSetString2(&d->ocilib, obj, cname, str->getBuffer());
                 break;
             }
 
@@ -212,14 +212,14 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
                 // date
                 const DateTimeNode * dn = reinterpret_cast<const DateTimeNode*>(val);
                 if (col->type == OCI_CDT_TIMESTAMP) {
-                    OCI_Timestamp * dt = OCI_TimestampCreate(d->ocilib_cn, col->subtype);
-                    OCI_TimestampConstruct(dt,
+                    OCI_Timestamp * dt = OCI_TimestampCreate2(&d->ocilib, d->ocilib_cn, col->subtype);
+                    OCI_TimestampConstruct2(&d->ocilib, dt,
                                            dn->getYear(), dn->getMonth(), dn->getDay(),
                                            dn->getHour(), dn->getMinute(), dn->getSecond(),
                                            (dn->getMillisecond() * 1000000),
                                            0 // no TZ here
                                            );
-                    OCI_ObjectSetTimestamp(obj, cname, dt);
+                    OCI_ObjectSetTimestamp2(&d->ocilib,obj, cname, dt);
                     OCI_TimestampFree(dt);
                 }
                 else if (col->type == OCI_CDT_DATETIME) {
@@ -235,19 +235,19 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
                 else if (col->type == OCI_CDT_INTERVAL) {
                     OCI_Interval * dt;
                     if (col->ocode == SQLT_INTERVAL_YM) {
-                        dt = OCI_IntervalCreate(d->ocilib_cn, OCI_INTERVAL_YM);
-                        OCI_IntervalSetYearMonth(dt, dn->getYear(), dn->getMonth());
-                        OCI_ObjectSetInterval(obj, cname, dt);
+                        dt = OCI_IntervalCreate2(&d->ocilib, d->ocilib_cn, OCI_INTERVAL_YM);
+                        OCI_IntervalSetYearMonth2(&d->ocilib, dt, dn->getYear(), dn->getMonth());
+                        OCI_ObjectSetInterval2(&d->ocilib, obj, cname, dt);
                     }
                     else  {
                         // SQLT_INTERVAL_DS
-                        dt = OCI_IntervalCreate(d->ocilib_cn, OCI_INTERVAL_DS);
-                        OCI_IntervalSetDaySecond(dt,
+                        dt = OCI_IntervalCreate2(&d->ocilib, d->ocilib_cn, OCI_INTERVAL_DS);
+                        OCI_IntervalSetDaySecond2(&d->ocilib, dt,
                                                  dn->getDay(),
                                                  dn->getHour(), dn->getMinute(), dn->getSecond(),
                                                  (dn->getMillisecond() * 1000000)
                                                 );
-                        OCI_ObjectSetInterval(obj, cname, dt);
+                        OCI_ObjectSetInterval2(&d->ocilib, obj, cname, dt);
                     }
                     OCI_IntervalFree(dt);
                 }
@@ -279,14 +279,14 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
                 OCI_Lob * l;
                 qore_type_t ntype = val->getType();
                 if (ntype == NT_BINARY) {
-                    l = OCI_LobCreate(d->ocilib_cn, OCI_BLOB);
+                    l = OCI_LobCreate2(&d->ocilib, d->ocilib_cn, OCI_BLOB);
                     const BinaryNode * bn = reinterpret_cast<const BinaryNode*>(val);
                     unsigned int size = bn->size();
                     OCI_LobWrite2(l, (void*)bn->getPtr(), &size, &size);
                 }
                 else {
                     // clobs
-                    l = OCI_LobCreate(d->ocilib_cn, OCI_CLOB);
+                    l = OCI_LobCreate2(&d->ocilib, d->ocilib_cn, OCI_CLOB);
                     QoreStringNodeValueHelper str(val);
                     unsigned int size = str->length();
                     unsigned int sizelen = str->strlen();
@@ -315,13 +315,13 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
                 if (t && !strcmp(t, ORACLE_OBJECT)) {
                     
                     OCI_Object * o = objBindQore(d, n, xsink);
-                    OCI_ObjectSetObject(obj, cname, o);
-                    OCI_ObjectFree(o);
+                    OCI_ObjectSetObject2(&d->ocilib, obj, cname, o);
+                    OCI_ObjectFree2(&d->ocilib, o);
                 }
                 else if (t && !strcmp(t, ORACLE_COLLECTION)) {
                     OCI_Coll * o = collBindQore(d, n, xsink);
-                    OCI_ObjectSetColl(obj, cname, o);
-                    OCI_CollFree(o);
+                    OCI_ObjectSetColl2(&d->ocilib, obj, cname, o);
+                    OCI_CollFree2(&d->ocilib, o);
                 }
                 else {
                     xsink->raiseException("BIND-NTY-ERROR", "Unknown NTY-like argument for %s (type: %d)", cname, col->type);
@@ -337,11 +337,11 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
 
         delete key;
     }
-    
+
     return obj;
 }
 
-AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsink)
+AbstractQoreNode* objToQore(OracleData * d_ora, OCI_Object * obj, Datasource *ds, ExceptionSink *xsink)
 {
     QoreHashNode *rv = new QoreHashNode();
 
@@ -365,7 +365,7 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
             case SQLT_STR:
             case SQLT_CHR: {
                 // strings
-                rv->setKeyValue(cname, new QoreStringNode(OCI_ObjectGetString(obj, cname)), xsink);
+                rv->setKeyValue(cname, new QoreStringNode(OCI_ObjectGetString2(&d_ora->ocilib, obj, cname)), xsink);
                 break;
             }
 
@@ -407,7 +407,7 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
             {
                 // timestamps-like dates
                 if (col->type == OCI_CDT_TIMESTAMP) {
-                    OCI_Timestamp * dt = OCI_ObjectGetTimestamp(obj, cname);
+                    OCI_Timestamp * dt = OCI_ObjectGetTimestamp2(&d_ora->ocilib, obj, cname);
                     // only SQLT_TIMESTAMP gets the default TZ
 //                     assert(0);
                     rv->setKeyValue(cname, get_oracle_timestamp(col->ocode != SQLT_TIMESTAMP, ds, dt->handle, xsink), xsink);
@@ -422,7 +422,7 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
                 }
                 // intervals
                 else if (col->type == OCI_CDT_INTERVAL) {
-                    OCI_Interval * dt = OCI_ObjectGetInterval(obj, cname);
+                    OCI_Interval * dt = OCI_ObjectGetInterval2(&d_ora->ocilib, obj, cname);
                     if (col->ocode == SQLT_INTERVAL_YM) {
                         int y, m;
                         OCI_IntervalGetYearMonth(dt, &y, &m);
@@ -431,7 +431,7 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
                     else  {
                         // SQLT_INTERVAL_DS
                         int d, h, mi, s, fs;
-                        OCI_IntervalGetDaySecond(dt, &d, &h, &mi, &s, &fs);
+                        OCI_IntervalGetDaySecond2(&d_ora->ocilib, dt, &d, &h, &mi, &s, &fs);
 #ifdef _QORE_HAS_TIME_ZONES
                         rv->setKeyValue(cname, DateTimeNode::makeRelative(0, 0, d, h, mi, s, fs / 1000), xsink);
 #else
@@ -463,7 +463,7 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
 
             case SQLT_CLOB:
             case SQLT_BLOB: {
-                OCI_Lob * l = OCI_ObjectGetLob(obj, cname);
+                OCI_Lob * l = OCI_ObjectGetLob2(&d_ora->ocilib, obj, cname);
                 // The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
                 uint len = OCI_LobGetLength(l);
                 void *buf = malloc(len);
@@ -501,10 +501,10 @@ AbstractQoreNode* objToQore(OCI_Object * obj, Datasource *ds, ExceptionSink *xsi
             case SQLT_NTY:
                 if (col->typinf->ccode) {
                     // collection
-                    rv->setKeyValue(cname, collToQore(OCI_ObjectGetColl(obj, cname), ds, xsink), xsink);
+                    rv->setKeyValue(cname, collToQore(d_ora, OCI_ObjectGetColl2(&d_ora->ocilib, obj, cname), ds, xsink), xsink);
                 } else {
                     // object
-                    rv->setKeyValue(cname, objToQore(OCI_ObjectGetObject(obj, cname), ds, xsink), xsink);
+                    rv->setKeyValue(cname, objToQore(d_ora, OCI_ObjectGetObject2(&d_ora->ocilib, obj, cname), ds, xsink), xsink);
                 }
                 break;
 
@@ -533,9 +533,9 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
     const QoreListNode * th = reinterpret_cast<const QoreListNode*>(h->getKeyValue("^values^"));
     const char * tname = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("^oratype^"))->getBuffer();
     
-    OCI_TypeInfo * info = OCI_TypeInfoGet(d->ocilib_cn, tname, OCI_TIF_TYPE);
+    OCI_TypeInfo * info = OCI_TypeInfoGet2(&d->ocilib, d->ocilib_cn, tname, OCI_TIF_TYPE);
 //     printf("onfo: %d\n", info->nb_cols);
-    OCI_Coll * obj = OCI_CollCreate(info);
+    OCI_Coll * obj = OCI_CollCreate2(&d->ocilib, info);
     OCI_Column *col = OCI_TypeInfoGetColumn(info, 1);
         
 //     const char * cname = OCI_GetColumnName(col);
@@ -547,7 +547,7 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
 
         if (is_null(val) || is_nothing(val)) {
             OCI_ElemSetNull(e);
-            OCI_CollAppend(obj, e);
+            OCI_CollAppend2(&d->ocilib, obj, e);
             continue;
         }
 
@@ -561,7 +561,7 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
                 // strings
                 QoreStringNodeValueHelper str(val);
 //                 printf("val str: %s\n", str->getBuffer());
-                OCI_ElemSetString(e, str->getBuffer());
+                OCI_ElemSetString2(&d->ocilib, e, str->getBuffer());
 //                 printf("OCI_ElemSetString %s\n", OCI_ElemGetString(e));
                 break;
             }
@@ -605,14 +605,14 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
                 // date
                 const DateTimeNode * dn = reinterpret_cast<const DateTimeNode*>(val);
                 if (col->type == OCI_CDT_TIMESTAMP) {
-                    OCI_Timestamp *dt = OCI_TimestampCreate(d->ocilib_cn, col->subtype);
-                    OCI_TimestampConstruct(dt,
+                    OCI_Timestamp *dt = OCI_TimestampCreate2(&d->ocilib, d->ocilib_cn, col->subtype);
+                    OCI_TimestampConstruct2(&d->ocilib, dt,
                                            dn->getYear(), dn->getMonth(), dn->getDay(),
                                            dn->getHour(), dn->getMinute(), dn->getSecond(),
                                            (dn->getMillisecond() * 1000000),
                                            0 // no TZ here
                                            );
-                    OCI_ElemSetTimestamp(e, dt);
+                    OCI_ElemSetTimestamp2(&d->ocilib, e, dt);
                     OCI_TimestampFree(dt);
                 }
                 else if (col->type == OCI_CDT_DATETIME) {
@@ -628,19 +628,19 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
                 else if (col->type == OCI_CDT_INTERVAL) {
                     OCI_Interval * dt;
                     if (col->ocode == SQLT_INTERVAL_YM) {
-                        dt = OCI_IntervalCreate(d->ocilib_cn, OCI_INTERVAL_YM);
-                        OCI_IntervalSetYearMonth(dt, dn->getYear(), dn->getMonth());
-                        OCI_ElemSetInterval(e, dt);
+                        dt = OCI_IntervalCreate2(&d->ocilib, d->ocilib_cn, OCI_INTERVAL_YM);
+                        OCI_IntervalSetYearMonth2(&d->ocilib, dt, dn->getYear(), dn->getMonth());
+                        OCI_ElemSetInterval2(&d->ocilib, e, dt);
                     }
                     else  {
                         // SQLT_INTERVAL_DS
-                        dt = OCI_IntervalCreate(d->ocilib_cn, OCI_INTERVAL_DS);
-                        OCI_IntervalSetDaySecond(dt,
+                        dt = OCI_IntervalCreate2(&d->ocilib, d->ocilib_cn, OCI_INTERVAL_DS);
+                        OCI_IntervalSetDaySecond2(&d->ocilib, dt,
                                                  dn->getDay(),
                                                  dn->getHour(), dn->getMinute(), dn->getSecond(),
                                                  (dn->getMillisecond() * 1000000)
                                                 );
-                        OCI_ElemSetInterval(e, dt);
+                        OCI_ElemSetInterval2(&d->ocilib, e, dt);
                     }
                     OCI_IntervalFree(dt);
                 }
@@ -671,20 +671,20 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
                 OCI_Lob * l;
                 qore_type_t ntype = val->getType();
                 if (ntype == NT_BINARY) {
-                    l = OCI_LobCreate(d->ocilib_cn, OCI_BLOB);
+                    l = OCI_LobCreate2(&d->ocilib, d->ocilib_cn, OCI_BLOB);
                     const BinaryNode * bn = reinterpret_cast<const BinaryNode*>(val);
                     unsigned int size = bn->size();
                     OCI_LobWrite2(l, (void*)bn->getPtr(), &size, &size);
                 }
                 else {
                     // clobs
-                    l = OCI_LobCreate(d->ocilib_cn, OCI_CLOB);
+                    l = OCI_LobCreate2(&d->ocilib, d->ocilib_cn, OCI_CLOB);
                     QoreStringNodeValueHelper str(val);
                     unsigned int size = str->length();
                     unsigned int sizelen = str->strlen();
                     OCI_LobWrite2(l, (void*)str->getBuffer(), &size, &sizelen);
                 }
-                OCI_ElemSetLob(e, l);
+                OCI_ElemSetLob2(&d->ocilib, e, l);
                 OCI_LobFree(l);
                 break;
             }
@@ -706,13 +706,13 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
                 const char * t = ntyHashType(n);
                 if (t && !strcmp(t, ORACLE_OBJECT)) {
                     OCI_Object * o = objBindQore(d, n, xsink);
-                    OCI_ElemSetObject(e, o);
-                    OCI_ObjectFree(o);
+                    OCI_ElemSetObject2(&d->ocilib, e, o);
+                    OCI_ObjectFree2(&d->ocilib, o);
                 }
                 else if (t && !strcmp(t, ORACLE_COLLECTION)) {
                     OCI_Coll * o = collBindQore(d, n, xsink);
-                    OCI_ElemSetColl(e, o);
-                    OCI_CollFree(o);
+                    OCI_ElemSetColl2(&d->ocilib, e, o);
+                    OCI_CollFree2(&d->ocilib, o);
                 }
                 else {
                     xsink->raiseException("BIND-NTY-ERROR", "Unknown NTY-like argument (type: %d)", col->type);
@@ -737,7 +737,7 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
     return obj;
 }
 
-AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsink)
+AbstractQoreNode* collToQore(OracleData * d_ora, OCI_Coll * obj, Datasource *ds, ExceptionSink *xsink)
 {
     QoreListNode *rv = new QoreListNode();
     
@@ -763,7 +763,7 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
             case SQLT_STR:
             case SQLT_CHR: {
                 // strings
-                rv->set_entry(rv->size(), new QoreStringNode(OCI_ElemGetString(e)), xsink);
+                rv->set_entry(rv->size(), new QoreStringNode(OCI_ElemGetString2(&d_ora->ocilib, e)), xsink);
                 break;
             }
 
@@ -804,7 +804,7 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
             {
                 // timestamps-like dates
                 if (col->type == OCI_CDT_TIMESTAMP) {
-                    OCI_Timestamp * dt = OCI_ElemGetTimestamp(e);
+                    OCI_Timestamp * dt = OCI_ElemGetTimestamp2(&d_ora->ocilib, e);
                     // only SQLT_TIMESTAMP gets the default TZ
                     rv->set_entry(rv->size(), get_oracle_timestamp(col->ocode != SQLT_TIMESTAMP, ds, dt->handle, xsink), xsink);
                 }
@@ -818,16 +818,16 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
                 }
                 // intervals
                 else if (col->type == OCI_CDT_INTERVAL) {
-                    OCI_Interval * dt = OCI_ElemGetInterval(e);
+                    OCI_Interval * dt = OCI_ElemGetInterval2(&d_ora->ocilib, e);
                     if (col->ocode == SQLT_INTERVAL_YM) {
                         int y, m;
-                        OCI_IntervalGetYearMonth(dt, &y, &m);
+                        OCI_IntervalGetYearMonth2(&d_ora->ocilib, dt, &y, &m);
                         rv->set_entry(rv->size(), new DateTimeNode(y, m, 0, 0, 0, 0, 0, true), xsink);
                     }
                     else  {
                         // SQLT_INTERVAL_DS
                         int d, h, mi, s, fs;
-                        OCI_IntervalGetDaySecond(dt, &d, &h, &mi, &s, &fs);
+                        OCI_IntervalGetDaySecond2(&d_ora->ocilib, dt, &d, &h, &mi, &s, &fs);
 #ifdef _QORE_HAS_TIME_ZONES
                         rv->set_entry(rv->size(), DateTimeNode::makeRelative(0, 0, d, h, mi, s, fs / 1000), xsink);
 #else
@@ -859,7 +859,7 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
 
             case SQLT_CLOB:
             case SQLT_BLOB: {
-                OCI_Lob * l = OCI_ElemGetLob(e);
+                OCI_Lob * l = OCI_ElemGetLob2(&d_ora->ocilib, e);
                 // The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
                 uint len = OCI_LobGetLength(l);
                 void *buf = malloc(len);
@@ -896,10 +896,10 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
             case SQLT_NTY:
                 if (col->typinf->ccode) {
                     // collection
-                    rv->set_entry(rv->size(), collToQore(OCI_ElemGetColl(e), ds, xsink), xsink);
+                    rv->set_entry(rv->size(), collToQore(d_ora, OCI_ElemGetColl2(&d_ora->ocilib, e), ds, xsink), xsink);
                 } else {
                     // object
-                    rv->set_entry(rv->size(), objToQore(OCI_ElemGetObject(e), ds, xsink), xsink);
+                    rv->set_entry(rv->size(), objToQore(d_ora, OCI_ElemGetObject2(&d_ora->ocilib, e), ds, xsink), xsink);
                 }
                 break;
 
@@ -915,7 +915,7 @@ AbstractQoreNode* collToQore(OCI_Coll * obj, Datasource *ds, ExceptionSink *xsin
 
 OCI_Coll* collPlaceholderQore(OracleData * d_ora, const char * tname, ExceptionSink *xsink)
 {
-    OCI_TypeInfo * info = OCI_TypeInfoGet(d_ora->ocilib_cn, tname, OCI_TIF_TYPE);
-    OCI_Coll * obj = OCI_CollCreate(info);
+    OCI_TypeInfo * info = OCI_TypeInfoGet2(&d_ora->ocilib, d_ora->ocilib_cn, tname, OCI_TIF_TYPE);
+    OCI_Coll * obj = OCI_CollCreate2(&d_ora->ocilib, info);
     return obj;
 }

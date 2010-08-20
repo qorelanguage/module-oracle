@@ -63,7 +63,8 @@ OCI_Object* objPlaceholderQore(OracleData * d_ora,
     \param xsink exception hanlder
     \retval AbstractQoreNode* Plain Qore hash node
  */
-AbstractQoreNode* objToQore(OCI_Object * obj,
+AbstractQoreNode* objToQore(OracleData * d_ora,
+                            OCI_Object * obj,
                             Datasource *ds,
                             ExceptionSink *xsink);
 
@@ -102,7 +103,8 @@ OCI_Coll* collPlaceholderQore(OracleData * d_ora,
     \param xsink exception hanlder
     \retval AbstractQoreNode* Plain Qore list node
  */
-AbstractQoreNode* collToQore(OCI_Coll * obj,
+AbstractQoreNode* collToQore(OracleData * d_ora,
+                             OCI_Coll * obj,
                              Datasource *ds,
                              ExceptionSink *xsink);
 

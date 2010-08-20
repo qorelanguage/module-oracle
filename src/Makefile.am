@@ -1,42 +1,23 @@
 ORACLE_SOURCES = oracle.cc oracleobject.cpp \
-	ocilib/array.c \
-	ocilib/bind.c \
-	ocilib/callback.c \
-	ocilib/connection.c \
-	ocilib/define.c \
 	ocilib/exception.c \
-	ocilib/handle.c \
-	ocilib/iterator.c \
 	ocilib/lob.c \
-	ocilib/mutex.c \
-	ocilib/resultset.c \
 	ocilib/string.c \
 	ocilib/timestamp.c \
 	ocilib/collection.c \
 	ocilib/element.c \
-	ocilib/file.c \
 	ocilib/hash.c \
 	ocilib/library.c \
 	ocilib/long.c \
 	ocilib/number.c \
 	ocilib/typeinfo.c \
-	ocilib/thread.c \
-	ocilib/transaction.c \
 	ocilib/column.c \
 	ocilib/date.c \
 	ocilib/error.c \
-	ocilib/format.c \
 	ocilib/interval.c \
 	ocilib/list.c \
 	ocilib/memory.c \
-	ocilib/object.c \
-	ocilib/pool.c \
-	ocilib/statement.c \
-	ocilib/ref.c \
-	ocilib/threadkey.c \
-	ocilib/dirpath.c \
-	ocilib/event.c \
-	ocilib/subscription.c
+	ocilib/object.c
+
 
 lib_LTLIBRARIES = oracle.la
 oracle_la_SOURCES = $(ORACLE_SOURCES)

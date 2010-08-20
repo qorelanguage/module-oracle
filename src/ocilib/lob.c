@@ -42,7 +42,7 @@
  * OCI_LobInit
  * ------------------------------------------------------------------------ */
 
- OCI_Lob * OCI_LobInit(OCI_Connection *con, OCI_Lob **plob,
+ OCI_Lob * OCI_LobInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_Lob **plob,
                        OCILobLocator *handle, ub4 type)
 {
     ub2 csid      = OCI_DEFAULT;
@@ -88,7 +88,7 @@
             {
                 lob->hstate = OCI_OBJECT_ALLOCATED;
 
-                res = (OCI_SUCCESS == OCI_DescriptorAlloc((dvoid  *) OCILib.env,
+                res = (OCI_SUCCESS == OCI_DescriptorAlloc((dvoid  *) pOCILib->env,
                                                           (dvoid **) (void *) &lob->handle,
                                                           (ub4) OCI_DTYPE_LOB,
                                                           (size_t) 0, (dvoid **) NULL));
@@ -140,13 +140,18 @@
 
 OCI_Lob * OCI_API OCI_LobCreate(OCI_Connection *con, unsigned int type)
 {
+    return OCI_LobCreate2(&OCILib, con, type);
+}
+
+OCI_Lob * OCI_API OCI_LobCreate2(OCI_Library *pOCILib, OCI_Connection *con, unsigned int type)
+{
     OCI_Lob *lob = NULL;
 
-    OCI_CHECK_INITIALIZED(NULL);
+    OCI_CHECK_INITIALIZED2(NULL);
 
     OCI_CHECK_PTR(OCI_IPC_CONNECTION, con, NULL);
 
-    lob = OCI_LobInit(con, &lob, NULL, type);
+    lob = OCI_LobInit(pOCILib, con, &lob, NULL, type);
 
     OCI_RESULT(lob != NULL);
 
@@ -1091,29 +1096,6 @@ boolean OCI_API OCI_LobAppendLob(OCI_Lob *lob, OCI_Lob *lob_src)
 }
 
 /* ------------------------------------------------------------------------ *
- * OCI_LobIsTemporary
- * ------------------------------------------------------------------------ */
-
-boolean OCI_API OCI_LobIsTemporary(OCI_Lob *lob)
-{
-    boolean value = FALSE;
-    boolean res   = TRUE;
-
-    OCI_CHECK_PTR(OCI_IPC_LOB, lob, FALSE);
-
-    OCI_CALL2
-    (
-        res, lob->con,
-
-        OCILobIsTemporary(OCILib.env, lob->con->err, lob->handle, &value)
-    )
-
-    OCI_RESULT(res);
-
-    return value;
-}
-
-/* ------------------------------------------------------------------------ *
  * OCI_LobOpen
  * ------------------------------------------------------------------------ */
 
@@ -1151,67 +1133,6 @@ boolean OCI_API OCI_LobClose(OCI_Lob *lob)
 
         OCILobClose(lob->con->cxt, lob->con->err, lob->handle)
     )
-
-    OCI_RESULT(res);
-
-    return res;
-}
-
-/* ------------------------------------------------------------------------ *
- * OCI_LobIsEqual
- * ------------------------------------------------------------------------ */
-
-boolean OCI_API OCI_LobIsEqual(OCI_Lob *lob, OCI_Lob *lob2)
-{
-    boolean value = FALSE;
-    boolean res   = TRUE;
-
-    OCI_CHECK_PTR(OCI_IPC_LOB, lob,FALSE);
-    OCI_CHECK_PTR(OCI_IPC_LOB, lob2, FALSE);
-
-    OCI_CALL2
-    (
-        res, lob->con,
-
-        OCILobIsEqual(OCILib.env, lob->handle, lob2->handle, &value)
-    )
-
-    OCI_RESULT(res);
-
-    return value;
-}
-
-/* ------------------------------------------------------------------------ *
- * OCI_LobAssign
- * ------------------------------------------------------------------------ */
-
-boolean OCI_API OCI_LobAssign(OCI_Lob *lob, OCI_Lob *lob_src)
-{
-    boolean res   = TRUE;
-
-    OCI_CHECK_PTR(OCI_IPC_LOB, lob,     FALSE);
-    OCI_CHECK_PTR(OCI_IPC_LOB, lob_src, FALSE);
-
-    if (lob->hstate == OCI_OBJECT_ALLOCATED)
-    {
-        OCI_CALL2
-        (
-            res, lob->con,
-
-            OCILobLocatorAssign(lob->con->cxt, lob->con->err,
-                                lob_src->handle, &lob->handle)
-        )
-    }
-    else
-    {
-        OCI_CALL2
-        (
-            res, lob->con,
-
-            OCILobAssign(OCILib.env, lob->con->err,
-                         lob_src->handle, &lob->handle)
-        )
-    }
 
     OCI_RESULT(res);
 

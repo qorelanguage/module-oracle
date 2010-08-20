@@ -42,7 +42,7 @@
  * OCI_CollInit
  * ------------------------------------------------------------------------ */
 
-OCI_Coll * OCI_CollInit(OCI_Connection *con, OCI_Coll **pcoll, void *handle,
+OCI_Coll * OCI_CollInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_Coll **pcoll, void *handle,
                         OCI_TypeInfo *typinf)
 {
     OCI_Coll *coll = NULL;
@@ -75,7 +75,7 @@ OCI_Coll * OCI_CollInit(OCI_Connection *con, OCI_Coll **pcoll, void *handle,
             (
                 res, con,
 
-                OCI_ObjectNew(OCILib.env, con->err, con->cxt, typinf->ccode,
+                OCI_ObjectNew(pOCILib->env, con->err, con->cxt, typinf->ccode,
                               typinf->tdo, (void *) NULL, OCI_DURATION_SESSION,
                               TRUE, (dvoid **) &coll->handle)
             )
@@ -84,7 +84,7 @@ OCI_Coll * OCI_CollInit(OCI_Connection *con, OCI_Coll **pcoll, void *handle,
             (
                 res, con,
 
-                OCIObjectGetInd(OCILib.env, con->err,
+                OCIObjectGetInd(pOCILib->env, con->err,
                                 (dvoid *) coll->handle,
                                 (dvoid **) &coll->tab_ind)
             )
@@ -117,14 +117,19 @@ OCI_Coll * OCI_CollInit(OCI_Connection *con, OCI_Coll **pcoll, void *handle,
 
 OCI_Coll * OCI_API OCI_CollCreate(OCI_TypeInfo *typinf)
 {
+    return OCI_CollCreate2(&OCILib, typinf);
+}
+
+OCI_Coll * OCI_API OCI_CollCreate2(OCI_Library *pOCILib, OCI_TypeInfo *typinf)
+{
     OCI_Coll *coll = NULL;
 
-    OCI_CHECK_INITIALIZED(NULL);
+    OCI_CHECK_INITIALIZED2(NULL);
 
     OCI_CHECK_PTR(OCI_IPC_TYPE_INFO, typinf, NULL);
     OCI_CHECK(typinf->ccode == OCI_UNKNOWN, NULL)
 
-    coll = OCI_CollInit(typinf->con, &coll, (OCIColl *) NULL, typinf);
+    coll = OCI_CollInit(pOCILib, typinf->con, &coll, (OCIColl *) NULL, typinf);
 
     OCI_RESULT(coll != NULL);
 
@@ -136,6 +141,11 @@ OCI_Coll * OCI_API OCI_CollCreate(OCI_TypeInfo *typinf)
  * ------------------------------------------------------------------------ */
 
 boolean OCI_API OCI_CollFree(OCI_Coll *coll)
+{
+    return OCI_CollFree2(&OCILib, coll);
+}
+
+boolean OCI_API OCI_CollFree2(OCI_Library *pOCILib, OCI_Coll *coll)
 {
     OCI_CHECK_PTR(OCI_IPC_COLLECTION, coll, FALSE);
     OCI_CHECK_OBJECT_FETCHED(coll, FALSE);
@@ -154,7 +164,7 @@ boolean OCI_API OCI_CollFree(OCI_Coll *coll)
     if ((coll->hstate == OCI_OBJECT_ALLOCATED      ) ||
         (coll->hstate == OCI_OBJECT_ALLOCATED_ARRAY))
     {
-        OCI_OCIObjectFree(OCILib.env, coll->typinf->con->err,
+        OCI_OCIObjectFree(pOCILib->env, coll->typinf->con->err,
                           coll->handle, OCI_OBJECTFREE_NONULL);
     }
 
@@ -169,156 +179,15 @@ boolean OCI_API OCI_CollFree(OCI_Coll *coll)
 }
 
 /* ------------------------------------------------------------------------ *
- * OCI_CollArrayCreate
- * ------------------------------------------------------------------------ */
-
-OCI_Coll ** OCI_API OCI_CollArrayCreate(OCI_Connection *con,
-                                        OCI_TypeInfo *typinf,
-                                        unsigned int nbelem)
-{
-    OCI_Array   *arr   = NULL;
-    OCI_Coll   **colls = NULL;
-
-    arr = OCI_ArrayCreate(con, nbelem, OCI_CDT_COLLECTION, 0, 
-                          sizeof(OCIColl *), sizeof(OCI_Coll), 
-                          0, typinf);
-
-    if (arr != NULL)
-    {
-        colls = (OCI_Coll **) arr->tab_obj;
-    }
-
-    return colls;
-}
-
-/* ------------------------------------------------------------------------ *
- * OCI_CollArrayFree
- * ------------------------------------------------------------------------ */
-
-boolean OCI_API OCI_CollArrayFree(OCI_Coll **colls)
-{
-    return OCI_ArrayFreeFromHandles((void **) colls);
-}
-
-/* ------------------------------------------------------------------------ *
- * OCI_CollAssign
- * ------------------------------------------------------------------------ */
-
-boolean OCI_API OCI_CollAssign(OCI_Coll *coll, OCI_Coll *coll_src)
-{
-    boolean res = TRUE;
-
-    OCI_CHECK_PTR(OCI_IPC_COLLECTION, coll,     FALSE);
-    OCI_CHECK_PTR(OCI_IPC_COLLECTION, coll_src, FALSE);
-
-    OCI_CHECK_COMPAT(coll->con,
-                     coll->typinf->cols[0].icode == coll_src->typinf->cols[0].icode,
-                     FALSE);
-
-    OCI_CALL2
-    (
-        res, coll->con,
-
-        OCICollAssign(OCILib.env, coll->con->err, coll_src->handle, coll->handle)
-    )
-
-    OCI_RESULT(res);
-
-    return res;
-}
-
-/* ------------------------------------------------------------------------ *
- * OCI_CollGetType
- * ------------------------------------------------------------------------ */
-
-unsigned int OCI_API OCI_CollGetType(OCI_Coll *coll)
-{
-    unsigned int type = OCI_UNKNOWN;
-
-    OCI_CHECK_PTR(OCI_IPC_COLLECTION, coll, OCI_UNKNOWN);
-
-    if (coll->typinf->ccode == OCI_TYPECODE_TABLE)
-        type = OCI_COLL_NESTED_TABLE;
-    else if(coll->typinf->ccode == OCI_TYPECODE_VARRAY)
-        type = OCI_COLL_VARRAY;
-
-    OCI_RESULT(TRUE);
-
-    return type;
-}
-
-/* ------------------------------------------------------------------------ *
- * OCI_CollGetCount
- * ------------------------------------------------------------------------ */
-
-unsigned int OCI_API OCI_CollGetMax(OCI_Coll *coll)
-{
-    int max = 0;
-
-    OCI_CHECK_PTR(OCI_IPC_COLLECTION, coll, 0);
-
-    max = OCICollMax(OCILib.env, coll->handle);
-
-    OCI_RESULT(TRUE);
-
-    return (unsigned int) max;
-}
-
-/* ------------------------------------------------------------------------ *
- * OCI_CollGetSize
- * ------------------------------------------------------------------------ */
-
-unsigned int OCI_API OCI_CollGetSize(OCI_Coll *coll)
-{
-    boolean res = TRUE;
-    sb4 size    = 0;
-
-    OCI_CHECK_PTR(OCI_IPC_COLLECTION, coll, 0);
-
-    OCI_CALL2
-    (
-        res, coll->con,
-
-        OCICollSize(OCILib.env, coll->con->err, coll->handle, &size)
-    )
-
-    OCI_RESULT(res);
-
-    return (unsigned int) size;
-}
-
-/* ------------------------------------------------------------------------ *
- * OCI_CollTrim
- * ------------------------------------------------------------------------ */
-
-boolean OCI_API OCI_CollTrim(OCI_Coll *coll, unsigned int nb_elem)
-{
-    boolean res      = TRUE;
-    unsigned int size = 0;
-
-    OCI_CHECK_PTR(OCI_IPC_COLLECTION, coll, FALSE);
-
-    size = OCI_CollGetSize(coll);
-
-    OCI_CHECK_BOUND(coll->con, (sb4) nb_elem, (sb4) 0, (sb4) size, FALSE);
-
-    OCI_CALL2
-    (
-        res, coll->con,
-
-        OCICollTrim(OCILib.env, coll->con->err, (sb4) nb_elem, coll->handle)
-    )
-
-    OCI_RESULT(res);
-
-    return res;
-}
-
-/* ------------------------------------------------------------------------ *
  * OCI_CollGetAt
  * ------------------------------------------------------------------------ */
 
 OCI_Elem * OCI_API OCI_CollGetAt(OCI_Coll *coll, unsigned int index)
+{
+    return OCI_CollGetAt2(&OCILib, coll, index);
+}
+
+OCI_Elem * OCI_API OCI_CollGetAt2(OCI_Library *pOCILib, OCI_Coll *coll, unsigned int index)
 {
     boolean res    = TRUE;
     boolean exists = FALSE;
@@ -332,7 +201,7 @@ OCI_Elem * OCI_API OCI_CollGetAt(OCI_Coll *coll, unsigned int index)
     (
         res, coll->con,
 
-        OCICollGetElem(OCILib.env, coll->con->err, coll->handle, (sb4) index-1,
+        OCICollGetElem(pOCILib->env, coll->con->err, coll->handle, (sb4) index-1,
                        &exists, &data, (dvoid **) (dvoid *) &p_ind)
     )
 
@@ -347,69 +216,6 @@ OCI_Elem * OCI_API OCI_CollGetAt(OCI_Coll *coll, unsigned int index)
     return elem;
 }
 
-/* ------------------------------------------------------------------------ *
- * OCI_CollGetAt2
- * ------------------------------------------------------------------------ */
-
-boolean OCI_API OCI_CollGetAt2(OCI_Coll *coll, unsigned int index, OCI_Elem *elem)
-{
-    boolean res    = TRUE;
-    boolean exists = FALSE;
-    void *data     = NULL;
-    OCIInd *p_ind  = NULL;
-
-    OCI_CHECK_PTR(OCI_IPC_COLLECTION, coll, FALSE);
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
-
-    OCI_CHECK_COMPAT(coll->con, elem->typinf->cols[0].type == coll->typinf->cols[0].type, FALSE);
-
-    OCI_CALL2
-    (
-        res, coll->con,
-
-        OCICollGetElem(OCILib.env, coll->con->err, coll->handle, (sb4) index-1,
-                       &exists, &data, (dvoid **) (dvoid *) &p_ind)
-    )
-
-    if (res == TRUE && exists == TRUE && data != NULL)
-    {
-        res = (OCI_ElemInit(coll->con, &elem, data, p_ind, coll->typinf) != NULL);
-    }
-    else
-    {
-        OCI_ElemSetNullIndicator(elem, OCI_IND_NULL);
-    }
-
-    OCI_RESULT(res);
-
-    return res;
-}
-
-/* ------------------------------------------------------------------------ *
- * OCI_CollSetAt
- * ------------------------------------------------------------------------ */
-
-boolean OCI_API OCI_CollSetAt(OCI_Coll *coll, unsigned int index, OCI_Elem *elem)
-{
-    boolean res = TRUE;
-
-    OCI_CHECK_PTR(OCI_IPC_COLLECTION, coll, FALSE);
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
-
-    OCI_CHECK_COMPAT(coll->con, elem->typinf->cols[0].type == coll->typinf->cols[0].type, FALSE);
-
-    OCI_CALL2
-    (
-        res, coll->con,
-
-        OCICollAssignElem(OCILib.env, coll->con->err, (sb4) index-1, elem->handle,
-                          elem->pind,coll->handle)
-    )
-
-    OCI_RESULT(res);
-
-    return res;
-}
 
 /* ------------------------------------------------------------------------ *
  * OCI_CollAppend
@@ -417,6 +223,11 @@ boolean OCI_API OCI_CollSetAt(OCI_Coll *coll, unsigned int index, OCI_Elem *elem
 
 boolean OCI_API OCI_CollAppend(OCI_Coll *coll, OCI_Elem *elem)
 {
+    return OCI_CollAppend2(&OCILib, coll, elem);
+}
+
+boolean OCI_API OCI_CollAppend2(OCI_Library *pOCILib, OCI_Coll *coll, OCI_Elem *elem)
+{
     boolean res = TRUE;
 
     OCI_CHECK_PTR(OCI_IPC_COLLECTION, coll, FALSE);
@@ -428,42 +239,9 @@ boolean OCI_API OCI_CollAppend(OCI_Coll *coll, OCI_Elem *elem)
     (
         res, coll->con,
 
-        OCICollAppend(OCILib.env, coll->con->err, elem->handle, elem->pind,
+        OCICollAppend(pOCILib->env, coll->con->err, elem->handle, elem->pind,
                       coll->handle)
     )
-
-    OCI_RESULT(res);
-
-    return res;
-}
-
-/* ------------------------------------------------------------------------ *
- * OCI_CollGetTypeInfo
- * ------------------------------------------------------------------------ */
-
-OCI_TypeInfo * OCI_API OCI_CollGetTypeInfo(OCI_Coll *coll)
-{
-    OCI_CHECK_PTR(OCI_IPC_COLLECTION, coll, NULL);
-
-    OCI_RESULT(TRUE);
-
-    return coll->typinf;
-}
-
-/* ------------------------------------------------------------------------ *
- * OCI_CollTrim
- * ------------------------------------------------------------------------ */
-
-boolean OCI_API OCI_CollClear(OCI_Coll *coll)
-{
-    boolean res = TRUE;
-
-    unsigned int size = OCI_CollGetSize(coll);
-
-    if (size > 0)
-    {
-        res = OCI_CollTrim(coll, size);
-    }
 
     OCI_RESULT(res);
 

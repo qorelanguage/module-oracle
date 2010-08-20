@@ -96,7 +96,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
     mtext obj_schema[OCI_SIZE_OBJ_NAME+1];
     mtext obj_name[OCI_SIZE_OBJ_NAME+1];
 
-    OCI_CHECK_INITIALIZED(NULL);
+    OCI_CHECK_INITIALIZED2(NULL);
 
     OCI_CHECK_PTR(OCI_IPC_CONNECTION, con, NULL);
     OCI_CHECK_PTR(OCI_IPC_STRING, name, NULL);
