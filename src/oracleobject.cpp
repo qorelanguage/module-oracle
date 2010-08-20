@@ -137,6 +137,11 @@ OCI_Object* objBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * 
     const char * tname = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("^oratype^"))->getBuffer();
     
     OCI_TypeInfo * info = OCI_TypeInfoGet2(&d->ocilib, d->ocilib_cn, tname, OCI_TIF_TYPE);
+    if (!info) {
+        xsink->raiseException("BIND-ORACLE-OBJECT-ERROR",
+                              "No type '%s' defined in the DB", tname);
+        return 0;
+    }
     OCI_Object * obj = OCI_ObjectCreate2(&d->ocilib, d->ocilib_cn, info);
 
     int n = OCI_TypeInfoGetColumnCount(info);
@@ -534,6 +539,12 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
     const char * tname = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("^oratype^"))->getBuffer();
     
     OCI_TypeInfo * info = OCI_TypeInfoGet2(&d->ocilib, d->ocilib_cn, tname, OCI_TIF_TYPE);
+    if (!info) {
+        xsink->raiseException("BIND-ORACLE-COLLECTION-ERROR",
+                              "No type '%s' defined in the DB", tname);
+        return 0;
+    }
+
 //     printf("onfo: %d\n", info->nb_cols);
     OCI_Coll * obj = OCI_CollCreate2(&d->ocilib, info);
     OCI_Column *col = OCI_TypeInfoGetColumn(info, 1);
@@ -916,6 +927,13 @@ AbstractQoreNode* collToQore(OracleData * d_ora, OCI_Coll * obj, Datasource *ds,
 OCI_Coll* collPlaceholderQore(OracleData * d_ora, const char * tname, ExceptionSink *xsink)
 {
     OCI_TypeInfo * info = OCI_TypeInfoGet2(&d_ora->ocilib, d_ora->ocilib_cn, tname, OCI_TIF_TYPE);
+    if (!info) {
+        xsink->raiseException("PLACEHOLDER-ORACLE-COLLECTION-ERROR",
+                              "No type '%s' defined in the DB", tname);
+        return 0;
+    }
     OCI_Coll * obj = OCI_CollCreate2(&d_ora->ocilib, info);
+    if (!obj && !*xsink)
+        xsink->raiseException("ORACLE-COLLECTION-ERROR", "could not create placeholder buffer for object type '%s'", tname);
     return obj;
 }
