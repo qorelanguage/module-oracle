@@ -924,15 +924,15 @@ void OraBindGroup::parseQuery(const QoreListNode *args) {
 		  xsink->raiseException("DBI-EXEC-EXCEPTION", "expecting type name as value of 'type' key, got '%s'", t->getTypeName());
 		  break;
 	       }
-	       const AbstractQoreNode *v = h->getKeyValue("value");
+//	       const AbstractQoreNode *v = h->getKeyValue("value");
 	       
 	       // get and check size
 	       const AbstractQoreNode *sz = h->getKeyValue("size");
 	       int size = sz ? sz->getAsInt() : -1;
 	       
-               QoreStringValueHelper strdebug(v);
+//               QoreStringValueHelper strdebug(v);
 // 	       printd(0, "OraBindGroup::parseQuery() adding placeholder name=%s, size=%d, type=%s, value=%s\n", tstr.getBuffer(), size, str->getBuffer(), strdebug->getBuffer());
-	       add(tstr.giveBuffer(), size, str->getBuffer(), v);
+    	   add(tstr.giveBuffer(), size, str->getBuffer(), h);
 	    }
 	    else if (vtype == NT_STRING)
 	       add(tstr.giveBuffer(), -1, (reinterpret_cast<const QoreStringNode *>(v))->getBuffer(), 0);
@@ -1364,14 +1364,20 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
 	 buf.ptr = NULL;
    }
    else if (!strcmp(data.ph.type, ORACLE_OBJECT)) {
-       const QoreStringNode * h = reinterpret_cast<const QoreStringNode*>(data.ph.value);
 
        bufsubtype = SQLT_NTY_OBJECT;
        buftype = SQLT_NTY;
 
-       buf.oraObj = objPlaceholderQore(d_ora, h->getBuffer(), xsink);
+       const QoreHashNode * h = reinterpret_cast<const QoreHashNode*>(data.ph.value);
+       if (h->existsKey("^values^"))
+           buf.oraObj = objBindQore(d_ora, h, xsink); // IN/OUT
+       else {
+           const QoreStringNode * str = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("value"));
+           buf.oraObj = objPlaceholderQore(d_ora, str->getBuffer(), xsink); // IN
+       }
+
        if (*xsink)
-	  return;
+           return;
 
        ora_checkerr(d_ora->errhp, 
                     OCIBindByPos(stmthp, &bndp, d_ora->errhp,
@@ -1389,11 +1395,20 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
        //printd(0, "OraBindNode::bindValue() object '%s' tdo=0x%x handle=0x%x\n", h->getBuffer(), buf.oraObj->typinf->tdo, buf.oraObj->handle);
    }
    else if (!strcmp(data.ph.type, ORACLE_COLLECTION)) {
-       const QoreStringNode * h = reinterpret_cast<const QoreStringNode*>(data.ph.value);
 
-       buf.oraColl = collPlaceholderQore(d_ora, h->getBuffer(), xsink);
        bufsubtype = SQLT_NTY_COLLECTION;
        buftype = SQLT_NTY;
+
+       const QoreHashNode * h = reinterpret_cast<const QoreHashNode*>(data.ph.value);
+       if (h->existsKey("^values^"))
+           buf.oraColl = collBindQore(d_ora, h, xsink); // IN/OUT
+       else {
+           const QoreStringNode * str = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("value"));
+           buf.oraColl = collPlaceholderQore(d_ora, str->getBuffer(), xsink); // IN
+       }
+
+       if (*xsink)
+           return;
 
        ora_checkerr(d_ora->errhp, 
                     OCIBindByPos(stmthp, &bndp, d_ora->errhp,
