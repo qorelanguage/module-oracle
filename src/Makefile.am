@@ -17,7 +17,6 @@ ORACLE_SOURCES = oracle.cc oracleobject.cpp \
 	ocilib/date.c
 
 #	ocilib/hash.c 
-#	ocilib/lob.c
 #	ocilib/long.c
 
 
