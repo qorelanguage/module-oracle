@@ -458,15 +458,15 @@
 
 #define OCI_NB_ARG_VERSION              3
 
-#define OCI_LIB_THREADED                (OCILib.env_mode & OCI_ENV_THREADED)
+#define OCI_LIB_THREADED(ocilib)       (ocilib->env_mode & OCI_ENV_THREADED)
 
-#define OCI_LIB_CONTEXT                 (OCILib.env_mode & OCI_ENV_CONTEXT)
+#define OCI_LIB_CONTEXT(ocilib)        (ocilib->env_mode & OCI_ENV_CONTEXT)
 
+#define OCI_RESULT(ocilib, res)						\
+                                                                                \
+        if (OCI_LIB_CONTEXT(ocilib))						\
+             OCI_SetStatus(res);                                                \
 
-#define OCI_RESULT(res)                                                        \
-                                                                               \
-        if (OCI_LIB_CONTEXT)                                                   \
-            OCI_SetStatus(res);                                                \
 
 #ifdef _WINDOWS
   #define OCI_CVT_CHAR                  1

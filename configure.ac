@@ -568,6 +568,7 @@ if test "${enable_debug}" = yes; then
    AC_DEFINE(DEBUG, 1, Define if debugging support should be included)
    # remove -O2 from CXXFLAGS so valgrind can report properly
    CXXFLAGS=`echo $CXXFLAGS | sed 's/\-O2//'`
+   CFLAGS=`echo $CFLAGS | sed 's/\-O2//'`
 else
    AC_DEFINE(NDEBUG, 1, Define if assert() declarations should be suppressed)
 fi
@@ -637,6 +638,7 @@ if test "$enable_optimization" = "yes"; then
 else
     if test "$GXX" = "yes"; then
         CXXFLAGS="`echo $CXXFLAGS| sed s/-O2//`"  # gcc
+        CFLAGS="`echo $CFLAGS| sed s/-O2//`"  # gcc
     fi
 fi
 

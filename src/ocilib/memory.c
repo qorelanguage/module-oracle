@@ -42,7 +42,7 @@
  * OCI_MemAlloc
  * ------------------------------------------------------------------------ */
 
-void * OCI_MemAlloc(int ptr_type, size_t block_size, size_t block_count, 
+void * OCI_MemAlloc2(OCI_Library *pOCILib, int ptr_type, size_t block_size, size_t block_count, 
                     boolean zero_fill)
 {
     void * ptr  = NULL;
@@ -56,7 +56,7 @@ void * OCI_MemAlloc(int ptr_type, size_t block_size, size_t block_count,
             memset(ptr, 0, size);
     }
     else
-        OCI_ExceptionMemory(ptr_type, size, NULL, NULL);
+       OCI_ExceptionMemory2(pOCILib, ptr_type, size, NULL, NULL);
 
     return ptr;
 }
@@ -65,7 +65,7 @@ void * OCI_MemAlloc(int ptr_type, size_t block_size, size_t block_count,
  * OCI_MemRealloc
  * ------------------------------------------------------------------------ */
 
-void * OCI_MemRealloc(void * ptr_mem, int ptr_type, size_t block_size, 
+void * OCI_MemRealloc2(OCI_Library *pOCILib, void * ptr_mem, int ptr_type, size_t block_size, 
                       size_t block_count)
 {
     void * ptr  = NULL;
@@ -77,7 +77,7 @@ void * OCI_MemRealloc(void * ptr_mem, int ptr_type, size_t block_size,
     {
         OCI_MemFree(ptr_mem);
 
-        OCI_ExceptionMemory(ptr_type, size, NULL, NULL);
+        OCI_ExceptionMemory2(pOCILib, ptr_type, size, NULL, NULL);
     }
 
     return ptr;
@@ -97,7 +97,7 @@ void OCI_MemFree(void * ptr_mem)
  * OCI_HandleAlloc
  * ------------------------------------------------------------------------ */
 
-sword OCI_HandleAlloc(CONST dvoid *parenth, dvoid **hndlpp, CONST ub4 type,
+sword OCI_HandleAlloc2(OCI_Library *pOCILib, CONST dvoid *parenth, dvoid **hndlpp, CONST ub4 type,
                       CONST size_t xtramem_sz, dvoid **usrmempp)
 {     
     sword ret = OCI_SUCCESS;
@@ -106,7 +106,7 @@ sword OCI_HandleAlloc(CONST dvoid *parenth, dvoid **hndlpp, CONST ub4 type,
 
     if (ret == OCI_SUCCESS)
     {
-        OCILib.nb_hndlp++;   
+        pOCILib->nb_hndlp++;   
     }
 
     return ret;
@@ -116,13 +116,13 @@ sword OCI_HandleAlloc(CONST dvoid *parenth, dvoid **hndlpp, CONST ub4 type,
  * OCI_HandleFree
  * ------------------------------------------------------------------------ */
 
-sword OCI_HandleFree(dvoid *hndlp, CONST ub4 type)
+sword OCI_HandleFree2(OCI_Library *pOCILib, dvoid *hndlp, CONST ub4 type)
 {                
     sword ret = OCI_SUCCESS;
 
     if (hndlp != NULL)
     {
-        OCILib.nb_hndlp--;  
+        pOCILib->nb_hndlp--;  
 
         ret = OCIHandleFree(hndlp, type);
     }
@@ -134,7 +134,7 @@ sword OCI_HandleFree(dvoid *hndlp, CONST ub4 type)
  * OCI_DescriptorAlloc
  * ------------------------------------------------------------------------ */
 
-sword OCI_DescriptorAlloc(CONST dvoid *parenth, dvoid **descpp, CONST ub4 type,
+sword OCI_DescriptorAlloc2(OCI_Library *pOCILib, CONST dvoid *parenth, dvoid **descpp, CONST ub4 type,
                           CONST size_t xtramem_sz,  dvoid **usrmempp)
 {
     sword ret = OCI_SUCCESS;
@@ -143,7 +143,7 @@ sword OCI_DescriptorAlloc(CONST dvoid *parenth, dvoid **descpp, CONST ub4 type,
 
     if (ret == OCI_SUCCESS)
     {
-        OCILib.nb_descp++;   
+        pOCILib->nb_descp++;   
     }
 
     return ret;
@@ -153,7 +153,7 @@ sword OCI_DescriptorAlloc(CONST dvoid *parenth, dvoid **descpp, CONST ub4 type,
  * OCI_DescriptorArrayAlloc
  * ------------------------------------------------------------------------ */
 
-sword OCI_DescriptorArrayAlloc(CONST dvoid *parenth, dvoid **descpp, 
+sword OCI_DescriptorArrayAlloc2(OCI_Library *pOCILib, CONST dvoid *parenth, dvoid **descpp, 
                                CONST ub4 type, ub4 nb_elem, 
                                CONST size_t xtramem_sz, dvoid **usrmempp)
 {
@@ -161,7 +161,7 @@ sword OCI_DescriptorArrayAlloc(CONST dvoid *parenth, dvoid **descpp,
 
 #if OCI_VERSION_COMPILE >= OCI_11_1
 
-    if (OCILib.version_runtime >= OCI_11_1)
+    if (pOCILib->version_runtime >= OCI_11_1)
     {
         ret = OCIArrayDescriptorAlloc(parenth, descpp, type, nb_elem,
                                       xtramem_sz, usrmempp);
@@ -182,7 +182,7 @@ sword OCI_DescriptorArrayAlloc(CONST dvoid *parenth, dvoid **descpp,
 
     if (ret == OCI_SUCCESS)
     {
-        OCILib.nb_descp += nb_elem;   
+        pOCILib->nb_descp += nb_elem;   
     }
 
     return ret;
@@ -192,13 +192,13 @@ sword OCI_DescriptorArrayAlloc(CONST dvoid *parenth, dvoid **descpp,
  * OCI_DescriptorFree
  * ------------------------------------------------------------------------ */
 
-sword OCI_DescriptorFree(dvoid *descp, CONST ub4 type)
+sword OCI_DescriptorFree2(OCI_Library *pOCILib, dvoid *descp, CONST ub4 type)
 {                                                    
     sword ret = OCI_SUCCESS;
 
     if (descp != NULL)
     {
-        OCILib.nb_descp--;  
+        pOCILib->nb_descp--;  
 
         ret = OCIDescriptorFree(descp, type);
     }
@@ -210,7 +210,7 @@ sword OCI_DescriptorFree(dvoid *descp, CONST ub4 type)
  * OCI_DescriptorFree
  * ------------------------------------------------------------------------ */
 
-sword OCI_DescriptorArrayFree(dvoid **descp, CONST ub4 type, ub4 nb_elem)
+sword OCI_DescriptorArrayFree2(OCI_Library *pOCILib, dvoid **descp, CONST ub4 type, ub4 nb_elem)
 {            
     sword ret = OCI_SUCCESS;
 
@@ -218,7 +218,7 @@ sword OCI_DescriptorArrayFree(dvoid **descp, CONST ub4 type, ub4 nb_elem)
     {
     #if OCI_VERSION_COMPILE >= OCI_11_1
 
-        if (OCILib.version_runtime >= OCI_11_1)
+        if (pOCILib->version_runtime >= OCI_11_1)
         {
             ret = OCIArrayDescriptorFree(descp, type);
 
@@ -237,7 +237,7 @@ sword OCI_DescriptorArrayFree(dvoid **descp, CONST ub4 type, ub4 nb_elem)
         }
 
   
-        OCILib.nb_descp -= nb_elem;  
+        pOCILib->nb_descp -= nb_elem;  
     }
 
     return ret;
@@ -247,7 +247,7 @@ sword OCI_DescriptorArrayFree(dvoid **descp, CONST ub4 type, ub4 nb_elem)
  * OCI_fob
  * ------------------------------------------------------------------------ */
 
-sword OCI_ObjectNew(OCIEnv *env, OCIError *err, CONST OCISvcCtx *svc,
+sword OCI_ObjectNew2(OCI_Library *pOCILib, OCIEnv *env, OCIError *err, CONST OCISvcCtx *svc,
                     OCITypeCode typecode, OCIType *tdo, dvoid *table, 
                     OCIDuration duration, boolean value, 
                     dvoid **instance)
@@ -258,7 +258,7 @@ sword OCI_ObjectNew(OCIEnv *env, OCIError *err, CONST OCISvcCtx *svc,
 
     if (ret == OCI_SUCCESS)
     {
-        OCILib.nb_objinst++;  
+        pOCILib->nb_objinst++;  
     }
 
     return ret;
@@ -268,13 +268,13 @@ sword OCI_ObjectNew(OCIEnv *env, OCIError *err, CONST OCISvcCtx *svc,
  * OCI_OCIObjectFree
  * ------------------------------------------------------------------------ */
 
-sword OCI_OCIObjectFree(OCIEnv *env, OCIError *err, dvoid *instance, ub2 flags)
+sword OCI_OCIObjectFree2(OCI_Library *pOCILib, OCIEnv *env, OCIError *err, dvoid *instance, ub2 flags)
 {
     sword ret = OCI_SUCCESS;
 
     if (instance != NULL)
     {
-        OCILib.nb_objinst--;  
+        pOCILib->nb_objinst--;  
     
         ret = OCIObjectFree(env, err, instance, flags);
     }

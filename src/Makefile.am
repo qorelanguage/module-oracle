@@ -1,22 +1,24 @@
 ORACLE_SOURCES = oracle.cc oracleobject.cpp \
 	ocilib/exception.c \
-	ocilib/lob.c \
 	ocilib/string.c \
 	ocilib/timestamp.c \
 	ocilib/collection.c \
 	ocilib/element.c \
-	ocilib/hash.c \
 	ocilib/library.c \
-	ocilib/long.c \
 	ocilib/number.c \
 	ocilib/typeinfo.c \
 	ocilib/column.c \
-	ocilib/date.c \
 	ocilib/error.c \
-	ocilib/interval.c \
 	ocilib/list.c \
 	ocilib/memory.c \
-	ocilib/object.c
+	ocilib/lob.c \
+	ocilib/object.c \
+	ocilib/interval.c \
+	ocilib/date.c
+
+#	ocilib/hash.c 
+#	ocilib/lob.c
+#	ocilib/long.c
 
 
 lib_LTLIBRARIES = oracle.la
@@ -32,6 +34,7 @@ AM_CXXFLAGS=-g -pg
 else
 if COND_DEBUG
 AM_CXXFLAGS=-g
+AM_CFLAGS=-g
 endif
 endif
 

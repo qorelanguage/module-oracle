@@ -85,7 +85,7 @@ boolean OCI_ColumnDescribe
 /* ------------------------------------------------------------------------ *
  * date.c
  * ------------------------------------------------------------------------ */
-
+/*
 OCI_Date * OCI_DateInit
 (
     OCI_Connection *con,
@@ -94,12 +94,12 @@ OCI_Date * OCI_DateInit
     boolean allocate,
     boolean ansi
 );
-
+*/
 
 /* ------------------------------------------------------------------------ *
  * element.c
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_ElemGetNumber
 (
     OCI_Elem *elem,
@@ -124,7 +124,7 @@ OCI_Elem * OCI_ElemInit
     OCIInd *pind,
     OCI_TypeInfo *typeinf
 );
-
+*/
 boolean OCI_ElemSetNullIndicator
 (
     OCI_Elem *elem,
@@ -159,7 +159,7 @@ OCI_Error * OCI_ErrorCreate
 /* ------------------------------------------------------------------------ *
  * exception.c
  * ------------------------------------------------------------------------ */
-
+/*
 OCI_Error * OCI_ExceptionGetError
 (
     boolean warning
@@ -300,7 +300,7 @@ void OCI_ExceptionDirPathState
 );
 
 void OCI_ExceptionOCIEnvironment(void);
-
+*/
 
 
 /* ------------------------------------------------------------------------ *
@@ -348,7 +348,7 @@ void OCI_SetStatus
     boolean res
  );
 
-boolean OCI_KeyMapFree(void);
+//boolean OCI_KeyMapFree(void);
 
 /* ------------------------------------------------------------------------ *
  * list.c
@@ -366,12 +366,14 @@ boolean OCI_ListFree
 
 OCI_Item * OCI_ListCreateItem
 (
+    OCI_Library *pOCILib,
     int type,
     int size
 );
 
 OCI_Item * OCI_ListAppend
 (
+    OCI_Library *pOCILib,
     OCI_List *list,
     int size
 );
@@ -422,16 +424,18 @@ OCI_Long * OCI_LongInit
  * memory.c
  * ------------------------------------------------------------------------ */
 
-void * OCI_MemAlloc
+void * OCI_MemAlloc2
 (
+   OCI_Library *pOCILib,
     int ptr_type,
     size_t block_size,
     size_t block_count,
     boolean zero_fill
 );
 
-void * OCI_MemRealloc
+void * OCI_MemRealloc2
 (
+   OCI_Library *pOCILib,
     void * ptr_mem,
     int ptr_type,
     size_t block_size,
@@ -443,8 +447,9 @@ void OCI_MemFree
     void * ptr_mem
 );
 
-sword OCI_HandleAlloc
+sword OCI_HandleAlloc2
 (
+   OCI_Library *pOCILib,
     CONST dvoid *parenth,
     dvoid **hndlpp,
     CONST ub4 type,
@@ -452,14 +457,16 @@ sword OCI_HandleAlloc
     dvoid **usrmempp
 );
 
-sword OCI_HandleFree
+sword OCI_HandleFree2
 (
+   OCI_Library *pOCILib,
     dvoid *hndlp,
     CONST ub4 type
 );
 
-sword OCI_DescriptorAlloc
+sword OCI_DescriptorAlloc2
 (
+   OCI_Library *pOCILib,
     CONST dvoid *parenth,
     dvoid **descpp,
     CONST ub4 type,
@@ -467,8 +474,9 @@ sword OCI_DescriptorAlloc
     dvoid **usrmempp
 );
 
-sword OCI_DescriptorArrayAlloc
+sword OCI_DescriptorArrayAlloc2
 (
+   OCI_Library *pOCILib,
     CONST dvoid *parenth,
     dvoid **descpp,
     CONST ub4 type,
@@ -477,14 +485,16 @@ sword OCI_DescriptorArrayAlloc
     dvoid **usrmempp
 );
 
-sword OCI_DescriptorFree
+sword OCI_DescriptorFree2
 (
+   OCI_Library *pOCILib,
     void *descp,
     CONST ub4 type
 );
 
-sword OCI_DescriptorArrayFree
+sword OCI_DescriptorArrayFree2
 (
+   OCI_Library *pOCILib,
     void **descp,
     CONST ub4 type,
     ub4 nb_elem
@@ -503,7 +513,7 @@ sword OCI_ObjectNew
     boolean value,
     dvoid **instance
 );
-
+/*
 sword OCI_OCIObjectFree
 (
     OCIEnv *env,
@@ -511,13 +521,13 @@ sword OCI_OCIObjectFree
     dvoid *instance,
     ub2 flags
 );
-
+*/
 
 
 /* ------------------------------------------------------------------------ *
  * number.c
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_NumberGet
 (
     OCI_Connection *con,
@@ -557,7 +567,7 @@ boolean OCI_NumberGetFromStr
     const mtext* fmt,
     ub4 fmt_size
 );
-
+*/
 /* ------------------------------------------------------------------------ *
  * object.c
  * ------------------------------------------------------------------------ */
@@ -595,23 +605,24 @@ OCI_Object * OCI_ObjectInit
 
 void OCI_ObjectReset
 (
+    OCI_Library *pOCILib,
     OCI_Object *obj
 );
-
+/*
 int OCI_ObjectGetAttrIndex
 (
     OCI_Object *obj,
     const mtext *attr,
     int type
 );
-
+*/
 void * OCI_ObjectGetAttr
 (
     OCI_Object *obj,
     unsigned int index,
     OCIInd **pind
 );
-
+/*
 boolean OCI_ObjectSetNumber
 (
     OCI_Object *obj,
@@ -627,7 +638,7 @@ boolean OCI_ObjectGetNumber
     void *value,
     uword size, uword flag
 );
-
+*/
 
 /* ------------------------------------------------------------------------ *
  * string.c
@@ -652,6 +663,7 @@ int OCI_StringCopy2to4bytes
 
 void * OCI_GetInputString
 (
+    OCI_Library *pOCILib,
     void *src,
     int *size,
     size_t size_char_in,
@@ -715,7 +727,7 @@ int OCI_StringUTF8Length
 );
 
 
-#define OCI_GetInputMetaString(s, n)     OCI_GetInputString((void *) s, n,     \
+#define OCI_GetInputMetaString(ocilib, s, n)     OCI_GetInputString(ocilib, (void *) s, n, \
                                                              sizeof(mtext),    \
                                                              sizeof(omtext))
 
@@ -723,7 +735,7 @@ int OCI_StringUTF8Length
                                                              sizeof(omtext),   \
                                                              sizeof(mtext))
 
-#define OCI_GetInputDataString(s, n)     OCI_GetInputString((void *) s, n,     \
+#define OCI_GetInputDataString(ocilib, s, n)     OCI_GetInputString(ocilib, (void *) s, n, \
                                                              sizeof(dtext),    \
                                                              sizeof(odtext))
 

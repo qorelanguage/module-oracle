@@ -54,7 +54,7 @@ OCI_Timestamp * OCI_TimestampInit(OCI_Library *pOCILib, OCI_Connection *con, OCI
     OCI_CHECK(ptmsp == NULL, NULL);
 
     if (*ptmsp == NULL)
-        *ptmsp = (OCI_Timestamp *) OCI_MemAlloc(OCI_IPC_TIMESTAMP, sizeof(*tmsp),
+        *ptmsp = (OCI_Timestamp *) OCI_MemAlloc2(pOCILib, OCI_IPC_TIMESTAMP, sizeof(*tmsp),
                                                 (size_t) 1, TRUE);
 
     if (*ptmsp != NULL)
@@ -70,7 +70,7 @@ OCI_Timestamp * OCI_TimestampInit(OCI_Library *pOCILib, OCI_Connection *con, OCI
         if (con != NULL)
             tmsp->err = con->err;
         else
-            tmsp->err = OCILib.err;
+            tmsp->err = pOCILib->err;
 
         /* allocate buffer if needed */
 
@@ -87,10 +87,10 @@ OCI_Timestamp * OCI_TimestampInit(OCI_Library *pOCILib, OCI_Connection *con, OCI
 
             if (tmsp->hstate != OCI_OBJECT_ALLOCATED_ARRAY)
             {
-                res = (OCI_SUCCESS == OCI_DescriptorAlloc((dvoid  *) pOCILib->env,
-                                                          (dvoid **) (void *) &tmsp->handle,
-                                                          (ub4     ) htype, (size_t) 0,
-                                                          (dvoid **) NULL));
+                res = (OCI_SUCCESS == OCI_DescriptorAlloc2(pOCILib, (dvoid  *) pOCILib->env,
+							   (dvoid **) (void *) &tmsp->handle,
+							   (ub4     ) htype, (size_t) 0,
+							   (dvoid **) NULL));
                 tmsp->hstate = OCI_OBJECT_ALLOCATED;
             }
 
@@ -105,7 +105,7 @@ OCI_Timestamp * OCI_TimestampInit(OCI_Library *pOCILib, OCI_Connection *con, OCI
 
     if (res == FALSE)
     {
-        OCI_TimestampFree(tmsp);
+        OCI_TimestampFree2(pOCILib, tmsp);
         tmsp = NULL;
     }
 
@@ -128,21 +128,22 @@ OCI_Timestamp * OCI_TimestampInit(OCI_Library *pOCILib, OCI_Connection *con, OCI
 /* ------------------------------------------------------------------------ *
  * OCI_TimestampCreate
  * ------------------------------------------------------------------------ */
-
+/*
 OCI_Timestamp * OCI_API OCI_TimestampCreate(OCI_Connection *con,
                                             unsigned int type)
 {
     return OCI_TimestampCreate2(&OCILib, con, type);
 }
+*/
 
 OCI_Timestamp * OCI_API OCI_TimestampCreate2(OCI_Library *pOCILib, OCI_Connection *con,
                                             unsigned int type)
 {
     OCI_Timestamp *tmsp = NULL;
 
-    OCI_CHECK_INITIALIZED2(NULL);
+    OCI_CHECK_INITIALIZED2(pOCILib, NULL);
 
-    OCI_CHECK_TIMESTAMP_ENABLED(con, NULL);
+    OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, con, NULL);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
@@ -154,7 +155,7 @@ OCI_Timestamp * OCI_API OCI_TimestampCreate2(OCI_Library *pOCILib, OCI_Connectio
 
 #endif
 
-    OCI_RESULT(tmsp != NULL);
+    OCI_RESULT(pOCILib, tmsp != NULL);
 
     return tmsp;
 }
@@ -162,12 +163,18 @@ OCI_Timestamp * OCI_API OCI_TimestampCreate2(OCI_Library *pOCILib, OCI_Connectio
 /* ------------------------------------------------------------------------ *
  * OCI_TimestampFree
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_TimestampFree(OCI_Timestamp *tmsp)
 {
-    OCI_CHECK_PTR(OCI_IPC_TIMESTAMP, tmsp, FALSE);
+   return OCI_TimestampFree2(&OCILib, tmsp);
+}
+*/
 
-    OCI_CHECK_TIMESTAMP_ENABLED(tmsp->con, FALSE);
+boolean OCI_API OCI_TimestampFree2(OCI_Library *pOCILib, OCI_Timestamp *tmsp)
+{
+   OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp, FALSE);
+
+    OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, tmsp->con, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
@@ -184,7 +191,7 @@ boolean OCI_API OCI_TimestampFree(OCI_Timestamp *tmsp)
         else if (tmsp->type == OCI_TIMESTAMP_LTZ)
             htype = OCI_DTYPE_TIMESTAMP_LTZ;
 
-       OCI_DescriptorFree((dvoid *) tmsp->handle, htype);
+       OCI_DescriptorFree2(pOCILib, (dvoid *) tmsp->handle, htype);
     }
 
     if (tmsp->hstate != OCI_OBJECT_ALLOCATED_ARRAY)
@@ -194,7 +201,7 @@ boolean OCI_API OCI_TimestampFree(OCI_Timestamp *tmsp)
 
 #endif
 
-   OCI_RESULT(TRUE);
+   OCI_RESULT(pOCILib, TRUE);
 
    return TRUE;
 }
@@ -202,26 +209,26 @@ boolean OCI_API OCI_TimestampFree(OCI_Timestamp *tmsp)
 /* ------------------------------------------------------------------------ *
  * OCI_DateZoneToZone
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_TimestampAssign(OCI_Timestamp *tmsp, OCI_Timestamp *tmsp_src)
 {
     return OCI_TimestampAssign2(&OCILib, tmsp, tmsp_src);
 }
-
+*/
 boolean OCI_API OCI_TimestampAssign2(OCI_Library *pOCILib, OCI_Timestamp *tmsp, OCI_Timestamp *tmsp_src)
 {
     boolean res = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_TIMESTAMP, tmsp,     FALSE);
-    OCI_CHECK_PTR(OCI_IPC_TIMESTAMP, tmsp_src, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp,     FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp_src, FALSE);
 
-    OCI_CHECK_TIMESTAMP_ENABLED(tmsp->con, FALSE);
+    OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, tmsp->con, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
     OCI_CALL4
     (
-        res, tmsp->err, tmsp->con,
+        pOCILib, res, tmsp->err, tmsp->con,
 
         OCIDateTimeAssign((dvoid *) pOCILib->env, tmsp->err,
                           tmsp_src->handle, tmsp->handle)
@@ -229,7 +236,7 @@ boolean OCI_API OCI_TimestampAssign2(OCI_Library *pOCILib, OCI_Timestamp *tmsp, 
 
 #endif
 
-   OCI_RESULT(res);
+   OCI_RESULT(pOCILib, res);
 
    return res;
 }
@@ -237,13 +244,14 @@ boolean OCI_API OCI_TimestampAssign2(OCI_Library *pOCILib, OCI_Timestamp *tmsp, 
 /* ------------------------------------------------------------------------ *
  * OCI_TimestampConstruct
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_TimestampConstruct(OCI_Timestamp *tmsp, int year,int month,
                                       int day, int hour,  int min, int sec,
                                       int fsec, const mtext *timezone)
 {
     return OCI_TimestampConstruct2(&OCILib, tmsp, year, month, day, hour, min, sec, fsec, timezone);
 }
+*/
 
 boolean OCI_API OCI_TimestampConstruct2(OCI_Library *pOCILib, OCI_Timestamp *tmsp, int year,int month,
                                       int day, int hour,  int min, int sec,
@@ -251,15 +259,15 @@ boolean OCI_API OCI_TimestampConstruct2(OCI_Library *pOCILib, OCI_Timestamp *tms
 {
     boolean res = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_TIMESTAMP, tmsp, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp, FALSE);
 
-    OCI_CHECK_TIMESTAMP_ENABLED(tmsp->con, FALSE);
+    OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, tmsp->con, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
     OCI_CALL4
     (
-        res, tmsp->err, tmsp->con,
+        pOCILib, res, tmsp->err, tmsp->con,
 
         OCIDateTimeConstruct((dvoid *) pOCILib->env, tmsp->err,
                                          tmsp->handle,
@@ -282,7 +290,7 @@ boolean OCI_API OCI_TimestampConstruct2(OCI_Library *pOCILib, OCI_Timestamp *tms
 
 #endif
 
-   OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
    return res;
 }

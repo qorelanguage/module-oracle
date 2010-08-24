@@ -52,14 +52,14 @@
  *
  */
 
-#define OCI_CALL0(res, err, fct)                                               \
+#define OCI_CALL0(ocilib, res, err, fct)					\
                                                                                \
     {                                                                          \
         (res) = (boolean) fct;                                                 \
         if (OCI_NO_ERROR((res)) == FALSE)                                      \
         {                                                                      \
             (res) = ((res) == OCI_SUCCESS_WITH_INFO);                          \
-            OCI_ExceptionOCI((err), NULL, NULL, res);                          \
+            OCI_ExceptionOCI2(ocilib, (err), NULL, NULL, res);		\
         }                                                                      \
         else                                                                   \
             (res) = TRUE;                                                      \
@@ -81,7 +81,7 @@
  *
  */
 
-#define OCI_CALL1(res, con, stmt, fct)                                         \
+#define OCI_CALL1(ocilib, res, con, stmt, fct)				\
                                                                                \
     {                                                                          \
         if ((res) == TRUE)                                                     \
@@ -90,7 +90,7 @@
             if (OCI_NO_ERROR((res)) == FALSE)                                  \
             {                                                                  \
                 (res) = ((res) == OCI_SUCCESS_WITH_INFO);                      \
-                 OCI_ExceptionOCI((con)->err, (con), (stmt), res);             \
+		OCI_ExceptionOCI2(ocilib, (con)->err, (con), (stmt), res); \
             }                                                                  \
             else                                                               \
                 (res) = TRUE;                                                  \
@@ -112,7 +112,7 @@
  *
  */
 
-#define OCI_CALL2(res, con, fct)                                               \
+#define OCI_CALL2(ocilib, res, con, fct)					\
                                                                                \
     {                                                                          \
         if ((res) == TRUE)                                                     \
@@ -121,7 +121,7 @@
             if (OCI_NO_ERROR((res)) == FALSE)                                  \
             {                                                                  \
                 (res) = ((res) == OCI_SUCCESS_WITH_INFO);                      \
-                OCI_ExceptionOCI((con)->err, (con), NULL, res);                \
+                OCI_ExceptionOCI2(ocilib, (con)->err, (con), NULL, res);	\
             }                                                                  \
             else                                                               \
                 (res) = TRUE;                                                  \
@@ -141,7 +141,7 @@
  *
  */
 
-#define OCI_CALL3(res, err, fct)                                               \
+#define OCI_CALL3(ocilib, res, err, fct)					\
                                                                                \
     {                                                                          \
         if ((res) == TRUE)                                                     \
@@ -150,7 +150,7 @@
             if (OCI_NO_ERROR((res)) == FALSE)                                  \
             {                                                                  \
                 (res) = ((res) == OCI_SUCCESS_WITH_INFO);                      \
-                 OCI_ExceptionOCI((err), NULL, NULL, res);                     \
+		OCI_ExceptionOCI2(ocilib, (err), NULL, NULL, res);	\
             }                                                                  \
             else                                                               \
                 (res) = TRUE;                                                  \
@@ -172,7 +172,7 @@
  *
  */
 
-#define OCI_CALL4(res, err, con, fct)                                          \
+#define OCI_CALL4(ocilib, res, err, con, fct)				\
                                                                                \
     {                                                                          \
         if ((res) == TRUE)                                                     \
@@ -181,7 +181,7 @@
             if (OCI_NO_ERROR((res)) == FALSE)                                  \
             {                                                                  \
                 (res) = ((res) == OCI_SUCCESS_WITH_INFO);                      \
-                OCI_ExceptionOCI((err), (con), NULL, res);                     \
+                OCI_ExceptionOCI2(ocilib, (err), (con), NULL, res);	\
             }                                                                  \
             else                                                               \
                 (res) = TRUE;                                                  \
@@ -204,7 +204,7 @@
  *
  */
 
-#define OCI_CALL5(res, con, stmt, fct)                                         \
+#define OCI_CALL5(res, con, stmt, fct)				\
                                                                                \
     {                                                                          \
         (res) = (boolean) fct;                                                 \
@@ -248,11 +248,11 @@
  *
  */
 
-#define OCI_CHECK_PTR(type, ptr, ret)                                          \
+#define OCI_CHECK_PTR(ocilib, type, ptr, ret)				\
                                                                                \
     if ((ptr) == NULL)                                                         \
     {                                                                          \
-        OCI_ExceptionNullPointer(type);                                        \
+       OCI_ExceptionNullPointer2(ocilib, type);				\
                                                                                \
         return (ret);                                                          \
     }           
@@ -272,12 +272,12 @@
  *
  */
 
-#define OCI_CHECK_BIND_CALL(stmt, name, data, type)                            \
+#define OCI_CHECK_BIND_CALL(ocilib, stmt, name, data, type)		\
                                                                                \
-    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, FALSE);                             \
-    OCI_CHECK_PTR(OCI_IPC_STRING, name, FALSE);                                \
+   OCI_CHECK_PTR(ocilib, OCI_IPC_STATEMENT, stmt, FALSE);		\
+   OCI_CHECK_PTR(ocilib, OCI_IPC_STRING, name, FALSE);			\
     if (stmt->bind_alloc_mode == OCI_BAM_EXTERNAL)                             \
-        OCI_CHECK_PTR(type, data, FALSE);                                      \
+       OCI_CHECK_PTR(ocilib, type, data, FALSE);				\
 
 
 /**
@@ -291,10 +291,10 @@
  * Throws an exception if one of the parameters is invalid and returns FALSE.
  *
  */
-#define OCI_CHECK_REGISTER_CALL(stmt, name)                                    \
+#define OCI_CHECK_REGISTER_CALL(ocilib, stmt, name)			\
                                                                                \
-    OCI_CHECK_PTR(OCI_IPC_STATEMENT, stmt, FALSE);                             \
-    OCI_CHECK_PTR(OCI_IPC_STRING, name, FALSE);                                \
+   OCI_CHECK_PTR(ocilib, OCI_IPC_STATEMENT, stmt, FALSE);		\
+   OCI_CHECK_PTR(ocilib, OCI_IPC_STRING, name, FALSE);			\
 
 
 /* ************************************************************************ *
@@ -316,11 +316,11 @@
  *
  */
 
-#define OCI_CHECK_BOUND(con, v, b1, b2, ret)                                   \
+#define OCI_CHECK_BOUND(ocilib, con, v, b1, b2, ret)			\
                                                                                \
     if ((v < (b1)) || (v > (b2)))                                              \
     {                                                                          \
-        OCI_ExceptionOutOfBounds((con), (v));                                  \
+       OCI_ExceptionOutOfBounds2(ocilib, (con), (v));			\
                                                                                \
         return (ret);                                                          \
     } 
@@ -340,11 +340,11 @@
  *
  */
 
-#define OCI_CHECK_MIN(con, stmt, v, m, ret)                                    \
+#define OCI_CHECK_MIN(ocilib, con, stmt, v, m, ret)			\
                                                                                \
     if ((v) < (m))                                                             \
     {                                                                          \
-        OCI_ExceptionMinimumValue((con), (stmt), m);                           \
+       OCI_ExceptionMinimumValue2(ocilib, (con), (stmt), m);		\
                                                                                \
         return (ret);                                                          \
     } 
@@ -362,11 +362,11 @@
  *
  */
 
-#define OCI_CHECK_COMPAT(con, exp, ret)                                        \
+#define OCI_CHECK_COMPAT(ocilib, con, exp, ret)				\
                                                                                \
     if ((exp) == FALSE)                                                         \
     {                                                                          \
-        OCI_ExceptionTypeNotCompatible((con));                                 \
+       OCI_ExceptionTypeNotCompatible2(ocilib, (con));			\
                                                                                \
         return (ret);                                                          \
     } 
@@ -406,11 +406,11 @@
  *
  */
 
-#define OCI_CHECK_STMT_STATUS(st, v, ret)                                      \
+#define OCI_CHECK_STMT_STATUS(ocilib, st, v, ret)			\
                                                                                \
     if ((st)->status == (v))                                                   \
     {                                                                          \
-        OCI_ExceptionStatementState((st), v);                                  \
+       OCI_ExceptionStatementState2(ocilib, (st), v);			\
         return ret;                                                            \
     }                                                                          \
 
@@ -426,12 +426,12 @@
  *
  */
 
-#define OCI_CHECK_SCROLLABLE_CURSOR_ACTIVATED(st, ret)                         \
+#define OCI_CHECK_SCROLLABLE_CURSOR_ACTIVATED(ocilib, st, ret)		\
                                                                                \
     if (((st)->nb_rbinds > 0) ||                                             \
         ((st)->exec_mode != OCI_STMT_SCROLLABLE_READONLY))                     \
     {                                                                          \
-        OCI_ExceptionStatementNotScrollable(st);                               \
+       OCI_ExceptionStatementNotScrollable2(ocilib, st);			\
         return ret;                                                            \
     }
 
@@ -449,11 +449,11 @@
  * the provided one.
  *
  */
-#define OCI_CHECK_DIRPATH_STATUS(dp, v, ret)                                   \
+#define OCI_CHECK_DIRPATH_STATUS(ocilib, dp, v, ret)			\
                                                                                \
     if ((dp)->status != (v))                                                   \
     {                                                                          \
-        OCI_ExceptionDirPathState((dp), (dp)->status);                         \
+       OCI_ExceptionDirPathState2(ocilib, (dp), (dp)->status);		\
         return ret;                                                            \
     } 
 
@@ -473,18 +473,11 @@
  *
  */
 
-#define OCI_CHECK_INITIALIZED(ret)                                             \
+#define OCI_CHECK_INITIALIZED2(ocilib, ret)				\
                                                                                \
-        if (OCILib.loaded == FALSE)                                            \
+        if (ocilib->loaded == FALSE)                                            \
         {                                                                      \
-            OCI_ExceptionNotInitialized();                                     \
-            return ret;                                                        \
-        }
-#define OCI_CHECK_INITIALIZED2(ret)                                             \
-                                                                               \
-        if (pOCILib->loaded == FALSE)                                            \
-        {                                                                      \
-            OCI_ExceptionNotInitialized();                                     \
+            OCI_ExceptionNotInitialized2(ocilib);                                     \
             return ret;                                                        \
         }
 
@@ -502,11 +495,11 @@
  *
  */
 
-#define OCI_CHECK_FEATURE(con, feat, ver,  ret)                                    \
+#define OCI_CHECK_FEATURE(ocilib, con, feat, ver,  ret)			\
                                                                                    \
-    if (OCILib.version_runtime < ver || (((con) != NULL) && (con)->ver_num < ver)) \
+    if (ocilib->version_runtime < ver || (((con) != NULL) && (con)->ver_num < ver)) \
     {                                                                              \
-        OCI_ExceptionNotAvailable(con, feat);                                      \
+       OCI_ExceptionNotAvailable2(ocilib, con, feat);			\
         return ret;                                                                \
     }
 
@@ -522,11 +515,11 @@
  *
  */
 
-#define OCI_CHECK_THREAD_ENABLED(ret)                                          \
+#define OCI_CHECK_THREAD_ENABLED(ocilib, ret)				\
                                                                                \
-        if ((OCI_LIB_THREADED) == FALSE)                                       \
+   if ((OCI_LIB_THREADED(ocilib)) == FALSE)				\
         {                                                                      \
-            OCI_ExceptionNotMultithreaded();                                   \
+            OCI_ExceptionNotMultithreaded2(ocilib);                                   \
             return ret;                                                        \
         }
 
@@ -543,9 +536,9 @@
  *
  */
 
-#define OCI_CHECK_TIMESTAMP_ENABLED(con,  ret)                                 \
+#define OCI_CHECK_TIMESTAMP_ENABLED(ocilib, con,  ret)			\
                                                                                \
-        OCI_CHECK_FEATURE(con, OCI_FEATURE_TIMESTAMP, OCI_9_0, ret)
+   OCI_CHECK_FEATURE(ocilib, con, OCI_FEATURE_TIMESTAMP, OCI_9_0, ret)
 
 /**
  * @brief 
@@ -575,9 +568,9 @@
  *
  */
 
-#define OCI_CHECK_SCROLLABLE_CURSOR_ENABLED(con, ret)                          \
+#define OCI_CHECK_SCROLLABLE_CURSOR_ENABLED(ocilib, con, ret)		\
                                                                                \
-        OCI_CHECK_FEATURE(con, OCI_FEATURE_SCROLLABLE_CURSOR, OCI_9_0, ret)
+   OCI_CHECK_FEATURE(ocilib, con, OCI_FEATURE_SCROLLABLE_CURSOR, OCI_9_0, ret)
 
 
 /**
@@ -592,11 +585,11 @@
  *
  */
 
-#define OCI_CHECK_DIRPATH_DATE_CACHE_ENABLED(dp,  ret)                         \
+#define OCI_CHECK_DIRPATH_DATE_CACHE_ENABLED(ocilib, dp,  ret)		\
                                                                                \
-    if (OCILib.version_runtime < OCI_9_2)                                      \
+    if (ocilib->version_runtime < OCI_9_2)                                      \
     {                                                                          \
-        OCI_ExceptionNotAvailable((dp)->con, OCI_FEATURE_DIRPATH_DATE_CACHE);  \
+       OCI_ExceptionNotAvailable2(ocilib, (dp)->con, OCI_FEATURE_DIRPATH_DATE_CACHE); \
         return ret;                                                            \
     }
 
@@ -611,11 +604,11 @@
  *
  */
 
-#define OCI_CHECK_REMOTE_DBS_CONTROL_ENABLED(ret)                              \
+#define OCI_CHECK_REMOTE_DBS_CONTROL_ENABLED(ocilib, ret)		\
                                                                                \
-    if (OCILib.version_runtime < OCI_10_2)                                     \
+    if (ocilib->version_runtime < OCI_10_2)                                     \
     {                                                                          \
-        OCI_ExceptionNotAvailable(NULL, OCI_FEATURE_DIRPATH_DATE_CACHE);       \
+       OCI_ExceptionNotAvailable2(ocilib, NULL, OCI_FEATURE_DIRPATH_DATE_CACHE);	\
         return ret;                                                            \
     }
 
@@ -630,11 +623,11 @@
  *
  */
 
-#define OCI_CHECK_DATABASE_NOTIFY_ENABLED(ret)                                 \
+#define OCI_CHECK_DATABASE_NOTIFY_ENABLED(ocilib, ret)			\
                                                                                \
-    if (OCILib.version_runtime < OCI_10_2)                                     \
+    if (ocilib->version_runtime < OCI_10_2)                                     \
     {                                                                          \
-        OCI_ExceptionNotAvailable(NULL, OCI_FEATURE_DATABASE_NOTIFY);          \
+       OCI_ExceptionNotAvailable2(ocilib, NULL, OCI_FEATURE_DATABASE_NOTIFY); \
         return ret;                                                            \
     }
 

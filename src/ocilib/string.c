@@ -223,7 +223,7 @@ int OCI_StringUTF8Length(const char *str)
  * OCI_GetInputString
  * ------------------------------------------------------------------------ */
 
-void * OCI_GetInputString(void *src, int *size, size_t size_char_in,
+void * OCI_GetInputString(OCI_Library *pOCILib, void *src, int *size, size_t size_char_in,
                           size_t size_char_out)
 {
     OCI_CHECK(src  == NULL, NULL);
@@ -252,7 +252,7 @@ void * OCI_GetInputString(void *src, int *size, size_t size_char_in,
 
         *size = 0;
 
-        dest = OCI_MemAlloc(OCI_IPC_STRING, size_char_out, char_count + 1, 0);
+        dest = OCI_MemAlloc2(pOCILib, OCI_IPC_STRING, size_char_out, char_count + 1, 0);
         
         if (dest != NULL)
         {
@@ -608,13 +608,13 @@ void * OCI_StringFromStringPtr(OCI_Library *pOCILib, OCIString *str, void **buf,
             if ((*buf) == NULL)
             {           
                 *buflen = (olen+1) * msize;
-                *buf    = OCI_MemAlloc(OCI_IPC_STRING, (size_t) msize,
+                *buf    = OCI_MemAlloc2(pOCILib, OCI_IPC_STRING, (size_t) msize,
                                        (size_t) (olen+1), FALSE);
             }
             else if ((*buflen) < ((olen+1) * msize))
             {
                 *buflen = (olen+1) * msize;
-                *buf    = OCI_MemRealloc(*buf, OCI_IPC_STRING, (size_t) msize,
+                *buf    = OCI_MemRealloc2(pOCILib, *buf, OCI_IPC_STRING, (size_t) msize,
                                          (size_t) (olen+1));
             }
         }
@@ -690,12 +690,12 @@ boolean OCI_StringToStringPtr(OCI_Library *pOCILib, OCIString **str, OCIError *e
         if ((*buf) == NULL)
         {           
             *buflen = (olen+1) * esize;
-            *buf    = OCI_MemAlloc(OCI_IPC_STRING, esize, olen+1, FALSE);
+            *buf    = OCI_MemAlloc2(pOCILib, OCI_IPC_STRING, esize, olen+1, FALSE);
         }
         else if ((*buflen) < ((olen+1) * esize))
         {
             *buflen = (olen+1) * esize;
-            *buf    = OCI_MemRealloc(*buf, OCI_IPC_STRING, esize, olen+1);
+            *buf    = OCI_MemRealloc2(pOCILib, *buf, OCI_IPC_STRING, esize, olen+1);
         }
 
     }    
@@ -707,13 +707,13 @@ boolean OCI_StringToStringPtr(OCI_Library *pOCILib, OCIString **str, OCIError *e
 #else
     
     osize  = -1;
-    ostr   = OCI_GetInputDataString(value, &osize);
+    ostr   = OCI_GetInputDataString(pOCILib, value, &osize);
 
 #endif
 
     OCI_CALL3
     (
-        res, err, 
+       pOCILib, res, err, 
 
         OCIStringAssignText(pOCILib->env, err, (oratext *) ostr, (ub4) osize, str)
     )
@@ -734,13 +734,13 @@ boolean OCI_StringToStringPtr(OCI_Library *pOCILib, OCIString **str, OCIError *e
  * ocistrdup
  * ------------------------------------------------------------------------ */
 
-char * ocistrdup(const char * src)
+char * ocistrdup2(OCI_Library *pOCILib, const char * src)
 {
     char *dst;
 
     OCI_CHECK(src == NULL, NULL)
 
-    dst = (char *) OCI_MemAlloc(OCI_IPC_STRING, 1, strlen(src) + 1, 0);
+    dst = (char *) OCI_MemAlloc2(pOCILib, OCI_IPC_STRING, 1, strlen(src) + 1, 0);
 
     if (dst != NULL)
         strcpy(dst, src);
@@ -798,13 +798,13 @@ int ocisprintf(char *str, int size, const char *format, ...)
  * ociwcsdup
  * ------------------------------------------------------------------------ */
 
-wchar_t * ociwcsdup(const wchar_t * src)
+wchar_t * ociwcsdup2(OCI_Library *pOCILib, const wchar_t * src)
 {
     wchar_t *dst;
 
     OCI_CHECK(src == NULL, NULL)
 
-    dst = (wchar_t *) OCI_MemAlloc(OCI_IPC_STRING, sizeof(wchar_t), wcslen(src) + 1, 0);
+       dst = (wchar_t *) OCI_MemAlloc2(pOCILib, OCI_IPC_STRING, sizeof(wchar_t), wcslen(src) + 1, 0);
 
     if (dst != NULL)
         wcscpy(dst, src);

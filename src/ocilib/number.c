@@ -42,8 +42,8 @@
  * OCI_NumberGet
  * ------------------------------------------------------------------------ */
 
-boolean OCI_NumberGet(OCI_Connection *con,  OCINumber *data, void *value,
-                      uword size, uword flag)
+boolean OCI_NumberGet2(OCI_Library *pOCILib, OCI_Connection *con,  OCINumber *data, void *value,
+		       uword size, uword flag)
 {
     boolean res = TRUE;
 
@@ -55,7 +55,7 @@ boolean OCI_NumberGet(OCI_Connection *con,  OCINumber *data, void *value,
     {
         OCI_CALL2
         (
-            res, con, 
+            pOCILib, res, con, 
             
             OCINumberToReal(con->err, data, size, value)
         )
@@ -69,7 +69,7 @@ boolean OCI_NumberGet(OCI_Connection *con,  OCINumber *data, void *value,
 
         OCI_CALL2
         (
-            res, con, 
+            pOCILib, res, con, 
             
             OCINumberToInt(con->err, data, size, sign, value)
         )
@@ -82,7 +82,7 @@ boolean OCI_NumberGet(OCI_Connection *con,  OCINumber *data, void *value,
  * OCI_NumberSet
  * ------------------------------------------------------------------------ */
 
-boolean OCI_NumberSet(OCI_Connection *con,  OCINumber *data, void *value, 
+boolean OCI_NumberSet2(OCI_Library *pOCILib, OCI_Connection *con,  OCINumber *data, void *value, 
                       uword size, uword flag)
 {
     boolean res = TRUE;
@@ -95,7 +95,7 @@ boolean OCI_NumberSet(OCI_Connection *con,  OCINumber *data, void *value,
     {
         OCI_CALL2
         (
-            res, con, 
+	   pOCILib, res, con, 
             
             OCINumberFromReal(con->err, value, size, (OCINumber *) data)
         )
@@ -109,7 +109,7 @@ boolean OCI_NumberSet(OCI_Connection *con,  OCINumber *data, void *value,
 
         OCI_CALL2
         (
-            res, con, 
+            pOCILib, res, con, 
             
             OCINumberFromInt(con->err, value, size, sign, (OCINumber *) data)
         )
@@ -123,7 +123,7 @@ boolean OCI_NumberSet(OCI_Connection *con,  OCINumber *data, void *value,
  * OCI_NumberConvertStr
  * ------------------------------------------------------------------------ */
 
-boolean OCI_NumberConvertStr(OCI_Connection *con,  OCINumber *num, 
+boolean OCI_NumberConvertStr2(OCI_Library *pOCILib, OCI_Connection *con,  OCINumber *num, 
                             const dtext *str, int str_size, 
                             const mtext* fmt, ub4 fmt_size)
 {
@@ -152,18 +152,18 @@ boolean OCI_NumberConvertStr(OCI_Connection *con,  OCINumber *num,
 
 #else
 
-    ostr1 = OCI_GetInputDataString(str, &osize1);
+    ostr1 = OCI_GetInputDataString(pOCILib, str, &osize1);
 
 #endif
 
-    ostr2 = OCI_GetInputMetaString(fmt, &osize2);
+    ostr2 = OCI_GetInputMetaString(pOCILib, fmt, &osize2);
 
 
     memset(num, 0, sizeof(*num));
 
     OCI_CALL2
     (
-        res, con, 
+       pOCILib, res, con, 
         
         OCINumberFromText(con->err, (oratext *) ostr1, (ub4) osize1,
                                     (oratext *) ostr2, (ub4) osize2, 
@@ -186,7 +186,7 @@ boolean OCI_NumberConvertStr(OCI_Connection *con,  OCINumber *num,
  * OCI_NumberGetFromStr
  * ------------------------------------------------------------------------ */
 
-boolean OCI_NumberGetFromStr(OCI_Connection *con,  void *value, uword size,
+boolean OCI_NumberGetFromStr2(OCI_Library *pOCILib, OCI_Connection *con,  void *value, uword size,
                              uword type, const dtext *str, int str_size, 
                              const mtext* fmt, ub4 fmt_size)
 {
@@ -194,6 +194,6 @@ boolean OCI_NumberGetFromStr(OCI_Connection *con,  void *value, uword size,
   
     OCI_CHECK(value == NULL, FALSE);
   
-    return (OCI_NumberConvertStr(con, &num, str, str_size, fmt, fmt_size) &&
-            OCI_NumberGet(con, &num, value, size, type));
+    return (OCI_NumberConvertStr2(pOCILib, con, &num, str, str_size, fmt, fmt_size) &&
+            OCI_NumberGet2(pOCILib, con, &num, value, size, type));
  }

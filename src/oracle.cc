@@ -757,20 +757,20 @@ AbstractQoreNode *OraColumn::getValue(Datasource *ds, bool horizontal, Exception
           OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
           if (subdtype == SQLT_NTY_OBJECT) {
-              OCI_ObjectGetStruct(val.oraObj, (void**)&pp_struct, (void**)&pp_ind);
-              if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
-                  return null();
-              return objToQore(d_ora, val.oraObj, ds, xsink);
+	     OCI_ObjectGetStruct2(&d_ora->ocilib, val.oraObj, (void**)&pp_struct, (void**)&pp_ind);
+	     if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
+		return null();
+	     return objToQore(d_ora, val.oraObj, ds, xsink);
           }
           else if (subdtype == SQLT_NTY_COLLECTION) {
-              OCI_CollGetStruct(val.oraColl, (void**)&pp_struct, (void**)&pp_ind);
-              if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
-                  return null();
-              return collToQore(d_ora, val.oraColl, ds, xsink);
+	     OCI_CollGetStruct(&d_ora->ocilib, val.oraColl, (void**)&pp_struct, (void**)&pp_ind);
+	     if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
+		return null();
+	     return collToQore(d_ora, val.oraColl, ds, xsink);
           }
           else {
-              xsink->raiseException("NAMED-TYPE-FETCH-ERROR", "Unknown NTY to fetch Oracle object or collection");
-              return 0;
+	     xsink->raiseException("NAMED-TYPE-FETCH-ERROR", "Unknown NTY to fetch Oracle object or collection");
+	     return 0;
           }
           break;
       } // SQLT_NTY
@@ -1501,19 +1501,19 @@ AbstractQoreNode *OraBindNode::getValue(Datasource *ds, bool horizontal, Excepti
       OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
       if (bufsubtype == SQLT_NTY_OBJECT) {
-          OCI_ObjectGetStruct(buf.oraObj, (void**)&pp_struct, (void**)&pp_ind);
+          OCI_ObjectGetStruct2(&d_ora->ocilib, buf.oraObj, (void**)&pp_struct, (void**)&pp_ind);
           if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
               return null();
           return objToQore(d_ora, buf.oraObj, ds, xsink);
       }
       else if (bufsubtype == SQLT_NTY_COLLECTION) {
-          OCI_CollGetStruct(buf.oraColl, (void**)&pp_struct, (void**)&pp_ind);
-          if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
-              return null();
-          return collToQore(d_ora, buf.oraColl, ds, xsink);
+	 OCI_CollGetStruct(&d_ora->ocilib, buf.oraColl, (void**)&pp_struct, (void**)&pp_ind);
+	 if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
+	    return null();
+	 return collToQore(d_ora, buf.oraColl, ds, xsink);
       }
       else
-          xsink->raiseException("NAMED-TYPE-PLACEHOLDER-ERROR", "Placeholder is not initilaized as a Oracle object or collection");
+	 xsink->raiseException("NAMED-TYPE-PLACEHOLDER-ERROR", "Placeholder is not initilaized as a Oracle object or collection");
    }
    return 0;
 }
@@ -1848,7 +1848,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
    // fake the OCI_Connection
    d_ora->ocilib_cn->err = d_ora->errhp;
    d_ora->ocilib_cn->cxt = d_ora->svchp;
-   d_ora->ocilib_cn->tinfs = OCI_ListCreate(OCI_IPC_TYPE_INFO);
+   d_ora->ocilib_cn->tinfs = OCI_ListCreate2(&d_ora->ocilib, OCI_IPC_TYPE_INFO);
    // then reset unused attributes
    d_ora->ocilib_cn->db = 0;
    d_ora->ocilib_cn->user = 0;      /* user */

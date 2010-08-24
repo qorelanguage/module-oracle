@@ -191,17 +191,18 @@ public:
 	       break;
 	    }
 	    
-            case SQLT_NTY:
+            case SQLT_NTY: {
+	       OracleData *d_ora = (OracleData *)ds->getPrivateData();
 //                 printf("Deleting object (OraColumn) val.oraObj: %p, val.oraColl: %p\n", val.oraObj, val.oraColl);
                 // objects are allocated in bind-methods and it has to be freed in any case
                 if (subdtype == SQLT_NTY_OBJECT)
-                    OCI_ObjectFree(val.oraObj);
+                    OCI_ObjectFree2(&d_ora->ocilib, val.oraObj);
                 else if (subdtype == SQLT_NTY_COLLECTION)
-                    OCI_CollFree(val.oraColl);
+                    OCI_CollFree2(&d_ora->ocilib, val.oraColl);
                 else
                     xsink->raiseException("FREE-NTY-ERROR", "An attempt to free unknown NTY type");
                 break;
-
+	    }
 	    default:	  // for all columns where data must be allocated
 	       if (val.ptr)
 		  free(val.ptr);
@@ -331,12 +332,14 @@ public:
 	 else if (buftype == SQLT_DATE && buf.odt)
 	    OCIDescriptorFree(buf.odt, OCI_DTYPE_TIMESTAMP);
          else if (buftype == SQLT_NTY) {
+	    OracleData *d_ora = (OracleData *)ds->getPrivateData();
+
 //             printf("Deleting object (OraBindNode BN_PLACEHOLDER) buf.oraObj: %p, buf.oraColl: %p\n", buf.oraObj, buf.oraColl);
             // objects are allocated in bind-methods - placeholder and it has to be freed in any case
             if (bufsubtype == SQLT_NTY_OBJECT)
-                OCI_ObjectFree(buf.oraObj);
+                OCI_ObjectFree2(&d_ora->ocilib, buf.oraObj);
             else if (bufsubtype == SQLT_NTY_COLLECTION)
-                OCI_CollFree(buf.oraColl);
+                OCI_CollFree2(&d_ora->ocilib, buf.oraColl);
             else
                 xsink->raiseException("FREE-NTY-ERROR", "An attempt to free unknown NTY type (BN_PLACEHOLDER)");
          }
@@ -358,10 +361,12 @@ public:
 	 }
          else if (buftype == SQLT_NTY) {
 //             printf("Deleting object (OraBindNode IN value) buf.oraObj: %p, buf.oraColl: %p (type: %d (obj=1,coll=2,err=0))\n", buf.oraObj, buf.oraColl, bufsubtype);
+	    OracleData *d_ora = (OracleData *)ds->getPrivateData();
+
             if (bufsubtype == SQLT_NTY_OBJECT)
-                OCI_ObjectFree(buf.oraObj);
+                OCI_ObjectFree2(&d_ora->ocilib, buf.oraObj);
             else if (bufsubtype == SQLT_NTY_COLLECTION)
-                OCI_CollFree(buf.oraColl);
+                OCI_CollFree2(&d_ora->ocilib, buf.oraColl);
             else
                 xsink->raiseException("FREE-NTY-ERROR", "An attempt to free unknown NTY type (BN_VALUE)");
          }

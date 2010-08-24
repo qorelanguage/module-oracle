@@ -54,7 +54,7 @@ OCI_Interval * OCI_IntervalInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_I
     OCI_CHECK(pitv == NULL, NULL);
 
     if (*pitv == NULL)
-        *pitv = (OCI_Interval *) OCI_MemAlloc(OCI_IPC_INTERVAL, sizeof(*itv),
+        *pitv = (OCI_Interval *) OCI_MemAlloc2(pOCILib, OCI_IPC_INTERVAL, sizeof(*itv),
                                               (size_t) 1, TRUE);
 
     if (*pitv != NULL)
@@ -70,7 +70,7 @@ OCI_Interval * OCI_IntervalInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_I
         if (con != NULL)
             itv->err = con->err;
         else
-            itv->err = OCILib.err;
+            itv->err = pOCILib->err;
 
         /* allocate buffer if needed */
 
@@ -85,7 +85,7 @@ OCI_Interval * OCI_IntervalInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_I
 
             if (itv->hstate != OCI_OBJECT_ALLOCATED_ARRAY)
             {
-                res = (OCI_SUCCESS == OCI_DescriptorAlloc((dvoid  *) pOCILib->env,
+                res = (OCI_SUCCESS == OCI_DescriptorAlloc2(pOCILib, (dvoid  *) pOCILib->env,
                                                           (dvoid **) (void *) &itv->handle,
                                                           (ub4     ) htype, (size_t) 0,
                                                           (dvoid **) NULL));
@@ -126,19 +126,20 @@ OCI_Interval * OCI_IntervalInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_I
 /* ------------------------------------------------------------------------ *
  * OCI_IntervalCreate
  * ------------------------------------------------------------------------ */
-
+/*
 OCI_Interval * OCI_API OCI_IntervalCreate(OCI_Connection *con, unsigned int type)
 {
     return OCI_IntervalCreate2(&OCILib, con, type);
 }
+*/
 
 OCI_Interval * OCI_API OCI_IntervalCreate2(OCI_Library *pOCILib, OCI_Connection *con, unsigned int type)
 {
     OCI_Interval *itv = NULL;
 
-    OCI_CHECK_INITIALIZED2(NULL);
+    OCI_CHECK_INITIALIZED2(pOCILib, NULL);
 
-    OCI_CHECK_INTERVAL_ENABLED(con, NULL);
+    OCI_CHECK_INTERVAL_ENABLED(pOCILib, con, NULL);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
@@ -150,7 +151,7 @@ OCI_Interval * OCI_API OCI_IntervalCreate2(OCI_Library *pOCILib, OCI_Connection 
 
 #endif
 
-    OCI_RESULT(itv != NULL);
+    OCI_RESULT(pOCILib, itv != NULL);
 
     return itv;
 }
@@ -159,11 +160,11 @@ OCI_Interval * OCI_API OCI_IntervalCreate2(OCI_Library *pOCILib, OCI_Connection 
  * OCI_IntervalFree
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_IntervalFree(OCI_Interval *itv)
+boolean OCI_API OCI_IntervalFree2(OCI_Library *pOCILib, OCI_Interval *itv)
 {
-    OCI_CHECK_PTR(OCI_IPC_INTERVAL, itv, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_INTERVAL, itv, FALSE);
 
-    OCI_CHECK_INTERVAL_ENABLED(itv->con, FALSE);
+    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
@@ -178,7 +179,7 @@ boolean OCI_API OCI_IntervalFree(OCI_Interval *itv)
         else if (itv->type == OCI_INTERVAL_DS)
             htype = OCI_DTYPE_INTERVAL_DS;
 
-        OCI_DescriptorFree((dvoid *) itv->handle, htype);
+        OCI_DescriptorFree2(pOCILib, (dvoid *) itv->handle, htype);
     }
 
     if (itv->hstate != OCI_OBJECT_ALLOCATED_ARRAY)
@@ -188,33 +189,33 @@ boolean OCI_API OCI_IntervalFree(OCI_Interval *itv)
 
 #endif
 
-   OCI_RESULT(TRUE);
+   OCI_RESULT(pOCILib, TRUE);
 
    return TRUE;
 }
 /* ------------------------------------------------------------------------ *
  * OCI_IntervalAssign
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_IntervalAssign(OCI_Interval *itv,  OCI_Interval *itv_src)
 {
     return OCI_IntervalAssign2(&OCILib, itv, itv_src);
 }
-
+*/
 boolean OCI_API OCI_IntervalAssign2(OCI_Library *pOCILib, OCI_Interval *itv,  OCI_Interval *itv_src)
 {
     boolean res = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_INTERVAL, itv,     FALSE);
-    OCI_CHECK_PTR(OCI_IPC_INTERVAL, itv_src, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_INTERVAL, itv,     FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_INTERVAL, itv_src, FALSE);
 
-    OCI_CHECK_INTERVAL_ENABLED(itv->con, FALSE);
+    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
     OCI_CALL4
     (
-        res, itv->err, itv->con,
+        pOCILib, res, itv->err, itv->con,
 
         OCIIntervalAssign((dvoid *) pOCILib->env, itv->err,
                           itv_src->handle, itv->handle)
@@ -222,7 +223,7 @@ boolean OCI_API OCI_IntervalAssign2(OCI_Library *pOCILib, OCI_Interval *itv,  OC
 
 #endif
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -230,25 +231,25 @@ boolean OCI_API OCI_IntervalAssign2(OCI_Library *pOCILib, OCI_Interval *itv,  OC
 /* ------------------------------------------------------------------------ *
  * OCI_IntervalGetDaySecond
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_IntervalGetDaySecond(OCI_Interval *itv, int *day, int *hour,
                                          int *min, int *sec, int *fsec)
 {
     return OCI_IntervalGetDaySecond2(&OCILib, itv, day, hour, min, sec, fsec);
 }
-
+*/
 boolean OCI_API OCI_IntervalGetDaySecond2(OCI_Library *pOCILib, OCI_Interval *itv, int *day, int *hour,
                                          int *min, int *sec, int *fsec)
 {
     boolean res = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_INTERVAL, itv, FALSE);
-    OCI_CHECK_PTR(OCI_IPC_INT, hour, FALSE);
-    OCI_CHECK_PTR(OCI_IPC_INT, min , FALSE);
-    OCI_CHECK_PTR(OCI_IPC_INT, sec,  FALSE);
-    OCI_CHECK_PTR(OCI_IPC_INT, fsec, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_INTERVAL, itv, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_INT, hour, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_INT, min , FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_INT, sec,  FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_INT, fsec, FALSE);
 
-    OCI_CHECK_INTERVAL_ENABLED(itv->con, FALSE);
+    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE);
 
     *day  = 0;
     *hour = 0;
@@ -260,7 +261,7 @@ boolean OCI_API OCI_IntervalGetDaySecond2(OCI_Library *pOCILib, OCI_Interval *it
 
     OCI_CALL4
     (
-        res, itv->err, itv->con,
+        pOCILib, res, itv->err, itv->con,
 
         OCIIntervalGetDaySecond((dvoid *) pOCILib->env, itv->err,
                                 (sb4 *) day, (sb4 *) hour, (sb4 *) min,
@@ -277,7 +278,7 @@ boolean OCI_API OCI_IntervalGetDaySecond2(OCI_Library *pOCILib, OCI_Interval *it
 
 #endif
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -285,21 +286,21 @@ boolean OCI_API OCI_IntervalGetDaySecond2(OCI_Library *pOCILib, OCI_Interval *it
 /* ------------------------------------------------------------------------ *
  * OCI_IntervalGetYearMonth
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_IntervalGetYearMonth(OCI_Interval *itv, int *year, int *month)
 {
     return OCI_IntervalGetYearMonth2(&OCILib, itv, year, month);
 }
-
+*/
 boolean OCI_API OCI_IntervalGetYearMonth2(OCI_Library *pOCILib, OCI_Interval *itv, int *year, int *month)
 {
     boolean res = FALSE;
 
-    OCI_CHECK_PTR(OCI_IPC_INTERVAL, itv, FALSE);
-    OCI_CHECK_PTR(OCI_IPC_INT, year,  FALSE);
-    OCI_CHECK_PTR(OCI_IPC_INT, month, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_INTERVAL, itv, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_INT, year,  FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_INT, month, FALSE);
 
-    OCI_CHECK_INTERVAL_ENABLED(itv->con, FALSE);
+    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE);
 
     *year  = 0;
     *month = 0;
@@ -308,7 +309,7 @@ boolean OCI_API OCI_IntervalGetYearMonth2(OCI_Library *pOCILib, OCI_Interval *it
 
     OCI_CALL4
     (
-        res, itv->err, itv->con,
+        pOCILib, res, itv->err, itv->con,
 
         OCIIntervalGetYearMonth((dvoid *) pOCILib->env, itv->err,
                                 (sb4 *) year, (sb4 *) month, itv->handle)
@@ -321,7 +322,7 @@ boolean OCI_API OCI_IntervalGetYearMonth2(OCI_Library *pOCILib, OCI_Interval *it
 
 #endif
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -329,28 +330,28 @@ boolean OCI_API OCI_IntervalGetYearMonth2(OCI_Library *pOCILib, OCI_Interval *it
 /* ------------------------------------------------------------------------ *
  * OCI_IntervalSetDaySecond
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_IntervalSetDaySecond(OCI_Interval *itv, int day,int hour,
                                          int min, int sec, int fsec)
 {
     return OCI_IntervalSetDaySecond2(&OCILib, itv, day, hour,
                                          min, sec, fsec);
 }
-
+*/
 boolean OCI_API OCI_IntervalSetDaySecond2(OCI_Library *pOCILib, OCI_Interval *itv, int day,int hour,
                                          int min, int sec, int fsec)
 {
     boolean res = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_INTERVAL, itv, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_INTERVAL, itv, FALSE);
 
-    OCI_CHECK_INTERVAL_ENABLED(itv->con, FALSE);
+    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
     OCI_CALL4
     (
-        res, itv->err, itv->con,
+        pOCILib, res, itv->err, itv->con,
 
         OCIIntervalSetDaySecond((dvoid *) pOCILib->env, itv->err,
                                 (sb4) day, (sb4) hour, (sb4) min,
@@ -367,7 +368,7 @@ boolean OCI_API OCI_IntervalSetDaySecond2(OCI_Library *pOCILib, OCI_Interval *it
 
 #endif
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -375,25 +376,25 @@ boolean OCI_API OCI_IntervalSetDaySecond2(OCI_Library *pOCILib, OCI_Interval *it
 /* ------------------------------------------------------------------------ *
  * OCI_IntervalSetYearMonth
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_IntervalSetYearMonth(OCI_Interval *itv, int year, int month)
 {
     return OCI_IntervalSetYearMonth2(&OCILib, itv, year, month);
 }
-
+*/
 boolean OCI_API OCI_IntervalSetYearMonth2(OCI_Library *pOCILib, OCI_Interval *itv, int year, int month)
 {
     boolean res = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_INTERVAL, itv, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_INTERVAL, itv, FALSE);
 
-    OCI_CHECK_INTERVAL_ENABLED(itv->con, FALSE);
+    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
     OCI_CALL4
     (
-        res, itv->err, itv->con,
+        pOCILib, res, itv->err, itv->con,
 
         OCIIntervalSetYearMonth((dvoid *) pOCILib->env, itv->err,
                                 (sb4) year, (sb4) month, itv->handle)
@@ -406,7 +407,7 @@ boolean OCI_API OCI_IntervalSetYearMonth2(OCI_Library *pOCILib, OCI_Interval *it
 
 #endif
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }

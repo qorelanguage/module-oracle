@@ -41,8 +41,15 @@
 /* ------------------------------------------------------------------------ *
  * OCI_ColumnDescribe
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con, 
+                           OCI_Statement *stmt, void *handle, int index,
+                           int ptype)
+{
+}
+*/
+
+boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connection *con, 
                            OCI_Statement *stmt, void *handle, int index,
                            int ptype)
 {
@@ -59,7 +66,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
     {
         OCI_CALL1
         (
-            res, con, stmt,
+            pOCILib, res, con, stmt,
             
             OCIAttrGet((dvoid *) handle, (ub4) OCI_DTYPE_PARAM, (dvoid *) &param, 
                        (ub4 *) NULL, (ub4) OCI_ATTR_COLLECTION_ELEMENT, con->err)
@@ -76,7 +83,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 
         OCI_CALL1
         (
-            res, con, stmt,
+            pOCILib, res, con, stmt,
             
             OCIParamGet((dvoid *) handle, htype,  con->err, (void**) &param, 
                         (ub4) index)
@@ -87,7 +94,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 
     OCI_CALL1
     (
-        res, con, stmt,
+        pOCILib, res, con, stmt,
         
         OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, (dvoid *) &col->ocode,
                    (ub4 *) NULL, (ub4) OCI_ATTR_DATA_TYPE, con->err)
@@ -97,7 +104,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 
     OCI_CALL1
     (
-        res, con, stmt,
+        pOCILib, res, con, stmt,
         
         OCIAttrGet((dvoid *) param, (ub4)  OCI_DTYPE_PARAM, (dvoid *) &col->size,
                    (ub4 *) NULL, (ub4) OCI_ATTR_DATA_SIZE, con->err)
@@ -107,7 +114,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 
     OCI_CALL1
     (
-        res, con, stmt,
+        pOCILib, res, con, stmt,
         
         OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, (dvoid *) &col->scale,
                    (ub4 *) NULL, (ub4) OCI_ATTR_SCALE, con->err)
@@ -121,7 +128,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 
         OCI_CALL1
         (
-            res, con, stmt,
+            pOCILib, res, con, stmt,
             
             OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, (dvoid *) &prec,
                        (ub4 *) NULL, (ub4) OCI_ATTR_PRECISION, con->err)
@@ -135,7 +142,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 
         OCI_CALL1
         (
-            res, con, stmt,
+            pOCILib, res, con, stmt,
             
             OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, (dvoid *) &prec,
                        (ub4 *) NULL, (ub4) OCI_ATTR_PRECISION, con->err)
@@ -148,7 +155,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 
     OCI_CALL1
     (
-        res, con, stmt,
+        pOCILib, res, con, stmt,
         
         OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, (dvoid *) &col->csfrm, 
                    (ub4 *) NULL, (ub4) OCI_ATTR_CHARSET_FORM, con->err)
@@ -158,7 +165,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 
 #if OCI_VERSION_COMPILE >= OCI_9_0 
 
-    if ((OCILib.version_runtime >= OCI_9_0) && (con->ver_num >= OCI_9_0))
+    if ((pOCILib->version_runtime >= OCI_9_0) && (con->ver_num >= OCI_9_0))
     {
         /* char used - no error checking because on Oracle 9.0, querying
                        this param that is not char/varchar based will cause an 
@@ -166,7 +173,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 
         OCI_CALL1
         (
-            res, con, stmt,
+            pOCILib, res, con, stmt,
             
             OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, 
                        (dvoid *) &col->charused, (ub4 *) NULL, 
@@ -180,7 +187,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
     {
         OCI_CALL1
         (
-            res, con, stmt,
+            pOCILib, res, con, stmt,
         
             OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, 
                        (dvoid *) &col->charsize, (ub4 *) NULL, 
@@ -188,7 +195,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
         )
     }
 
-    if ((OCILib.version_runtime >= OCI_9_0) && (con->ver_num >= OCI_9_0))
+    if ((pOCILib->version_runtime >= OCI_9_0) && (con->ver_num >= OCI_9_0))
     {
         /* fractional time precision for timestamps */
 
@@ -198,7 +205,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
         {
             OCI_CALL1
             (
-                res, con, stmt,
+                pOCILib, res, con, stmt,
         
                 OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM,
                            (dvoid *) &col->prec, (ub4 *) NULL, 
@@ -213,7 +220,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
         {
             OCI_CALL1
             (
-                res, con, stmt,
+                pOCILib, res, con, stmt,
         
                 OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, 
                            (dvoid *) &col->prec, (ub4 *) NULL, 
@@ -222,7 +229,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 
             OCI_CALL1
             (
-                res, con, stmt,
+                pOCILib, res, con, stmt,
         
                 OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, 
                            (dvoid *) &col->prec2, (ub4 *) NULL, 
@@ -239,7 +246,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
     {
         OCI_CALL1
         (
-            res, con, stmt,
+            pOCILib, res, con, stmt,
         
             OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, 
                        (dvoid *) &col->null, (ub4 *) NULL, 
@@ -266,7 +273,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 
     OCI_CALL1
     (
-        res, con, stmt,
+        pOCILib, res, con, stmt,
         
         OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, (dvoid *) &ostr,
                    (ub4 *) &osize, (ub4) attrname, con->err)
@@ -274,7 +281,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 
     if ((res == TRUE) && (ostr != NULL))
     {
-        col->name = (mtext *) OCI_MemAlloc(OCI_IPC_STRING, sizeof(mtext),
+        col->name = (mtext *) OCI_MemAlloc2(pOCILib, OCI_IPC_STRING, sizeof(mtext),
                                            (size_t) ((osize / (int) sizeof(omtext)) + 1),
                                            TRUE);
   
@@ -293,7 +300,7 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
     {
         OCI_CALL1
         (
-            res, con, stmt,
+            pOCILib, res, con, stmt,
         
             OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, 
                        (dvoid *) &ostr, (ub4 *) &osize, 
@@ -302,14 +309,14 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
       
         if ((res == TRUE) && (ostr != NULL))
         {   
-            mtext *tmp = (mtext *) OCI_MemAlloc(OCI_IPC_STRING, sizeof(mtext),
+            mtext *tmp = (mtext *) OCI_MemAlloc2(pOCILib, OCI_IPC_STRING, sizeof(mtext),
                                                 (size_t)((osize / (int) sizeof(omtext)) + 1),
                                                 TRUE);
         
             if (tmp != NULL)
             {
                OCI_CopyString(ostr, tmp, &osize, sizeof(omtext), sizeof(mtext));
-               col->typinf = OCI_TypeInfoGet(con, tmp, OCI_SCHEMA_TYPE);
+               col->typinf = OCI_TypeInfoGet2(pOCILib, con, tmp, OCI_SCHEMA_TYPE);
             }
 
             res = (col->typinf != NULL);
@@ -329,8 +336,14 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 /* ------------------------------------------------------------------------ *
  * OCI_ColumnMap
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_ColumnMap(OCI_Column *col, OCI_Statement *stmt)
+{
+    return OCI_ColumnMap2(&OCILib, col, stmt);
+}
+*/
+
+boolean OCI_ColumnMap2(OCI_Library *pOCILib, OCI_Column *col, OCI_Statement *stmt)
 {
     boolean res = TRUE;
     
@@ -500,7 +513,7 @@ boolean OCI_ColumnMap(OCI_Column *col, OCI_Statement *stmt)
                 col->bufsize  = (OCI_SIZE_LONG+1) * ((ub2) sizeof(dtext));
                 col->subtype  = OCI_CLONG;
 
-                if (OCILib.nls_utf8 == TRUE)
+                if (pOCILib->nls_utf8 == TRUE)
                 {
                     col->bufsize *= UTF8_BYTES_PER_CHAR;
                 }
@@ -610,7 +623,7 @@ boolean OCI_ColumnMap(OCI_Column *col, OCI_Statement *stmt)
             col->type     = OCI_CDT_TEXT;
             col->bufsize  = (ub4) ((col->size + 1) * (ub2) sizeof(dtext));
 
-            if (OCILib.nls_utf8 == TRUE)
+            if (pOCILib->nls_utf8 == TRUE)
             {
                 col->bufsize *= UTF8_BYTES_PER_CHAR;
             }
@@ -629,9 +642,9 @@ boolean OCI_ColumnMap(OCI_Column *col, OCI_Statement *stmt)
  * OCI_ColumnGetName
  * ------------------------------------------------------------------------ */
 
-const mtext * OCI_API OCI_ColumnGetName(OCI_Column *col)
+const mtext * OCI_API OCI_ColumnGetName2(OCI_Library *pOCILib, OCI_Column *col)
 {
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, NULL);
 
     return col->name;
 }
@@ -640,11 +653,11 @@ const mtext * OCI_API OCI_ColumnGetName(OCI_Column *col)
  * OCI_ColumnGetType
  * ------------------------------------------------------------------------ */
 
-unsigned int OCI_API OCI_ColumnGetType(OCI_Column *col)
+unsigned int OCI_API OCI_ColumnGetType2(OCI_Library *pOCILib, OCI_Column *col)
 {
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, OCI_UNKNOWN);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, OCI_UNKNOWN);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     return col->type;
 }
@@ -653,11 +666,11 @@ unsigned int OCI_API OCI_ColumnGetType(OCI_Column *col)
  * OCI_ColumnGetCharsetForm
  * ------------------------------------------------------------------------ */
 
-unsigned int OCI_API OCI_ColumnGetCharsetForm(OCI_Column *col)
+unsigned int OCI_API OCI_ColumnGetCharsetForm2(OCI_Library *pOCILib, OCI_Column *col)
 {
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, OCI_CSF_NONE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, OCI_CSF_NONE);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     if (col->csfrm == SQLCS_NCHAR)
         return OCI_CSF_NATIONAL;
@@ -671,11 +684,11 @@ unsigned int OCI_API OCI_ColumnGetCharsetForm(OCI_Column *col)
  * OCI_ColumnGetSize
  * ------------------------------------------------------------------------ */
 
-unsigned int OCI_API OCI_ColumnGetSize(OCI_Column *col)
+unsigned int OCI_API OCI_ColumnGetSize2(OCI_Library *pOCILib, OCI_Column *col)
 {
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, 0);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, 0);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     /* Oracle 9i introduced CHAR attribute on string columns to indicate the 
        size of the column is not in bytes (default) but in chars
@@ -695,11 +708,11 @@ unsigned int OCI_API OCI_ColumnGetSize(OCI_Column *col)
  * OCI_ColumnGetScale
  * ------------------------------------------------------------------------ */
 
-int OCI_API OCI_ColumnGetScale(OCI_Column *col)
+int OCI_API OCI_ColumnGetScale2(OCI_Library *pOCILib, OCI_Column *col)
 {
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, 0);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, 0);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     return (int) col->scale;
 }
@@ -708,11 +721,11 @@ int OCI_API OCI_ColumnGetScale(OCI_Column *col)
  * OCI_ColumnGetPrecision
  * ------------------------------------------------------------------------ */
 
-int OCI_API OCI_ColumnGetPrecision(OCI_Column *col)
+int OCI_API OCI_ColumnGetPrecision2(OCI_Library *pOCILib, OCI_Column *col)
 {
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, 0);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, 0);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     if (col->type == OCI_CDT_NUMERIC)
         return (int) col->prec;
@@ -724,11 +737,11 @@ int OCI_API OCI_ColumnGetPrecision(OCI_Column *col)
  * OCI_ColumnGetFractionalPrecision
  * ------------------------------------------------------------------------ */
 
-int OCI_API OCI_ColumnGetFractionalPrecision(OCI_Column *col)
+int OCI_API OCI_ColumnGetFractionalPrecision2(OCI_Library *pOCILib, OCI_Column *col)
 {
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, 0);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, 0);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     if (col->type == OCI_CDT_TIMESTAMP)
         return (int) col->prec;
@@ -742,11 +755,11 @@ int OCI_API OCI_ColumnGetFractionalPrecision(OCI_Column *col)
  * OCI_ColumnGetLeadingPrecision
  * ------------------------------------------------------------------------ */
 
-int OCI_API OCI_ColumnGetLeadingPrecision(OCI_Column *col)
+int OCI_API OCI_ColumnGetLeadingPrecision2(OCI_Library *pOCILib, OCI_Column *col)
 {
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, 0);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, 0);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     if (col->type == OCI_CDT_INTERVAL)
         return (int) col->prec;
@@ -758,11 +771,11 @@ int OCI_API OCI_ColumnGetLeadingPrecision(OCI_Column *col)
  * OCI_ColumnGetNullable
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_ColumnGetNullable(OCI_Column *col)
+boolean OCI_API OCI_ColumnGetNullable2(OCI_Library *pOCILib, OCI_Column *col)
 {
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, FALSE);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     return (col->null == TRUE);
 }
@@ -771,11 +784,11 @@ boolean OCI_API OCI_ColumnGetNullable(OCI_Column *col)
  * OCI_ColumnGetCharUsed
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_ColumnGetCharUsed(OCI_Column *col)
+boolean OCI_API OCI_ColumnGetCharUsed2(OCI_Library *pOCILib, OCI_Column *col)
 {
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, FALSE);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     return (boolean) col->charused;
 }
@@ -784,16 +797,16 @@ boolean OCI_API OCI_ColumnGetCharUsed(OCI_Column *col)
  * OCI_ColumnGetSQLType
  * ------------------------------------------------------------------------ */
 
-const mtext * OCI_API OCI_ColumnGetSQLType(OCI_Column *col)
+const mtext * OCI_API OCI_ColumnGetSQLType2(OCI_Library *pOCILib, OCI_Column *col)
 {
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, NULL);
 
     /* VARCHAR type will not be returned because Oracle does not make any 
        difference with VARCHAR2. If a column is created with VARCHAR, it is
        internally created as VARCHAR2
     */       
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     switch(col->ocode)
     {
@@ -946,13 +959,13 @@ const mtext * OCI_API OCI_ColumnGetSQLType(OCI_Column *col)
  * OCI_ColumnGetFullSQLType
  * ------------------------------------------------------------------------ */
 
-unsigned int OCI_API OCI_ColumnGetFullSQLType(OCI_Column *col, mtext *buffer, 
+unsigned int OCI_API OCI_ColumnGetFullSQLType2(OCI_Library *pOCILib, OCI_Column *col, mtext *buffer, 
                                               unsigned int len)
 {
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, 0);
-    OCI_CHECK_PTR(OCI_IPC_STRING, buffer, 0);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, 0);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_STRING, buffer, 0);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     buffer[0] = 0;
 
@@ -1157,11 +1170,11 @@ unsigned int OCI_API OCI_ColumnGetFullSQLType(OCI_Column *col, mtext *buffer,
  * OCI_ColumnGetTypeInfo
  * ------------------------------------------------------------------------ */
 
-OCI_TypeInfo * OCI_API OCI_ColumnGetTypeInfo(OCI_Column *col)
+OCI_TypeInfo * OCI_API OCI_ColumnGetTypeInfo2(OCI_Library *pOCILib, OCI_Column *col)
 {
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, FALSE);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     return col->typinf;
 }
@@ -1170,13 +1183,13 @@ OCI_TypeInfo * OCI_API OCI_ColumnGetTypeInfo(OCI_Column *col)
  * OCI_ColumnGetSubType
  * ------------------------------------------------------------------------ */
 
-unsigned int OCI_API OCI_ColumnGetSubType(OCI_Column *col)
+unsigned int OCI_API OCI_ColumnGetSubType2(OCI_Library *pOCILib, OCI_Column *col)
 {
     unsigned int type = OCI_UNKNOWN;
 
-    OCI_CHECK_PTR(OCI_IPC_COLUMN, col, OCI_UNKNOWN);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, OCI_UNKNOWN);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     if (col->type == OCI_CDT_LONG      || 
         col->type == OCI_CDT_LOB       ||

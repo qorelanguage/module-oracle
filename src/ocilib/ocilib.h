@@ -621,7 +621,7 @@ OCI_EXPORT int       ociwcscasecmp(const wchar_t *str1, const wchar_t *str2);
 /* helpers mapping macros */
 
 #ifdef OCI_METADATA_WIDE
-    #define mtsdup          ociwcsdup
+    #define mtsdup          ociwcsdup2
     #define mtscpy          wcscpy
     #define mtsncpy         wcsncpy
     #define mtscat          wcscat
@@ -632,7 +632,7 @@ OCI_EXPORT int       ociwcscasecmp(const wchar_t *str1, const wchar_t *str2);
     #define mtsprintf       swprintf
     #define mtstol          wcstol
 #else
-    #define mtsdup          ocistrdup
+    #define mtsdup          ocistrdup2
     #define mtscpy          strcpy
     #define mtsncpy         strncpy
     #define mtscat          strcat
@@ -6620,12 +6620,12 @@ OCI_EXPORT const dtext * OCI_API OCI_ServerGetOutput
  * Return the collection object handle on success otherwise NULL on failure
  *
  */
-
+/*
 OCI_EXPORT OCI_Coll * OCI_API OCI_CollCreate
 (
     OCI_TypeInfo *typinf
 );
-
+*/
 /**
  * @brief
  * Free a local collection
@@ -6640,12 +6640,12 @@ OCI_EXPORT OCI_Coll * OCI_API OCI_CollCreate
  * TRUE on success otherwise FALSE
  *
  */
-
+ /*
 OCI_EXPORT boolean OCI_API OCI_CollFree
 (
    OCI_Coll *coll
 );
-
+*/
 /**
  * @brief
  * Create an array of Collection object
@@ -6661,14 +6661,14 @@ OCI_EXPORT boolean OCI_API OCI_CollFree
  * Return the Collection handle array on success otherwise NULL on failure
  *
  */
-
+  /*
 OCI_EXPORT OCI_Coll ** OCI_API OCI_CollArrayCreate
 (
     OCI_Connection *con,
     OCI_TypeInfo *typinf,
     unsigned int nbelem
 );
-
+*/
 /**
  * @brief
  * Free an arrray of Collection objects
@@ -6683,12 +6683,12 @@ OCI_EXPORT OCI_Coll ** OCI_API OCI_CollArrayCreate
  * TRUE on success otherwise FALSE
  *
  */
-
+   /*
 OCI_EXPORT boolean OCI_API OCI_CollArrayFree
 (
     OCI_Coll **colls
 );
-
+*/
 /**
  * @brief
  * Assign a collection to another one
@@ -6703,13 +6703,13 @@ OCI_EXPORT boolean OCI_API OCI_CollArrayFree
  * TRUE on success otherwise FALSE
  *
  */
-
+    /*
 OCI_EXPORT boolean OCI_API OCI_CollAssign
 (
     OCI_Coll *coll,
     OCI_Coll *coll_src
 );
-
+*/
 /**
  * @brief
  * Return the type info object associated to the collection
@@ -6717,12 +6717,12 @@ OCI_EXPORT boolean OCI_API OCI_CollAssign
  * @param coll - Collection handle
  *
  */
-
+     /*
 OCI_EXPORT OCI_TypeInfo * OCI_API OCI_CollGetTypeInfo
 (
     OCI_Coll *coll
 );
-
+*/
 /**
  * @brief
  * Return the collection type
@@ -6739,12 +6739,12 @@ OCI_EXPORT OCI_TypeInfo * OCI_API OCI_CollGetTypeInfo
  * Collection type or OCI_UNKNOWN if the collection handle is null
  *
  */
-
+      /*
 OCI_EXPORT unsigned int OCI_API OCI_CollGetType
 (
     OCI_Coll *coll
 );
-
+*/
 /**
  * @brief
  * Returns the maximum number of elements of the given collection.
@@ -6752,12 +6752,12 @@ OCI_EXPORT unsigned int OCI_API OCI_CollGetType
  * @param coll - Collection handle
  *
  */
-
+       /*
 OCI_EXPORT unsigned int OCI_API OCI_CollGetMax
 (
     OCI_Coll *coll
 );
-
+*/
 /**
  * @brief
  * Returns the current number of elements of the given collection.
@@ -6765,12 +6765,12 @@ OCI_EXPORT unsigned int OCI_API OCI_CollGetMax
  * @param coll - Collection handle
  *
  */
-
+	/*
 OCI_EXPORT unsigned int OCI_API OCI_CollGetSize
 (
     OCI_Coll *coll
 );
-
+*/
 /**
  * @brief
  * Trims the given number of elements from the end of the collection
@@ -6782,13 +6782,13 @@ OCI_EXPORT unsigned int OCI_API OCI_CollGetSize
  * TRUE on success otherwise FALSE
  *
  */
-
+	 /*
 OCI_EXPORT boolean OCI_API OCI_CollTrim
 (
     OCI_Coll *coll,
     unsigned int nb_elem
 );
-
+*/
 /**
  * @brief
  * clear all items of the given collection
@@ -6799,12 +6799,12 @@ OCI_EXPORT boolean OCI_API OCI_CollTrim
  * TRUE on success otherwise FALSE
  *
  */
-
+	  /*
 OCI_EXPORT boolean OCI_API OCI_CollClear
 (
     OCI_Coll *coll
 );
-
+*/
 /**
  * @brief
  * Return the element at the given position in the collection
@@ -6825,13 +6825,13 @@ OCI_EXPORT boolean OCI_API OCI_CollClear
  * Element handle on success otherwise FALSE
  *
  */
-
+	   /*
 OCI_EXPORT OCI_Elem * OCI_API OCI_CollGetAt
 (
     OCI_Coll *coll,
     unsigned int index
 );
-
+*/
 /**
  * @brief
  * Assign the given element value to the element at the given position in
@@ -6854,14 +6854,14 @@ OCI_EXPORT OCI_Elem * OCI_API OCI_CollGetAt
  * TRUE on success otherwise FALSE
  *
  */
-
+	    /*
 OCI_EXPORT boolean OCI_API OCI_CollSetAt
 (
     OCI_Coll *coll,
     unsigned int index,
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Append the given element at the end of the collection
@@ -6875,13 +6875,13 @@ OCI_EXPORT boolean OCI_API OCI_CollSetAt
  * TRUE on success otherwise FALSE
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_CollAppend
 (
     OCI_Coll *coll,
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Create an iterator handle to iterate through a collection
@@ -6963,12 +6963,12 @@ OCI_EXPORT OCI_Elem * OCI_API OCI_IterGetPrev
  * Return the collection element handle on success otherwise NULL on failure
  *
  */
-
+/*
 OCI_EXPORT OCI_Elem * OCI_API OCI_ElemCreate
 (
     OCI_TypeInfo *typinf
 );
-
+*/
 /**
  * @brief
  * Free a local collection element
@@ -6983,12 +6983,12 @@ OCI_EXPORT OCI_Elem * OCI_API OCI_ElemCreate
  * TRUE on success otherwise FALSE
  *
  */
-
+ /*
 OCI_EXPORT boolean OCI_API OCI_ElemFree
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the short value of the given collection element
@@ -6999,12 +6999,12 @@ OCI_EXPORT boolean OCI_API OCI_ElemFree
  * Short value or 0 on failure
  *
  */
-
+  /*
 OCI_EXPORT short OCI_API OCI_ElemGetShort
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the unsigned short value of the given collection element
@@ -7015,12 +7015,12 @@ OCI_EXPORT short OCI_API OCI_ElemGetShort
  * Unsigned short value or 0 on failure
  *
  */
-
+   /*
 OCI_EXPORT unsigned short OCI_API OCI_ElemGetUnsignedShort
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the int value of the given collection element
@@ -7031,12 +7031,12 @@ OCI_EXPORT unsigned short OCI_API OCI_ElemGetUnsignedShort
  * Int value or 0 on failure
  *
  */
-
+    /*
 OCI_EXPORT int OCI_API OCI_ElemGetInt
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the unsigned int value of the given collection element
@@ -7047,12 +7047,12 @@ OCI_EXPORT int OCI_API OCI_ElemGetInt
  * Unsigned int value or 0 on failure
  *
  */
-
+     /*
 OCI_EXPORT unsigned int OCI_API OCI_ElemGetUnsignedInt
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the big int value of the given collection element
@@ -7063,12 +7063,12 @@ OCI_EXPORT unsigned int OCI_API OCI_ElemGetUnsignedInt
  * Big int value or 0 on failure
  *
  */
-
+      /*
 OCI_EXPORT big_int OCI_API OCI_ElemGetBigInt
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the unsigned big int value of the given collection element
@@ -7079,12 +7079,12 @@ OCI_EXPORT big_int OCI_API OCI_ElemGetBigInt
  * Unsigned big int value or 0 on failure
  *
  */
-
+       /*
 OCI_EXPORT big_uint OCI_API OCI_ElemGetUnsignedBigInt
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the Double value of the given collection element
@@ -7095,12 +7095,12 @@ OCI_EXPORT big_uint OCI_API OCI_ElemGetUnsignedBigInt
  * Double value or 0 on failure
  *
  */
-
+	/*
 OCI_EXPORT double OCI_API OCI_ElemGetDouble
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the String value of the given collection element
@@ -7111,12 +7111,12 @@ OCI_EXPORT double OCI_API OCI_ElemGetDouble
  * String value or NULL on failure
  *
  */
-
+	 /*
 OCI_EXPORT const dtext * OCI_API OCI_ElemGetString
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Read the RAW value of the collection element into the given buffer
@@ -7129,14 +7129,14 @@ OCI_EXPORT const dtext * OCI_API OCI_ElemGetString
  * Number of bytes read from the RAW value or 0 on failure
  *
  */
-
+	  /*
 OCI_EXPORT unsigned int OCI_API  OCI_ElemGetRaw
 (
     OCI_Elem *elem,
     void *value,
     unsigned int len
 );
-
+*/
 /**
  * @brief
  * Return the Date value of the given collection element
@@ -7147,12 +7147,12 @@ OCI_EXPORT unsigned int OCI_API  OCI_ElemGetRaw
  * Date handle or NULL on failure
  *
  */
-
+	   /*
 OCI_EXPORT OCI_Date * OCI_API OCI_ElemGetDate
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the Timestamp value of the given collection element
@@ -7163,12 +7163,12 @@ OCI_EXPORT OCI_Date * OCI_API OCI_ElemGetDate
  * Timestamp handle or NULL on failure
  *
  */
-
+	    /*
 OCI_EXPORT OCI_Timestamp * OCI_API OCI_ElemGetTimestamp
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the Interval value of the given collection element
@@ -7179,12 +7179,12 @@ OCI_EXPORT OCI_Timestamp * OCI_API OCI_ElemGetTimestamp
  * Interval handle or NULL on failure
  *
  */
-
+	     /*
 OCI_EXPORT OCI_Interval * OCI_API OCI_ElemGetInterval
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the Lob value of the given collection element
@@ -7195,12 +7195,12 @@ OCI_EXPORT OCI_Interval * OCI_API OCI_ElemGetInterval
  * Lob handle or NULL on failure
  *
  */
-
+	      /*
 OCI_EXPORT OCI_Lob * OCI_API  OCI_ElemGetLob
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the File value of the given collection element
@@ -7211,12 +7211,12 @@ OCI_EXPORT OCI_Lob * OCI_API  OCI_ElemGetLob
  * File handle or NULL on failure
  *
  */
-
+	       /*
 OCI_EXPORT OCI_File * OCI_API  OCI_ElemGetFile
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the object value of the given collection element
@@ -7227,12 +7227,12 @@ OCI_EXPORT OCI_File * OCI_API  OCI_ElemGetFile
  * Object handle or NULL on failure
  *
  */
-
+		/*
 OCI_EXPORT OCI_Object * OCI_API OCI_ElemGetObject
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the collection value of the given collection element
@@ -7243,12 +7243,12 @@ OCI_EXPORT OCI_Object * OCI_API OCI_ElemGetObject
  * Collection handle or NULL on failure
  *
  */
-
+		 /*
 OCI_EXPORT OCI_Coll * OCI_API OCI_ElemGetColl
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Return the Ref value of the given collection element
@@ -7259,12 +7259,12 @@ OCI_EXPORT OCI_Coll * OCI_API OCI_ElemGetColl
  * Ref handle or NULL on failure
  *
  */
-
+		  /*
 OCI_EXPORT OCI_Ref * OCI_API OCI_ElemGetRef
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Set a short value to a collection element
@@ -7277,13 +7277,13 @@ OCI_EXPORT OCI_Ref * OCI_API OCI_ElemGetRef
  *
  */
 
-
+		   /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetShort
 (
     OCI_Elem *elem,
     short value
 );
-
+*/
 /**
  * @brief
  * Set a unsigned short value to a collection element
@@ -7295,13 +7295,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetShort
  * TRUE on success otherwise FALSE
  *
  */
-
+		    /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetUnsignedShort
 (
     OCI_Elem *elem,
     unsigned short value
 );
-
+*/
 /**
  * @brief
  * Set a int value to a collection element
@@ -7313,13 +7313,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetUnsignedShort
  * TRUE on success otherwise FALSE
  *
  */
-
+		     /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetInt
 (
     OCI_Elem *elem,
     int value
 );
-
+*/
 /**
  * @brief
  * Set a unsigned int value to a collection element
@@ -7331,13 +7331,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetInt
  * TRUE on success otherwise FALSE
  *
  */
-
+		      /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetUnsignedInt
 (
     OCI_Elem *elem,
     unsigned int value
 );
-
+*/
 /**
  * @brief
  * Set a big int value to a collection element
@@ -7349,13 +7349,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetUnsignedInt
  * TRUE on success otherwise FALSE
  *
  */
-
+		       /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetBigInt
 (
     OCI_Elem *elem,
     big_int value
 );
-
+*/
 /**
  * @brief
  * Set a unsigned big_int value to a collection element
@@ -7367,13 +7367,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetBigInt
  * TRUE on success otherwise FALSE
  *
  */
-
+			/*
 OCI_EXPORT boolean OCI_API OCI_ElemSetUnsignedBigInt
 (
     OCI_Elem *elem,
     big_uint value
 );
-
+*/
 /**
  * @brief
  * Set a double value to a collection element
@@ -7385,13 +7385,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetUnsignedBigInt
  * TRUE on success otherwise FALSE
  *
  */
-
+			 /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetDouble
 (
     OCI_Elem *elem,
     double value
 );
-
+*/
 /**
  * @brief
  * Set a string value to a collection element
@@ -7406,13 +7406,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetDouble
  * TRUE on success otherwise FALSE
  *
  */
-
+			  /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetString
 (
     OCI_Elem *elem,
     const dtext *value
 );
-
+*/
 /**
  * @brief
  * Set a RAW value to a collection element
@@ -7428,14 +7428,14 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetString
  * TRUE on success otherwise FALSE
  *
  */
-
+			   /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetRaw
 (
     OCI_Elem *elem,
     void* value,
     unsigned int len
 );
-
+*/
 /**
  * @brief
  * Assign a Date handle to a collection element
@@ -7450,13 +7450,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetRaw
  * TRUE on success otherwise FALSE
  *
  */
-
+			    /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetDate
 (
     OCI_Elem *elem,
     OCI_Date *value
 );
-
+*/
 /**
  * @brief
  * Assign a Timestamp handle to a collection element
@@ -7471,13 +7471,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetDate
  * TRUE on success otherwise FALSE
  *
  */
-
+			     /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetTimestamp
 (
     OCI_Elem *elem,
     OCI_Timestamp *value
 );
-
+*/
 /**
  * @brief
  * Assign an Interval handle to a collection element
@@ -7492,13 +7492,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetTimestamp
  * TRUE on success otherwise FALSE
  *
  */
-
+			      /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetInterval
 (
     OCI_Elem *elem,
     OCI_Interval *value
 );
-
+*/
 /**
  * @brief
  * Assign a Collection handle to a collection element
@@ -7513,13 +7513,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetInterval
  * TRUE on success otherwise FALSE
  *
  */
-
+			       /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetColl
 (
     OCI_Elem *elem,
     OCI_Coll *value
 );
-
+*/
 /**
  * @brief
  * Assign an Object handle to a collection element
@@ -7539,13 +7539,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetColl
  * TRUE on success otherwise FALSE
  *
  */
-
+				/*
 OCI_EXPORT boolean OCI_API OCI_ElemSetObject
 (
     OCI_Elem *elem,
     OCI_Object *value
 );
-
+*/
 /**
  * @brief
  * Assign a Lob handle to a collection element
@@ -7560,13 +7560,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetObject
  * TRUE on success otherwise FALSE
  *
  */
-
+				 /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetLob
 (
     OCI_Elem *elem,
     OCI_Lob *value
 );
-
+*/
 /**
  * @brief
  * Assign a File handle to a collection element
@@ -7581,13 +7581,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetLob
  * TRUE on success otherwise FALSE
  *
  */
-
+				  /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetFile
 (
     OCI_Elem *elem,
     OCI_File *value
 );
-
+*/
 /**
  * @brief
  * Assign a Ref handle to a collection element
@@ -7602,13 +7602,13 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetFile
  * TRUE on success otherwise FALSE
  *
  */
-
+				   /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetRef
 (
     OCI_Elem *elem,
     OCI_Ref *value
 );
-
+*/
 /**
  * @brief
  * Check if the collection element value is null
@@ -7619,12 +7619,12 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetRef
  * TRUE if it's null otherwise FALSE
  *
  */
-
+				    /*
 OCI_EXPORT boolean OCI_API OCI_ElemIsNull
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @brief
  * Set a collection element value to null
@@ -7635,12 +7635,12 @@ OCI_EXPORT boolean OCI_API OCI_ElemIsNull
  * TRUE on success otherwise FALSE
  *
  */
-
+				     /*
 OCI_EXPORT boolean OCI_API OCI_ElemSetNull
 (
     OCI_Elem *elem
 );
-
+*/
 /**
  * @}
  */
@@ -8496,11 +8496,12 @@ OCI_EXPORT OCI_Lob * OCI_API OCI_LobCreate
  * TRUE on success otherwise FALSE
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_LobFree
 (
     OCI_Lob *lob
 );
+*/
 
 /**
  * @brief
@@ -8558,12 +8559,12 @@ OCI_EXPORT boolean OCI_API OCI_LobArrayFree
  * Object type or OCI_UNKNOWN the input handle is NULL
  *
  */
-
+/*
 OCI_EXPORT unsigned int OCI_API OCI_LobGetType
 (
     OCI_Lob *lob
 );
-
+*/
 /**
  * @brief
  * Perform a seek operation on the OCI_lob content buffer
@@ -8590,14 +8591,14 @@ OCI_EXPORT unsigned int OCI_API OCI_LobGetType
  * TRUE on success otherwise FALSE
  *
  */
-
+ /*
 OCI_EXPORT boolean OCI_API OCI_LobSeek
 (
     OCI_Lob *lob,
     big_uint offset,
     unsigned int mode
 );
-
+*/
 /**
  * @brief
  * Return the current position in the Lob content buffer
@@ -8607,12 +8608,12 @@ OCI_EXPORT boolean OCI_API OCI_LobSeek
  * @return
  * Lob position (starting with 0) or 0 on failure
  */
-
+  /*
 OCI_EXPORT big_uint OCI_API OCI_LobGetOffset
 (
     OCI_Lob *lob
 );
-
+*/
 /**
  * @brief
  * [OBSOLETE] Read a portion of a lob into the given buffer
@@ -8633,13 +8634,14 @@ OCI_EXPORT big_uint OCI_API OCI_LobGetOffset
  * Number of bytes/characters read on success otherwise 0 on failure
  *
  */
-
+   /*
 OCI_EXPORT unsigned int OCI_API OCI_LobRead
 (
     OCI_Lob *lob,
     void *buffer,
     unsigned int len
 );
+*/
 
 /**
  * @brief
@@ -8665,7 +8667,7 @@ OCI_EXPORT unsigned int OCI_API OCI_LobRead
  * TRUE on success otherwise FALSE
  *
  */
-
+    /*
 OCI_EXPORT boolean OCI_API OCI_LobRead2
 (
     OCI_Lob *lob,
@@ -8673,7 +8675,7 @@ OCI_EXPORT boolean OCI_API OCI_LobRead2
     unsigned int *char_count,
     unsigned int *byte_count
 );
-
+*/
 /**
  * @brief
  * [OBSOLETE] Write a buffer into a LOB 
@@ -8694,14 +8696,14 @@ OCI_EXPORT boolean OCI_API OCI_LobRead2
  * Number of bytes / characters written on success otherwise 0 on failure
  *
  */
-
+     /*
 OCI_EXPORT unsigned int OCI_API OCI_LobWrite
 (
     OCI_Lob *lob,
     void *buffer,
     unsigned int len
 );
-
+*/
 /**
  * @brief
  * Write a buffer into a LOB 
@@ -8727,7 +8729,7 @@ OCI_EXPORT unsigned int OCI_API OCI_LobWrite
  *
  */
 
-
+      /*
 OCI_EXPORT boolean OCI_API OCI_LobWrite2
 (
     OCI_Lob *lob,
@@ -8735,7 +8737,7 @@ OCI_EXPORT boolean OCI_API OCI_LobWrite2
     unsigned int *char_count,
     unsigned int *byte_count
 );
-
+*/
 /**
  * @brief
  * Truncate the given lob to a shorter length
@@ -8752,13 +8754,13 @@ OCI_EXPORT boolean OCI_API OCI_LobWrite2
  * TRUE on success otherwise FALSE
  *
  */
-
+       /*
 OCI_EXPORT boolean OCI_API OCI_LobTruncate
 (
     OCI_Lob *lob,
     big_uint size
 );
-
+*/
 /**
  * @brief
  * Return the actual length of a lob
@@ -8769,12 +8771,12 @@ OCI_EXPORT boolean OCI_API OCI_LobTruncate
  * The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
  *
  */
-
+	/*
 OCI_EXPORT big_uint OCI_API OCI_LobGetLength
 (
     OCI_Lob *lob
 );
-
+*/
 /**
  * @brief
  * Returns the chunk size of a LOB
@@ -8791,12 +8793,12 @@ OCI_EXPORT big_uint OCI_API OCI_LobGetLength
  * The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
  *
  */
-
+/*
 OCI_EXPORT unsigned int OCI_API OCI_LobGetChunkSize
 (
     OCI_Lob *lob
 );
-
+*/
 /**
  * @brief
  * Erase a portion of the lob at a given position
@@ -8813,14 +8815,14 @@ OCI_EXPORT unsigned int OCI_API OCI_LobGetChunkSize
  * otherwise 0 on failure
  *
  */
-
+ /*
 OCI_EXPORT big_uint OCI_API OCI_LobErase
 (
     OCI_Lob *lob,
     big_uint offset,
     big_uint len
 );
-
+*/
 /**
  * @brief
  * Append a buffer at the end of a LOB
@@ -8838,14 +8840,14 @@ OCI_EXPORT big_uint OCI_API OCI_LobErase
  * Number of bytes / characters written on success otherwise 0 on failure
  *
  */
-
+  /*
 OCI_EXPORT unsigned int OCI_API OCI_LobAppend
 (
     OCI_Lob *lob,
     void *buffer,
     unsigned int len
 );
-
+*/
 /**
  * @brief
  * Append a buffer at the end of a LOB
@@ -8871,7 +8873,7 @@ OCI_EXPORT unsigned int OCI_API OCI_LobAppend
  *
  */
 
-
+   /*
 OCI_EXPORT boolean OCI_API OCI_LobAppend2
 (
     OCI_Lob *lob,
@@ -8879,7 +8881,7 @@ OCI_EXPORT boolean OCI_API OCI_LobAppend2
     unsigned int *char_count,
     unsigned int *byte_count
 );
-
+*/
 /**
  * @brief
  * Append a source LOB at the end of a destination LOB
@@ -8891,13 +8893,13 @@ OCI_EXPORT boolean OCI_API OCI_LobAppend2
  * TRUE on success otherwise FALSE
  *
  */
-
+    /*
 OCI_EXPORT boolean OCI_API OCI_LobAppendLob
 (
     OCI_Lob *lob,
     OCI_Lob *lob_src
 );
-
+*/
 /**
  * @brief
  * Check if the given lob is a temporary lob
@@ -8908,12 +8910,12 @@ OCI_EXPORT boolean OCI_API OCI_LobAppendLob
  * TRUE if it's a temporary lob otherwise FALSE
  *
  */
-
+     /*
 OCI_EXPORT boolean OCI_API OCI_LobIsTemporary
 (
     OCI_Lob *lob
 );
-
+*/
 /**
  * @brief
  * Copy a portion of a source LOB into a destination LOB
@@ -8932,7 +8934,7 @@ OCI_EXPORT boolean OCI_API OCI_LobIsTemporary
  * Absolute position starts at 1.
  *
  */
-
+      /*
 OCI_EXPORT boolean OCI_API OCI_LobCopy
 (
     OCI_Lob *lob,
@@ -8941,7 +8943,7 @@ OCI_EXPORT boolean OCI_API OCI_LobCopy
     big_uint offset_src,
     big_uint count
 );
-
+*/
 /**
  * @brief
  * Copy a portion of a source FILE into a destination LOB
@@ -8961,7 +8963,7 @@ OCI_EXPORT boolean OCI_API OCI_LobCopy
  * Absolute position starts at 1.
  *
  */
-
+       /*
 OCI_EXPORT boolean OCI_API OCI_LobCopyFromFile
 (
     OCI_Lob *lob,
@@ -8970,7 +8972,7 @@ OCI_EXPORT boolean OCI_API OCI_LobCopyFromFile
     big_uint offset_src,
     big_uint count
 );
-
+*/
 /**
  * @brief
  * Open explicitly a Lob
@@ -8992,13 +8994,13 @@ OCI_EXPORT boolean OCI_API OCI_LobCopyFromFile
  * TRUE on success otherwise FALSE
  *
  */
-
+	/*
 OCI_EXPORT boolean OCI_API OCI_LobOpen
 (
     OCI_Lob *lob,
     unsigned int mode
 );
-
+*/
 /**
  * @brief
  * Close explicitly a Lob
@@ -9012,12 +9014,12 @@ OCI_EXPORT boolean OCI_API OCI_LobOpen
  * TRUE on success otherwise FALSE
  *
  */
-
+	 /*
 OCI_EXPORT boolean OCI_API OCI_LobClose
 (
     OCI_Lob *lob
 );
-
+*/
 /**
  * @brief
  * Compare two lob handles for equality
@@ -9031,13 +9033,13 @@ OCI_EXPORT boolean OCI_API OCI_LobClose
  * TRUE is the lobs are not null and equal otherwise FALSE
  *
  */
-
+	  /*
 OCI_EXPORT boolean OCI_API OCI_LobIsEqual
 (
     OCI_Lob *lob,
     OCI_Lob *lob2
 );
-
+*/
 /**
  * @brief
  * Assign a lob to another one
@@ -9049,13 +9051,13 @@ OCI_EXPORT boolean OCI_API OCI_LobIsEqual
  * TRUE on success otherwise FALSE
  *
  */
-
+	   /*
 OCI_EXPORT boolean OCI_API OCI_LobAssign
 (
     OCI_Lob *lob,
     OCI_Lob *lob_src
 );
-
+*/
 /**
  * @brief
  * Return the maximum size that the lob can contain
@@ -9066,12 +9068,12 @@ OCI_EXPORT boolean OCI_API OCI_LobAssign
  * TRUE on success otherwise FALSE
  *
  */
-
+	    /*
 OCI_EXPORT big_uint OCI_API OCI_LobGetMaxSize
 (
     OCI_Lob *lob
 );
-
+*/
 /**
  * @brief
  * Flush Lob content to the server
@@ -9082,12 +9084,12 @@ OCI_EXPORT big_uint OCI_API OCI_LobGetMaxSize
  * TRUE on success otherwise FALSE
  *
  */
-
+	     /*
 OCI_EXPORT boolean OCI_API OCI_LobFlush
 (
     OCI_Lob *lob
 );
-
+*/
 /**
  * @brief
  * Enable / disable buffering mode on the given lob handle
@@ -9111,13 +9113,13 @@ OCI_EXPORT boolean OCI_API OCI_LobFlush
  * TRUE on success otherwise FALSE
  *
  */
-
+	      /*
 OCI_EXPORT boolean OCI_API OCI_LobEnableBuffering
 (
     OCI_Lob *lob,
     boolean value
 );
-
+*/
 /**
  * @}
  */
@@ -9706,12 +9708,12 @@ OCI_EXPORT void * OCI_API OCI_LongGetBuffer
  * Return the date handle on success otherwise NULL on failure
  *
  */
-
+/*
 OCI_EXPORT OCI_Date * OCI_API OCI_DateCreate
 (
     OCI_Connection *con
 );
-
+*/
 /**
  * @brief
  * Free a date object
@@ -9725,12 +9727,12 @@ OCI_EXPORT OCI_Date * OCI_API OCI_DateCreate
  * TRUE on success otherwise FALSE
  *
  */
-
+ /*
 OCI_EXPORT boolean OCI_API OCI_DateFree
 (
     OCI_Date *date
 );
-
+*/
 /**
  * @brief
  * Create an array of date object
@@ -9745,13 +9747,13 @@ OCI_EXPORT boolean OCI_API OCI_DateFree
  * Return the date handle array on success otherwise NULL on failure
  *
  */
-
+  /*
 OCI_EXPORT OCI_Date ** OCI_API OCI_DateArrayCreate
 (
     OCI_Connection *con,
     unsigned int nbelem
 );
-
+*/
 /**
  * @brief
  * Free an arrray of date objects
@@ -9766,12 +9768,12 @@ OCI_EXPORT OCI_Date ** OCI_API OCI_DateArrayCreate
  * TRUE on success otherwise FALSE
  *
  */
-
+   /*
 OCI_EXPORT boolean OCI_API OCI_DateArrayFree
 (
     OCI_Date **dates
 );
-
+*/
 /**
  * @brief
  * Add or subtract days to a date handle
@@ -9783,13 +9785,13 @@ OCI_EXPORT boolean OCI_API OCI_DateArrayFree
  * TRUE on success otherwise FALSE
  *
  */
-
+    /*
 OCI_EXPORT boolean OCI_API OCI_DateAddDays
 (
     OCI_Date *date,
     int nb
 );
-
+*/
 /**
  * @brief
  * Add or subtract months to a date handle
@@ -9801,13 +9803,13 @@ OCI_EXPORT boolean OCI_API OCI_DateAddDays
  * TRUE on success otherwise FALSE
  *
  */
-
+     /*
 OCI_EXPORT boolean OCI_API OCI_DateAddMonths
 (
     OCI_Date *date,
     int nb
 );
-
+*/
 /**
  * @brief
  * Assign the value of a date handle to another one
@@ -9819,13 +9821,13 @@ OCI_EXPORT boolean OCI_API OCI_DateAddMonths
  * TRUE on success otherwise FALSE
  *
  */
-
+      /*
 OCI_EXPORT int OCI_API OCI_DateAssign
 (
     OCI_Date *date,
     OCI_Date *date_src
 );
-
+*/
 /**
  * @brief
  * Check if the given date is valid
@@ -9837,11 +9839,12 @@ OCI_EXPORT int OCI_API OCI_DateAssign
  * - Any other value means the date is invalid
  *
  */
-
+       /*
 OCI_EXPORT int OCI_API OCI_DateCheck
 (
     OCI_Date *date
 );
+*/
 
 /**
  * @brief
@@ -9856,13 +9859,13 @@ OCI_EXPORT int OCI_API OCI_DateCheck
  * -  1 if date1 is greater than date2.
  *
  */
-
+	/*
 OCI_EXPORT int OCI_API OCI_DateCompare
 (
     OCI_Date *date,
     OCI_Date *date2
 );
-
+*/
 /**
  * @brief
  * Return the number of days betWeen two dates
@@ -9874,13 +9877,13 @@ OCI_EXPORT int OCI_API OCI_DateCompare
  * Number of days on success otherwise OCI_ERROR on failure
  *
  */
-
+	 /*
 OCI_EXPORT int OCI_API OCI_DateDaysBetween
 (
     OCI_Date *date,
     OCI_Date *date2
 );
-
+*/
 /**
  * @brief
  * Convert a string to a date and store it in the given date handle
@@ -9893,14 +9896,14 @@ OCI_EXPORT int OCI_API OCI_DateDaysBetween
  * TRUE on success otherwise FALSE
  *
  */
-
+	  /*
 OCI_EXPORT boolean OCI_API OCI_DateFromText
 (
     OCI_Date *date,
     const mtext *str,
     const mtext *fmt
 );
-
+*/
 /**
  * @brief
  * Convert a Date value from the given date handle to a string
@@ -9914,7 +9917,7 @@ OCI_EXPORT boolean OCI_API OCI_DateFromText
  * TRUE on success otherwise FALSE
  *
  */
-
+	   /*
 OCI_EXPORT boolean OCI_API OCI_DateToText
 (
     OCI_Date *date,
@@ -9922,7 +9925,7 @@ OCI_EXPORT boolean OCI_API OCI_DateToText
     int size,
     mtext *str
 );
-
+*/
 /**
  * @brief
  * Extract the date part from a date handle
@@ -9936,7 +9939,7 @@ OCI_EXPORT boolean OCI_API OCI_DateToText
  * TRUE on success otherwise FALSE
  *
  */
-
+	    /*
 OCI_EXPORT boolean OCI_API OCI_DateGetDate
 (
     OCI_Date *date,
@@ -9944,7 +9947,7 @@ OCI_EXPORT boolean OCI_API OCI_DateGetDate
     int *month,
     int *day
 );
-
+*/
 /**
  * @brief
  * Extract the time part from a date handle
@@ -9958,7 +9961,7 @@ OCI_EXPORT boolean OCI_API OCI_DateGetDate
  * TRUE on success otherwise FALSE
  *
  */
-
+	     /*
 OCI_EXPORT boolean OCI_API OCI_DateGetTime
 (
     OCI_Date *date,
@@ -9966,7 +9969,7 @@ OCI_EXPORT boolean OCI_API OCI_DateGetTime
     int *min,
     int *sec
 );
-
+*/
 /**
  * @brief
  * Extract the date and time parts from a date handle
@@ -9983,7 +9986,7 @@ OCI_EXPORT boolean OCI_API OCI_DateGetTime
  * TRUE on success otherwise FALSE
  *
  */
-
+	      /*
 OCI_EXPORT boolean OCI_API OCI_DateGetDateTime
 (
     OCI_Date *date,
@@ -9994,7 +9997,7 @@ OCI_EXPORT boolean OCI_API OCI_DateGetDateTime
     int *min,
     int *sec
 );
-
+*/
 /**
  * @brief
  * Set the date portion if the given date handle
@@ -10008,7 +10011,7 @@ OCI_EXPORT boolean OCI_API OCI_DateGetDateTime
  * TRUE on success otherwise FALSE
  *
  */
-
+	       /*
 OCI_EXPORT boolean OCI_API OCI_DateSetDate
 (
     OCI_Date *date,
@@ -10016,7 +10019,7 @@ OCI_EXPORT boolean OCI_API OCI_DateSetDate
     int month,
     int day
 );
-
+*/
 /**
  * @brief
  * Set the time portion if the given date handle
@@ -10030,7 +10033,7 @@ OCI_EXPORT boolean OCI_API OCI_DateSetDate
  * TRUE on success otherwise FALSE
  *
  */
-
+		/*
 OCI_EXPORT boolean OCI_API OCI_DateSetTime
 (
     OCI_Date *date,
@@ -10038,7 +10041,7 @@ OCI_EXPORT boolean OCI_API OCI_DateSetTime
     int min,
     int sec
 );
-
+*/
 /**
  * @brief
  * Set the date and time portions if the given date handle
@@ -10055,7 +10058,7 @@ OCI_EXPORT boolean OCI_API OCI_DateSetTime
  * TRUE on success otherwise FALSE
  *
  */
-
+		 /*
 OCI_EXPORT boolean OCI_API OCI_DateSetDateTime
 (
     OCI_Date *date,
@@ -10066,7 +10069,7 @@ OCI_EXPORT boolean OCI_API OCI_DateSetDateTime
     int min,
     int sec
 );
-
+*/
 /**
  * @brief
  * Place the last day of month (from the given date) into the given date
@@ -10077,12 +10080,12 @@ OCI_EXPORT boolean OCI_API OCI_DateSetDateTime
  * TRUE on success otherwise FALSE
  *
  */
-
+		  /*
 OCI_EXPORT boolean OCI_API OCI_DateLastDay
 (
     OCI_Date *date
 );
-
+*/
 /**
  * @brief
  * Gets the date of next day of the week, after a given date
@@ -10094,13 +10097,13 @@ OCI_EXPORT boolean OCI_API OCI_DateLastDay
  * TRUE on success otherwise FALSE
  *
  */
-
+		   /*
 OCI_EXPORT boolean OCI_API OCI_DateNextDay
 (
     OCI_Date *date,
     const mtext *day
 );
-
+*/
 /**
  * @brief
  * Return the current system date/time into the date handle
@@ -10111,12 +10114,12 @@ OCI_EXPORT boolean OCI_API OCI_DateNextDay
  * TRUE on success otherwise FALSE
  *
  */
-
+		    /*
 OCI_EXPORT boolean OCI_API OCI_DateSysDate
 (
     OCI_Date *date
 );
-
+*/
 /**
  * @brief
  * Convert a date from one zone to another zone
@@ -10129,14 +10132,14 @@ OCI_EXPORT boolean OCI_API OCI_DateSysDate
  * TRUE on success otherwise FALSE
  *
  */
-
+		     /*
 OCI_EXPORT boolean OCI_API OCI_DateZoneToZone
 (
     OCI_Date *date,
     const mtext *zone1,
     const mtext *zone2
 );
-
+*/
 /**
  * @brief
  * Affect an OCI_Date handle value to ISO C time datatypes
@@ -10152,14 +10155,14 @@ OCI_EXPORT boolean OCI_API OCI_DateZoneToZone
  * TRUE on success otherwise FALSE
  *
  */
-
+		      /*
 OCI_EXPORT boolean OCI_API OCI_DateToCTime
 (
     OCI_Date *date,
     struct tm *ptm,
     time_t *pt
 );
-
+*/
 /**
  * @brief
  * Affect ISO C time datatypes values to an OCI_Date handle
@@ -10178,14 +10181,14 @@ OCI_EXPORT boolean OCI_API OCI_DateToCTime
  * TRUE on success otherwise FALSE
  *
  */
-
+		       /*
 OCI_EXPORT boolean OCI_API OCI_DateFromCTime
 (
     OCI_Date *date,
     struct tm *ptm,
     time_t t
 );
-
+*/
 /**
  * @}
  */
@@ -10250,12 +10253,12 @@ OCI_EXPORT OCI_Timestamp * OCI_API OCI_TimestampCreate
  * TRUE on success otherwise FALSE
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_TimestampFree
 (
     OCI_Timestamp *tmsp
 );
-
+*/
 /**
  * @brief
  * Create an array of timestamp object
@@ -10729,13 +10732,13 @@ OCI_EXPORT boolean OCI_API OCI_TimestampFromCTime
  * Return the Interval handle on success otherwise NULL on failure
  *
  */
-
+/*
 OCI_EXPORT OCI_Interval * OCI_API OCI_IntervalCreate
 (
     OCI_Connection *con,
     unsigned int type
 );
-
+*/
 /**
  * @brief
  * Free an OCI_Interval handle
@@ -10750,12 +10753,12 @@ OCI_EXPORT OCI_Interval * OCI_API OCI_IntervalCreate
  * TRUE on success otherwise FALSE
  *
  */
-
+ /*
 OCI_EXPORT boolean OCI_API OCI_IntervalFree
 (
     OCI_Interval *itv
 );
-
+*/
 /**
  * @brief
  * Create an array of Interval object
@@ -10771,14 +10774,14 @@ OCI_EXPORT boolean OCI_API OCI_IntervalFree
  * Return the Interval handle array on success otherwise NULL on failure
  *
  */
-
+  /*
 OCI_EXPORT OCI_Interval ** OCI_API OCI_IntervalArrayCreate
 (
     OCI_Connection *con,
     unsigned int type,
     unsigned int nbelem
 );
-
+*/
 /**
  * @brief
  * Free an arrray of Interval objects
@@ -10793,12 +10796,12 @@ OCI_EXPORT OCI_Interval ** OCI_API OCI_IntervalArrayCreate
  * TRUE on success otherwise FALSE
  *
  */
-
+   /*
 OCI_EXPORT boolean OCI_API OCI_IntervalArrayFree
 (
     OCI_Interval **itvs
 );
-
+*/
 /**
  * @brief
  * Return the type of the given Interval object
@@ -10812,12 +10815,12 @@ OCI_EXPORT boolean OCI_API OCI_IntervalArrayFree
  * Object type or OCI_UNKNOWN the input handle is NULL
  *
  */
-
+    /*
 OCI_EXPORT unsigned int OCI_API OCI_IntervalGetType
 (
     OCI_Interval *itv
 );
-
+*/
 /**
  * @brief
  * Assign the value of a interval handle to another one
@@ -10829,13 +10832,13 @@ OCI_EXPORT unsigned int OCI_API OCI_IntervalGetType
  * TRUE on success otherwise FALSE
  *
  */
-
+     /*
 OCI_EXPORT boolean OCI_API OCI_IntervalAssign
 (
     OCI_Interval *itv,
     OCI_Interval *itv_src
 );
-
+*/
 /**
  * @brief
  * Check if the given interval is valid
@@ -10847,12 +10850,12 @@ OCI_EXPORT boolean OCI_API OCI_IntervalAssign
  * - Any other value means the interval value is invalid
  *
  */
-
+      /*
 OCI_EXPORT int OCI_API OCI_IntervalCheck
 (
     OCI_Interval *itv
 );
-
+*/
 /**
  * @brief
  * Compares two interval handles
@@ -10866,13 +10869,13 @@ OCI_EXPORT int OCI_API OCI_IntervalCheck
  * -  1 if interval1 is greater than interval2.
  *
  */
-
+       /*
 OCI_EXPORT int OCI_API OCI_IntervalCompare
 (
     OCI_Interval *itv,
     OCI_Interval *itv2
 );
-
+*/
 /**
  * @brief
  * Convert a string to an interval and store it in the given interval handle
@@ -10884,13 +10887,13 @@ OCI_EXPORT int OCI_API OCI_IntervalCompare
  * TRUE on success otherwise FALSE
  *
  */
-
+	/*
 OCI_EXPORT boolean OCI_API OCI_IntervalFromText
 (
     OCI_Interval *itv,
     const mtext *str
 );
-
+*/
 /**
  * @brief
  * Convert an interval value from the given interval handle to a string
@@ -10905,7 +10908,7 @@ OCI_EXPORT boolean OCI_API OCI_IntervalFromText
  * TRUE on success otherwise FALSE
  *
  */
-
+	 /*
 OCI_EXPORT boolean OCI_API OCI_IntervalToText
 (
     OCI_Interval *itv,
@@ -10914,7 +10917,7 @@ OCI_EXPORT boolean OCI_API OCI_IntervalToText
     int size,
     mtext *str
 );
-
+*/
 /**
  * @brief
  * Correct an interval handle value with the given time zone
@@ -10926,13 +10929,13 @@ OCI_EXPORT boolean OCI_API OCI_IntervalToText
  * TRUE on success otherwise FALSE
  *
  */
-
+	  /*
 OCI_EXPORT boolean OCI_API OCI_IntervalFromTimeZone
 (
     OCI_Interval *itv,
     const mtext *str
 );
-
+*/
 /**
  * @brief
  * Return the day / time portion of an interval handle
@@ -10948,7 +10951,7 @@ OCI_EXPORT boolean OCI_API OCI_IntervalFromTimeZone
  * TRUE on success otherwise FALSE
  *
  */
-
+	   /*
 OCI_EXPORT boolean OCI_API OCI_IntervalGetDaySecond
 (
     OCI_Interval *itv,
@@ -10958,7 +10961,7 @@ OCI_EXPORT boolean OCI_API OCI_IntervalGetDaySecond
     int *sec,
     int *fsec
 );
-
+*/
 /**
  * @brief
  * Return the year / month portion of an interval handle
@@ -10971,14 +10974,14 @@ OCI_EXPORT boolean OCI_API OCI_IntervalGetDaySecond
  * TRUE on success otherwise FALSE
  *
  */
-
+	    /*
 OCI_EXPORT boolean OCI_API OCI_IntervalGetYearMonth
 (
     OCI_Interval *itv,
     int *year,
     int *month
 );
-
+*/
 /**
  * @brief
  * Set the day / time portion if the given interval handle
@@ -10994,7 +10997,7 @@ OCI_EXPORT boolean OCI_API OCI_IntervalGetYearMonth
  * TRUE on success otherwise FALSE
  *
  */
-
+	     /*
 OCI_EXPORT boolean OCI_API OCI_IntervalSetDaySecond
 (
     OCI_Interval *itv,
@@ -11004,7 +11007,7 @@ OCI_EXPORT boolean OCI_API OCI_IntervalSetDaySecond
     int sec,
     int fsec
 );
-
+*/
 /**
  * @brief
  * Set the year / month portion if the given Interval handle
@@ -11017,14 +11020,14 @@ OCI_EXPORT boolean OCI_API OCI_IntervalSetDaySecond
  * TRUE on success otherwise FALSE
  *
  */
-
+	      /*
 OCI_EXPORT boolean OCI_API OCI_IntervalSetYearMonth
 (
     OCI_Interval *itv,
     int year,
     int month
 );
-
+*/
 /**
  * @brief
  * Adds an interval handle value to another
@@ -11036,13 +11039,13 @@ OCI_EXPORT boolean OCI_API OCI_IntervalSetYearMonth
  * TRUE on success otherwise FALSE
  *
  */
-
+	       /*
 OCI_EXPORT boolean OCI_API OCI_IntervalAdd
 (
     OCI_Interval *itv,
     OCI_Interval *itv2
 );
-
+*/
 /**
  * @brief
  * Subtract an interval handle value from another
@@ -11054,13 +11057,13 @@ OCI_EXPORT boolean OCI_API OCI_IntervalAdd
  * TRUE on success otherwise FALSE
  *
  */
-
+		/*
 OCI_EXPORT boolean OCI_API OCI_IntervalSubtract
 (
     OCI_Interval *itv,
     OCI_Interval *itv2
 );
-
+*/
 /**
  * @}
  */
@@ -11141,12 +11144,12 @@ OCI_EXPORT OCI_Object * OCI_API OCI_ObjectCreate
  * TRUE on success otherwise FALSE
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_ObjectFree
 (
     OCI_Object *obj
 );
-
+*/
 /**
  * @brief
  * Create an array of Object object
@@ -11290,13 +11293,13 @@ OCI_EXPORT OCI_TypeInfo * OCI_API OCI_ObjectGetTypeInfo
  * Attribute value or 0 on failure or wrong attribute type
  *
  */
-
+/*
 OCI_EXPORT short OCI_API OCI_ObjectGetShort
 (
     OCI_Object *obj,
     const mtext *attr
 );
-
+*/
 /**
  * @brief
  * Return the unsigned short value of the given object attribute
@@ -11314,13 +11317,13 @@ OCI_EXPORT short OCI_API OCI_ObjectGetShort
  * Attribute value or 0 on failure or wrong attribute type
  *
  */
-
+ /*
 OCI_EXPORT unsigned short OCI_API OCI_ObjectGetUnsignedShort
 (
     OCI_Object *obj,
     const mtext *attr
 );
-
+*/
 /**
  * @brief
  * Return the integer value of the given object attribute
@@ -11338,13 +11341,13 @@ OCI_EXPORT unsigned short OCI_API OCI_ObjectGetUnsignedShort
  * Attribute value or 0 on failure or wrong attribute type
  *
  */
-
+  /*
 OCI_EXPORT int OCI_API OCI_ObjectGetInt
 (
     OCI_Object *obj,
     const mtext *attr
 );
-
+*/
 /**
  * @brief
  * Return the unsigned integer value of the given object attribute
@@ -11362,13 +11365,13 @@ OCI_EXPORT int OCI_API OCI_ObjectGetInt
  * Attribute value or 0 on failure or wrong attribute type
  *
  */
-
+   /*
 OCI_EXPORT unsigned int OCI_API OCI_ObjectGetUnsignedInt
 (
     OCI_Object *obj,
     const mtext *attr
 );
-
+*/
 /**
  * @brief
  * Return the big integer value of the given object attribute
@@ -11386,13 +11389,13 @@ OCI_EXPORT unsigned int OCI_API OCI_ObjectGetUnsignedInt
  * Attribute value or 0 on failure or wrong attribute type
  *
  */
-
+    /*
 OCI_EXPORT big_int OCI_API OCI_ObjectGetBigInt
 (
     OCI_Object *obj,
     const mtext *attr
 );
-
+*/
 /**
  * @brief
  * Return the unsigned big integer value of the given object attribute
@@ -11410,13 +11413,13 @@ OCI_EXPORT big_int OCI_API OCI_ObjectGetBigInt
  * Attribute value or 0 on failure or wrong attribute type
  *
  */
-
+     /*
 OCI_EXPORT big_uint OCI_API OCI_ObjectGetUnsignedBigInt
 (
     OCI_Object *obj,
     const mtext *attr
 );
-
+*/
 /**
  * @brief
  * Return the double value of the given object attribute
@@ -11434,13 +11437,13 @@ OCI_EXPORT big_uint OCI_API OCI_ObjectGetUnsignedBigInt
  * Attribute value or 0.0 on failure or wrong attribute type
  *
  */
-
+      /*
 OCI_EXPORT double OCI_API OCI_ObjectGetDouble
 (
     OCI_Object *obj,
     const mtext *attr
 );
-
+*/
 /**
  * @brief
  * Return the string value of the given object attribute
@@ -11511,13 +11514,13 @@ OCI_EXPORT int OCI_API OCI_ObjectGetRaw
  * Attribute value or NULL on failure or wrong attribute type
  *
  */
-
+/*
 OCI_EXPORT OCI_Date * OCI_API OCI_ObjectGetDate
 (
     OCI_Object *obj,
     const mtext *attr
 );
-
+*/
 /**
  * @brief
  * Return the timestamp value of the given object attribute
@@ -11698,13 +11701,15 @@ OCI_EXPORT OCI_File * OCI_API OCI_ObjectGetFile
  * TRUE on success otherwise FALSE
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_ObjectSetShort
 (
+    OCI_Library *pOCILib, 
     OCI_Object *obj,
     const mtext *attr,
     short value
 );
+*/
 
 /**
  * @brief
@@ -11718,14 +11723,15 @@ OCI_EXPORT boolean OCI_API OCI_ObjectSetShort
  * TRUE on success otherwise FALSE
  *
  */
-
+ /*
 OCI_EXPORT boolean OCI_API OCI_ObjectSetUnsignedShort
 (
+    OCI_Library *pOCILib, 
     OCI_Object *obj,
     const mtext *attr,
     unsigned short value
 );
-
+*/
 /**
  * @brief
  * Set an object attribute of type int
@@ -11738,14 +11744,15 @@ OCI_EXPORT boolean OCI_API OCI_ObjectSetUnsignedShort
  * TRUE on success otherwise FALSE
  *
  */
-
+  /*
 OCI_EXPORT boolean OCI_API OCI_ObjectSetInt
 (
+    OCI_Library *pOCILib, 
     OCI_Object *obj,
     const mtext *attr,
     int value
 );
-
+*/
 /**
  * @brief
  * Set an object attribute of type unsigned int
@@ -11758,14 +11765,15 @@ OCI_EXPORT boolean OCI_API OCI_ObjectSetInt
  * TRUE on success otherwise FALSE
  *
  */
-
+   /*
 OCI_EXPORT boolean OCI_API OCI_ObjectSetUnsignedInt
 (
+    OCI_Library *pOCILib, 
     OCI_Object *obj,
     const mtext *attr,
     unsigned int value
 );
-
+*/
 /**
  * @brief
  * Set an object attribute of type big int
@@ -11778,14 +11786,15 @@ OCI_EXPORT boolean OCI_API OCI_ObjectSetUnsignedInt
  * TRUE on success otherwise FALSE
  *
  */
-
+    /*
 OCI_EXPORT boolean OCI_API OCI_ObjectSetBigInt
 (
+    OCI_Library *pOCILib, 
     OCI_Object *obj,
     const mtext *attr,
     big_int value
 );
-
+*/
 /**
  * @brief
  * Set an object attribute of type unsigned big int
@@ -11798,14 +11807,15 @@ OCI_EXPORT boolean OCI_API OCI_ObjectSetBigInt
  * TRUE on success otherwise FALSE
  *
  */
-
+     /*
 OCI_EXPORT boolean OCI_API OCI_ObjectSetUnsignedBigInt
 (
+    OCI_Library *pOCILib, 
     OCI_Object *obj,
     const mtext *attr,
     big_uint value
 );
-
+*/
 /**
  * @brief
  * Set an object attribute of type double
@@ -11818,14 +11828,15 @@ OCI_EXPORT boolean OCI_API OCI_ObjectSetUnsignedBigInt
  * TRUE on success otherwise FALSE
  *
  */
-
+      /*
 OCI_EXPORT boolean OCI_API OCI_ObjectSetDouble
 (
+    OCI_Library *pOCILib, 
     OCI_Object *obj,
     const mtext *attr,
     double value
 );
-
+*/
 /**
  * @brief
  * Set an object attribute of type string
@@ -11842,12 +11853,14 @@ OCI_EXPORT boolean OCI_API OCI_ObjectSetDouble
  *
  */
 
+/*
 OCI_EXPORT boolean OCI_API OCI_ObjectSetString
 (
     OCI_Object *obj,
     const mtext *attr,
     const dtext *value
 );
+*/
 
 /**
  * @brief
@@ -12074,13 +12087,13 @@ OCI_EXPORT boolean OCI_API OCI_ObjectSetRef
  * FALSE if the attribute is not null otherwise TRUE
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_ObjectIsNull
 (
     OCI_Object *obj,
     const mtext *attr
 );
-
+*/
 /**
  * @brief
  * Set an object attribute to null
@@ -12118,14 +12131,14 @@ OCI_EXPORT boolean OCI_API OCI_ObjectSetNull
  * TRUE on success otherwise FALSE
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_ObjectGetStruct
 (
     OCI_Object *obj,
     void **pp_struct,
     void ** pp_ind
 );
-
+*/
 /**
  * @brief
  * Create a local Ref instance
@@ -14729,18 +14742,18 @@ OCI_EXPORT const void * OCI_API OCI_HandleGetSubscription
 
 /* macros added in version 3.0.0 */
 
-#define OCI_GetColumnName                   OCI_ColumnGetName
-#define OCI_GetColumnType                   OCI_ColumnGetType
-#define OCI_GetColumnCharsetForm            OCI_ColumnGetCharsetForm
-#define OCI_GetColumnSQLType                OCI_ColumnGetSQLType
-#define OCI_GetColumnFullSQLType            OCI_ColumnGetFullSQLType
-#define OCI_GetColumnSize                   OCI_ColumnGetSize
-#define OCI_GetColumnScale                  OCI_ColumnGetScale
-#define OCI_GetColumnPrecision              OCI_ColumnGetPrecision
-#define OCI_GetColumnFractionnalPrecision   OCI_ColumnGetFractionnalPrecision
-#define OCI_GetColumnLeadingPrecision       OCI_ColumnGetLeadingPrecision
-#define OCI_GetColumnNullable               OCI_ColumnGetNullable
-#define OCI_GetColumnCharUsed               OCI_ColumnGetCharUsed
+#define OCI_GetColumnName                   OCI_ColumnGetName2
+#define OCI_GetColumnType                   OCI_ColumnGetType2
+#define OCI_GetColumnCharsetForm            OCI_ColumnGetCharsetForm2
+#define OCI_GetColumnSQLType                OCI_ColumnGetSQLType2
+#define OCI_GetColumnFullSQLType            OCI_ColumnGetFullSQLType2
+#define OCI_GetColumnSize                   OCI_ColumnGetSize2
+#define OCI_GetColumnScale                  OCI_ColumnGetScale2
+#define OCI_GetColumnPrecision              OCI_ColumnGetPrecision2
+#define OCI_GetColumnFractionnalPrecision   OCI_ColumnGetFractionnalPrecision2
+#define OCI_GetColumnLeadingPrecision       OCI_ColumnGetLeadingPrecision2
+#define OCI_GetColumnNullable               OCI_ColumnGetNullable2
+#define OCI_GetColumnCharUsed               OCI_ColumnGetCharUsed2
 
 #define OCI_GetFormatDate(s)                OCI_GetDefaultFormatDate(OCI_StatementGetConnection(s))
 #define OCI_SetFormatDate(s)                OCI_SetDefaultFormatDate(OCI_StatementGetConnection(s))

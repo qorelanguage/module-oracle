@@ -1,7 +1,9 @@
+#!/usr/bin/env qore
+
 %requires oracle
 printf("\nQore named types test - various errors checking\n\n");
 
-my $db = new Datasource("oracle", "omqtest", "omqtest", "stimpy11");
+my $db = new Datasource("oracle", "omq", "omq", "quark");
 $db.open();
 
 
@@ -90,7 +92,7 @@ my hash $obj = (
                 );
 
 my $r = $db.exec("begin qore_test.do_obj_timestamp(%v, :retval); end;",
-                 bindOracleObject("OMQTEST.TEST_OBJECT_TIMESTAMP", $obj),
+                 bindOracleObject("OMQ.TEST_OBJECT_TIMESTAMP", $obj),
                  Type::String);
 printf("object: %N\n", $r);
 $db.rollback();

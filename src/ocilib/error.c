@@ -82,23 +82,23 @@ void OCI_ErrorReset(OCI_Error *err)
  * OCI_ErrorGet
  * ------------------------------------------------------------------------ */
 
-OCI_Error * OCI_ErrorGet(boolean check, boolean warning)
+OCI_Error * OCI_ErrorGet2(OCI_Library *pOCILib, boolean check, boolean warning)
 {
     OCI_Error *err = NULL;
 
-    if ((warning == TRUE) && (OCILib.warnings_on == FALSE))
+    if ((warning == TRUE) && (pOCILib->warnings_on == FALSE))
         return NULL;
 
-    if (OCILib.loaded == TRUE)
+    if (pOCILib->loaded == TRUE)
     {
-        if (OCI_ThreadKeyGet(OCILib.key_errs, ( void **) (dvoid *) &err) == TRUE)
+        if (OCI_ThreadKeyGet(pOCILib->key_errs, ( void **) (dvoid *) &err) == TRUE)
         {
             if (err == NULL)
             {
                 err = OCI_ErrorCreate();
 
                 if (err != NULL)
-                    OCI_ThreadKeySet(OCILib.key_errs, err);
+                    OCI_ThreadKeySet(pOCILib->key_errs, err);
             }
             else  if (check == TRUE) 
             {
@@ -109,7 +109,7 @@ OCI_Error * OCI_ErrorGet(boolean check, boolean warning)
     }
     else
     {
-        err = &OCILib.lib_err;
+        err = &pOCILib->lib_err;
 
         if (err != NULL)
         {
@@ -162,9 +162,9 @@ int OCI_API OCI_ErrorGetOCICode(OCI_Error *err)
  * OCI_ErrorGetInternalCode
  * ------------------------------------------------------------------------ */
 
-int OCI_API OCI_ErrorGetInternalCode(OCI_Error *err)
+int OCI_API OCI_ErrorGetInternalCode2(OCI_Library *pOCILib, OCI_Error *err)
 {
-    OCI_CHECK_PTR(OCI_IPC_ERROR, err, 0);
+   OCI_CHECK_PTR(pOCILib, OCI_IPC_ERROR, err, 0);
 
     return err->icode;
 }

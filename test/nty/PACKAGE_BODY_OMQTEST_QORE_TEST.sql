@@ -243,12 +243,12 @@ begin
         retval := retval || chr(10); 
         if c(i) is null then
             retval := retval || '{NULL}';
-            continue;
+	else
+	    tmp := c(i);
+            for j in 1 .. tmp.count loop
+            	retval := retval || j || '=' || tmp(j) ||'|';
+	    end loop;
         end if;
-        tmp := c(i);
-        for j in 1 .. tmp.count loop
-            retval := retval || j || '=' || tmp(j) ||'|';
-        end loop;
     end loop;
 end do_coll_coll_str;
 

@@ -5,6 +5,7 @@
 #include <qore/Qore.h>
 #include <map>
 #include "ocilib.h"
+#include "ocilib_types.h"
 
 class OracleData;
 
@@ -22,9 +23,10 @@ void ocilib_err_handler(OCI_Error *err);
  */
 boolean OCI_CollGetStruct
 (
-    OCI_Coll *obj,
-    void **pp_struct,
-    void** pp_ind
+   OCI_Library *pOCILib, 
+   OCI_Coll *obj,
+   void **pp_struct,
+   void** pp_ind
 );
 
 

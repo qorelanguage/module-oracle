@@ -38,7 +38,7 @@
  *                             INTERNAL VARIABLES
  * ************************************************************************ */
 
-OCI_Library OCILib;
+//OCI_Library OCILib;
 
 OCI_SQLCmdInfo SQLCmds[OCI_SQLCMD_COUNT] =
 {
@@ -391,21 +391,27 @@ OCILOBWRITEAPPEND2           OCILobWriteAppend2           = NULL;
 /* ------------------------------------------------------------------------ *
  * OCI_KeyMapFree
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_KeyMapFree(void)
+{
+    return OCI_KeyMapFree2(&OCILib);
+}
+*/
+
+boolean OCI_KeyMapFree2(OCI_Library *pOCILib)
 {
     boolean res      = TRUE;
     OCI_HashEntry *e = NULL;
     OCI_HashValue *v = NULL;
     int i, n, nb_err = 0;
 
-    OCI_CHECK(OCILib.key_map == NULL, TRUE)
+    OCI_CHECK(pOCILib->key_map == NULL, TRUE)
 
-    n = OCI_HashGetSize(OCILib.key_map);
+    n = OCI_HashGetSize(pOCILib->key_map);
 
     for (i = 0; i < n; i++)
     {
-        e = OCI_HashGetEntry(OCILib.key_map, i);
+        e = OCI_HashGetEntry(pOCILib->key_map, i);
 
         while (e != NULL)
         {
@@ -423,9 +429,9 @@ boolean OCI_KeyMapFree(void)
         }
     }
 
-    res = (OCI_HashFree(OCILib.key_map) && (nb_err == 0));
+    res = (OCI_HashFree(pOCILib->key_map) && (nb_err == 0));
 
-    OCILib.key_map = NULL;
+    pOCILib->key_map = NULL;
 
     return res;
 }
@@ -452,11 +458,13 @@ void OCI_SetStatus(boolean res)
  * OCI_Initialize
  * ------------------------------------------------------------------------ */
 
+/*
 boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const mtext *lib_path,
                                unsigned int mode)
 {
    return OCI_Initialize2(&OCILib, d_ora_env, err_handler, lib_path, mode);
 }
+*/
 
 boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_ERROR err_handler, const mtext *lib_path,
                                unsigned int mode)
@@ -1118,7 +1126,7 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_E
 
         /*  allocate error handle */
 
-        res = res && (OCI_SUCCESS == OCI_HandleAlloc((dvoid *) pOCILib->env,
+        res = res && (OCI_SUCCESS == OCI_HandleAlloc2(pOCILib, (dvoid *) pOCILib->env,
                                                      (dvoid **) (void *) &pOCILib->err,
                                                      (ub4) OCI_HTYPE_ERROR,
                                                      (size_t) 0, (dvoid **) NULL));
@@ -1128,7 +1136,7 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_E
 
     if (res == TRUE)
     {
-        if (OCI_LIB_THREADED)
+       if (OCI_LIB_THREADED(pOCILib))
         {
             OCIThreadProcessInit();
 
@@ -1143,7 +1151,7 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_E
 
         if (res == TRUE)
         {
-            pOCILib->cons  = OCI_ListCreate(OCI_IPC_CONNECTION);
+	   pOCILib->cons  = OCI_ListCreate2(pOCILib, OCI_IPC_CONNECTION);
 
             res = (pOCILib->cons != NULL);
         }
@@ -1153,7 +1161,7 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_E
         if (res == TRUE)
         {
 
-            pOCILib->pools = OCI_ListCreate(OCI_IPC_POOL);
+            pOCILib->pools = OCI_ListCreate2(pOCILib, OCI_IPC_POOL);
 
             res = (pOCILib->pools != NULL);
         }
@@ -1165,7 +1173,7 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_E
         if (res == TRUE)
         {
 
-            pOCILib->subs = OCI_ListCreate(OCI_IPC_NOTIFY);
+            pOCILib->subs = OCI_ListCreate2(pOCILib, OCI_IPC_NOTIFY);
 
             res = (pOCILib->subs != NULL);
         }
@@ -1174,7 +1182,7 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_E
         if (res == TRUE)
         {
 
-            pOCILib->arrs = OCI_ListCreate(OCI_IPC_ARRAY);
+            pOCILib->arrs = OCI_ListCreate2(pOCILib, OCI_IPC_ARRAY);
 
             res = (pOCILib->arrs != NULL);
         }
@@ -1190,10 +1198,12 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_E
  * OCI_Cleanup
  * ------------------------------------------------------------------------ */
 
+/*
 boolean OCI_API OCI_Cleanup(void)
 {
    return OCI_Cleanup2(&OCILib);
 }
+*/
 
 boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
 {
@@ -1221,7 +1231,7 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
 
     /* free objects */
 
-    OCI_KeyMapFree();
+    OCI_KeyMapFree2(pOCILib);
 
     OCI_ListFree(pOCILib->cons);
     OCI_ListFree(pOCILib->pools);
@@ -1235,11 +1245,11 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
 
     /* finalize OCIThread object support */
 
-    if (OCI_LIB_THREADED)
+    if (OCI_LIB_THREADED(pOCILib))
     {
         OCI_CALL0
         (
-            res, pOCILib->err,
+	   pOCILib, res, pOCILib->err,
 
             OCIThreadTerm(pOCILib->env, pOCILib->err)
         )
@@ -1266,7 +1276,7 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
     /* close error handle */
 
     if (pOCILib->err != NULL)
-       OCI_HandleFree(pOCILib->err, OCI_HTYPE_ERROR);
+       OCI_HandleFree2(pOCILib, pOCILib->err, OCI_HTYPE_ERROR);
 
     /* close environment handle
        => direct OCIHandleFree() because this handle was not allocated
@@ -1307,7 +1317,7 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
         res = FALSE;
     }
 
-    memset(&OCILib, 0, sizeof(OCILib));
+    memset(pOCILib, 0, sizeof(struct OCI_Library));
 
     return res;
 }
@@ -1316,10 +1326,12 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
  * OCI_GetOCICompileVersion
  * ------------------------------------------------------------------------ */
 
+/*
 unsigned int OCI_API OCI_GetOCICompileVersion(void)
 {
     return (unsigned int) OCILib.version_compile;
 }
+*/
 
 unsigned int OCI_API OCI_GetOCICompileVersion2(OCI_Library *pOCILib)
 {
@@ -1330,10 +1342,12 @@ unsigned int OCI_API OCI_GetOCICompileVersion2(OCI_Library *pOCILib)
  * OCI_GetOCIRuntimeVersion
  * ------------------------------------------------------------------------ */
 
+/*
 unsigned int OCI_API OCI_GetOCIRuntimeVersion(void)
 {
     return (unsigned int) OCILib.version_runtime;
 }
+*/
 
 unsigned int OCI_API OCI_GetOCIRuntimeVersion2(OCI_Library *pOCILib)
 {
@@ -1371,16 +1385,18 @@ unsigned int OCI_API OCI_GetCharsetUserData(void)
  * OCI_GetLastError
  * ------------------------------------------------------------------------ */
 
+/*
 OCI_Error * OCI_API OCI_GetLastError(void)
 {
    return OCI_GetLastError2(&OCILib);
 }
+*/
 
 OCI_Error * OCI_API OCI_GetLastError2(OCI_Library *pOCILib)
 {
     OCI_Error *err = NULL;
 
-    if ((pOCILib->loaded == FALSE) || (OCI_LIB_CONTEXT))
+    if ((pOCILib->loaded == FALSE) || (OCI_LIB_CONTEXT(pOCILib)))
     {
         err = OCI_ErrorGet(TRUE, FALSE);
 
@@ -1398,10 +1414,12 @@ OCI_Error * OCI_API OCI_GetLastError2(OCI_Library *pOCILib)
  * OCI_EnableWarnings
  * ------------------------------------------------------------------------ */
 
+/*
 void OCI_API OCI_EnableWarnings(boolean value)
 {
    OCILib.warnings_on = value;
 }
+*/
 
 void OCI_API OCI_EnableWarnings2(OCI_Library *pOCILib, boolean value)
 {
@@ -1412,10 +1430,12 @@ void OCI_API OCI_EnableWarnings2(OCI_Library *pOCILib, boolean value)
  * OCI_SetErrorHandler
  * ------------------------------------------------------------------------ */
 
+/*
 void OCI_API OCI_SetErrorHandler(POCI_ERROR handler)
 {
    OCILib.error_handler = handler;
 }
+*/
 
 void OCI_API OCI_SetErrorHandler2(OCI_Library *pOCILib, POCI_ERROR handler)
 {
@@ -1426,6 +1446,7 @@ void OCI_API OCI_SetErrorHandler2(OCI_Library *pOCILib, POCI_ERROR handler)
  * OCI_DatabaseStartup
  * ------------------------------------------------------------------------ */
 
+/*
 boolean OCI_API OCI_DatabaseStartup(const mtext *db,  const mtext *user,
                                     const mtext *pwd, unsigned int sess_mode,
                                     unsigned int start_mode, unsigned int start_flag,
@@ -1433,6 +1454,7 @@ boolean OCI_API OCI_DatabaseStartup(const mtext *db,  const mtext *user,
 {
    return OCI_DatabaseStartup2(&OCILib, db, user, pwd, sess_mode, start_mode, start_flag, spfile);
 }
+*/
 
 boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  const mtext *user,
                                     const mtext *pwd, unsigned int sess_mode,
@@ -1442,7 +1464,7 @@ boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  con
     boolean         res = TRUE;
     OCI_Connection *con = NULL;
 
-    OCI_CHECK_REMOTE_DBS_CONTROL_ENABLED(FALSE);
+    OCI_CHECK_REMOTE_DBS_CONTROL_ENABLED(pOCILib, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_10_2
 
@@ -1463,18 +1485,18 @@ boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  con
 
                 /* allocate admin handle */
 
-                res = (OCI_SUCCESS == OCI_HandleAlloc((dvoid *) pOCILib->env,
+                res = (OCI_SUCCESS == OCI_HandleAlloc2(pOCILib, (dvoid *) pOCILib->env,
                                                       (dvoid **) (void *) &adm,
                                                       (ub4) OCI_HTYPE_ADMIN,
                                                       (size_t) 0, (dvoid **) NULL));
 
                 /* set client spfile if provided */
 
-                ostr  = OCI_GetInputMetaString(spfile, &osize);
+                ostr  = OCI_GetInputMetaString(pOCILib, spfile, &osize);
 
                 OCI_CALL2
                 (
-                    res, con,
+                    pOCILib, res, con,
 
                     OCIAttrSet((dvoid *) adm, (ub4) OCI_HTYPE_ADMIN,
                                (dvoid *) ostr, (ub4) osize,
@@ -1488,7 +1510,7 @@ boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  con
 
             OCI_CALL2
             (
-                res, con,
+                pOCILib, res, con,
                 
                 OCIDBStartup(con->cxt, con->err, (OCIAdmin *) adm,
                              OCI_DEFAULT, start_flag)
@@ -1498,7 +1520,7 @@ boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  con
 
             if (adm != NULL)
             {
-                OCI_HandleFree(pOCILib->err, OCI_HTYPE_ADMIN);
+                OCI_HandleFree2(pOCILib, pOCILib->err, OCI_HTYPE_ADMIN);
             }
 
             /* disconnect */
@@ -1556,7 +1578,7 @@ boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  con
 
 #endif
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -1564,8 +1586,17 @@ boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  con
 /* ------------------------------------------------------------------------ *
  * OCI_DatabaseShutdown
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_DatabaseShutdown(const mtext *db, const mtext *user,
+                                     const mtext *pwd, unsigned int sess_mode,
+                                     unsigned int shut_mode, unsigned int shut_flag
+)
+{
+   return OCI_DatabaseShutdown2(&OCILib, db, user, pwd, sess_mode, shut_mode, shut_flag);
+}
+*/
+
+boolean OCI_API OCI_DatabaseShutdown2(OCI_Library *pOCILib, const mtext *db, const mtext *user,
                                      const mtext *pwd, unsigned int sess_mode,
                                      unsigned int shut_mode, unsigned int shut_flag
 )
@@ -1573,7 +1604,7 @@ boolean OCI_API OCI_DatabaseShutdown(const mtext *db, const mtext *user,
     boolean         res = TRUE;
     OCI_Connection *con = NULL;
 
-    OCI_CHECK_REMOTE_DBS_CONTROL_ENABLED(FALSE);
+    OCI_CHECK_REMOTE_DBS_CONTROL_ENABLED(pOCILib, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_10_2
 
@@ -1600,7 +1631,7 @@ boolean OCI_API OCI_DatabaseShutdown(const mtext *db, const mtext *user,
 
             OCI_CALL2
             (
-                res, con,
+                pOCILib, res, con,
                 
                 OCIDBShutdown(con->cxt, con->err, (OCIAdmin *) NULL, shut_flag)
             )
@@ -1637,7 +1668,7 @@ boolean OCI_API OCI_DatabaseShutdown(const mtext *db, const mtext *user,
         
             OCI_CALL2
             (
-                res, con,
+                pOCILib, res, con,
                 
                 OCIDBShutdown(con->cxt, con->err, (OCIAdmin *) 0, OCI_DBSHUTDOWN_FINAL)
             )
@@ -1664,7 +1695,7 @@ boolean OCI_API OCI_DatabaseShutdown(const mtext *db, const mtext *user,
 
 #endif
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }

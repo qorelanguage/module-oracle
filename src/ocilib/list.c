@@ -42,13 +42,13 @@
  * OCI_ListCreate
  * ------------------------------------------------------------------------ */
 
-OCI_List * OCI_ListCreate(int type)
+OCI_List * OCI_ListCreate2(OCI_Library *pOCILib, int type)
 {
     OCI_List *list = NULL;
     
     /* allocate list */
 
-    list = (OCI_List *) OCI_MemAlloc(OCI_IPC_LIST, sizeof(*list), (size_t) 1, TRUE);
+    list = (OCI_List *) OCI_MemAlloc2(pOCILib, OCI_IPC_LIST, sizeof(*list), (size_t) 1, TRUE);
 
     /* create a mutex on multithreaded environments */
 
@@ -56,7 +56,7 @@ OCI_List * OCI_ListCreate(int type)
     {
         list->type = type;
 
-         if (OCI_LIB_THREADED)
+	if (OCI_LIB_THREADED(pOCILib))
          {
              list->mutex = OCI_MutexCreateInternal();
 
@@ -92,20 +92,20 @@ boolean OCI_ListFree(OCI_List *list)
  * OCI_ListCreateItem
  * ------------------------------------------------------------------------ */
 
-OCI_Item * OCI_ListCreateItem(int type, int size)
+OCI_Item * OCI_ListCreateItem(OCI_Library *pOCILib, int type, int size)
 {
     OCI_Item *item  = NULL;
 
     /* allocate list item entry */
 
-    item = (OCI_Item *) OCI_MemAlloc(OCI_IPC_LIST_ITEM, sizeof(*item),
+    item = (OCI_Item *) OCI_MemAlloc2(pOCILib, OCI_IPC_LIST_ITEM, sizeof(*item),
                                      (size_t) 1, TRUE);
 
     if (item != NULL)
     {
         /* allocate item data buffer */
 
-        item->data = (void *) OCI_MemAlloc(type, (size_t) size, (size_t) 1, TRUE);
+        item->data = (void *) OCI_MemAlloc2(pOCILib, type, (size_t) size, (size_t) 1, TRUE);
 
         if (item->data == NULL)
             OCI_FREE(item);
@@ -118,14 +118,14 @@ OCI_Item * OCI_ListCreateItem(int type, int size)
  * OCI_ListAppend
  * ------------------------------------------------------------------------ */
 
-OCI_Item * OCI_ListAppend(OCI_List *list, int size)
+OCI_Item * OCI_ListAppend(OCI_Library *pOCILib, OCI_List *list, int size)
 {
     OCI_Item *item = NULL;
     OCI_Item *temp = NULL;
 
     OCI_CHECK(list == NULL, NULL);
 
-    item = OCI_ListCreateItem(list->type, size);
+    item = OCI_ListCreateItem(pOCILib, list->type, size);
 
     OCI_CHECK(item == NULL, FALSE);
 

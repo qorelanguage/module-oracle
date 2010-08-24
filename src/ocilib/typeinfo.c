@@ -68,12 +68,13 @@ boolean OCI_TypeInfoClose(OCI_TypeInfo *typinf)
 /* ------------------------------------------------------------------------ *
  * OCI_TypeInfoGet
  * ------------------------------------------------------------------------ */
-
+/*
 OCI_TypeInfo * OCI_API OCI_TypeInfoGet(OCI_Connection *con, const mtext *name, 
                                        unsigned int type)
 {
    return OCI_TypeInfoGet2(&OCILib, con, name, type);
 }
+*/
 
 OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *con, const mtext *name, 
 					unsigned int type)
@@ -96,10 +97,10 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
     mtext obj_schema[OCI_SIZE_OBJ_NAME+1];
     mtext obj_name[OCI_SIZE_OBJ_NAME+1];
 
-    OCI_CHECK_INITIALIZED2(NULL);
+    OCI_CHECK_INITIALIZED2(pOCILib, NULL);
 
-    OCI_CHECK_PTR(OCI_IPC_CONNECTION, con, NULL);
-    OCI_CHECK_PTR(OCI_IPC_STRING, name, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_CONNECTION, con, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_STRING, name, NULL);
 
     if (type == OCI_TIF_TABLE)
         item_type = OCI_PTYPE_TABLE;
@@ -169,7 +170,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
     if (found == FALSE)
     {
-        item = OCI_ListAppend(con->tinfs, sizeof(OCI_TypeInfo));
+        item = OCI_ListAppend(pOCILib, con->tinfs, sizeof(OCI_TypeInfo));
 
         res = (item != NULL);
 
@@ -179,11 +180,11 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
             typinf->type        = type;
             typinf->con         = con;
-            typinf->name        = mtsdup(obj_name);
-            typinf->schema      = mtsdup(obj_schema);
+            typinf->name        = mtsdup(pOCILib, obj_name);
+            typinf->schema      = mtsdup(pOCILib, obj_schema);
             typinf->struct_size = 0;
 
-            res = (OCI_SUCCESS == OCI_HandleAlloc(pOCILib->env,
+            res = (OCI_SUCCESS == OCI_HandleAlloc2(pOCILib, pOCILib->env,
                                                   (dvoid **) (void *) &dschp, 
                                                   OCI_HTYPE_DESCRIBE, (size_t) 0, 
                                                   (dvoid **) NULL));
@@ -202,12 +203,12 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
                 num_type  = OCI_ATTR_NUM_TYPE_ATTRS;
                 ptype     = OCI_DESC_TYPE;
 
-                ostr1 = OCI_GetInputMetaString(typinf->schema, &osize1);
-                ostr2 = OCI_GetInputMetaString(typinf->name,   &osize2);
+                ostr1 = OCI_GetInputMetaString(pOCILib, typinf->schema, &osize1);
+                ostr2 = OCI_GetInputMetaString(pOCILib, typinf->name,   &osize2);
 
                 OCI_CALL2
                 (
-                    res, con, 
+		   pOCILib, res, con, 
                     
                     OCITypeByName(pOCILib->env, con->err, con->cxt,
                                  (text *) ostr1, (ub4) osize1, 
@@ -219,7 +220,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
                 OCI_CALL2
                 (
-                    res, con, 
+                    pOCILib, res, con, 
                     
                     OCIDescribeAny(con->cxt, con->err, (void *) typinf->tdo,
                                    0, OCI_OTYPE_PTR, OCI_DEFAULT, 
@@ -254,11 +255,11 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
                 mtsncat(str, typinf->name, size);
 
-                ostr1 = OCI_GetInputMetaString(str, &osize1);
+                ostr1 = OCI_GetInputMetaString(pOCILib, str, &osize1);
 
                 OCI_CALL2
                 (
-                    res, con, 
+                    pOCILib, res, con, 
                     
                     OCIDescribeAny(con->cxt, con->err, (dvoid *) ostr1, 
                                    (ub4) osize1, OCI_OTYPE_NAME, 
@@ -270,7 +271,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
                   
             OCI_CALL2
             (
-                res, con, 
+                pOCILib, res, con, 
                 
                 OCIAttrGet(dschp, OCI_HTYPE_DESCRIBE, &parmh1, 
                            NULL, OCI_ATTR_PARAM, con->err)
@@ -282,7 +283,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
             {
                 OCI_CALL2
                 (
-                    res, con, 
+                    pOCILib, res, con, 
                     
                     OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &typinf->tcode, 
                                NULL, OCI_ATTR_TYPECODE, con->err)
@@ -300,7 +301,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
                 OCI_CALL2
                 (
-                    res, con, 
+                    pOCILib, res, con, 
                     
                     OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &typinf->ccode, 
                                NULL, OCI_ATTR_COLLECTION_TYPECODE, con->err)
@@ -310,7 +311,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
             {
                 OCI_CALL2
                 (
-                    res, con, 
+                    pOCILib, res, con, 
                     
                     OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &parmh2, 
                                NULL, attr_type, con->err)
@@ -318,7 +319,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
                 OCI_CALL2
                 (
-                    res, con, 
+                    pOCILib, res, con, 
                     
                     OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &typinf->nb_cols,
                                NULL, num_type, con->err)
@@ -329,7 +330,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
             if (typinf->nb_cols > 0)
             {
-                typinf->offsets = (int *) OCI_MemAlloc(OCI_IPC_ARRAY,
+                typinf->offsets = (int *) OCI_MemAlloc2(pOCILib, OCI_IPC_ARRAY,
                                                        sizeof(*typinf->offsets),
                                                        (size_t) typinf->nb_cols,
                                                        FALSE);
@@ -346,7 +347,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
             if (typinf->nb_cols > 0)
             {
-                typinf->cols = (OCI_Column *) OCI_MemAlloc(OCI_IPC_COLUMN,
+                typinf->cols = (OCI_Column *) OCI_MemAlloc2(pOCILib, OCI_IPC_COLUMN,
                                                            sizeof(*typinf->cols),
                                                            (size_t) typinf->nb_cols,
                                                            TRUE);
@@ -357,10 +358,10 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
                 {
                     for (i = 0; i < typinf->nb_cols; i++)
                     {
-                        res = res && OCI_ColumnDescribe(&typinf->cols[i], con, 
-                                                        NULL, parmh2, i + 1, ptype);
+		        res = res && OCI_ColumnDescribe2(pOCILib, &typinf->cols[i], con, 
+							 NULL, parmh2, i + 1, ptype);
                         
-                        res = res && OCI_ColumnMap(&typinf->cols[i], NULL);
+		        res = res && OCI_ColumnMap2(pOCILib, &typinf->cols[i], NULL);
 
                         if (res == FALSE)
                             break;
@@ -373,7 +374,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
             /* free describe handle */
 
             if (dschp != NULL)
-                OCI_HandleFree(dschp, OCI_HTYPE_DESCRIBE);
+	       OCI_HandleFree2(pOCILib, dschp, OCI_HTYPE_DESCRIBE);
         }
     }
 
@@ -385,7 +386,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
        typinf = NULL;
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     /* increment type info reference counter on success */
 
@@ -399,11 +400,11 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
  * OCI_TypeInfoFree
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_TypeInfoFree(OCI_TypeInfo *typinf)
+boolean OCI_API OCI_TypeInfoFree2(OCI_Library *pOCILib, OCI_TypeInfo *typinf)
 {
     boolean res = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_TYPE_INFO, typinf, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_TYPE_INFO, typinf, FALSE);
 
     typinf->refcount--;
 
@@ -416,7 +417,7 @@ boolean OCI_API OCI_TypeInfoFree(OCI_TypeInfo *typinf)
         OCI_FREE(typinf);
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -425,11 +426,11 @@ boolean OCI_API OCI_TypeInfoFree(OCI_TypeInfo *typinf)
  * OCI_TypeInfoGetType
  * ------------------------------------------------------------------------ */
 
-unsigned int OCI_API OCI_TypeInfoGetType(OCI_TypeInfo *typinf)
+unsigned int OCI_API OCI_TypeInfoGetType2(OCI_Library *pOCILib, OCI_TypeInfo *typinf)
 {
-    OCI_CHECK_PTR(OCI_IPC_TYPE_INFO, typinf, OCI_UNKNOWN);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_TYPE_INFO, typinf, OCI_UNKNOWN);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     return typinf->type;
 }
@@ -438,11 +439,11 @@ unsigned int OCI_API OCI_TypeInfoGetType(OCI_TypeInfo *typinf)
  * OCI_TypeInfoGetColumnCount
  * ------------------------------------------------------------------------ */
 
-unsigned int OCI_API OCI_TypeInfoGetColumnCount(OCI_TypeInfo *typinf)
+unsigned int OCI_API OCI_TypeInfoGetColumnCount2(OCI_Library *pOCILib, OCI_TypeInfo *typinf)
 {
-    OCI_CHECK_PTR(OCI_IPC_TYPE_INFO, typinf, 0);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_TYPE_INFO, typinf, 0);
   
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     return typinf->nb_cols;
 }
@@ -451,12 +452,12 @@ unsigned int OCI_API OCI_TypeInfoGetColumnCount(OCI_TypeInfo *typinf)
  * OCI_TypeInfoGetColumn
  * ------------------------------------------------------------------------ */
 
-OCI_Column * OCI_API OCI_TypeInfoGetColumn(OCI_TypeInfo *typinf, unsigned int index)
+OCI_Column * OCI_API OCI_TypeInfoGetColumn2(OCI_Library *pOCILib, OCI_TypeInfo *typinf, unsigned int index)
 {
-    OCI_CHECK_PTR(OCI_IPC_TYPE_INFO, typinf, NULL);
-    OCI_CHECK_BOUND(typinf->con, index, 1,  typinf->nb_cols, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_TYPE_INFO, typinf, NULL);
+    OCI_CHECK_BOUND(pOCILib, typinf->con, index, 1,  typinf->nb_cols, NULL);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     return &(typinf->cols[index-1]);
 }
@@ -465,11 +466,11 @@ OCI_Column * OCI_API OCI_TypeInfoGetColumn(OCI_TypeInfo *typinf, unsigned int in
  * OCI_TypeInfoGetName
  * ------------------------------------------------------------------------ */
 
-const mtext * OCI_API OCI_TypeInfoGetName(OCI_TypeInfo *typinf)
+const mtext * OCI_API OCI_TypeInfoGetName2(OCI_Library *pOCILib, OCI_TypeInfo *typinf)
 {
-    OCI_CHECK_PTR(OCI_IPC_TYPE_INFO, typinf, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_TYPE_INFO, typinf, NULL);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     return typinf->name;
 }

@@ -42,7 +42,7 @@
  * OCI_ElemInit
  * ------------------------------------------------------------------------ */
 
-OCI_Elem * OCI_ElemInit(OCI_Connection *con, OCI_Elem **pelem, void *handle, 
+OCI_Elem * OCI_ElemInit2(OCI_Library *pOCILib, OCI_Connection *con, OCI_Elem **pelem, void *handle, 
                         OCIInd *pind, OCI_TypeInfo *typinf)
 {
     OCI_Elem *elem = NULL;
@@ -51,7 +51,7 @@ OCI_Elem * OCI_ElemInit(OCI_Connection *con, OCI_Elem **pelem, void *handle,
     OCI_CHECK(pelem == NULL, NULL);
 
     if (*pelem == NULL)
-        *pelem = (OCI_Elem *) OCI_MemAlloc(OCI_IPC_ELEMENT, sizeof(*elem),
+        *pelem = (OCI_Elem *) OCI_MemAlloc2(pOCILib, OCI_IPC_ELEMENT, sizeof(*elem),
                                            (size_t) 1, TRUE);
 
     if (*pelem != NULL)
@@ -74,7 +74,7 @@ OCI_Elem * OCI_ElemInit(OCI_Connection *con, OCI_Elem **pelem, void *handle,
 
                 if (elem->handle == NULL)
                 {
-                    elem->handle = (OCINumber *) OCI_MemAlloc(OCI_IPC_VOID, 
+		   elem->handle = (OCINumber *) OCI_MemAlloc2(pOCILib, OCI_IPC_VOID, 
                                                               sizeof(OCINumber),
                                                               1, TRUE);
                 }
@@ -111,7 +111,7 @@ OCI_Elem * OCI_ElemInit(OCI_Connection *con, OCI_Elem **pelem, void *handle,
 
     if (res == FALSE)
     {
-        OCI_ElemFree(elem);
+        OCI_ElemFree2(pOCILib, elem);
         elem = NULL;
     }
 
@@ -147,19 +147,25 @@ boolean OCI_ElemSetNullIndicator(OCI_Elem *elem, OCIInd value)
 /* ------------------------------------------------------------------------ *
  * OCI_ElemSetNumber
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_ElemSetNumber(OCI_Elem  *elem, void *value, uword size, uword flag)
+{
+   return OCI_ElemSetNumber2(&OCILib, elem, value, size, flag);
+}
+*/
+
+boolean OCI_ElemSetNumber2(OCI_Library *pOCILib, OCI_Elem  *elem, void *value, uword size, uword flag)
 {
     boolean res = FALSE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_NUMERIC, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_NUMERIC, FALSE);
 
-    res = OCI_NumberSet(elem->con, (OCINumber *) elem->handle, value, size, flag);
+    res = OCI_NumberSet2(pOCILib, elem->con, (OCINumber *) elem->handle, value, size, flag);
 
     OCI_ElemSetNullIndicator(elem, OCI_IND_NOTNULL);
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -168,33 +174,33 @@ boolean OCI_ElemSetNumber(OCI_Elem  *elem, void *value, uword size, uword flag)
  * OCI_ElemGetNumber
  * ------------------------------------------------------------------------ */
 
-boolean OCI_ElemGetNumber(OCI_Elem *elem, void *value, uword size, uword flag)
+boolean OCI_ElemGetNumber2(OCI_Library *pOCILib, OCI_Elem *elem, void *value, uword size, uword flag)
 {
     boolean res = FALSE;
     
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
     
     if (elem->typinf->cols[0].type == OCI_CDT_NUMERIC)
     {
         OCINumber *num  = (OCINumber *) elem->handle;
 
-        res = OCI_NumberGet(elem->con, num, value, size, flag);
+        res = OCI_NumberGet2(pOCILib, elem->con, num, value, size, flag);
     }
     else if (elem->typinf->cols[0].type == OCI_CDT_TEXT)
     {
         const mtext *fmt = OCI_GetDefaultFormatNumeric(elem->con);
         ub4 fmt_size     = (ub4) mtslen(fmt);
-        dtext *data      = (dtext *) OCI_ElemGetString(elem);
+        dtext *data      = (dtext *) OCI_ElemGetString2(pOCILib, elem);
 
-        res = OCI_NumberGetFromStr(elem->con, value, size, flag, data, 
+        res = OCI_NumberGetFromStr2(pOCILib, elem->con, value, size, flag, data, 
                                    (int) dtslen(data),  fmt, fmt_size);
     }
     else
     {
-        OCI_ExceptionTypeNotCompatible(elem->con);
+        OCI_ExceptionTypeNotCompatible2(pOCILib, elem->con);
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -207,16 +213,16 @@ boolean OCI_ElemGetNumber(OCI_Elem *elem, void *value, uword size, uword flag)
  * OCI_ElemCreate
  * ------------------------------------------------------------------------ */
 
-OCI_Elem * OCI_API OCI_ElemCreate(OCI_TypeInfo *typinf)
+OCI_Elem * OCI_API OCI_ElemCreate2(OCI_Library *pOCILib, OCI_TypeInfo *typinf)
 {
     OCI_Elem *elem = NULL;
 
-    OCI_CHECK_INITIALIZED(NULL);
-    OCI_CHECK_PTR(OCI_IPC_TYPE_INFO, typinf, NULL);
+    OCI_CHECK_INITIALIZED2(pOCILib, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_TYPE_INFO, typinf, NULL);
 
-    elem = OCI_ElemInit(typinf->con, &elem, NULL, (OCIInd *) NULL, typinf);
+    elem = OCI_ElemInit2(pOCILib, typinf->con, &elem, NULL, (OCIInd *) NULL, typinf);
                         
-    OCI_RESULT(elem != NULL);
+    OCI_RESULT(pOCILib, elem != NULL);
 
     return elem;
 }
@@ -225,9 +231,9 @@ OCI_Elem * OCI_API OCI_ElemCreate(OCI_TypeInfo *typinf)
  * OCI_ElemFree
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_ElemFree(OCI_Elem *elem)
+boolean OCI_API OCI_ElemFree2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
 
     OCI_CHECK_OBJECT_FETCHED(elem, FALSE);
 
@@ -245,12 +251,12 @@ boolean OCI_API OCI_ElemFree(OCI_Elem *elem)
         {
             case OCI_CDT_DATETIME:
 
-                OCI_DateFree((OCI_Date *) elem->obj);
+                OCI_DateFree(pOCILib, (OCI_Date *) elem->obj);
                 break;
 
             case OCI_CDT_LOB:
 
-                OCI_LobFree((OCI_Lob *) elem->obj);
+	       OCI_LobFree(pOCILib, (OCI_Lob *) elem->obj);
                 break;
 
             case OCI_CDT_FILE:
@@ -260,17 +266,17 @@ boolean OCI_API OCI_ElemFree(OCI_Elem *elem)
 
             case OCI_CDT_OBJECT:
 
-                OCI_ObjectFree((OCI_Object *) elem->obj);
+                OCI_ObjectFree2(pOCILib, (OCI_Object *) elem->obj);
                 break;
 
             case OCI_CDT_COLLECTION:
 
-                OCI_CollFree((OCI_Coll *) elem->obj);;
+                OCI_CollFree2(pOCILib, (OCI_Coll *) elem->obj);;
                 break;
 
             case OCI_CDT_TIMESTAMP:
 
-                OCI_TimestampFree((OCI_Timestamp *) elem->obj);
+                OCI_TimestampFree2(pOCILib, (OCI_Timestamp *) elem->obj);
                 break;
 
             case OCI_CDT_INTERVAL:
@@ -294,7 +300,7 @@ boolean OCI_API OCI_ElemFree(OCI_Elem *elem)
     OCI_FREE(elem->buf);
     OCI_FREE(elem);
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     return TRUE;
 }
@@ -303,11 +309,11 @@ boolean OCI_API OCI_ElemFree(OCI_Elem *elem)
  * OCI_ElemGetShort
  * ------------------------------------------------------------------------ */
 
-short OCI_API OCI_ElemGetShort(OCI_Elem *elem)
+short OCI_API OCI_ElemGetShort2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     short value = 0;
     
-    OCI_ElemGetNumber(elem, (void *) &value, (uword) sizeof(short), 
+    OCI_ElemGetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(short), 
                       (uword) OCI_NUM_SHORT);
   
     return value;
@@ -317,11 +323,11 @@ short OCI_API OCI_ElemGetShort(OCI_Elem *elem)
  * OCI_ElemGetUnsignedShort
  * ------------------------------------------------------------------------ */
 
-unsigned short OCI_API OCI_ElemGetUnsignedShort(OCI_Elem *elem)
+unsigned short OCI_API OCI_ElemGetUnsignedShort2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     unsigned short value = 0;
     
-    OCI_ElemGetNumber(elem, (void *) &value, (uword) sizeof(unsigned short),
+    OCI_ElemGetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(unsigned short),
                       (uword) OCI_NUM_USHORT);
  
     return value;
@@ -331,11 +337,11 @@ unsigned short OCI_API OCI_ElemGetUnsignedShort(OCI_Elem *elem)
  * OCI_ElemGetInt
  * ------------------------------------------------------------------------ */
 
-int OCI_API OCI_ElemGetInt(OCI_Elem *elem)
+int OCI_API OCI_ElemGetInt2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     int value = 0;
     
-    OCI_ElemGetNumber(elem, (void *) &value, (uword) sizeof(value),
+    OCI_ElemGetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(value),
                       (uword) OCI_NUM_INT);
  
     return value;
@@ -345,11 +351,11 @@ int OCI_API OCI_ElemGetInt(OCI_Elem *elem)
  * OCI_ElemGetUnsignedInt
  * ------------------------------------------------------------------------ */
 
-unsigned int OCI_API OCI_ElemGetUnsignedInt(OCI_Elem *elem)
+unsigned int OCI_API OCI_ElemGetUnsignedInt2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     unsigned int value = 0;
     
-    OCI_ElemGetNumber(elem, (void *) &value, (uword) sizeof(value),
+    OCI_ElemGetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(value),
                       (uword) OCI_NUM_UINT);
  
     return value;
@@ -359,11 +365,11 @@ unsigned int OCI_API OCI_ElemGetUnsignedInt(OCI_Elem *elem)
  * OCI_ElemGetBigInt
  * ------------------------------------------------------------------------ */
 
-big_int OCI_API OCI_ElemGetBigInt(OCI_Elem *elem)
+big_int OCI_API OCI_ElemGetBigInt2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     big_int value = 0;
     
-    OCI_ElemGetNumber(elem, (void *) &value, (uword) sizeof(big_int),
+    OCI_ElemGetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(big_int),
                       (uword) OCI_NUM_BIGINT);
  
     return value;
@@ -373,11 +379,11 @@ big_int OCI_API OCI_ElemGetBigInt(OCI_Elem *elem)
  * OCI_ElemGetUnsignedBigInt
  * ------------------------------------------------------------------------ */
 
-big_uint OCI_API OCI_ElemGetUnsignedBigInt(OCI_Elem *elem)
+big_uint OCI_API OCI_ElemGetUnsignedBigInt2(OCI_Library *pOCILib, OCI_Elem *elem)
 {   
     big_uint value = 0;
 
-    OCI_ElemGetNumber(elem, (void *) &value,  (uword) sizeof(big_uint),
+    OCI_ElemGetNumber2(pOCILib, elem, (void *) &value,  (uword) sizeof(big_uint),
                       (uword) OCI_NUM_BIGUINT);
  
     return value;
@@ -387,11 +393,11 @@ big_uint OCI_API OCI_ElemGetUnsignedBigInt(OCI_Elem *elem)
  * OCI_ElemGetDouble
  * ------------------------------------------------------------------------ */
 
-double OCI_API OCI_ElemGetDouble(OCI_Elem *elem)
+double OCI_API OCI_ElemGetDouble2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     double value = 0.0;
     
-    OCI_ElemGetNumber(elem, (void *) &value, (uword) sizeof(double),
+    OCI_ElemGetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(double),
                       (uword) OCI_NUM_DOUBLE);
 
     return value;
@@ -400,19 +406,20 @@ double OCI_API OCI_ElemGetDouble(OCI_Elem *elem)
 /* ------------------------------------------------------------------------ *
  * OCI_ElemGetString
  * ------------------------------------------------------------------------ */
-
+/*
 const dtext * OCI_API OCI_ElemGetString(OCI_Elem *elem)
 {
     return OCI_ElemGetString2(&OCILib, elem);
 }
+*/
 
 const dtext * OCI_API OCI_ElemGetString2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     const dtext *str  = NULL;
     boolean res       = FALSE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_TEXT, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_TEXT, NULL);
 
     if (elem->handle != NULL)
     {
@@ -422,7 +429,7 @@ const dtext * OCI_API OCI_ElemGetString2(OCI_Library *pOCILib, OCI_Elem *elem)
                                                 &elem->buf, &elem->buflen);
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return str;    
 }
@@ -431,17 +438,19 @@ const dtext * OCI_API OCI_ElemGetString2(OCI_Library *pOCILib, OCI_Elem *elem)
  * OCI_ElemGetRaw
  * ------------------------------------------------------------------------ */
 
+/*
 unsigned int OCI_API OCI_ElemGetRaw(OCI_Elem *elem, void *value, unsigned int len)
 {
     return OCI_ElemGetRaw2(&OCILib, elem, value, len);
 }
+*/
 
 unsigned int OCI_API OCI_ElemGetRaw2(OCI_Library *pOCILib, OCI_Elem *elem, void *value, unsigned int len)
 {
     boolean res = FALSE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, 0);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_RAW, 0);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, 0);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_RAW, 0);
 
     if (elem->handle != NULL)
     {
@@ -456,7 +465,7 @@ unsigned int OCI_API OCI_ElemGetRaw2(OCI_Library *pOCILib, OCI_Elem *elem, void 
         memcpy(value, OCIRawPtr(pOCILib->env, raw), (size_t) len);
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return len; 
 }
@@ -464,20 +473,26 @@ unsigned int OCI_API OCI_ElemGetRaw2(OCI_Library *pOCILib, OCI_Elem *elem, void 
 /* ------------------------------------------------------------------------ *
  * OCI_ElemGetDate
  * ------------------------------------------------------------------------ */
-
+/*
 OCI_Date * OCI_API  OCI_ElemGetDate(OCI_Elem *elem)
+{
+   return OCI_ElemGetDate2(&OCILib, elem);
+}
+*/
+
+OCI_Date * OCI_API  OCI_ElemGetDate2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     boolean res    = TRUE;
     OCI_Date *date = NULL;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_DATETIME, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_DATETIME, NULL);
 
     if (elem->ind != OCI_IND_NULL)
     {
         if (elem->init == FALSE)
         {
-            date = OCI_DateInit(elem->con, (OCI_Date **) &elem->obj, 
+            date = OCI_DateInit2(pOCILib, elem->con, (OCI_Date **) &elem->obj, 
                                 (OCIDate *) elem->handle, FALSE, FALSE);
 
             elem->init = (date != NULL);
@@ -488,26 +503,27 @@ OCI_Date * OCI_API  OCI_ElemGetDate(OCI_Elem *elem)
         res = elem->init;
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return date;
 }
 /* ------------------------------------------------------------------------ *
  * OCI_ElemGetTimestamp
  * ------------------------------------------------------------------------ */
-
+/*
 OCI_Timestamp * OCI_API  OCI_ElemGetTimestamp(OCI_Elem *elem)
 {
     return OCI_ElemGetTimestamp2(&OCILib, elem);
 }
+*/
 
 OCI_Timestamp * OCI_API  OCI_ElemGetTimestamp2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     boolean res = TRUE;
     OCI_Timestamp *tmsp = NULL;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_TIMESTAMP, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_TIMESTAMP, NULL);
 
     if (elem->ind != OCI_IND_NULL)
     {
@@ -525,7 +541,7 @@ OCI_Timestamp * OCI_API  OCI_ElemGetTimestamp2(OCI_Library *pOCILib, OCI_Elem *e
         res = elem->init;
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return tmsp;
 }
@@ -533,19 +549,20 @@ OCI_Timestamp * OCI_API  OCI_ElemGetTimestamp2(OCI_Library *pOCILib, OCI_Elem *e
 /* ------------------------------------------------------------------------ *
  * OCI_ElemGetInterval
  * ------------------------------------------------------------------------ */
-
+/*
 OCI_Interval * OCI_API OCI_ElemGetInterval(OCI_Elem *elem)
 {
     return OCI_ElemGetInterval2(&OCILib, elem);
 }
+*/
 
 OCI_Interval * OCI_API OCI_ElemGetInterval2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     boolean res = TRUE;
     OCI_Interval *itv = NULL;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_INTERVAL, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_INTERVAL, NULL);
 
     if (elem->ind != OCI_IND_NULL)
     {
@@ -563,7 +580,7 @@ OCI_Interval * OCI_API OCI_ElemGetInterval2(OCI_Library *pOCILib, OCI_Elem *elem
         res = elem->init;
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return itv;
 }
@@ -571,19 +588,20 @@ OCI_Interval * OCI_API OCI_ElemGetInterval2(OCI_Library *pOCILib, OCI_Elem *elem
 /* ------------------------------------------------------------------------ *
  * OCI_ElemGetLob
  * ------------------------------------------------------------------------ */
-
+/*
 OCI_Lob * OCI_API OCI_ElemGetLob(OCI_Elem *elem)
 {
     return OCI_ElemGetLob2(&OCILib, elem);
 }
+*/
 
 OCI_Lob * OCI_API OCI_ElemGetLob2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     boolean res  = TRUE;
     OCI_Lob *lob = NULL;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_LOB, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_LOB, NULL);
 
     if (elem->ind != OCI_IND_NULL)
     {      
@@ -601,7 +619,7 @@ OCI_Lob * OCI_API OCI_ElemGetLob2(OCI_Library *pOCILib, OCI_Elem *elem)
         res = elem->init;
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return lob;
 }
@@ -609,19 +627,20 @@ OCI_Lob * OCI_API OCI_ElemGetLob2(OCI_Library *pOCILib, OCI_Elem *elem)
 /* ------------------------------------------------------------------------ *
  * OCI_ElemGetObject
  * ------------------------------------------------------------------------ */
-
+/*
 OCI_Object * OCI_API OCI_ElemGetObject(OCI_Elem *elem)
 {
     return OCI_ElemGetObject2(&OCILib, elem);
 }
+*/
 
 OCI_Object * OCI_API OCI_ElemGetObject2(OCI_Library * pOCILib, OCI_Elem *elem)
 {
     boolean res = TRUE;
     OCI_Object *obj = NULL;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_OBJECT, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_OBJECT, NULL);
 
     if (elem->ind != OCI_IND_NULL)
     {
@@ -640,7 +659,7 @@ OCI_Object * OCI_API OCI_ElemGetObject2(OCI_Library * pOCILib, OCI_Elem *elem)
         res = elem->init;
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return obj;
 }
@@ -648,19 +667,20 @@ OCI_Object * OCI_API OCI_ElemGetObject2(OCI_Library * pOCILib, OCI_Elem *elem)
 /* ------------------------------------------------------------------------ *
  * OCI_ElemGetColl
  * ------------------------------------------------------------------------ */
-
+/*
 OCI_Coll * OCI_API OCI_ElemGetColl(OCI_Elem *elem)
 {
     return OCI_ElemGetColl2(&OCILib, elem);
 }
+*/
 
 OCI_Coll * OCI_API OCI_ElemGetColl2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     boolean res    = TRUE;
     OCI_Coll *coll = NULL;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_COLLECTION, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_COLLECTION, NULL);
 
     if (elem->ind != OCI_IND_NULL)
     {
@@ -678,7 +698,7 @@ OCI_Coll * OCI_API OCI_ElemGetColl2(OCI_Library *pOCILib, OCI_Elem *elem)
         res = elem->init;
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return coll;
 }
@@ -687,9 +707,9 @@ OCI_Coll * OCI_API OCI_ElemGetColl2(OCI_Library *pOCILib, OCI_Elem *elem)
  * OCI_ElemSetShort
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_ElemSetShort(OCI_Elem *elem, short value)
+boolean OCI_API OCI_ElemSetShort(OCI_Library *pOCILib, OCI_Elem *elem, short value)
 {
-    return OCI_ElemSetNumber(elem, (void *) &value, (uword) sizeof(value), 
+    return OCI_ElemSetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(value), 
                              (uword) OCI_NUM_SHORT);
 }
 
@@ -697,9 +717,9 @@ boolean OCI_API OCI_ElemSetShort(OCI_Elem *elem, short value)
  * OCI_ElemSetUnsignedShort
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_ElemSetUnsignedShort(OCI_Elem *elem, unsigned short value)
+boolean OCI_API OCI_ElemSetUnsignedShort(OCI_Library *pOCILib, OCI_Elem *elem, unsigned short value)
 {
-    return OCI_ElemSetNumber(elem, (void *) &value, (uword) sizeof(value), 
+    return OCI_ElemSetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(value), 
                              (uword) OCI_NUM_USHORT);
 }
 
@@ -707,9 +727,9 @@ boolean OCI_API OCI_ElemSetUnsignedShort(OCI_Elem *elem, unsigned short value)
  * OCI_ElemSetInt
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_ElemSetInt(OCI_Elem *elem, int value)
+boolean OCI_API OCI_ElemSetInt(OCI_Library *pOCILib, OCI_Elem *elem, int value)
 {
-    return OCI_ElemSetNumber(elem, (void *) &value, (uword) sizeof(value), 
+    return OCI_ElemSetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(value), 
                              (uword) OCI_NUM_INT);
 }
 
@@ -717,9 +737,9 @@ boolean OCI_API OCI_ElemSetInt(OCI_Elem *elem, int value)
  * OCI_ElemSetUnsignedInt
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_ElemSetUnsignedInt(OCI_Elem *elem, unsigned int value)
+boolean OCI_API OCI_ElemSetUnsignedInt(OCI_Library *pOCILib, OCI_Elem *elem, unsigned int value)
 {
-    return OCI_ElemSetNumber(elem, (void *) &value, (uword) sizeof(value), 
+    return OCI_ElemSetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(value), 
                              (uword) OCI_NUM_UINT);
 }
 
@@ -727,9 +747,9 @@ boolean OCI_API OCI_ElemSetUnsignedInt(OCI_Elem *elem, unsigned int value)
  * OCI_ElemSetBigInt
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_ElemSetBigInt(OCI_Elem *elem, big_int value)
+boolean OCI_API OCI_ElemSetBigInt(OCI_Library *pOCILib, OCI_Elem *elem, big_int value)
 {
-    return OCI_ElemSetNumber(elem, (void *) &value, (uword) sizeof(value), 
+    return OCI_ElemSetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(value), 
                              (uword) OCI_NUM_BIGINT);
 }
 
@@ -737,9 +757,9 @@ boolean OCI_API OCI_ElemSetBigInt(OCI_Elem *elem, big_int value)
  * OCI_ElemSetUnsignedBigInt
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_ElemSetUnsignedBigInt(OCI_Elem *elem, big_uint value)
+boolean OCI_API OCI_ElemSetUnsignedBigInt(OCI_Library *pOCILib, OCI_Elem *elem, big_uint value)
 {
-    return OCI_ElemSetNumber(elem, (void *) &value, (uword) sizeof(value), 
+    return OCI_ElemSetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(value), 
                              (uword) OCI_NUM_BIGUINT);
 }
 
@@ -747,27 +767,28 @@ boolean OCI_API OCI_ElemSetUnsignedBigInt(OCI_Elem *elem, big_uint value)
  * OCI_ElemSetDouble
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_ElemSetDouble(OCI_Elem *elem, double value)
+boolean OCI_API OCI_ElemSetDouble(OCI_Library *pOCILib, OCI_Elem *elem, double value)
 {
-    return OCI_ElemSetNumber(elem, (void *) &value, (uword) sizeof(value), 
+    return OCI_ElemSetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(value), 
                              (uword) OCI_NUM_DOUBLE);
 }
 
 /* ------------------------------------------------------------------------ *
  * OCI_ElemSetString
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_ElemSetString(OCI_Elem *elem, const dtext *value)
 {
     return OCI_ElemSetString2(&OCILib, elem, value);
 }
+*/
 
 boolean OCI_API OCI_ElemSetString2(OCI_Library *pOCILib, OCI_Elem *elem, const dtext *value)
 {
     boolean res  = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_TEXT, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_TEXT, FALSE);
 
     if (value == NULL)
     {
@@ -782,7 +803,7 @@ boolean OCI_API OCI_ElemSetString2(OCI_Library *pOCILib, OCI_Elem *elem, const d
         OCI_ElemSetNullIndicator(elem, OCI_IND_NOTNULL);
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -790,18 +811,19 @@ boolean OCI_API OCI_ElemSetString2(OCI_Library *pOCILib, OCI_Elem *elem, const d
 /* ------------------------------------------------------------------------ *
  * OCI_ElemSetRaw
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_ElemSetRaw(OCI_Elem *elem, void* value, unsigned int len)
 {
     return OCI_ElemSetRaw2(&OCILib, elem, value, len);
 }
+*/
 
 boolean OCI_API OCI_ElemSetRaw2(OCI_Library *pOCILib, OCI_Elem *elem, void* value, unsigned int len)
 {
     boolean res  = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_RAW, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_RAW, FALSE);
  
     if (value == NULL)
     {
@@ -809,11 +831,11 @@ boolean OCI_API OCI_ElemSetRaw2(OCI_Library *pOCILib, OCI_Elem *elem, void* valu
     }
     else
     {
-        OCI_CHECK_MIN(elem->con, NULL, len, 1, FALSE);                                  
+       OCI_CHECK_MIN(pOCILib, elem->con, NULL, len, 1, FALSE);                                  
 
         OCI_CALL2
         (
-            res, elem->con, 
+	   pOCILib, res, elem->con, 
             
             OCIRawAssignBytes(pOCILib->env, elem->con->err, (ub1*) value,
                               len, (OCIRaw **) &elem->handle)
@@ -822,7 +844,7 @@ boolean OCI_API OCI_ElemSetRaw2(OCI_Library *pOCILib, OCI_Elem *elem, void* valu
         OCI_ElemSetNullIndicator(elem, OCI_IND_NOTNULL);
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -830,13 +852,19 @@ boolean OCI_API OCI_ElemSetRaw2(OCI_Library *pOCILib, OCI_Elem *elem, void* valu
 /* ------------------------------------------------------------------------ *
  * OCI_ElemSetDate
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_ElemSetDate(OCI_Elem *elem, OCI_Date *value)
+{
+   return OCI_ElemSetDate2(&OCILib, elem, value);
+}
+*/
+
+boolean OCI_API OCI_ElemSetDate2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Date *value)
 {
     boolean res  = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_DATETIME, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_DATETIME, FALSE);
   
     if (value == NULL)
     {
@@ -846,13 +874,13 @@ boolean OCI_API OCI_ElemSetDate(OCI_Elem *elem, OCI_Date *value)
     {
         if (elem->obj == NULL)
         {
-            OCI_DateInit(elem->con, (OCI_Date **) &elem->obj, 
+            OCI_DateInit2(pOCILib, elem->con, (OCI_Date **) &elem->obj, 
                          (OCIDate *) elem->handle, TRUE, FALSE);
         }
 
         if (elem->obj != NULL)
         {
-            res = OCI_DateAssign((OCI_Date *) elem->obj, value);
+            res = OCI_DateAssign(pOCILib, (OCI_Date *) elem->obj, value);
 
             if (res == TRUE)
             {
@@ -863,7 +891,7 @@ boolean OCI_API OCI_ElemSetDate(OCI_Elem *elem, OCI_Date *value)
         }
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -871,18 +899,19 @@ boolean OCI_API OCI_ElemSetDate(OCI_Elem *elem, OCI_Date *value)
 /* ------------------------------------------------------------------------ *
  * OCI_ElemSetTimestamp
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_ElemSetTimestamp(OCI_Elem *elem, OCI_Timestamp *value)
 {
     return OCI_ElemSetTimestamp2(&OCILib, elem, value);
 }
+*/
 
 boolean OCI_API OCI_ElemSetTimestamp2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Timestamp *value)
 {
     boolean res  = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_TIMESTAMP, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_TIMESTAMP, FALSE);
   
     if (value == NULL)
     {
@@ -910,7 +939,7 @@ boolean OCI_API OCI_ElemSetTimestamp2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_
         }
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -918,18 +947,19 @@ boolean OCI_API OCI_ElemSetTimestamp2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_
 /* ------------------------------------------------------------------------ *
  * OCI_ElemSetInterval
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_ElemSetInterval(OCI_Elem *elem, OCI_Interval *value)
 {
     return OCI_ElemSetInterval2(&OCILib, elem, value);
 }
+*/
 
 boolean OCI_API OCI_ElemSetInterval2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Interval *value)
 {
     boolean res  = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_INTERVAL, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_INTERVAL, FALSE);
  
     if (value == NULL)
     {
@@ -957,7 +987,7 @@ boolean OCI_API OCI_ElemSetInterval2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_I
         }
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -965,18 +995,19 @@ boolean OCI_API OCI_ElemSetInterval2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_I
 /* ------------------------------------------------------------------------ *
  * OCI_ElemSetColl
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_ElemSetColl(OCI_Elem *elem, OCI_Coll *value)
 {
     return OCI_ElemSetColl2(&OCILib, elem, value);
 }
+*/
 
 boolean OCI_API OCI_ElemSetColl2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Coll *value)
 {
     boolean res  = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_COLLECTION, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_COLLECTION, FALSE);
   
     if (value == NULL)
     {
@@ -1004,7 +1035,7 @@ boolean OCI_API OCI_ElemSetColl2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Coll 
         }
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -1012,18 +1043,19 @@ boolean OCI_API OCI_ElemSetColl2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Coll 
 /* ------------------------------------------------------------------------ *
  * OCI_ElemSetObject
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_ElemSetObject(OCI_Elem *elem, OCI_Object *value)
 {
     return OCI_ElemSetObject2(&OCILib, elem, value);
 }
+*/
 
 boolean OCI_API OCI_ElemSetObject2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Object *value)
 {
     boolean res  = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_OBJECT, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_OBJECT, FALSE);
   
     if (value == NULL)
     {
@@ -1051,7 +1083,7 @@ boolean OCI_API OCI_ElemSetObject2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Obj
         }
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -1059,18 +1091,19 @@ boolean OCI_API OCI_ElemSetObject2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Obj
 /* ------------------------------------------------------------------------ *
  * OCI_ElemSetLob
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_ElemSetLob(OCI_Elem *elem, OCI_Lob *value)
 {
     return OCI_ElemSetLob2(&OCILib, elem, value);
 }
+*/
 
 boolean OCI_API OCI_ElemSetLob2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Lob *value)
 {
     boolean res  = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_LOB, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_LOB, FALSE);
   
     if (value == NULL)
     {
@@ -1098,7 +1131,7 @@ boolean OCI_API OCI_ElemSetLob2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Lob *v
         }
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -1106,13 +1139,19 @@ boolean OCI_API OCI_ElemSetLob2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Lob *v
 /* ------------------------------------------------------------------------ *
  * OCI_ElemSetFile
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_ElemSetFile(OCI_Elem *elem, OCI_File *value)
+{
+   return OCI_ElemSetFile2(&OCILib, elem, value);
+}
+*/
+
+boolean OCI_API OCI_ElemSetFile2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_File *value)
 {
     boolean res  = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_FILE, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_FILE, FALSE);
   
     if (value == NULL)
     {
@@ -1140,7 +1179,7 @@ boolean OCI_API OCI_ElemSetFile(OCI_Elem *elem, OCI_File *value)
         }
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -1149,13 +1188,19 @@ boolean OCI_API OCI_ElemSetFile(OCI_Elem *elem, OCI_File *value)
 /* ------------------------------------------------------------------------ *
  * OCI_ElemSetRef
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_ElemSetRef(OCI_Elem *elem, OCI_Ref *value)
+{
+    return OCI_ElemSetRef2(&OCILib, elem, value);
+}
+*/
+
+boolean OCI_API OCI_ElemSetRef2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Ref *value)
 {
     boolean res  = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPAT(elem->con, elem->typinf->cols[0].type == OCI_CDT_REF, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_REF, FALSE);
   
     if (value == NULL)
     {
@@ -1182,7 +1227,7 @@ boolean OCI_API OCI_ElemSetRef(OCI_Elem *elem, OCI_Ref *value)
         }
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
@@ -1191,18 +1236,18 @@ boolean OCI_API OCI_ElemSetRef(OCI_Elem *elem, OCI_Ref *value)
  * OCI_ElemIsNull
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_ElemIsNull(OCI_Elem *elem)
+boolean OCI_API OCI_ElemIsNull2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     boolean ret = FALSE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
 
     if (elem->pind != NULL)
     {
         ret = (*elem->pind == OCI_IND_NULL);
     }
 
-    OCI_RESULT(TRUE);
+    OCI_RESULT(pOCILib, TRUE);
 
     return ret;
 }
@@ -1211,15 +1256,15 @@ boolean OCI_API OCI_ElemIsNull(OCI_Elem *elem)
  * OCI_ElemSetNull
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_ElemSetNull(OCI_Elem *elem)
+boolean OCI_API OCI_ElemSetNull2(OCI_Library *pOCILib, OCI_Elem *elem)
 {
     boolean res = FALSE;
 
-    OCI_CHECK_PTR(OCI_IPC_ELEMENT, elem, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
 
     res = OCI_ElemSetNullIndicator(elem, OCI_IND_NULL);
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
    
     return res;
 }
