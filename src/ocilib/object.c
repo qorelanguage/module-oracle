@@ -349,7 +349,7 @@ void OCI_ObjectReset(OCI_Library *pOCILib, OCI_Object *obj)
 
                 case OCI_CDT_INTERVAL:
 
-                    OCI_IntervalFree((OCI_Interval *) obj->objs[i]);
+                    OCI_IntervalFree2(pOCILib, (OCI_Interval *) obj->objs[i]);
                     break;
                 case OCI_CDT_REF:
 

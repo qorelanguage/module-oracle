@@ -281,7 +281,7 @@ boolean OCI_API OCI_ElemFree2(OCI_Library *pOCILib, OCI_Elem *elem)
 
             case OCI_CDT_INTERVAL:
 
-                OCI_IntervalFree((OCI_Interval *) elem->obj);
+                OCI_IntervalFree2(pOCILib, (OCI_Interval *) elem->obj);
                 break;
             
             case OCI_CDT_REF:

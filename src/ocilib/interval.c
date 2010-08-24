@@ -103,7 +103,7 @@ OCI_Interval * OCI_IntervalInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_I
 
     if (res == FALSE)
     {
-        OCI_IntervalFree(itv);
+        OCI_IntervalFree2(pOCILib, itv);
         itv = NULL;
     }
 
