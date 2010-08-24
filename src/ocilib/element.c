@@ -792,7 +792,7 @@ boolean OCI_API OCI_ElemSetString2(OCI_Library *pOCILib, OCI_Elem *elem, const d
 
     if (value == NULL)
     {
-        res = OCI_ElemSetNull(elem);
+        res = OCI_ElemSetNull2(pOCILib, elem);
     }
     else
     {
@@ -827,7 +827,7 @@ boolean OCI_API OCI_ElemSetRaw2(OCI_Library *pOCILib, OCI_Elem *elem, void* valu
  
     if (value == NULL)
     {
-        res = OCI_ElemSetNull(elem);
+        res = OCI_ElemSetNull2(pOCILib, elem);
     }
     else
     {
@@ -868,7 +868,7 @@ boolean OCI_API OCI_ElemSetDate2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Date 
   
     if (value == NULL)
     {
-        res = OCI_ElemSetNull(elem);
+        res = OCI_ElemSetNull2(pOCILib, elem);
     }
     else
     {
@@ -915,7 +915,7 @@ boolean OCI_API OCI_ElemSetTimestamp2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_
   
     if (value == NULL)
     {
-        res = OCI_ElemSetNull(elem);
+        res = OCI_ElemSetNull2(pOCILib, elem);
     }
     else
     {
@@ -963,7 +963,7 @@ boolean OCI_API OCI_ElemSetInterval2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_I
  
     if (value == NULL)
     {
-        res = OCI_ElemSetNull(elem);
+        res = OCI_ElemSetNull2(pOCILib, elem);
     }
     else
     {
@@ -1011,7 +1011,7 @@ boolean OCI_API OCI_ElemSetColl2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Coll 
   
     if (value == NULL)
     {
-        res = OCI_ElemSetNull(elem);
+        res = OCI_ElemSetNull2(pOCILib, elem);
     }
     else
     {
@@ -1024,7 +1024,7 @@ boolean OCI_API OCI_ElemSetColl2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Coll 
 
         if (elem->obj != NULL)
         {
-            res = OCI_CollAssign((OCI_Coll *) elem->obj, value);
+            res = OCI_CollAssign(pOCILib, (OCI_Coll *) elem->obj, value);
             
             if (res == TRUE)
             {
@@ -1059,7 +1059,7 @@ boolean OCI_API OCI_ElemSetObject2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Obj
   
     if (value == NULL)
     {
-        res = OCI_ElemSetNull(elem);
+        res = OCI_ElemSetNull2(pOCILib, elem);
     }
     else
     {
@@ -1072,7 +1072,7 @@ boolean OCI_API OCI_ElemSetObject2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Obj
 
         if (elem->obj != NULL)
         {
-            res = OCI_ObjectAssign((OCI_Object *) elem->obj , value);
+            res = OCI_ObjectAssign2(pOCILib, (OCI_Object *) elem->obj , value);
 
             if (res == TRUE)
             {
@@ -1107,7 +1107,7 @@ boolean OCI_API OCI_ElemSetLob2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Lob *v
   
     if (value == NULL)
     {
-        res = OCI_ElemSetNull(elem);
+        res = OCI_ElemSetNull2(pOCILib, elem);
     }
     else
     {
@@ -1120,7 +1120,7 @@ boolean OCI_API OCI_ElemSetLob2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Lob *v
 
         if (elem->obj != NULL)
         {
-            res = OCI_LobAssign((OCI_Lob *) elem->obj, value);
+            res = OCI_LobAssign(pOCILib, (OCI_Lob *) elem->obj, value);
 
             if (res == TRUE)
             {
@@ -1155,7 +1155,7 @@ boolean OCI_API OCI_ElemSetFile2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_File 
   
     if (value == NULL)
     {
-        res = OCI_ElemSetNull(elem);
+        res = OCI_ElemSetNull2(pOCILib, elem);
     }
     else
     {
@@ -1204,7 +1204,7 @@ boolean OCI_API OCI_ElemSetRef2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Ref *v
   
     if (value == NULL)
     {
-        res = OCI_ElemSetNull(elem);
+        res = OCI_ElemSetNull2(pOCILib, elem);
     }
     else
     {

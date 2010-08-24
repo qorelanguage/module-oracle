@@ -91,14 +91,14 @@ OCI_Error * OCI_ErrorGet2(OCI_Library *pOCILib, boolean check, boolean warning)
 
     if (pOCILib->loaded == TRUE)
     {
-        if (OCI_ThreadKeyGet(pOCILib->key_errs, ( void **) (dvoid *) &err) == TRUE)
+        if (OCI_ThreadKeyGet(pOCILib, pOCILib->key_errs, ( void **) (dvoid *) &err) == TRUE)
         {
             if (err == NULL)
             {
                 err = OCI_ErrorCreate();
 
                 if (err != NULL)
-                    OCI_ThreadKeySet(pOCILib->key_errs, err);
+                    OCI_ThreadKeySet(pOCILib, pOCILib->key_errs, err);
             }
             else  if (check == TRUE) 
             {

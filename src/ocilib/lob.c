@@ -1138,6 +1138,43 @@ boolean OCI_API OCI_LobClose(OCI_Library *pOCILib, OCI_Lob *lob)
 }
 
 /* ------------------------------------------------------------------------ *
+ * OCI_LobAssign
+ * ------------------------------------------------------------------------ */
+
+boolean OCI_API OCI_LobAssign(OCI_Library *pOCILib, OCI_Lob *lob, OCI_Lob *lob_src)
+{
+    boolean res   = TRUE;
+
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_LOB, lob,     FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_LOB, lob_src, FALSE);
+
+    if (lob->hstate == OCI_OBJECT_ALLOCATED)
+    {
+        OCI_CALL2
+        (
+            pOCILib, res, lob->con,
+
+            OCILobLocatorAssign(lob->con->cxt, lob->con->err,
+                                lob_src->handle, &lob->handle)
+        )
+    }
+    else
+    {
+        OCI_CALL2
+        (
+            pOCILib, res, lob->con,
+
+            OCILobAssign(pOCILib->env, lob->con->err,
+                         lob_src->handle, &lob->handle)
+        )
+    }
+
+    OCI_RESULT(pOCILib, res);
+
+    return res;
+}
+
+/* ------------------------------------------------------------------------ *
  * OCI_LobGetMaxSize
  * ------------------------------------------------------------------------ */
 

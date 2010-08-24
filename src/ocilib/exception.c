@@ -204,9 +204,9 @@ static mtext * OCILib_HandleNames[] =
  * OCI_ExceptionGetError
  * ------------------------------------------------------------------------ */
 
-OCI_Error * OCI_ExceptionGetError(boolean warning)
+OCI_Error * OCI_ExceptionGetError(OCI_Library *pOCILib, boolean warning)
 {
-    OCI_Error *err = OCI_ErrorGet(TRUE, warning);
+    OCI_Error *err = OCI_ErrorGet2(pOCILib, TRUE, warning);
 
     if (err != NULL)
     {
@@ -254,7 +254,7 @@ void OCI_ExceptionOCI(OCIError *p_err, OCI_Connection *con,
 void OCI_ExceptionOCI2(OCI_Library *pOCILib, OCIError *p_err, OCI_Connection *con, 
                       OCI_Statement *stmt, boolean warning)
 {
-    OCI_Error *err = OCI_ExceptionGetError(warning);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, warning);
 
     if (err != NULL)
     {
@@ -293,7 +293,7 @@ void OCI_ExceptionNotInitialized(void)
 
 void OCI_ExceptionNotInitialized2(OCI_Library *pOCILib)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -321,7 +321,7 @@ void OCI_ExceptionLoadingSharedLib2(OCI_Library *pOCILib)
 {
 #ifdef OCI_IMPORT_RUNTIME
 
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -350,7 +350,7 @@ void OCI_ExceptionLoadingSymbols(void)
 
 void OCI_ExceptionLoadingSymbols2(OCI_Library *pOCILib)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -375,7 +375,7 @@ void OCI_ExceptionNotMultithreaded(void)
 
 void OCI_ExceptionNotMultithreaded2(OCI_Library *pOCILib)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -395,7 +395,7 @@ void OCI_ExceptionNotMultithreaded2(OCI_Library *pOCILib)
 
 void OCI_ExceptionNullPointer2(OCI_Library *pOCILib, int type)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -417,7 +417,7 @@ void OCI_ExceptionNullPointer2(OCI_Library *pOCILib, int type)
 void OCI_ExceptionMemory2(OCI_Library *pOCILib, int type, size_t nb_bytes, OCI_Connection *con,
 			  OCI_Statement *stmt)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -442,7 +442,7 @@ void OCI_ExceptionMemory2(OCI_Library *pOCILib, int type, size_t nb_bytes, OCI_C
 
 void OCI_ExceptionNotAvailable2(OCI_Library *pOCILib, OCI_Connection *con, int feature)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -466,7 +466,7 @@ void OCI_ExceptionNotAvailable2(OCI_Library *pOCILib, OCI_Connection *con, int f
 void OCI_ExceptionDatatypeNotSupported2(OCI_Library *pOCILib, OCI_Connection *con, OCI_Statement *stmt,
 					int code)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -490,7 +490,7 @@ void OCI_ExceptionDatatypeNotSupported2(OCI_Library *pOCILib, OCI_Connection *co
 
 void OCI_ExceptionParsingToken2(OCI_Library *pOCILib, OCI_Connection *con, OCI_Statement *stmt, mtext token)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -515,7 +515,7 @@ void OCI_ExceptionParsingToken2(OCI_Library *pOCILib, OCI_Connection *con, OCI_S
 void OCI_ExceptionMappingArgument2(OCI_Library *pOCILib, OCI_Connection *con, OCI_Statement *stmt,
 				   int arg)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -539,7 +539,7 @@ void OCI_ExceptionMappingArgument2(OCI_Library *pOCILib, OCI_Connection *con, OC
 
 void OCI_ExceptionOutOfBounds2(OCI_Library *pOCILib, OCI_Connection *con, int value)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -562,7 +562,7 @@ void OCI_ExceptionOutOfBounds2(OCI_Library *pOCILib, OCI_Connection *con, int va
 
 void  OCI_ExceptionUnfreedData2(OCI_Library *pOCILib, int type_elem, int nb_elem)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -584,7 +584,7 @@ void  OCI_ExceptionUnfreedData2(OCI_Library *pOCILib, int type_elem, int nb_elem
 
 void OCI_ExceptionMaxBind2(OCI_Library *pOCILib, OCI_Statement *stmt)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -611,7 +611,7 @@ void OCI_ExceptionMaxBind2(OCI_Library *pOCILib, OCI_Statement *stmt)
 
 void OCI_ExceptionAttributeNotFound2(OCI_Library *pOCILib, OCI_Connection *con, const mtext *attr)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -634,7 +634,7 @@ void OCI_ExceptionAttributeNotFound2(OCI_Library *pOCILib, OCI_Connection *con, 
 
 void OCI_ExceptionMinimumValue2(OCI_Library *pOCILib, OCI_Connection *con, OCI_Statement *stmt, int min)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -655,7 +655,7 @@ void OCI_ExceptionMinimumValue2(OCI_Library *pOCILib, OCI_Connection *con, OCI_S
 
 void OCI_ExceptionTypeNotCompatible2(OCI_Library *pOCILib, OCI_Connection *con)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -676,7 +676,7 @@ void OCI_ExceptionTypeNotCompatible2(OCI_Library *pOCILib, OCI_Connection *con)
 
 void OCI_ExceptionStatementState2(OCI_Library *pOCILib, OCI_Statement *stmt, int state)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -702,7 +702,7 @@ void OCI_ExceptionStatementState2(OCI_Library *pOCILib, OCI_Statement *stmt, int
 
 void OCI_ExceptionStatementNotScrollable2(OCI_Library *pOCILib, OCI_Statement *stmt)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -727,7 +727,7 @@ void OCI_ExceptionStatementNotScrollable2(OCI_Library *pOCILib, OCI_Statement *s
 
 void OCI_ExceptionBindAlreadyUsed2(OCI_Library *pOCILib, OCI_Statement *stmt, const mtext * bind)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -754,7 +754,7 @@ void OCI_ExceptionBindAlreadyUsed2(OCI_Library *pOCILib, OCI_Statement *stmt, co
 void OCI_ExceptionBindArraySize2(OCI_Library *pOCILib, OCI_Statement *stmt, unsigned int maxsize, 
 				 unsigned int cursize, unsigned int newsize)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -781,7 +781,7 @@ void OCI_ExceptionBindArraySize2(OCI_Library *pOCILib, OCI_Statement *stmt, unsi
 void OCI_ExceptionDirPathColNotFound2(OCI_Library *pOCILib, OCI_DirPath *dp, const mtext * column,
                                      const mtext *table)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -808,7 +808,7 @@ void OCI_ExceptionDirPathColNotFound2(OCI_Library *pOCILib, OCI_DirPath *dp, con
 
 void OCI_ExceptionDirPathState2(OCI_Library *pOCILib, OCI_DirPath *dp, int state)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {
@@ -834,7 +834,7 @@ void OCI_ExceptionDirPathState2(OCI_Library *pOCILib, OCI_DirPath *dp, int state
 
 void OCI_ExceptionOCIEnvironment2(OCI_Library *pOCILib)
 {
-    OCI_Error *err = OCI_ExceptionGetError(FALSE);
+    OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
     if (err != NULL)
     {

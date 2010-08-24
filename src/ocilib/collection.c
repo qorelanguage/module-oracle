@@ -181,6 +181,33 @@ boolean OCI_API OCI_CollFree2(OCI_Library *pOCILib, OCI_Coll *coll)
 }
 
 /* ------------------------------------------------------------------------ *
+ * OCI_CollAssign
+ * ------------------------------------------------------------------------ */
+
+boolean OCI_API OCI_CollAssign(OCI_Library *pOCILib, OCI_Coll *coll, OCI_Coll *coll_src)
+{
+    boolean res = TRUE;
+
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLLECTION, coll,     FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLLECTION, coll_src, FALSE);
+
+    OCI_CHECK_COMPAT(pOCILib, coll->con,
+                     coll->typinf->cols[0].icode == coll_src->typinf->cols[0].icode,
+                     FALSE);
+
+    OCI_CALL2
+    (
+        pOCILib, res, coll->con,
+
+        OCICollAssign(pOCILib->env, coll->con->err, coll_src->handle, coll->handle)
+    )
+
+    OCI_RESULT(pOCILib, res);
+
+    return res;
+}
+
+/* ------------------------------------------------------------------------ *
  * OCI_CollGetSize
  * ------------------------------------------------------------------------ */
 /*

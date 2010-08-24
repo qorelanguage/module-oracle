@@ -382,7 +382,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
     if (res == FALSE)
     {
-       OCI_TypeInfoFree(typinf);        
+       OCI_TypeInfoFree2(pOCILib, typinf);
        typinf = NULL;
     }
 
