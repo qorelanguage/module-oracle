@@ -13029,9 +13029,9 @@ OCI_EXPORT OCI_HashEntry * OCI_API OCI_HashGetEntry
  * Mutex handle on success or NULL on failure
  *
  */
-
-OCI_EXPORT OCI_Mutex * OCI_API OCI_MutexCreate(void);
-
+/*
+OCI_EXPORT OCI_Mutex * OCI_API OCI_MutexCreate(OCI_Library * pOCILib);
+*/
 /**
  * @brief
  * Destroy a mutex object
@@ -13042,12 +13042,13 @@ OCI_EXPORT OCI_Mutex * OCI_API OCI_MutexCreate(void);
  * TRUE on success otherwise FALSE
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_MutexFree
 (
+    OCI_Library * pOCILib, 
     OCI_Mutex *mutex
 );
-
+*/
 /**
  * @brief
  * Acquire a mutex lock
@@ -13058,12 +13059,13 @@ OCI_EXPORT boolean OCI_API OCI_MutexFree
  * TRUE on success otherwise FALSE
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_MutexAcquire
 (
+    OCI_Library * pOCILib, 
     OCI_Mutex *mutex
 );
-
+*/
 /**
  * @brief
  * Release a mutex lock
@@ -13074,12 +13076,13 @@ OCI_EXPORT boolean OCI_API OCI_MutexAcquire
  * TRUE on success otherwise FALSE
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_MutexRelease
 (
+    OCI_Library * pOCILib, 
     OCI_Mutex *mutex
 );
-
+*/
 /**
  * @brief
  * Create a Thread object
