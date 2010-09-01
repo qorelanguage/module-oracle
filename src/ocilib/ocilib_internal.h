@@ -347,6 +347,7 @@ void OCI_SetLastError
 
 void OCI_SetStatus
 (
+   OCI_Library *pOCILib,
     boolean res
  );
 

@@ -465,7 +465,7 @@
 #define OCI_RESULT(ocilib, res)						\
                                                                                 \
         if (OCI_LIB_CONTEXT(ocilib))						\
-             OCI_SetStatus(res);                                                \
+	   OCI_SetStatus(ocilib, res);					\
 
 
 #ifdef _WINDOWS

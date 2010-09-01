@@ -440,9 +440,9 @@ boolean OCI_KeyMapFree2(OCI_Library *pOCILib)
  * OCI_SetStatus
  * ------------------------------------------------------------------------ */
 
-void OCI_SetStatus(boolean res)
+void OCI_SetStatus(OCI_Library *pOCILib, boolean res)
 {
-    OCI_Error *err = OCI_ErrorGet(FALSE, FALSE);
+   OCI_Error *err = OCI_ErrorGet2(pOCILib, FALSE, FALSE);
 
     if (err != NULL)
     {
@@ -1267,7 +1267,7 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
     if (pOCILib->key_errs != NULL)
     {
         OCI_ThreadKey *key = pOCILib->key_errs;
-        OCI_Error *err     = OCI_ErrorGet(FALSE, FALSE);
+        OCI_Error *err     = OCI_ErrorGet2(pOCILib, FALSE, FALSE);
 
         pOCILib->key_errs = NULL;
 
@@ -1407,7 +1407,7 @@ OCI_Error * OCI_API OCI_GetLastError2(OCI_Library *pOCILib)
 
     if ((pOCILib->loaded == FALSE) || (OCI_LIB_CONTEXT(pOCILib)))
     {
-        err = OCI_ErrorGet(TRUE, FALSE);
+       err = OCI_ErrorGet2(pOCILib, TRUE, FALSE);
 
         if (err != NULL)
         {
