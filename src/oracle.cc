@@ -1839,7 +1839,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
 
 //    printd(5, "oracle_open() datasource %p for DB=%s open (envhp=%p)\n", ds, db.getBuffer(), d_ora->envhp);
    
-   if (!OCI_Initialize2(&d_ora->ocilib, d_ora->envhp, d_ora->errhp, ocilib_err_handler, NULL, OCI_ENV_DEFAULT)) {
+   if (!OCI_Initialize2(&d_ora->ocilib, d_ora->envhp, d_ora->errhp, ocilib_err_handler, NULL, oci_flags)) {
        xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate OCILIB support handlers");
        return -1;
    }

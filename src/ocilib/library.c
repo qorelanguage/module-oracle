@@ -493,6 +493,8 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, OCIErr
     pOCILib->version_runtime    = OCI_VERSION_RUNTIME;
 
     pOCILib->env_mode           = mode;
+    if (mode & OCI_NO_MUTEX)
+       pOCILib->env_mode &= ~OCI_THREADED;
 
 #ifdef OCI_CHARSET_ANSI
    
@@ -1105,8 +1107,9 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, OCIErr
     {
         /* check modes */
 
-        if (mode & OCI_ENV_THREADED)
-            oci_mode |= OCI_THREADED;
+       // do not set OCI_THREADED
+       if (mode & OCI_ENV_THREADED && !(mode & OCI_NO_MUTEX))
+	  oci_mode |= OCI_THREADED;
 
         if (mode & OCI_ENV_EVENTS)
             oci_mode |= OCI_EVENTS;
