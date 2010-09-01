@@ -49,14 +49,14 @@ OCI_ThreadKey * OCI_ThreadKeyCreateInternal(OCI_Library *pOCILib, POCI_THREADKEY
 
     /* allocate key structure */
 
-    key = (OCI_ThreadKey *) OCI_MemAlloc(OCI_IPC_THREADKEY, sizeof(*key), 
+    key = (OCI_ThreadKey *) OCI_MemAlloc2(pOCILib, OCI_IPC_THREADKEY, sizeof(*key), 
                                          (size_t) 1, TRUE);
 
     if (key != NULL)
     {
         /* allocate error handle */
 
-        res = (OCI_SUCCESS == OCI_HandleAlloc(pOCILib->env, 
+       res = (OCI_SUCCESS == OCI_HandleAlloc2(pOCILib, pOCILib->env, 
                                               (dvoid **) (void *) &key->err,
                                               OCI_HTYPE_ERROR, (size_t) 0,
                                               (dvoid **) NULL));
