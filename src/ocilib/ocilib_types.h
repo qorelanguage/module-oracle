@@ -817,7 +817,7 @@ extern "C" {
 #endif
 
 OCI_EXPORT OCI_Error * OCI_API OCI_GetLastError2(OCI_Library *pOCILib);
-OCI_EXPORT boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_ERROR err_handler, const mtext *lib_path, unsigned int mode);
+OCI_EXPORT boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, OCIError *errhp, POCI_ERROR err_handler, const mtext *lib_path, unsigned int mode);
 OCI_EXPORT boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib);
 OCI_EXPORT OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *con, const mtext *name, unsigned int type);
 OCI_EXPORT boolean OCI_API OCI_ObjectSetRef2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, OCI_Ref *value);

@@ -50,7 +50,8 @@ void ocilib_err_handler(OCI_Error *err) {
                 "  sql   : %s\n",
                 OCI_ErrorGetOCICode(err), 
                 OCI_ErrorGetString(err),
-                OCI_GetSql(OCI_ErrorGetStatement(err))
+                //OCI_GetSql(OCI_ErrorGetStatement(err))
+		"<not available>"
            );
 };
 

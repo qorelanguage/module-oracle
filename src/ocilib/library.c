@@ -466,7 +466,7 @@ boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const
 }
 */
 
-boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_ERROR err_handler, const mtext *lib_path,
+boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, OCIError *errhp, POCI_ERROR err_handler, const mtext *lib_path,
                                unsigned int mode)
 {
     boolean res  = TRUE;
@@ -1111,25 +1111,29 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_E
         if (mode & OCI_ENV_EVENTS)
             oci_mode |= OCI_EVENTS;
 
-       /* create environment on success */
-
        pOCILib->env = d_ora_env;
+       pOCILib->err = errhp;
+
  
-//         res = res && (OCI_SUCCESS == OCIEnvCreate(&pOCILib->env, oci_mode,
-//                                                   (dvoid *) NULL, NULL, NULL, NULL,
-//                                                   (size_t) 0, (dvoid **) NULL));
+       /* create environment on success */
+/*
+
+         res = res && (OCI_SUCCESS == OCIEnvCreate(&pOCILib->env, oci_mode,
+                                                   (dvoid *) NULL, NULL, NULL, NULL,
+                                                   (size_t) 0, (dvoid **) NULL));
 
         if (res == FALSE)
         {
             OCI_ExceptionOCIEnvironment2(pOCILib);
         }       
-
+*/
         /*  allocate error handle */
-
+/*
         res = res && (OCI_SUCCESS == OCI_HandleAlloc2(pOCILib, (dvoid *) pOCILib->env,
                                                      (dvoid **) (void *) &pOCILib->err,
                                                      (ub4) OCI_HTYPE_ERROR,
                                                      (size_t) 0, (dvoid **) NULL));
+*/
     }
 
     /* on success, we need to initialize OCIThread object support */
@@ -1275,8 +1279,10 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
 
     /* close error handle */
 
-    if (pOCILib->err != NULL)
+    /*
+      if (pOCILib->err != NULL)
        OCI_HandleFree2(pOCILib, pOCILib->err, OCI_HTYPE_ERROR);
+    */
 
     /* close environment handle
        => direct OCIHandleFree() because this handle was not allocated
@@ -1287,7 +1293,7 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
         OCIHandleFree(pOCILib->env, OCI_HTYPE_ENV);
 
 #ifdef OCI_IMPORT_RUNTIME
-
+#error
     if (pOCILib->lib_handle != NULL)
         LIB_CLOSE(pOCILib->lib_handle);
 
