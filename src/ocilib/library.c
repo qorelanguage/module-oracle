@@ -462,6 +462,9 @@ void OCI_SetStatus(boolean res)
 boolean OCI_API OCI_Initialize(OCIEnv * d_ora_env, POCI_ERROR err_handler, const mtext *lib_path,
                                unsigned int mode)
 {
+    if (OCILib.loaded == TRUE)
+        return TRUE;
+
    return OCI_Initialize2(&OCILib, d_ora_env, err_handler, lib_path, mode);
 }
 */
@@ -480,11 +483,6 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, OCIErr
 
 #endif
 
-    /* check if it was already initialized */
-
-    if (pOCILib->loaded == TRUE)
-        return TRUE;
-
     memset(pOCILib, 0, sizeof(OCI_Library));
 
     pOCILib->error_handler      = err_handler;
@@ -495,6 +493,8 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, OCIErr
     pOCILib->env_mode           = mode;
     if (mode & OCI_NO_MUTEX)
        pOCILib->env_mode &= ~OCI_THREADED;
+
+    //printf("mode=%d\n", pOCILib->env_mode);
 
 #ifdef OCI_CHARSET_ANSI
    

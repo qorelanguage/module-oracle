@@ -1843,6 +1843,8 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
        xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate OCILIB support handlers");
        return -1;
    }
+
+   //printd(5, "d_ora->ocilib=%p mode=%d\n", &d_ora->ocilib, d_ora->ocilib.env_mode);
    
    d_ora->ocilib_cn = new OCI_Connection;
    // fake the OCI_Connection
