@@ -61,6 +61,8 @@ OCI_Coll * OCI_CollInit
     OCI_TypeInfo *typeinf
 );
 
+boolean OCI_CollAssign(OCI_Library *pOCILib, OCI_Coll *coll, OCI_Coll *coll_src);
+
 /* ------------------------------------------------------------------------ *
  * column.c
  * ------------------------------------------------------------------------ */
@@ -298,9 +300,9 @@ void OCI_ExceptionDirPathState
     OCI_DirPath *dp,
     int state
 );
-
-void OCI_ExceptionOCIEnvironment(void);
 */
+void OCI_ExceptionOCIEnvironment2(OCI_Library *pOCILib);
+
 
 
 /* ------------------------------------------------------------------------ *
@@ -361,7 +363,8 @@ OCI_List * OCI_ListCreate
 
 boolean OCI_ListFree
 (
-    OCI_List *list
+   OCI_Library *pOCILib,
+   OCI_List *list
 );
 
 OCI_Item * OCI_ListCreateItem
@@ -380,17 +383,20 @@ OCI_Item * OCI_ListAppend
 
 boolean OCI_ListClear
 (
+   OCI_Library *pOCILib,
     OCI_List *list
 );
 
 boolean OCI_ListForEach
 (
+   OCI_Library *pOCILib,
     OCI_List *list,
     boolean (*proc)(void *)
 );
 
 boolean OCI_ListRemove
 (
+   OCI_Library *pOCILib,
     OCI_List *list,
     void *data
 );
@@ -407,6 +413,8 @@ OCI_Lob * OCI_LobInit
     OCILobLocator *handle,
     ub4 type
 );
+
+boolean OCI_LobAssign(OCI_Library *pOCILib, OCI_Lob *lob, OCI_Lob *lob_src);
 
 /* ------------------------------------------------------------------------ *
  * long.c
@@ -782,6 +790,14 @@ boolean OCI_TypeInfoClose
 (
     OCI_TypeInfo *typeinf
 );
+
+boolean OCI_ThreadKeyFree(OCI_Library *pOCILib, OCI_ThreadKey *key);
+boolean OCI_ThreadKeyGet(OCI_Library *pOCILib, OCI_ThreadKey* key, void **value);
+boolean OCI_ThreadKeySet(OCI_Library *pOCILib, OCI_ThreadKey *key, void *value);
+OCI_Mutex * OCI_MutexCreateInternal(OCI_Library * pOCILib);
+boolean OCI_API OCI_MutexFree(OCI_Library * pOCILib, OCI_Mutex *mutex);
+boolean OCI_API OCI_MutexAcquire(OCI_Library * pOCILib, OCI_Mutex *mutex);
+boolean OCI_API OCI_MutexRelease(OCI_Library * pOCILib, OCI_Mutex *mutex);
 
 #ifdef  __cplusplus
 }

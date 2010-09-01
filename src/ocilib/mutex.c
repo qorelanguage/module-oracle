@@ -49,14 +49,14 @@ OCI_Mutex * OCI_MutexCreateInternal(OCI_Library * pOCILib)
 
     /* allocate mutex structure */
 
-    mutex = (OCI_Mutex *) OCI_MemAlloc(OCI_IPC_MUTEX, sizeof(*mutex), 
+    mutex = (OCI_Mutex *) OCI_MemAlloc2(pOCILib, OCI_IPC_MUTEX, sizeof(*mutex), 
                                        (size_t) 1, TRUE);
 
     if (mutex != NULL)
     {
         /* allocate error handle */
 
-        res = (OCI_SUCCESS == OCI_HandleAlloc(pOCILib->env, 
+       res = (OCI_SUCCESS == OCI_HandleAlloc2(pOCILib, pOCILib->env, 
                                               (dvoid **) (void *) &mutex->err,
                                               OCI_HTYPE_ERROR, (size_t) 0,
                                               (dvoid **) NULL));
@@ -94,7 +94,7 @@ OCI_Mutex * OCI_API OCI_MutexCreate(OCI_Library * pOCILib)
 {
     OCI_Mutex *mutex = NULL;
 
-    OCI_CHECK_INITIALIZED(NULL);
+    OCI_CHECK_INITIALIZED2(pOCILib, NULL);
 
     mutex = OCI_MutexCreateInternal(pOCILib);
 
@@ -129,7 +129,7 @@ boolean OCI_API OCI_MutexFree(OCI_Library * pOCILib, OCI_Mutex *mutex)
 
     if (mutex->err != NULL)
     {
-        OCI_HandleFree(mutex->err, OCI_HTYPE_ERROR);
+       OCI_HandleFree2(pOCILib, mutex->err, OCI_HTYPE_ERROR);
     }
 
     /* free mutex structure */

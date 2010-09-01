@@ -77,7 +77,7 @@ OCI_ThreadKey * OCI_ThreadKeyCreateInternal(OCI_Library *pOCILib, POCI_THREADKEY
 
     if (res == FALSE)
     {
-        OCI_ThreadKeyFree(key);
+       OCI_ThreadKeyFree(pOCILib, key);
         key = NULL;
     }
 
@@ -109,7 +109,7 @@ boolean OCI_ThreadKeyFree(OCI_Library *pOCILib, OCI_ThreadKey *key)
 
     if (key->err != NULL)
     {
-        OCI_HandleFree(key->err, OCI_HTYPE_ERROR);
+       OCI_HandleFree2(pOCILib, key->err, OCI_HTYPE_ERROR);
     }
 
     /* free key structure */

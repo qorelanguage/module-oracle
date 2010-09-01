@@ -32,6 +32,7 @@
  * $Id: element.c, v 3.7.1 2010-07-30 11:57 Vincent Rogier $
  * ------------------------------------------------------------------------ */
 
+#include "ocilib.h"
 #include "ocilib_internal.h"
 
 /* ************************************************************************ *
@@ -1144,7 +1145,6 @@ boolean OCI_API OCI_ElemSetFile(OCI_Elem *elem, OCI_File *value)
 {
    return OCI_ElemSetFile2(&OCILib, elem, value);
 }
-*/
 
 boolean OCI_API OCI_ElemSetFile2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_File *value)
 {
@@ -1183,6 +1183,7 @@ boolean OCI_API OCI_ElemSetFile2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_File 
 
     return res;
 }
+*/
 
 
 /* ------------------------------------------------------------------------ *
@@ -1193,7 +1194,6 @@ boolean OCI_API OCI_ElemSetRef(OCI_Elem *elem, OCI_Ref *value)
 {
     return OCI_ElemSetRef2(&OCILib, elem, value);
 }
-*/
 
 boolean OCI_API OCI_ElemSetRef2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Ref *value)
 {
@@ -1231,6 +1231,7 @@ boolean OCI_API OCI_ElemSetRef2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Ref *v
 
     return res;
 }
+*/
 
 /* ------------------------------------------------------------------------ *
  * OCI_ElemIsNull

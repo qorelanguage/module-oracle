@@ -481,7 +481,7 @@ boolean OCI_ObjectGetNumber2(OCI_Library *pOCILib, OCI_Object *obj, const mtext 
             ub4 fmt_size     = (ub4) mtslen(fmt);
             dtext *data      = (dtext *) OCI_ObjectGetString(obj, attr);
 
-            res = OCI_NumberGetFromStr(obj->con, value, size, flag, data,
+            res = OCI_NumberGetFromStr2(pOCILib, obj->con, value, size, flag, data,
                                        (int) dtslen(data),  fmt, fmt_size);
         }
     }

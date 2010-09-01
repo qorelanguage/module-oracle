@@ -419,7 +419,7 @@ boolean OCI_KeyMapFree2(OCI_Library *pOCILib)
 
             while (v != NULL)
             {
-                if (FALSE == OCI_ThreadKeyFree((OCI_ThreadKey *) (v->value.p_void)))
+	       if (FALSE == OCI_ThreadKeyFree(pOCILib, (OCI_ThreadKey *) (v->value.p_void)))
                   nb_err++;
 
                 v = v->next;
@@ -1121,7 +1121,7 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, POCI_E
 
         if (res == FALSE)
         {
-            OCI_ExceptionOCIEnvironment();
+            OCI_ExceptionOCIEnvironment2(pOCILib);
         }       
 
         /*  allocate error handle */
@@ -1212,31 +1212,31 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
     /* free all subscriptions */
 
 //     OCI_ListForEach(pOCILib->subs, (boolean (*)(void *)) OCI_SubscriptionClose);
-    OCI_ListClear(pOCILib->subs);
+    OCI_ListClear(pOCILib, pOCILib->subs);
 
     /* free all connections */
 
 //     OCI_ListForEach(pOCILib->cons, (boolean (*)(void *)) OCI_ConnectionClose);
-    OCI_ListClear(pOCILib->cons);
+    OCI_ListClear(pOCILib, pOCILib->cons);
 
     /* free all pools */
 
 //     OCI_ListForEach(pOCILib->pools, (boolean (*)(void *)) OCI_PoolClose);
-    OCI_ListClear(pOCILib->pools);
+    OCI_ListClear(pOCILib, pOCILib->pools);
 
     /* free all arrays */
 
 //     OCI_ListForEach(pOCILib->arrs, (boolean (*)(void *)) OCI_ArrayClose);
-    OCI_ListClear(pOCILib->arrs);
+    OCI_ListClear(pOCILib, pOCILib->arrs);
 
     /* free objects */
 
     OCI_KeyMapFree2(pOCILib);
 
-    OCI_ListFree(pOCILib->cons);
-    OCI_ListFree(pOCILib->pools);
-    OCI_ListFree(pOCILib->subs);
-    OCI_ListFree(pOCILib->arrs);
+    OCI_ListFree(pOCILib, pOCILib->cons);
+    OCI_ListFree(pOCILib, pOCILib->pools);
+    OCI_ListFree(pOCILib, pOCILib->subs);
+    OCI_ListFree(pOCILib, pOCILib->arrs);
 
     pOCILib->cons    = NULL;
     pOCILib->pools   = NULL;
@@ -1265,8 +1265,8 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
         pOCILib->key_errs = NULL;
 
         OCI_ErrorFree(err);
-        OCI_ThreadKeySet(key, NULL);
-        OCI_ThreadKeyFree(key);
+        OCI_ThreadKeySet(pOCILib, key, NULL);
+        OCI_ThreadKeyFree(pOCILib, key);
     }
 
     /* set unloaded flag */

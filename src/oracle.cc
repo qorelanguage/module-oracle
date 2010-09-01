@@ -1900,8 +1900,8 @@ static int oracle_close(Datasource *ds) {
    OCIHandleFree(d_ora->svchp, OCI_HTYPE_SVCCTX);
 //    OCIHandleFree(d_ora->errhp, OCI_HTYPE_ERROR); // deleted in OCI_Cleanup
 //    OCIHandleFree(d_ora->envhp, OCI_HTYPE_ENV); // OCI_Cleanup
-    OCI_ListForEach(d_ora->ocilib_cn->tinfs, (boolean (*)(void *)) OCI_TypeInfoClose);
-    OCI_ListFree(d_ora->ocilib_cn->tinfs);
+   OCI_ListForEach(&d_ora->ocilib, d_ora->ocilib_cn->tinfs, (boolean (*)(void *)) OCI_TypeInfoClose);
+   OCI_ListFree(&d_ora->ocilib, d_ora->ocilib_cn->tinfs);
 
    OCI_Cleanup2(&d_ora->ocilib);
 

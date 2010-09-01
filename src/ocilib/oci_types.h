@@ -292,7 +292,7 @@ typedef   signed long  sbig_ora;
 
 #define dvoid void
 
-typedef void (*lgenfp_t)( void );
+//typedef void (*lgenfp_t)( void );
 
 #ifndef ORASYS_TYPES
 # include <sys/types.h>

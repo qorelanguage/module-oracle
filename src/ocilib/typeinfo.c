@@ -410,7 +410,7 @@ boolean OCI_API OCI_TypeInfoFree2(OCI_Library *pOCILib, OCI_TypeInfo *typinf)
 
     if (typinf->refcount == 0)
     {
-        OCI_ListRemove(typinf->con->tinfs, typinf);
+       OCI_ListRemove(pOCILib, typinf->con->tinfs, typinf);
 
         res = OCI_TypeInfoClose(typinf);
 

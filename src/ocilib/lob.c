@@ -1041,7 +1041,7 @@ boolean OCI_API OCI_LobAppendLob(OCI_Library *pOCILib, OCI_Lob *lob, OCI_Lob *lo
 
     /*
        this might cause an ORA-24805 on Oracle 8.1.x only !
-       I couldnít find a bug ID on Metalink, but Oracle 9i had many fixes for
+       I couldn∆t find a bug ID on Metalink, but Oracle 9i had many fixes for
        lobs !
     */
 

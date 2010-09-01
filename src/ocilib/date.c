@@ -193,10 +193,12 @@ OCI_Date ** OCI_API OCI_DateArrayCreate(OCI_Connection *con, unsigned int nbelem
  * OCI_DateArrayFree
  * ------------------------------------------------------------------------ */
 
+ /*
 boolean OCI_API OCI_DateArrayFree(OCI_Date **dates)
 {
     return OCI_ArrayFreeFromHandles((void **) dates);
 }
+ */
 
 /* ------------------------------------------------------------------------ *
  * OCI_DateAddDays

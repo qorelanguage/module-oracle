@@ -12700,7 +12700,7 @@ OCI_EXPORT boolean OCI_ExecuteStmtFmt
  *
  * OCILIB uses hash tables internally for index/name columns mapping.
  *
- * OCILIB makes public its hash tableís implementation public for general purpose
+ * OCILIB makes public its hash table∆s implementation public for general purpose
  * uses.
  *
  * OCI_HashTable objects manage string keys / values that can be :

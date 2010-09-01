@@ -58,7 +58,7 @@ OCI_List * OCI_ListCreate2(OCI_Library *pOCILib, int type)
 
 	if (OCI_LIB_THREADED(pOCILib))
          {
-             list->mutex = OCI_MutexCreateInternal();
+             list->mutex = OCI_MutexCreateInternal(pOCILib);
 
             if (list->mutex == NULL)
                 OCI_FREE(list);
@@ -72,16 +72,16 @@ OCI_List * OCI_ListCreate2(OCI_Library *pOCILib, int type)
  * OCI_ListFree
  * ------------------------------------------------------------------------ */
 
-boolean OCI_ListFree(OCI_List *list)
+boolean OCI_ListFree(OCI_Library *pOCILib, OCI_List *list)
 {
     boolean res = TRUE;
 
     OCI_CHECK(list == NULL, FALSE);
 
-    OCI_ListClear(list);
+    OCI_ListClear(pOCILib, list);
 
     if (list->mutex != NULL)
-        res = OCI_MutexFree(list->mutex);
+       res = OCI_MutexFree(pOCILib, list->mutex);
 
     OCI_FREE(list);
     
@@ -130,7 +130,7 @@ OCI_Item * OCI_ListAppend(OCI_Library *pOCILib, OCI_List *list, int size)
     OCI_CHECK(item == NULL, FALSE);
 
     if (list->mutex != NULL)
-        OCI_MutexAcquire(list->mutex);
+       OCI_MutexAcquire(pOCILib, list->mutex);
 
     temp = list->head;
 
@@ -147,7 +147,7 @@ OCI_Item * OCI_ListAppend(OCI_Library *pOCILib, OCI_List *list, int size)
     list->count++;
 
     if (list->mutex != NULL)
-        OCI_MutexRelease(list->mutex);
+       OCI_MutexRelease(pOCILib, list->mutex);
 
     return item;
 }
@@ -156,7 +156,7 @@ OCI_Item * OCI_ListAppend(OCI_Library *pOCILib, OCI_List *list, int size)
  * OCI_ListClear
  * ------------------------------------------------------------------------ */
 
-boolean OCI_ListClear(OCI_List *list)
+boolean OCI_ListClear(OCI_Library *pOCILib, OCI_List *list)
 {
     OCI_Item *item = NULL;
     OCI_Item *temp = NULL;
@@ -164,7 +164,7 @@ boolean OCI_ListClear(OCI_List *list)
     OCI_CHECK(list == NULL, FALSE);
 
     if (list->mutex != NULL)
-        OCI_MutexAcquire(list->mutex);
+       OCI_MutexAcquire(pOCILib, list->mutex);
 
     /* walk along the list to free item's buffer */
 
@@ -185,7 +185,7 @@ boolean OCI_ListClear(OCI_List *list)
     list->count = 0;
 
     if (list->mutex != NULL)
-        OCI_MutexRelease(list->mutex);
+       OCI_MutexRelease(pOCILib, list->mutex);
 
     return TRUE;
 }
@@ -194,14 +194,14 @@ boolean OCI_ListClear(OCI_List *list)
  * OCI_ListForEach
  * ------------------------------------------------------------------------ */
 
-boolean OCI_ListForEach(OCI_List *list, boolean (*proc)(void *))
+boolean OCI_ListForEach(OCI_Library *pOCILib, OCI_List *list, boolean (*proc)(void *))
 {
     OCI_Item *item = NULL;
 
     OCI_CHECK(list == NULL, FALSE);
 
     if (list->mutex != NULL)
-        OCI_MutexAcquire(list->mutex);
+       OCI_MutexAcquire(pOCILib, list->mutex);
 
     item = list->head;
 
@@ -214,7 +214,7 @@ boolean OCI_ListForEach(OCI_List *list, boolean (*proc)(void *))
     }
 
     if (list->mutex != NULL)
-        OCI_MutexRelease(list->mutex);
+       OCI_MutexRelease(pOCILib, list->mutex);
 
     return TRUE;
 }
@@ -223,7 +223,7 @@ boolean OCI_ListForEach(OCI_List *list, boolean (*proc)(void *))
  * OCI_ListRemove
  * ------------------------------------------------------------------------ */
 
-boolean OCI_ListRemove(OCI_List *list, void *data)
+boolean OCI_ListRemove(OCI_Library *pOCILib, OCI_List *list, void *data)
 {
     OCI_Item *item = NULL;
     OCI_Item *temp = NULL;
@@ -232,7 +232,7 @@ boolean OCI_ListRemove(OCI_List *list, void *data)
     OCI_CHECK(data == NULL, FALSE);
 
     if (list->mutex != NULL)
-        OCI_MutexAcquire(list->mutex);
+       OCI_MutexAcquire(pOCILib, list->mutex);
 
     item = list->head;
 
@@ -259,7 +259,7 @@ boolean OCI_ListRemove(OCI_List *list, void *data)
     list->count--;
 
     if (list->mutex != NULL)
-        OCI_MutexRelease(list->mutex);
+       OCI_MutexRelease(pOCILib, list->mutex);
 
     return TRUE;
 }
