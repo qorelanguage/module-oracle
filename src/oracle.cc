@@ -87,7 +87,7 @@ DBIDriver *DBID_ORACLE = NULL;
 int ora_checkerr(OCIError *errhp, sword status, const char *query_name, Datasource *ds, ExceptionSink *xsink) {
    sb4 errcode = 0;
 
-   //printd(5, "ora_checkerr(%p, %d, %s, isEvent=%d)\n", errhp, status, query_name ? query_name : "none", xsink->isEvent());
+   //printd(5, "ora_checkerr(%p, %d, %s, isEvent=%d)\n", errhp, status, query_name ? query_name : "none", *xsink);
    switch (status) {
       case OCI_SUCCESS:
 	 return 0;
@@ -189,24 +189,24 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *n_ds, const char *str, Excep
       ora_checkerr(d_ora->errhp, 
                    OCIAttrGet(parmp, OCI_DTYPE_PARAM, &dtype, 0, OCI_ATTR_DATA_TYPE, d_ora->errhp), 
 		   str, ds, xsink);
-      if (xsink->isEvent()) return;
+      if (*xsink) return;
 
       // get column name
       ora_checkerr(d_ora->errhp, 
 		   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_name, (ub4 *)&col_name_len, OCI_ATTR_NAME, d_ora->errhp), 
 		   str, ds, xsink);
-      if (xsink->isEvent()) return;
+      if (*xsink) return;
 
       ub2 col_char_len;
       ora_checkerr(d_ora->errhp, 
 		   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_char_len, 0, OCI_ATTR_CHAR_SIZE, d_ora->errhp), 
 		   str, ds, xsink);
-      if (xsink->isEvent()) return;
+      if (*xsink) return;
 
       ora_checkerr(d_ora->errhp, 
 		   OCIAttrGet(parmp, OCI_DTYPE_PARAM, &col_max_size, 0, OCI_ATTR_DATA_SIZE, d_ora->errhp), 
 		   str, ds, xsink);
-      if (xsink->isEvent()) return;
+      if (*xsink) return;
 
 //       printd(5, "OraColumns::OraColumns() column %s: type=%d char_len=%d size=%d (SQLT_STR=%d)\n", col_name, dtype, col_char_len, col_max_size, SQLT_STR);
 //       printd(0, "OraColumns::OraColumns() column %s: type=%d char_len=%d size=%d (SQLT_NTY=%d)\n", col_name, dtype, col_char_len, col_max_size, SQLT_NTY);
@@ -217,12 +217,12 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *n_ds, const char *str, Excep
           ora_checkerr(d_ora->errhp, 
                        OCIAttrGet(parmp, OCI_DTYPE_PARAM, &sname, 0, OCI_ATTR_SCHEMA_NAME, d_ora->errhp), 
                        str, ds, xsink);
-          if (xsink->isEvent()) return;
+          if (*xsink) return;
 
           ora_checkerr(d_ora->errhp, 
                        OCIAttrGet(parmp, OCI_DTYPE_PARAM, &tname, 0, OCI_ATTR_TYPE_NAME, d_ora->errhp), 
                        str, ds, xsink);
-          if (xsink->isEvent()) return;
+          if (*xsink) return;
 
 //           printd(0, "OraColumns::OraColumns() SQLT_NTY type=%s.%s\n", sname, tname);
           QoreString s;
@@ -249,85 +249,98 @@ OraColumns::OraColumns(OCIStmt *stmthp, Datasource *n_ds, const char *str, Excep
    }
 }
 
+class ColumnHelper {
+protected:
+   OraColumns *col;
+   ExceptionSink *xsink;
+
+public:
+   DLLLOCAL ColumnHelper(OCIStmt *stmthp, Datasource *ds, const char *str, ExceptionSink *n_xsink) : col(new OraColumns(stmthp, ds, str, n_xsink)), xsink(n_xsink) {
+   }
+
+   DLLLOCAL ~ColumnHelper() {
+      col->del(xsink);
+      delete col;
+   }
+
+   DLLLOCAL OraColumns *operator*() { return col; }
+   DLLLOCAL OraColumns *operator->() { return col; }
+};
+
 // returns a list of hashes for a "horizontal" fetch
 static QoreListNode *ora_fetch_horizontal(OCIStmt *stmthp, Datasource *ds, ExceptionSink *xsink) {
-   QoreListNode *l = NULL;
-   // retrieve results from statement and return hash
+   // setup column structure for output columns
+   ColumnHelper columns(stmthp, ds, "ora_fetch_horizontal():params", xsink);
+   if (*xsink)
+      return 0;
+
+   ReferenceHolder<QoreListNode> l(new QoreListNode, xsink);
 
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
    
-   // setup column structure for output columns
-   OraColumns columns(stmthp, ds, "ora_fetch_horizontal() (get params)", xsink);
+   // setup temporary row to accept values
+   columns->define(stmthp, "ora_fetch_horizontal() (define)");
 
-   if (!xsink->isEvent()) {
-      // allocate result hash for result value
-      l = new QoreListNode();
+   // now finally fetch the data
+   while (!*xsink) {
+      int status;
 
-      // setup temporary row to accept values
-      columns.define(stmthp, "ora_fetch_horizontal() (define)");
+      //printd(5, "ora_fetch_horizontal(): l=%p, %d column(s) row %d\n", l, columns->size(), l->size());
 
-      // now finally fetch the data
-      while (!xsink->isEvent()) {
-	 int status;
-
-	 //printd(5, "ora_fetch_horizontal(): l=%p, %d column(s) row %d\n", l, columns.size(), l->size());
-
-	 if ((status = OCIStmtFetch(stmthp, d_ora->errhp, 1, OCI_FETCH_NEXT, OCI_DEFAULT))) {
-	    if (status == OCI_NO_DATA)
+      if ((status = OCIStmtFetch(stmthp, d_ora->errhp, 1, OCI_FETCH_NEXT, OCI_DEFAULT))) {
+	 if (status == OCI_NO_DATA)
+	    break;
+	 else {
+	    ora_checkerr(d_ora->errhp, status, "ora_fetch_horizontal() (fetch)", ds, xsink);
+	    if (*xsink)
 	       break;
-	    else {
-	       ora_checkerr(d_ora->errhp, status, "ora_fetch_horizontal() (fetch)", ds, xsink);
-	       if (xsink->isEvent())
-		  break;
-	    }
 	 }
-
-	 // set up hash for row
-	 QoreHashNode *h = new QoreHashNode();
-
-	 // copy data or perform per-value processing if needed
-	 OraColumn *w = columns.getHead();
-	 while (w) {
-	    // assign value to hash
-	    h->setKeyValue(w->name, w->getValue(ds, true, xsink), xsink);
-	    if (xsink->isEvent())
-	       break;
-	    w = w->next;
-	 }
-	 // add row to list
-	 l->push(h);
       }
-//       printd(2, "ora_fetch_horizontal(): %d column(s), %d row(s) retrieved as output\n", columns.size(), l->size());
+
+      // set up hash for row
+      ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
+
+      // copy data or perform per-value processing if needed
+      OraColumn *w = columns->getHead();
+      while (w) {
+	 // assign value to hash
+	 h->setKeyValue(w->name, w->getValue(ds, true, xsink), xsink);
+	 if (*xsink)
+	    break;
+	 w = w->next;
+      }
+      // add row to list
+      l->push(h.release());
    }
-   return l;
+   //       printd(2, "ora_fetch_horizontal(): %d column(s), %d row(s) retrieved as output\n", columns->size(), l->size());
+   return *xsink ? 0 : l.release();
 }
 
 static QoreHashNode *ora_fetch(OCIStmt *stmthp, Datasource *ds, ExceptionSink *xsink) {
    // retrieve results from statement and return hash
-   
-   // setup column structure for output columns
-   OraColumns columns(stmthp, ds, "ora_fetch() get_attributes", xsink);
+
+   ColumnHelper columns(stmthp, ds, "ora_fetch():params", xsink);
    if (*xsink)
       return 0;
-
+   
    // allocate result hash for result value
-   QoreHashNode *h = new QoreHashNode();
+   ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
       
    // create hash elements for each column, assign empty list
-   OraColumn *w = columns.getHead();
+   OraColumn *w = columns->getHead();
    while (w) {
 //       printd(5, "ora_fetch() allocating list for '%s' column\n", w->name);
-      h->setKeyValue(w->name, new QoreListNode(), xsink);
+      h->setKeyValue(w->name, new QoreListNode, xsink);
       w = w->next;
    }
    
    int num_rows = 0;
    
    // setup temporary row to accept values
-   columns.define(stmthp, "ora_fetch() define");
+   columns->define(stmthp, "ora_fetch() define");
    
    // now finally fetch the data
-   while (!xsink->isEvent()) {
+   while (!*xsink) {
       int status;
       OracleData *d_ora = (OracleData *)ds->getPrivateData();
       
@@ -336,35 +349,28 @@ static QoreHashNode *ora_fetch(OCIStmt *stmthp, Datasource *ds, ExceptionSink *x
 	    break;
 	 else {
 	    ora_checkerr(d_ora->errhp, status, "ora_fetch() OCIStmtFetch()", ds, xsink);
-	    if (xsink->isEvent())
+	    if (*xsink)
 	       break;
 	 }
       }
       
       // copy data or perform per-value processing if needed
-      OraColumn *w = columns.getHead();
+      OraColumn *w = columns->getHead();
       int i = 0;
       while (w) {
 	 // get pointer to value of target node
 	 QoreListNode *l = reinterpret_cast<QoreListNode *>(h->getKeyValue(w->name));
-	 AbstractQoreNode **v = l->get_entry_ptr(num_rows);
-	 
-	 // dereference node if already present
-	 if (*v) {
-// 	    printd(1, "ora_fetch(): dereferencing result value (col=%s)\n", w->name);
-	    (*v)->deref(xsink);
-	 }
-	 (*v) = w->getValue(ds, false, xsink);
-	 if (xsink->isEvent())
+	 l->push(w->getValue(ds, false, xsink));
+	 if (*xsink)
 	    break;
 	 w = w->next;
 	 i++;
       }
       num_rows++;
    }
-//    printd(2, "ora_fetch(): %d column(s), %d row(s) retrieved as output\n", columns.size(), num_rows);
+//    printd(2, "ora_fetch(): %d column(s), %d row(s) retrieved as output\n", columns->size(), num_rows);
 
-   return h;
+   return *xsink ? 0 : h.release();
 }
 
 void OraColumns::define(OCIStmt *stmthp, const char *str) {
@@ -480,7 +486,7 @@ void OraColumns::define(OCIStmt *stmthp, const char *str) {
 	    w->val.ptr = 0;
 	    ora_checkerr(d_ora->errhp, 
 			 OCIDescriptorAlloc(d_ora->envhp, &w->val.ptr, OCI_DTYPE_LOB, 0, NULL), str, ds, xsink);
-	    if (xsink->isEvent()) return;
+	    if (*xsink) return;
 	    //printd(5, "OraColumns::define() got LOB locator handle %p\n", w->val.ptr);
 	    ora_checkerr(d_ora->errhp,
 			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.ptr, 0, w->dtype, &w->ind, 0, 0, OCI_DEFAULT), 
@@ -492,7 +498,7 @@ void OraColumns::define(OCIStmt *stmthp, const char *str) {
 	    // allocate statement handle for result list
 	    ora_checkerr(d_ora->errhp, 
 			 OCIHandleAlloc(d_ora->envhp, &w->val.ptr, OCI_HTYPE_STMT, 0, 0), str, ds, xsink);
-	    if (xsink->isEvent()) return;
+	    if (*xsink) return;
 	    ora_checkerr(d_ora->errhp, 
 			 OCIDefineByPos(stmthp, &w->defp, d_ora->errhp, i + 1, &w->val.ptr, 0, w->dtype, &w->ind, 0, 0, OCI_DEFAULT), 
 			 str, ds, xsink);
@@ -855,7 +861,7 @@ int OraBindGroup::bind(const QoreListNode *args, ExceptionSink *xsink) {
       // get bind argument
       const AbstractQoreNode *v = args ? args->retrieve_entry(i) : 0;
 
-      if (w->set(v, xsink))
+      if (w->set(ds, v, xsink))
 	 return -1;
    }
 
@@ -877,7 +883,7 @@ int OraBindGroup::bindPlaceholders(const QoreListNode *args, ExceptionSink *xsin
       // get bind argument
       const AbstractQoreNode *v = args ? args->retrieve_entry(arg_offset++) : 0;
 
-      if (w->set(v, xsink))
+      if (w->set(ds, v, xsink))
 	 return -1;
    }
 
@@ -899,8 +905,8 @@ int OraBindGroup::bindValues(const QoreListNode *args, ExceptionSink *xsink) {
       // get bind argument
      const AbstractQoreNode *v = args ? args->retrieve_entry(arg_offset++) : 0;
 
-      if (w->set(v, xsink))
-	 return -1;
+     if (w->set(ds, v, xsink))
+	return -1;
    }
 
    if (bindOracle(xsink))
@@ -970,11 +976,11 @@ void OraBindGroup::parseQuery(const QoreListNode *args, ExceptionSink *xsink) {
 	    tstr.concat(*(p++));
 
 	 // add default placeholder
-	 OraBindNode *n = add(tstr.giveBuffer(), -1, "", 0);
+	 OraBindNode *n = add(tstr.giveBuffer(), -1);
 
 	 const AbstractQoreNode *v = args ? args->retrieve_entry(index++) : NULL;
 
-	 if (n->set(v, xsink))
+	 if (n->set(ds, v, xsink))
 	    break;
       }
       else if (((*p) == '\'') || ((*p) == '\"')) {
@@ -1365,7 +1371,7 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
 
       ora_checkerr(d_ora->errhp, OCIDescriptorAlloc(d_ora->envhp, &buf.ptr, OCI_DTYPE_LOB, 0, NULL), "OraBindNode::bindPlaceholder() allocate blob descriptor", ds, xsink);
 
-      if (xsink->isEvent()) return;
+      if (*xsink) return;
 //       printd(5, "bindPalceholder() got LOB locator handle %p\n", buf.ptr);
       ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.ptr, 0, SQLT_BLOB, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() blob", ds, xsink);
    }
@@ -1393,7 +1399,7 @@ void OraBindNode::bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, Exce
       // allocate statement handle for result list
       ora_checkerr(d_ora->errhp, OCIHandleAlloc(d_ora->envhp, (dvoid **)&buf.ptr, OCI_HTYPE_STMT, 0, 0), "OraBindNode::bindPlaceHolder() allocate statement handle", ds, xsink);
 
-      if (!xsink->isEvent())
+      if (!*xsink)
 	 ora_checkerr(d_ora->errhp, OCIBindByPos(stmthp, &bndp, d_ora->errhp, pos, &buf.ptr, 0, SQLT_RSET, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() result set", ds, xsink);
       else
 	 buf.ptr = NULL;
@@ -1553,22 +1559,21 @@ AbstractQoreNode *OraBindNode::getValue(Datasource *ds, bool horizontal, Excepti
    return 0;
 }
 
-QoreHashNode *OraBindGroup::getOutputHash(ExceptionSink *xsink) {
-   QoreHashNode *h = new QoreHashNode;
+QoreHashNode *OraBindGroup::getOutputHash(bool rows, ExceptionSink *xsink) {
+   ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
 
    for (node_list_t::iterator i = node_list.begin(), e = node_list.end(); i != e; ++i) {
       if ((*i)->bindtype == BN_PLACEHOLDER)
-	 h->setKeyValue((*i)->data.ph.name, (*i)->getValue(ds, false, xsink), xsink);
+	 h->setKeyValue((*i)->data.ph.name, (*i)->getValue(ds, rows, xsink), xsink);
    }
-   return h;
+
+   return *xsink ? 0 : h.release();
 }
 
 int OraBindGroup::oci_exec(const char *who, ub4 iters, ExceptionSink *xsink) {
    OracleData *d_ora = (OracleData *)ds->getPrivateData();    
-// assert(0);
    int status = OCIStmtExecute(d_ora->svchp, stmthp, d_ora->errhp, iters, 0, 0, 0, OCI_DEFAULT);
-// assert(0);
-//    printd(0, "oci_exec() stmthp=%p status=%d (OCI_ERROR=%d)\n", stmthp, status, OCI_ERROR);
+   //printd(0, "oci_exec() stmthp=%p status=%d (OCI_ERROR=%d)\n", stmthp, status, OCI_ERROR);
    if (status == OCI_ERROR) {
       // see if server is connected
       ub4 server_status = 0;
@@ -1578,12 +1583,12 @@ int OraBindGroup::oci_exec(const char *who, ub4 iters, ExceptionSink *xsink) {
       if (ora_checkerr(d_ora->errhp, OCIAttrGet(d_ora->svchp, OCI_HTYPE_SVCCTX, &svrh, 0, OCI_ATTR_SERVER, d_ora->errhp), who, ds, xsink))
 	 return -1;
 
-//       printd(0, "oci_exec() got server handle: %p\n", svrh);
+      //printd(0, "oci_exec() got server handle: %p\n", svrh);
 
       if (ora_checkerr(d_ora->errhp, OCIAttrGet(svrh, OCI_HTYPE_SERVER, (dvoid *)&server_status, 0, OCI_ATTR_SERVER_STATUS, d_ora->errhp), who, ds, xsink))
 	 return -1;
 
-//       printd(0, "oci_exec() server_status=%d (OCI_SERVER_NOT_CONNECTED=%d)\n", server_status, OCI_SERVER_NOT_CONNECTED);
+      //printd(0, "oci_exec() server_status=%d (OCI_SERVER_NOT_CONNECTED=%d)\n", server_status, OCI_SERVER_NOT_CONNECTED);
 
       if (server_status == OCI_SERVER_NOT_CONNECTED) {
 	 // check if a transaction was in progress
@@ -1596,20 +1601,20 @@ int OraBindGroup::oci_exec(const char *who, ub4 iters, ExceptionSink *xsink) {
 	 // otherwise try to reconnect
 	 OCILogoff(d_ora->svchp, d_ora->errhp);
 
-// 	 printd(0, "oci_exec() about to execute OCILogon() for reconnect\n");
+	 //printd(0, "oci_exec() about to execute OCILogon() for reconnect\n");
 	 if (ora_checkerr(d_ora->errhp, OCILogon(d_ora->envhp, d_ora->errhp, &d_ora->svchp, (text *)ds->getUsername(), strlen(ds->getUsername()), (text *)ds->getPassword(), strlen(ds->getPassword()), (text *)ds->getDBName(), strlen(ds->getDBName())), who, ds, xsink)) {
 	    // close datasource and remove private data
 	    ds->close();
 	    return -1;
 	 }
 
-// 	 printd(0, "oci_exec() returned from OCILogon() status=%d\n", status);
+	 //printd(0, "oci_exec() returned from OCILogon() status=%d\n", status);
 	 status = OCIStmtExecute(d_ora->svchp, stmthp, d_ora->errhp, iters, 0, 0, 0, OCI_DEFAULT);
 	 if (status && ora_checkerr(d_ora->errhp, status, who, ds, xsink))
 	    return -1;
       }
       else {
-//          printd(0, "oci_exec() error, but it's conected status=%d who=%s\n", status, who);
+	 //printd(0, "oci_exec() error, but it's conected status=%d who=%s\n", status, who);
 	 ora_checkerr(d_ora->errhp, status, who, ds, xsink);
 	 return -1;
       }
@@ -1620,39 +1625,39 @@ int OraBindGroup::oci_exec(const char *who, ub4 iters, ExceptionSink *xsink) {
    return 0;
 }
 
-AbstractQoreNode *OraBindGroup::exec(ExceptionSink *xsink) {
-   if (oci_exec("OraBindGroup::exec", 1, xsink))
+AbstractQoreNode *OraBindGroup::execWithPrologue(bool rows, ExceptionSink *xsink) {
+   if (exec(xsink))
       return 0;
 
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
-   int status;
-   /*
-   status = OCIStmtExecute(d_ora->svchp, stmthp, d_ora->errhp, 1, 0, NULL, NULL, OCI_DEFAULT);
-   if (status)
-      ora_checkerr(d_ora->errhp, status, "OraBindGroup::exec()", ds, xsink);
-   */
+   ReferenceHolder<AbstractQoreNode> rv(xsink);
 
-   AbstractQoreNode *rv;
-   if (!*xsink) {
-      // if there are output variables, then fix values if necessary and return
-      if (hasOutput)
-	 rv = getOutputHash(xsink);
-      else { // get row count
-	 int rc = 0;
-	 ora_checkerr(d_ora->errhp, OCIAttrGet(stmthp, OCI_HTYPE_STMT, &rc, 0, OCI_ATTR_ROW_COUNT, d_ora->errhp), "OraBindGroup::exec():attr", ds, xsink);
-	 rv = new QoreBigIntNode(rc);
-      }
-      
-      // commit transaction if autocommit set for datasource
-      if (ds->getAutoCommit())
-	 if ((status = OCITransCommit(d_ora->svchp, d_ora->errhp, (ub4) 0)))
-	    ora_checkerr(d_ora->errhp, status, "OraBindGroup::commit()", ds, xsink);
-   }   
-   else
-      rv = NULL;
+   // if there are output variables, then fix values if necessary and return
+   if (hasOutput)
+      rv = getOutputHash(rows, xsink);
+   else {
+      // get row count
+      int rc = affectedRows(xsink);
+      rv = *xsink ? 0 : new QoreBigIntNode(rc);
+   }
+   
+   // commit transaction if autocommit set for datasource
+   if (ds->getAutoCommit()) {
+      int status;
+      if ((status = OCITransCommit(d_ora->svchp, d_ora->errhp, (ub4) 0)))
+	 ora_checkerr(d_ora->errhp, status, "OraBindGroup::exec():commit", ds, xsink);
+   }
 
-   return rv;
+   return *xsink ? 0 : rv.release();
+}
+
+int OraBindGroup::affectedRows(ExceptionSink *xsink) {
+   OracleData *d_ora = (OracleData *)ds->getPrivateData();
+
+   int rc = 0;
+   ora_checkerr(d_ora->errhp, OCIAttrGet(stmthp, OCI_HTYPE_STMT, &rc, 0, OCI_ATTR_ROW_COUNT, d_ora->errhp), "OraBindGroup::affectedRows()", ds, xsink);
+   return rc;
 }
 
 AbstractQoreNode *OraBindGroup::select(ExceptionSink *xsink) {
@@ -1662,18 +1667,13 @@ AbstractQoreNode *OraBindGroup::select(ExceptionSink *xsink) {
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
    int status;
-   /*
-   status = OCIStmtExecute(d_ora->svchp, stmthp, d_ora->errhp, 0, 0, NULL, NULL, OCI_DEFAULT);
-   if (status)
-      ora_checkerr(d_ora->errhp, status, "OraBindGroup::select()", ds, xsink);
-   */
 
    QoreHashNode *h = 0;
-   if (!xsink->isEvent())
+   if (!*xsink)
       h = ora_fetch(stmthp, ds, xsink);
 
    // commit transaction if autocommit set for datasource
-   if (!xsink->isEvent() && ds->getAutoCommit())
+   if (!*xsink && ds->getAutoCommit())
       if ((status = OCITransCommit(d_ora->svchp, d_ora->errhp, (ub4) 0)))
 	 ora_checkerr(d_ora->errhp, status, "OraBindGroup():commit", ds, xsink);
 
@@ -1684,26 +1684,31 @@ AbstractQoreNode *OraBindGroup::selectRows(ExceptionSink *xsink) {
    if (oci_exec("OraBindGroup::selectRows", 0, xsink))
       return 0;
 
-   OracleData *d_ora = (OracleData *)ds->getPrivateData();
-
-   int status;
-   /*
-   status = OCIStmtExecute(d_ora->svchp, stmthp, d_ora->errhp, 0, 0, NULL, NULL, OCI_DEFAULT);
-   if (status)
-      ora_checkerr(d_ora->errhp, status, "OraBindGroup::select()", ds, xsink);
-   */
-
-   QoreListNode *l = NULL;
-   if (!xsink->isEvent())
-      l = ora_fetch_horizontal(stmthp, ds, xsink);
+   ReferenceHolder<QoreListNode> l(ora_fetch_horizontal(stmthp, ds, xsink), xsink);
+   if (*xsink)
+      return 0;
 
    // commit transaction if autocommit set for datasource
-   if (!xsink->isEvent() && ds->getAutoCommit())
+   if (ds->getAutoCommit()) {
+      OracleData *d_ora = (OracleData *)ds->getPrivateData();
+      int status;
       if ((status = OCITransCommit(d_ora->svchp, d_ora->errhp, (ub4) 0)))
 	 ora_checkerr(d_ora->errhp, status, "OraBindGroup():commit", ds, xsink);
 
-   return l;
+      if (*xsink)
+	 return 0;
+   }
+
+   return l.release();
 }
+
+/*
+bool OraBindGroup::next(ExceptionSink *xsink) {
+}
+
+QoreHashNode *OraBindGroup::fetchRow(ExceptionSink *xsink) {
+}
+*/
 
 static AbstractQoreNode *oracle_exec(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink) {
    OraBindGroup bg(ds);
@@ -1712,7 +1717,7 @@ static AbstractQoreNode *oracle_exec(Datasource *ds, const QoreString *qstr, con
    if (bg.prepare(qstr, args, true, xsink))
       return 0;
 
-   return bg.exec(xsink);
+   return bg.execWithPrologue(false, xsink);
 }
 
 #ifdef _QORE_HAS_DBI_EXECRAW
@@ -1723,7 +1728,7 @@ static AbstractQoreNode *oracle_execRaw(Datasource *ds, const QoreString *qstr, 
    if (bg.prepare(qstr, 0, false, xsink))
       return 0;
 
-   return bg.exec(xsink);
+   return bg.execWithPrologue(false, xsink);
 }
 #endif
 
@@ -1868,7 +1873,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
    ora_checkerr(d_ora->errhp, 
 		OCILogon(d_ora->envhp, d_ora->errhp, &d_ora->svchp, (text *)ds->getUsername(), strlen(ds->getUsername()), (text *)ds->getPassword(), strlen(ds->getPassword()), (text *)db.getBuffer(), db.strlen()), 
 		"<open>", ds, xsink);
-   if (xsink->isEvent()) {
+   if (*xsink) {
       OCIHandleFree(d_ora->errhp, OCI_HTYPE_ERROR);
       OCIHandleFree(d_ora->envhp, OCI_HTYPE_ENV);
       return -1;
