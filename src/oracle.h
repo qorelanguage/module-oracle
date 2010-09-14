@@ -37,6 +37,9 @@
 
 #include "ocilib_types.h"
 
+#include "OracleData.h"
+#include "QoreOracleStatement.h"
+
 #define ORACLE_OBJECT "OracleObject"
 #define ORACLE_COLLECTION "OracleCollection"
 
@@ -57,36 +60,12 @@
 // should be 32767
 #define CLOB_THRESHOLD 30000
 
-int ora_checkerr(OCIError *errhp, sword status, const char *query_name, Datasource *ds, ExceptionSink *xsink);
-
 DateTimeNode *get_oracle_timestamp(bool get_tz, Datasource *ds, OCIDateTime *odt, ExceptionSink *xsink);
-
-
-class OracleData {
-public:
-   OCIEnv *envhp;
-   OCIError *errhp;
-   OCISvcCtx *svchp;
-   ub2 charsetid;
-   // "fake" connection for OCILIB stuff
-   OCI_Connection *ocilib_cn;
-
-   OCI_Library ocilib;
-
-   DLLLOCAL OracleData() : envhp(0), errhp(0), svchp(0), ocilib_cn(0) {
-   }
-
-   DLLLOCAL ~OracleData() {
-      // c++ will ignore "delete NULL;"
-      delete ocilib_cn;
-   }
-};
 
 //! Support defines to enumerate SQLT_NTY subtype for ORACLE_OBJECT and ORACLE_COLLECTION
 #define SQLT_NTY_NONE 0
 #define SQLT_NTY_OBJECT 1
 #define SQLT_NTY_COLLECTION 2
-
 
 // FIXME: do not hardcode byte widths - could be incorrect on some platforms
 union ora_value {
@@ -100,174 +79,129 @@ union ora_value {
    //! named type: object
    OCI_Object * oraObj;
    //! named type: collection
-   OCI_Coll * oraColl;
+   OCI_Coll *oraColl;
+
+   DLLLOCAL void *takePtr() {
+      void *rv = ptr;
+      ptr = 0;
+      return rv;
+   }
 };
 
-class OraColumn {
+struct OraValue {
+   QoreOracleStatement &stmt;
+   union ora_value buf;  // union containing data for value
+   ub2 dtype;            // Oracle datatype for value
+   int subdtype;         // distinguish the SQLT_NTY subtype
+   sb2 ind;              // indicator value
+
+   DLLLOCAL OraValue(QoreOracleStatement &n_stmt, ub2 n_dtype = 0, int n_subdtype = SQLT_NTY_NONE) : stmt(n_stmt), dtype(n_dtype), subdtype(n_subdtype) {
+   }
+
+   DLLLOCAL void del(ExceptionSink *xsink);
+
+   DLLLOCAL void freeObject() {
+      assert(dtype == SQLT_NTY);
+      assert(subdtype == SQLT_NTY_OBJECT || subdtype == SQLT_NTY_COLLECTION);
+
+      OracleData *d_ora = stmt.getData();
+
+      // printd(0, "deleting object (OraColumn) buf.oraObj: %p, buf.oraColl: %p\n", buf.oraObj, buf.oraColl);
+      // objects are allocated in bind-methods and it has to be freed in any case
+      if (subdtype == SQLT_NTY_OBJECT)
+         OCI_ObjectFree2(&d_ora->ocilib, buf.oraObj);
+      else
+         OCI_CollFree2(&d_ora->ocilib, buf.oraColl);
+   }
+
+   DLLLOCAL AbstractQoreNode *getValue(ExceptionSink *xsink, bool horizontal, bool destructive = false);
+};
+
+class OraColumn : public OraValue {
 public:
-   char *name;
+   QoreString name;
    int maxsize;
-   ub2 dtype;           // Oracle datatype for column
    OCIDefine *defp;     // define handle
-   sb2 ind;             // indicator value
    ub2 charlen;
-   //! distinguish the SQLT_NTY subtype
-   int subdtype;
    QoreString subdtypename;
 
-   union ora_value val;
-
-   OraColumn *next;
-
-   DLLLOCAL inline OraColumn(const char *n, int len, int ms, ub2 dt, ub2 n_charlen, int subdt=SQLT_NTY_NONE, QoreString subdttn="") {
-      name = (char *)malloc(sizeof(char) * (len + 1));
-      strncpy(name, n, len);
-      name[len] = '\0';
-      strtolower(name);
-      maxsize = ms;
-      dtype = dt;
-      charlen = n_charlen;
-      subdtype = subdt;
-      subdtypename = subdttn;
-
-      defp = NULL;
-
-      next = NULL;
+   DLLLOCAL OraColumn(QoreOracleStatement &stmt, const char *n, int len, int ms, ub2 dt, ub2 n_charlen, int subdt = SQLT_NTY_NONE, QoreString subdttn = "")
+      : OraValue(stmt, dt, subdt), name(n, len, stmt.getEncoding()), maxsize(ms), defp(0), charlen(n_charlen), subdtypename(subdttn) {
+      name.tolwr();
    }
 
-   DLLLOCAL void del(Datasource *ds, ExceptionSink *xsink) {
-//        printf("DLLLOCAL void del(Datasource *ds, ExceptionSink *xsink)\n");
-      free(name);
-      if (defp) {
-// 	 printd(0, "freeing type %d\n", dtype);
-	 switch (dtype) {
-	    case SQLT_INT:
-	    case SQLT_UIN:
-	    case SQLT_FLT:
-#ifdef SQLT_BFLOAT
-	    case SQLT_BFLOAT:
-#endif
-#ifdef SQLT_BDOUBLE
-	    case SQLT_BDOUBLE:
-#endif
-#ifdef SQLT_IBFLOAT
-	    case SQLT_IBFLOAT:
-#endif
-#ifdef SQLT_IBDOUBLE
-	    case SQLT_IBDOUBLE:
-#endif
-	    case SQLT_DAT:
-	       break;
-
-	    case SQLT_CLOB:
-	    case SQLT_BLOB:
-	       if (val.ptr)
-		  OCIDescriptorFree(val.ptr, OCI_DTYPE_LOB);
-	       break;
-
-	    case SQLT_RSET:
-	       if (val.ptr)
-		  OCIHandleFree(val.ptr, OCI_HTYPE_STMT);
-	       break;
-
-	    case SQLT_TIMESTAMP:
-	    case SQLT_TIMESTAMP_TZ:
-	    case SQLT_TIMESTAMP_LTZ:
-	    case SQLT_DATE:
-	       if (val.odt)
-		  OCIDescriptorFree(val.odt, OCI_DTYPE_TIMESTAMP);
-	       break;
-
-	    case SQLT_INTERVAL_YM:
-	       if (val.oi)
-		  OCIDescriptorFree(val.odt, OCI_DTYPE_INTERVAL_YM);
-	       break;
-
-	    case SQLT_INTERVAL_DS:
-	       if (val.oi)
-		  OCIDescriptorFree(val.odt, OCI_DTYPE_INTERVAL_DS);
-	       break;
-
-	    case SQLT_LVB: {
-	       OracleData *d_ora = (OracleData *)ds->getPrivateData();
-	       //printd(5, "freeing binary pointer for SQLT_LVB %p\n", val.ptr);
-	       ora_checkerr(d_ora->errhp, OCIRawResize(d_ora->envhp, d_ora->errhp, 0, (OCIRaw**)&val.ptr), "OraColumn::del() free binary buffer", ds, xsink);
-	       break;
-	    }
-	    
-            case SQLT_NTY: {
-	       OracleData *d_ora = (OracleData *)ds->getPrivateData();
-//                 printf("Deleting object (OraColumn) val.oraObj: %p, val.oraColl: %p\n", val.oraObj, val.oraColl);
-                // objects are allocated in bind-methods and it has to be freed in any case
-                if (subdtype == SQLT_NTY_OBJECT)
-                    OCI_ObjectFree2(&d_ora->ocilib, val.oraObj);
-                else if (subdtype == SQLT_NTY_COLLECTION)
-                    OCI_CollFree2(&d_ora->ocilib, val.oraColl);
-                else
-                    xsink->raiseException("FREE-NTY-ERROR", "An attempt to free unknown NTY type");
-                break;
-	    }
-	    default:	  // for all columns where data must be allocated
-	       if (val.ptr)
-		  free(val.ptr);
-	       break;
-	 }
-	 OCIHandleFree(defp, OCI_HTYPE_DEFINE);
-      }	 
-   }
-
-   DLLLOCAL inline ~OraColumn() {
-   }
-   DLLLOCAL AbstractQoreNode *getValue(Datasource *ds, bool horizontal, ExceptionSink *xsink);
-};
-
-class OraBindGroup;
-
-class OraColumns {
-private:
-   int len;
-   OraColumn *head, *tail;
-   ExceptionSink *xsink;
-   OCIStmt *stmthp;
-   Datasource *ds;
-
-public:
-   DLLLOCAL OraColumns(OCIStmt *stmthp, Datasource *ds, const char *str, ExceptionSink *n_xsink);
-   DLLLOCAL inline ~OraColumns() {
-      assert(!head);
+   DLLLOCAL ~OraColumn() {
+      assert(!defp);
    }
 
    DLLLOCAL void del(ExceptionSink *xsink) {
-      OraColumn *w = head;
-      while (w) {
-	 head = w->next;
-	 w->del(ds, xsink);
-	 delete w;
-	 w = head;
+      // printf("DLLLOCAL void del(Datasource *ds, ExceptionSink *xsink)\n");
+      if (defp) {
+         OraValue::del(xsink);
+	 OCIHandleFree(defp, OCI_HTYPE_DEFINE);
+         defp = 0;
+      }	 
+   }
+
+   DLLLOCAL AbstractQoreNode *getValue(bool horizontal, ExceptionSink *xsink) {
+      return OraValue::getValue(xsink, horizontal, false);
+   }
+};
+
+typedef std::vector<OraColumn *> clist_t;
+
+class OraColumns {
+protected:
+   QoreOracleStatement &stmt;
+
+public:
+   clist_t clist;
+
+   DLLLOCAL OraColumns(QoreOracleStatement &n_stmt, const char *str, ExceptionSink *xsink);
+
+   DLLLOCAL ~OraColumns() {
+      assert(clist.empty());
+   }
+
+   DLLLOCAL void del(ExceptionSink *xsink) {
+      for (clist_t::iterator i = clist.begin(), e = clist.end(); i != e; ++i) {
+         (*i)->del(xsink);
+         delete (*i);
       }
+      clist.clear();
    }
 
-   DLLLOCAL inline void add(const char *name, int nlen, int maxsize, ub2 dtype, ub2 char_len, int subtype=SQLT_NTY_NONE, QoreString subdtn="") {
-      len++;
-      OraColumn *c = new OraColumn(name, nlen, maxsize, dtype, char_len, subtype, subdtn);
+   DLLLOCAL void add(const char *name, int nlen, int maxsize, ub2 dtype, ub2 char_len, int subtype=SQLT_NTY_NONE, QoreString subdtn = "") {
+      OraColumn *c = new OraColumn(stmt, name, nlen, maxsize, dtype, char_len, subtype, subdtn);
 
-      if (!tail)
-	 head = c;
-      else
-	 tail->next = c;
-      tail = c;
-
+      clist.push_back(c);
       // printd(5, "column: '%s'\n", c->name);
-//       printd(5, "OraColumns::add() %2d name='%s' (max %d) type=%d\n", size(), c->name, c->maxsize, dtype);
-   }
-   DLLLOCAL inline OraColumn *getHead() {
-      return head;
-   }
-   DLLLOCAL inline int size() {
-      return len;
+      //printd(0, "OraColumns::add() %2d name='%s' (max %d) type=%d\n", size(), c->name, c->maxsize, dtype);
    }
 
-   DLLLOCAL void define(OCIStmt *stmthp, const char *str);
+   DLLLOCAL unsigned size() const {
+      return clist.size();
+   }
+
+   DLLLOCAL void define(const char *str, ExceptionSink *xsink);
+};
+
+class ColumnHelper {
+protected:
+   OraColumns *col;
+   ExceptionSink *xsink;
+
+public:
+   DLLLOCAL ColumnHelper(QoreOracleStatement &stmt, const char *str, ExceptionSink *n_xsink) : col(new OraColumns(stmt, str, n_xsink)), xsink(n_xsink) {
+   }
+
+   DLLLOCAL ~ColumnHelper() {
+      col->del(xsink);
+      delete col;
+   }
+
+   DLLLOCAL OraColumns *operator*() { return col; }
+   DLLLOCAL OraColumns *operator->() { return col; }
 };
 
 union ora_bind {
@@ -281,93 +215,11 @@ union ora_bind {
    } v;
 };
 
-class OraBindNode {
+class OraBindNode : public OraValue {
 protected:
+   DLLLOCAL void resetPlaceholder(ExceptionSink *xsink, bool free_name = true);
 
-   DLLLOCAL void resetPlaceholder(Datasource *ds, ExceptionSink *xsink, bool free_name = true) {
-      if (!buftype) {
-	 assert(!data.ph.type);
-	 return;
-      }
-
-      if (free_name && data.ph.name) {
-	 free(data.ph.name);
-	 data.ph.name = 0;
-      }
-
-      if (data.ph.type) {
-	 free(data.ph.type);
-	 data.ph.type = 0;
-      }
-
-      // free buffer data if any
-      if ((buftype == SQLT_STR
-	   || buftype == SQLT_LBI
-	   || buftype == SQLT_VBI)
-	  && buf.ptr) {
-	 free(buf.ptr);	 
-      }
-      else if (buftype == SQLT_LVB) {
-	 OracleData *d_ora = (OracleData *)ds->getPrivateData();
-	 //printd(5, "freeing binary pointer for SQLT_LVB %p\n", buf.ptr);
-	 ora_checkerr(d_ora->errhp, OCIRawResize(d_ora->envhp, d_ora->errhp, 0, (OCIRaw**)&buf.ptr), "OraBindNode::del() free binary buffer", ds, xsink);
-      }
-      else if (buftype == SQLT_RSET && buf.ptr)
-	 OCIHandleFree((OCIStmt *)buf.ptr, OCI_HTYPE_STMT);
-      else if ((buftype == SQLT_BLOB || buftype == SQLT_CLOB) && buf.ptr) {
-	 //printd(5, "OraBindNode::del() freeing binary pointer for SQLT_*LOB %p\n", buf.ptr);
-	 OCIDescriptorFree(buf.ptr, OCI_DTYPE_LOB);
-      }
-      else if (buftype == SQLT_DATE && buf.odt)
-	 OCIDescriptorFree(buf.odt, OCI_DTYPE_TIMESTAMP);
-      else if (buftype == SQLT_NTY) {
-	 OracleData *d_ora = (OracleData *)ds->getPrivateData();
-
-	 //printf("Deleting object (OraBindNode BN_PLACEHOLDER) buf.oraObj: %p, buf.oraColl: %p\n", buf.oraObj, buf.oraColl);
-	 // objects are allocated in bind-methods - placeholder and it has to be freed in any case
-	 if (bufsubtype == SQLT_NTY_OBJECT)
-	    OCI_ObjectFree2(&d_ora->ocilib, buf.oraObj);
-	 else if (bufsubtype == SQLT_NTY_COLLECTION)
-	    OCI_CollFree2(&d_ora->ocilib, buf.oraColl);
-	 else
-	    xsink->raiseException("FREE-NTY-ERROR", "An attempt to free unknown NTY type (BN_PLACEHOLDER)");
-      }
-
-      buftype = 0;
-   }
-
-   DLLLOCAL void resetValue(Datasource *ds, ExceptionSink *xsink) {
-      if (!buftype) {
-	 assert(!data.v.tstr);
-	 return;
-      }
-
-      if (data.v.tstr)
-	 delete data.v.tstr;
-
-      if (strlob) {
-	 if (clob_allocated) {
-	    OracleData *d_ora = (OracleData *)ds->getPrivateData();
-	    //printd(5, "deallocating temporary clob\n");
-	    ora_checkerr(d_ora->errhp,
-			 OCILobFreeTemporary(d_ora->svchp, d_ora->errhp, strlob),
-			 "OraBindNode::del() free temporary CLOB", ds, xsink);
-	 }
-	 //printd(5, "freeing clob descriptor\n");
-	 OCIDescriptorFree(strlob, OCI_DTYPE_LOB);
-      }
-      else if (buftype == SQLT_NTY) {
-//             printf("Deleting object (OraBindNode IN value) buf.oraObj: %p, buf.oraColl: %p (type: %d (obj=1,coll=2,err=0))\n", buf.oraObj, buf.oraColl, bufsubtype);
-	 OracleData *d_ora = (OracleData *)ds->getPrivateData();
-
-	 if (bufsubtype == SQLT_NTY_OBJECT)
-	    OCI_ObjectFree2(&d_ora->ocilib, buf.oraObj);
-	 else if (bufsubtype == SQLT_NTY_COLLECTION)
-	    OCI_CollFree2(&d_ora->ocilib, buf.oraColl);
-	 else
-	    xsink->raiseException("FREE-NTY-ERROR", "An attempt to free unknown NTY type (BN_VALUE)");
-      }
-   }
+   DLLLOCAL void resetValue(ExceptionSink *xsink);
 
    DLLLOCAL void setValue(const AbstractQoreNode *v, ExceptionSink *xsink) {
       if (value)
@@ -381,8 +233,8 @@ protected:
       setType(typ);
    }
 
-   DLLLOCAL int setPlaceholder(Datasource *ds, const AbstractQoreNode *v, ExceptionSink *xsink) {
-      resetPlaceholder(ds, xsink, false);
+   DLLLOCAL int setPlaceholder(const AbstractQoreNode *v, ExceptionSink *xsink) {
+      resetPlaceholder(xsink, false);
 
       // assume string if no argument passed
       if (is_nothing(v)) {
@@ -440,33 +292,21 @@ public:
 
    union ora_bind data;
 
-   // buffer type
-   ub2 buftype;
-
-   //! distinguish the SQLT_NTY subtype
-   int bufsubtype;
-
-   // for bind buffers
-   union ora_value buf;
-
-   // NULL indicator for OCI calls
-   sb2 ind;
-
    OCILobLocator *strlob;
    bool clob_allocated;
    OCIBind *bndp;
 
    // for value nodes
-   DLLLOCAL inline OraBindNode(const AbstractQoreNode *v) : 
-      bindtype(BN_VALUE), value(v ? v->refSelf() : 0), buftype(0), bufsubtype(SQLT_NTY_NONE), 
-      strlob(0), clob_allocated(false), bndp(0) {
+   DLLLOCAL inline OraBindNode(QoreOracleStatement &stmt, const AbstractQoreNode *v) : 
+      OraValue(stmt), 
+      bindtype(BN_VALUE), value(v ? v->refSelf() : 0), strlob(0), clob_allocated(false), bndp(0) {
       data.v.tstr = 0;
    }
 
    // for placeholder nodes
-   DLLLOCAL inline OraBindNode(char *name, int size, const char *typ, const AbstractQoreNode *v) : 
-      bindtype(BN_PLACEHOLDER), value(v ? v->refSelf() : 0), buftype(0), bufsubtype(SQLT_NTY_NONE),
-      strlob(0), clob_allocated(false), bndp(0) {
+   DLLLOCAL inline OraBindNode(QoreOracleStatement &stmt, char *name, int size, const char *typ, const AbstractQoreNode *v) : 
+      OraValue(stmt),
+      bindtype(BN_PLACEHOLDER), value(v ? v->refSelf() : 0), strlob(0), clob_allocated(false), bndp(0) {
       data.ph.name = name;
       data.ph.maxsize = size;
       data.ph.type = typ ? strdup(typ) : 0;
@@ -480,52 +320,30 @@ public:
    }
 
    // returns -1 = ERROR, 0 = OK
-   DLLLOCAL int set(Datasource *ds, const AbstractQoreNode *v, ExceptionSink *xsink) {
-      if (bindtype == BN_VALUE) {
-	 resetValue(ds, xsink);
-	 setValue(v, xsink);
-	 return *xsink ? -1 : 0;
-      }
+   DLLLOCAL int set(const AbstractQoreNode *v, ExceptionSink *xsink);
+   DLLLOCAL void reset(ExceptionSink *xsink, bool free_name = true);
 
-      return setPlaceholder(ds, v, xsink);
-   }
+   DLLLOCAL void bindValue(int pos, ExceptionSink *xsink);
 
-   DLLLOCAL void reset(Datasource *ds, ExceptionSink *xsink, bool free_name = true) {
-      if (value) {
-	 value->deref(xsink);
-	 value = 0;
-      }
+   DLLLOCAL int bindDate(int pos, ExceptionSink *xsink);
+   DLLLOCAL void bindPlaceholder(int pos, ExceptionSink *xsink);
+   DLLLOCAL AbstractQoreNode *getValue(bool horizontal, ExceptionSink *xsink);
 
-      // printf("DLLLOCAL void OraBindNode::del(Datasource *ds, ExceptionSink *xsink) %d\n", bindtype == BN_PLACEHOLDER);
-      if (bindtype == BN_PLACEHOLDER)
-	 resetPlaceholder(ds, xsink, free_name);
-      else
-	 resetValue(ds, xsink);
-   }
+   DLLLOCAL int setupDateDescriptor(ExceptionSink *xsink);
 
-   DLLLOCAL void bindValue(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionSink *xsink);
-
-   DLLLOCAL int bindDate(Datasource *ds, OracleData *d_ora, OCIStmt *stmthp, int pos, ExceptionSink *xsink);
-   DLLLOCAL void bindPlaceholder(Datasource *ds, OCIStmt *stmthp, int pos, ExceptionSink *xsink);
-   DLLLOCAL AbstractQoreNode *getValue(Datasource *ds, bool horizontal, ExceptionSink *xsink);
-
-   DLLLOCAL int setupDateDescriptor(Datasource *ds, OracleData *d_ora, ExceptionSink *xsink);
-
-   DLLLOCAL int setDateDescriptor(Datasource *ds, OracleData *d_ora, const DateTime &d, ExceptionSink *xsink);
+   DLLLOCAL int setDateDescriptor(const DateTime &d, ExceptionSink *xsink);
 };
+
 
 typedef std::vector<OraBindNode *> node_list_t;
 
-class OraBindGroup {
-private:
+class OraBindGroup : public QoreOracleStatement {
+protected:
    node_list_t node_list;
    QoreString *str;
-   OCIStmt *stmthp;
-   Datasource *ds;
    OraColumns *columns;
    bool hasOutput;
    bool bound;
-   //ExceptionSink *xsink;
 
    DLLLOCAL void parseQuery(const QoreListNode *args, ExceptionSink *xsink);
 
@@ -533,15 +351,12 @@ private:
       node_list.push_back(c);
    }
 
-   // exec with auto-reconnect (if possible)
-   DLLLOCAL int oci_exec(const char *who, ub4 iters, ExceptionSink *xsink);
-
    DLLLOCAL int bindOracle(ExceptionSink *xsink);
 
 public:
    //DLLLOCAL OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreListNode *args, ExceptionSink *n_xsink, bool doBinding = true);
 
-   DLLLOCAL OraBindGroup(Datasource *ods) : str(0), stmthp(0), ds(ods), columns(0), hasOutput(false), bound(false) {
+   DLLLOCAL OraBindGroup(Datasource *ods) : QoreOracleStatement(ods), str(0), columns(0), hasOutput(false), bound(false) {
    }
 
    DLLLOCAL ~OraBindGroup() {
@@ -551,17 +366,13 @@ public:
    }
 
    DLLLOCAL void reset(ExceptionSink *xsink) {
-      // free OCI handle
-      if (stmthp) {
-	 OCIHandleFree(stmthp, OCI_HTYPE_STMT);
-	 stmthp = 0;
-      }
+      QoreOracleStatement::reset(xsink);
 
       delete str;
       str = 0;
 
       for (node_list_t::iterator i = node_list.begin(), e = node_list.end(); i != e; ++i) {
-	 (*i)->reset(ds, xsink);
+	 (*i)->reset(xsink);
 	 delete *i;
       }
       node_list.clear();
@@ -576,14 +387,14 @@ public:
    DLLLOCAL int prepare(const QoreString *sql, const QoreListNode *args, bool parse, ExceptionSink *xsink);
 
    DLLLOCAL OraBindNode *add(const AbstractQoreNode *v) {
-      OraBindNode *c = new OraBindNode(v);
+      OraBindNode *c = new OraBindNode(*this, v);
       add(c);
       //printd(5, "OraBindGroup::add()\n");
       return c;
    }
 
    DLLLOCAL OraBindNode *add(char *name, int size = -1, const char *type = 0, const AbstractQoreNode *val = 0) {
-      OraBindNode *c = new OraBindNode(name, size, type, val);
+      OraBindNode *c = new OraBindNode(*this, name, size, type, val);
       add(c);
       //printd(5, "OraBindGroup::add()\n");
       hasOutput = true;
@@ -595,7 +406,7 @@ public:
    DLLLOCAL int bindValues(const QoreListNode *args, ExceptionSink *xsink);
 
    DLLLOCAL int exec(ExceptionSink *xsink) {
-      return oci_exec("OraBindGroup::exec", 1, xsink);
+      return execute("OraBindGroup::exec()", 1, xsink);
    }
 
    DLLLOCAL int affectedRows(ExceptionSink *xsink);
@@ -619,23 +430,18 @@ public:
 
    // rows = true means get a list of hashes, otherwise the default is a hash of lists
    DLLLOCAL QoreHashNode *getOutputHash(bool rows, ExceptionSink *xsink);
-
-   DLLLOCAL Datasource *getDatasource() const {
-      return ds;
-   }
 };
 
-class OraBindGroupHelper {
+class OraBindGroupHelper : public OraBindGroup {
 protected:
-   OraBindGroup &bg;
    ExceptionSink *xsink;
 
 public:
-   DLLLOCAL OraBindGroupHelper(OraBindGroup &n_bg, ExceptionSink *n_xsink) : bg(n_bg), xsink(n_xsink) {
+   DLLLOCAL OraBindGroupHelper(Datasource *ds, ExceptionSink *n_xsink) : OraBindGroup(ds), xsink(n_xsink) {
    }
    
    DLLLOCAL ~OraBindGroupHelper() {
-      bg.reset(xsink);
+      reset(xsink);
    }
 };
 

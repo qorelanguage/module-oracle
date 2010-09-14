@@ -3,7 +3,7 @@
 %requires oracle
 printf("\nQore named types test - collections\n\n");
 
-my $db = new Datasource("oracle", "omq", "omq", "ren1");
+my $db = new Datasource("oracle", "omq", "omq", "quark");
 $db.open();
 
 printf("\nCOLLECTION IN varchar2\n");

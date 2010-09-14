@@ -416,7 +416,7 @@ AbstractQoreNode* objToQore(OracleData * d_ora, OCI_Object * obj, Datasource *ds
                     OCI_Timestamp * dt = OCI_ObjectGetTimestamp2(&d_ora->ocilib, obj, cname);
                     // only SQLT_TIMESTAMP gets the default TZ
 //                     assert(0);
-                    rv->setKeyValue(cname, get_oracle_timestamp(col->ocode != SQLT_TIMESTAMP, ds, dt->handle, xsink), xsink);
+                    rv->setKeyValue(cname, d_ora->getTimestamp(col->ocode != SQLT_TIMESTAMP, dt->handle, xsink), xsink);
                 }
                 // pure DATE like
                 else if (col->type == OCI_CDT_DATETIME) {
@@ -749,8 +749,7 @@ OCI_Coll* collBindQore(OracleData * d, const QoreHashNode * h, ExceptionSink * x
     return obj;
 }
 
-AbstractQoreNode* collToQore(OracleData * d_ora, OCI_Coll * obj, Datasource *ds, ExceptionSink *xsink)
-{
+AbstractQoreNode* collToQore(OracleData * d_ora, OCI_Coll * obj, Datasource *ds, ExceptionSink *xsink) {
     QoreListNode *rv = new QoreListNode();
     
     OCI_Elem * e;
@@ -759,7 +758,6 @@ AbstractQoreNode* collToQore(OracleData * d_ora, OCI_Coll * obj, Datasource *ds,
     OCI_Column *col = OCI_TypeInfoGetColumn2(&d_ora->ocilib, obj->typinf, 1);
 
     for (int i = 1; i <= count; ++i) {
-
         e = OCI_CollGetAt2(&d_ora->ocilib, obj, i);
 
         if (OCI_ElemIsNull2(&d_ora->ocilib, e)) {
@@ -818,7 +816,7 @@ AbstractQoreNode* collToQore(OracleData * d_ora, OCI_Coll * obj, Datasource *ds,
                 if (col->type == OCI_CDT_TIMESTAMP) {
                     OCI_Timestamp * dt = OCI_ElemGetTimestamp2(&d_ora->ocilib, e);
                     // only SQLT_TIMESTAMP gets the default TZ
-                    rv->set_entry(rv->size(), get_oracle_timestamp(col->ocode != SQLT_TIMESTAMP, ds, dt->handle, xsink), xsink);
+                    rv->set_entry(rv->size(), d_ora->getTimestamp(col->ocode != SQLT_TIMESTAMP, dt->handle, xsink), xsink);
                 }
                 // pure DATE like
                 else if (col->type == OCI_CDT_DATETIME) {

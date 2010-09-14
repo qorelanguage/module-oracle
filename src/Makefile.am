@@ -1,4 +1,7 @@
-ORACLE_SOURCES = oracle.cc oracleobject.cpp \
+ORACLE_SOURCES = oracle.cpp \
+	oracleobject.cpp \
+	OracleData.cpp \
+	QoreOracleStatement.cpp \
 	ocilib/exception.c \
 	ocilib/string.c \
 	ocilib/timestamp.c \

@@ -3,7 +3,7 @@
 %requires oracle
 printf("\nQore named types test - objects\n\n");
 
-my $db = new Datasource("oracle", "omq", "omq", "ren1");
+my $db = new Datasource("oracle", "omq", "omq", "quark");
 $db.open();
 
 printf("OBJECT IN\n");
