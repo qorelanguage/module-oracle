@@ -60,7 +60,33 @@
 // should be 32767
 #define CLOB_THRESHOLD 30000
 
-DateTimeNode *get_oracle_timestamp(bool get_tz, Datasource *ds, OCIDateTime *odt, ExceptionSink *xsink);
+// timestamp binding type
+#ifdef _QORE_HAS_TIME_ZONES
+// use timestamp with time zone if qore supports time zones
+#define QORE_SQLT_TIMESTAMP SQLT_TIMESTAMP_TZ
+#define QORE_DTYPE_TIMESTAMP  OCI_DTYPE_TIMESTAMP_TZ
+#else
+#define QORE_SQLT_TIMESTAMP SQLT_TIMESTAMP
+#define QORE_DTYPE_TIMESTAMP  OCI_DTYPE_TIMESTAMP
+#endif
+
+#ifdef _QORE_HAS_DBI_EXECRAW
+#define ORA_DBI_CAP_HAS_EXECRAW DBI_CAP_HAS_EXECRAW
+#else
+#define ORA_DBI_CAP_HAS_EXECRAW 0
+#endif
+
+#ifdef _QORE_HAS_TIME_ZONES
+#define ORA_DBI_CAP_TIME_ZONE_SUPPORT DBI_CAP_TIME_ZONE_SUPPORT
+#else
+#define ORA_DBI_CAP_TIME_ZONE_SUPPORT 0
+#endif
+
+// capabilities of this driver
+#define DBI_ORACLE_CAPS (DBI_CAP_TRANSACTION_MANAGEMENT | DBI_CAP_STORED_PROCEDURES | DBI_CAP_CHARSET_SUPPORT | DBI_CAP_LOB_SUPPORT | DBI_CAP_BIND_BY_VALUE | DBI_CAP_BIND_BY_PLACEHOLDER | ORA_DBI_CAP_HAS_EXECRAW | ORA_DBI_CAP_TIME_ZONE_SUPPORT)
+
+// maximum string size for an oracle number
+#define ORACLE_NUMBER_STR_LEN 30
 
 //! Support defines to enumerate SQLT_NTY subtype for ORACLE_OBJECT and ORACLE_COLLECTION
 #define SQLT_NTY_NONE 0
@@ -343,7 +369,7 @@ protected:
    QoreString *str;
    OraColumns *columns;
    bool hasOutput;
-   bool bound;
+   bool defined;
 
    DLLLOCAL void parseQuery(const QoreListNode *args, ExceptionSink *xsink);
 
@@ -356,7 +382,7 @@ protected:
 public:
    //DLLLOCAL OraBindGroup(Datasource *ods, const QoreString *ostr, const QoreListNode *args, ExceptionSink *n_xsink, bool doBinding = true);
 
-   DLLLOCAL OraBindGroup(Datasource *ods) : QoreOracleStatement(ods), str(0), columns(0), hasOutput(false), bound(false) {
+   DLLLOCAL OraBindGroup(Datasource *ods) : QoreOracleStatement(ods), str(0), columns(0), hasOutput(false), defined(false) {
    }
 
    DLLLOCAL ~OraBindGroup() {
@@ -382,9 +408,12 @@ public:
 	 delete columns;
 	 columns = 0;
       }
+
+      hasOutput = false;
+      defined = false;
    }
    
-   DLLLOCAL int prepare(const QoreString *sql, const QoreListNode *args, bool parse, ExceptionSink *xsink);
+   DLLLOCAL int prepare(const QoreString &sql, const QoreListNode *args, bool parse, ExceptionSink *xsink);
 
    DLLLOCAL OraBindNode *add(const AbstractQoreNode *v) {
       OraBindNode *c = new OraBindNode(*this, v);
@@ -406,7 +435,24 @@ public:
    DLLLOCAL int bindValues(const QoreListNode *args, ExceptionSink *xsink);
 
    DLLLOCAL int exec(ExceptionSink *xsink) {
-      return execute("OraBindGroup::exec()", 1, xsink);
+      return execute("OraBindGroup::exec()", xsink);
+   }
+
+   DLLLOCAL int define(ExceptionSink *xsink) {
+      if (defined) {
+         xsink->raiseException("DBI:ORACLE-DEFINE-ERROR", "SQLStatement::define() called twice for the same query");
+         return -1;
+      }
+
+      if (!columns) {
+         columns = new OraColumns(*this, "OraBindGroup::define()", xsink);
+         if (*xsink)
+            return -1;
+      }
+
+      defined = true;
+      columns->define("OraBindGroup::define()", xsink);
+      return *xsink ? -1 : 0;
    }
 
    DLLLOCAL int affectedRows(ExceptionSink *xsink);

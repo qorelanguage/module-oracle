@@ -31,10 +31,13 @@
 
 #include <oci.h>
 
+class OraColumns;
+
 class QoreOracleStatement {
 protected:
    Datasource *ds;
    OCIStmt *stmthp;
+   bool is_select;
 
    DLLLOCAL void del() {
       // free OCI handle
@@ -42,7 +45,7 @@ protected:
    }
 
 public:
-   DLLLOCAL QoreOracleStatement(Datasource *n_ds, OCIStmt *n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp) {
+   DLLLOCAL QoreOracleStatement(Datasource *n_ds, OCIStmt *n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), is_select(false) {
    }
 
    DLLLOCAL ~QoreOracleStatement() {
@@ -60,6 +63,8 @@ public:
          del();
          stmthp = 0;
       }
+
+      is_select = false;
    }
 
    DLLLOCAL int allocate(ExceptionSink *xsink) {
@@ -102,12 +107,12 @@ public:
    }
 
    // returns 0=OK, -1=ERROR (exception), 1=no data
-   DLLLOCAL int fetch(ExceptionSink *xsink) {
+   DLLLOCAL int fetch(ExceptionSink *xsink, unsigned rows = 1) {
       int status;
 
       OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
-      if ((status = OCIStmtFetch(stmthp, d_ora->errhp, 1, OCI_FETCH_NEXT, OCI_DEFAULT))) {
+      if ((status = OCIStmtFetch2(stmthp, d_ora->errhp, rows, OCI_FETCH_NEXT, 0, OCI_DEFAULT))) {
 	 if (status == OCI_NO_DATA)
 	    return 1;
 	 else if (d_ora->checkerr(status, "QoreOracleStatement::fetch()", xsink))
@@ -134,12 +139,25 @@ public:
    DLLLOCAL int prepare(QoreString &str, ExceptionSink *xsink) {
       OracleData *d_ora = (OracleData *)ds->getPrivateData();
 
-      return d_ora->checkerr(OCIStmtPrepare(stmthp, d_ora->errhp, (text *)str.getBuffer(), str.strlen(), OCI_NTV_SYNTAX, OCI_DEFAULT), 
-			     "QoreOracleStatement::prepare()", xsink);
+      int rc = d_ora->checkerr(OCIStmtPrepare(stmthp, d_ora->errhp, (text *)str.getBuffer(), str.strlen(), OCI_NTV_SYNTAX, OCI_DEFAULT), 
+			       "QoreOracleStatement::prepare()", xsink);
+      if (!rc) {
+	 // see what kind of statement was prepared and set the flag accordingly
+	 ub2 stype;
+	 if (attrGet(&stype, OCI_ATTR_STMT_TYPE, xsink))
+	    return -1;
+
+	 if (stype == OCI_STMT_SELECT)
+	    is_select = true;
+      }
+
+      return rc;
    }
 
-   DLLLOCAL int execute(const char *who, unsigned iters, ExceptionSink *xsink);
-   
+   DLLLOCAL int execute(const char *who, ExceptionSink *xsink);
+
+   DLLLOCAL QoreHashNode *fetchRow(OraColumns &columns, ExceptionSink *xsink);
+
    DLLLOCAL QoreListNode *fetchRows(ExceptionSink *xsink);
 
    DLLLOCAL QoreHashNode *fetchColumns(ExceptionSink *xsink);

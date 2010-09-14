@@ -54,36 +54,7 @@ DLLEXPORT qore_module_ns_init_t qore_module_ns_init = oracle_module_ns_init;
 DLLEXPORT qore_module_delete_t qore_module_delete = oracle_module_delete;
 DLLEXPORT qore_license_t qore_module_license = QL_LGPL;
 
-// timestamp binding type
-#ifdef _QORE_HAS_TIME_ZONES
-// use timestamp with time zone if qore supports time zones
-#define QORE_SQLT_TIMESTAMP SQLT_TIMESTAMP_TZ
-#define QORE_DTYPE_TIMESTAMP  OCI_DTYPE_TIMESTAMP_TZ
-#else
-#define QORE_SQLT_TIMESTAMP SQLT_TIMESTAMP
-#define QORE_DTYPE_TIMESTAMP  OCI_DTYPE_TIMESTAMP
-#endif
-
-#ifdef _QORE_HAS_DBI_EXECRAW
-#define ORA_DBI_CAP_HAS_EXECRAW DBI_CAP_HAS_EXECRAW
-#else
-#define ORA_DBI_CAP_HAS_EXECRAW 0
-#endif
-
-#ifdef _QORE_HAS_TIME_ZONES
-#define ORA_DBI_CAP_TIME_ZONE_SUPPORT DBI_CAP_TIME_ZONE_SUPPORT
-#else
-#define ORA_DBI_CAP_TIME_ZONE_SUPPORT 0
-#endif
-
-// capabilities of this driver
-#define DBI_ORACLE_CAPS (DBI_CAP_TRANSACTION_MANAGEMENT | DBI_CAP_STORED_PROCEDURES | DBI_CAP_CHARSET_SUPPORT | DBI_CAP_LOB_SUPPORT | DBI_CAP_BIND_BY_VALUE | DBI_CAP_BIND_BY_PLACEHOLDER | ORA_DBI_CAP_HAS_EXECRAW | ORA_DBI_CAP_TIME_ZONE_SUPPORT)
-
-DBIDriver *DBID_ORACLE = NULL;
-
-// maximum string size for an oracle number
-#define ORACLE_NUMBER_STR_LEN 30
-
+DBIDriver *DBID_ORACLE = 0;
 
 static int oracle_commit(Datasource *ds, ExceptionSink *xsink) {
    OracleData *d_ora = (OracleData *)ds->getPrivateData();
@@ -174,8 +145,8 @@ OraColumns::OraColumns(QoreOracleStatement &n_stmt, const char *str, ExceptionSi
 }
 
 void OraColumns::define(const char *str, ExceptionSink *xsink) {
-   //QORE_TRACE("OraColumne::define()");
-   //    printd(0, "OraColumne::define()\n");
+   //QORE_TRACE("OraColumns::define()");
+   //    printd(0, "OraColumns::define()\n");
 
    OracleData *d_ora = stmt.getData();
 
@@ -572,11 +543,9 @@ AbstractQoreNode *OraValue::getValue(ExceptionSink *xsink, bool horizontal, bool
    return 0;
 }
 
-int OraBindGroup::prepare(const QoreString *sql, const QoreListNode *args, bool parse, ExceptionSink *xsink) {
-   assert(sql);
-
+int OraBindGroup::prepare(const QoreString &sql, const QoreListNode *args, bool parse, ExceptionSink *xsink) {
    // create copy of string and convert encoding if necessary
-   str = sql->convertEncoding(getEncoding(), xsink);
+   str = sql.convertEncoding(getEncoding(), xsink);
    if (*xsink)
       return -1;
 
@@ -619,12 +588,12 @@ int OraBindGroup::bindOracle(ExceptionSink *xsink) {
    }   
    //printd(0, "OraBindGroup::bindOracle() bound %d position(s), statement handle: %p\n", pos - 1, stmthp);
 
-   bound = true;
+   //bound = true;
    return 0;
 }
 
 int OraBindGroup::bind(const QoreListNode *args, ExceptionSink *xsink) {
-   bound = false;
+   //bound = false;
 
    for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
       OraBindNode *w = node_list[i];
@@ -643,8 +612,8 @@ int OraBindGroup::bind(const QoreListNode *args, ExceptionSink *xsink) {
 }
 
 int OraBindGroup::bindPlaceholders(const QoreListNode *args, ExceptionSink *xsink) {
-   bound = false;
-
+   //bound = false;
+   
    unsigned arg_offset = 0;
    for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
       OraBindNode *w = node_list[i];
@@ -665,7 +634,7 @@ int OraBindGroup::bindPlaceholders(const QoreListNode *args, ExceptionSink *xsin
 }
 
 int OraBindGroup::bindValues(const QoreListNode *args, ExceptionSink *xsink) {
-   bound = false;
+   //bound = false;
 
    unsigned arg_offset = 0;
    for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
@@ -1318,7 +1287,7 @@ int OraBindGroup::affectedRows(ExceptionSink *xsink) {
 }
 
 AbstractQoreNode *OraBindGroup::select(ExceptionSink *xsink) {
-   if (execute("OraBindGroup::select()", 0, xsink))
+   if (execute("OraBindGroup::select()", xsink))
       return 0;
 
    ReferenceHolder<QoreHashNode> h(fetchColumns(xsink), xsink);
@@ -1333,7 +1302,7 @@ AbstractQoreNode *OraBindGroup::select(ExceptionSink *xsink) {
 }
 
 AbstractQoreNode *OraBindGroup::selectRows(ExceptionSink *xsink) {
-   if (execute("OraBindGroup::selectRows()", 0, xsink))
+   if (execute("OraBindGroup::selectRows()", xsink))
       return 0;
 
    ReferenceHolder<QoreListNode> l(fetchRows(xsink), xsink);
@@ -1347,13 +1316,119 @@ AbstractQoreNode *OraBindGroup::selectRows(ExceptionSink *xsink) {
    return l.release();
 }
 
-/*
 bool OraBindGroup::next(ExceptionSink *xsink) {
+   return fetch(xsink) ? false : true;
 }
 
 QoreHashNode *OraBindGroup::fetchRow(ExceptionSink *xsink) {
+   if (!columns) {
+      columns = new OraColumns(*this, "OraBindGroup::fetchRow", xsink);
+      if (*xsink || fetch(xsink))
+         return 0;
+   }
+
+   return QoreOracleStatement::fetchRow(*columns, xsink);
 }
-*/
+
+#ifdef _QORE_HAS_PREPARED_STATMENT_API
+static int oracle_stmt_prepare(SQLStatement *stmt, const QoreString &str, const QoreListNode *args, ExceptionSink *xsink) {
+   assert(!stmt->getPrivateData());
+
+   OraBindGroup *bg = new OraBindGroup(stmt->getDatasource());
+   stmt->setPrivateData(bg);
+
+   return bg->prepare(str, args, true, xsink);
+}
+
+static int oracle_stmt_prepare_raw(SQLStatement *stmt, const QoreString &str, ExceptionSink *xsink) {
+   assert(!stmt->getPrivateData());
+
+   OraBindGroup *bg = new OraBindGroup(stmt->getDatasource());
+   stmt->setPrivateData(bg);
+
+   return bg->prepare(str, 0, false, xsink);
+}
+
+static int oracle_stmt_bind(SQLStatement *stmt, const QoreListNode &l, ExceptionSink *xsink) {
+   OraBindGroup *bg = (OraBindGroup *)stmt->getPrivateData();
+   assert(bg);
+
+   return bg->bind(&l, xsink);
+}
+
+static int oracle_stmt_bind_placeholders(SQLStatement *stmt, const QoreListNode &l, ExceptionSink *xsink) {
+   OraBindGroup *bg = (OraBindGroup *)stmt->getPrivateData();
+   assert(bg);
+
+   return bg->bindPlaceholders(&l, xsink);
+}
+
+static int oracle_stmt_bind_values(SQLStatement *stmt, const QoreListNode &l, ExceptionSink *xsink) {
+   OraBindGroup *bg = (OraBindGroup *)stmt->getPrivateData();
+   assert(bg);
+
+   return bg->bindValues(&l, xsink);
+}
+
+static int oracle_stmt_exec(SQLStatement *stmt, ExceptionSink *xsink) {
+   OraBindGroup *bg = (OraBindGroup *)stmt->getPrivateData();
+   assert(bg);
+
+   return bg->exec(xsink);
+}
+
+static int oracle_stmt_define(SQLStatement *stmt, ExceptionSink *xsink) {
+   OraBindGroup *bg = (OraBindGroup *)stmt->getPrivateData();
+   assert(bg);
+
+   return bg->define(xsink);
+}
+
+static int oracle_stmt_affected_rows(SQLStatement *stmt, ExceptionSink *xsink) {
+   OraBindGroup *bg = (OraBindGroup *)stmt->getPrivateData();
+   assert(bg);
+
+   return bg->affectedRows(xsink);
+}
+
+static QoreHashNode *oracle_stmt_get_output(SQLStatement *stmt, ExceptionSink *xsink) {
+   OraBindGroup *bg = (OraBindGroup *)stmt->getPrivateData();
+   assert(bg);
+
+   return bg->getOutput(xsink);
+}
+
+static QoreHashNode *oracle_stmt_get_output_rows(SQLStatement *stmt, ExceptionSink *xsink) {
+   OraBindGroup *bg = (OraBindGroup *)stmt->getPrivateData();
+   assert(bg);
+
+   return bg->getOutputRows(xsink);
+}
+
+static QoreHashNode *oracle_stmt_fetch_row(SQLStatement *stmt, ExceptionSink *xsink) {
+   OraBindGroup *bg = (OraBindGroup *)stmt->getPrivateData();
+   assert(bg);
+
+   return bg->fetchRow(xsink);
+}
+
+static bool oracle_stmt_next(SQLStatement *stmt, ExceptionSink *xsink) {
+   OraBindGroup *bg = (OraBindGroup *)stmt->getPrivateData();
+   assert(bg);
+
+   return bg->next(xsink);
+}
+
+static int oracle_stmt_close(SQLStatement *stmt, ExceptionSink *xsink) {
+   OraBindGroup *bg = (OraBindGroup *)stmt->getPrivateData();
+   assert(bg);
+
+   bg->reset(xsink);
+   delete bg;
+   stmt->setPrivateData(0);
+   return *xsink ? -1 : 0;
+}
+#endif // _QORE_HAS_PREPARED_STATMENT_API
 
 static AbstractQoreNode *oracle_exec(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink) {
    OraBindGroupHelper bg(ds, xsink);
@@ -1652,6 +1727,22 @@ QoreStringNode *oracle_module_init() {
 #ifdef HAVE_OCICLIENTVERSION
    methods.add(QDBI_METHOD_GET_CLIENT_VERSION, oracle_get_client_version);
 #endif
+
+#ifdef _QORE_HAS_PREPARED_STATMENT_API
+   methods.add(QDBI_METHOD_STMT_PREPARE, oracle_stmt_prepare);
+   methods.add(QDBI_METHOD_STMT_PREPARE_RAW, oracle_stmt_prepare_raw);
+   methods.add(QDBI_METHOD_STMT_BIND, oracle_stmt_bind);
+   methods.add(QDBI_METHOD_STMT_BIND_PLACEHOLDERS, oracle_stmt_bind_placeholders);
+   methods.add(QDBI_METHOD_STMT_BIND_VALUES, oracle_stmt_bind_values);
+   methods.add(QDBI_METHOD_STMT_EXEC, oracle_stmt_exec);
+   methods.add(QDBI_METHOD_STMT_DEFINE, oracle_stmt_define);
+   methods.add(QDBI_METHOD_STMT_FETCH_ROW, oracle_stmt_fetch_row);
+   methods.add(QDBI_METHOD_STMT_NEXT, oracle_stmt_next);
+   methods.add(QDBI_METHOD_STMT_CLOSE, oracle_stmt_close);
+   methods.add(QDBI_METHOD_STMT_AFFECTED_ROWS, oracle_stmt_affected_rows);
+   methods.add(QDBI_METHOD_STMT_GET_OUTPUT, oracle_stmt_get_output);
+   methods.add(QDBI_METHOD_STMT_GET_OUTPUT_ROWS, oracle_stmt_get_output_rows);
+#endif // _QORE_HAS_PREPARED_STATMENT_API
    
    DBID_ORACLE = DBI.registerDriver("oracle", methods, DBI_ORACLE_CAPS);
 
