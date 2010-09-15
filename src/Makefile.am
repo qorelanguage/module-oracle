@@ -1,7 +1,10 @@
 ORACLE_SOURCES = oracle.cpp \
 	oracleobject.cpp \
-	OracleData.cpp \
+	QoreOracleConnection.cpp \
 	QoreOracleStatement.cpp \
+	QorePreparedStatement.cpp \
+	OraColumnValue.cpp \
+	OraResultSet.cpp \
 	ocilib/exception.c \
 	ocilib/string.c \
 	ocilib/timestamp.c \

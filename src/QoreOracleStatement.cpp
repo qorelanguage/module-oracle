@@ -24,9 +24,9 @@
 #include "oracle.h"
 
 int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
-   OracleData *d_ora = (OracleData *)ds->getPrivateData();
+   QoreOracleConnection *conn = (QoreOracleConnection *)ds->getPrivateData();
 
-   int status = OCIStmtExecute(d_ora->svchp, stmthp, d_ora->errhp, is_select ? 0 : 1, 0, 0, 0, OCI_DEFAULT);
+   int status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, is_select ? 0 : 1, 0, 0, 0, OCI_DEFAULT);
 
    //printd(0, "QoreOracleStatement::execute() stmthp=%p status=%d (OCI_ERROR=%d)\n", stmthp, status, OCI_ERROR);
    if (status == OCI_ERROR) {
@@ -35,11 +35,11 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
 
       // get server handle
       OCIServer *svrh;
-      if (d_ora->checkerr(OCIAttrGet(d_ora->svchp, OCI_HTYPE_SVCCTX, &svrh, 0, OCI_ATTR_SERVER, d_ora->errhp), who, xsink))
+      if (conn->checkerr(OCIAttrGet(conn->svchp, OCI_HTYPE_SVCCTX, &svrh, 0, OCI_ATTR_SERVER, conn->errhp), who, xsink))
 	 return -1;
 
       //printd(0, "QoreOracleStatement::execute() got server handle: %p\n", svrh);
-      if (d_ora->checkerr(OCIAttrGet(svrh, OCI_HTYPE_SERVER, (dvoid *)&server_status, 0, OCI_ATTR_SERVER_STATUS, d_ora->errhp), who, xsink))
+      if (conn->checkerr(OCIAttrGet(svrh, OCI_HTYPE_SERVER, (dvoid *)&server_status, 0, OCI_ATTR_SERVER_STATUS, conn->errhp), who, xsink))
 	 return -1;
 
       //printd(0, "QoreOracleStatement::execute() server_status=%d (OCI_SERVER_NOT_CONNECTED=%d)\n", server_status, OCI_SERVER_NOT_CONNECTED);
@@ -52,39 +52,39 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
 	 }
 
 	 // otherwise try to reconnect
-	 OCILogoff(d_ora->svchp, d_ora->errhp);
+	 OCILogoff(conn->svchp, conn->errhp);
 
 	 //printd(0, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect\n");
-	 if (d_ora->checkerr(OCILogon(d_ora->envhp, d_ora->errhp, &d_ora->svchp, (text *)ds->getUsername(), strlen(ds->getUsername()), (text *)ds->getPassword(), strlen(ds->getPassword()), (text *)ds->getDBName(), strlen(ds->getDBName())), who, xsink)) {
+	 if (conn->checkerr(OCILogon(conn->envhp, conn->errhp, &conn->svchp, (text *)ds->getUsername(), strlen(ds->getUsername()), (text *)ds->getPassword(), strlen(ds->getPassword()), (text *)ds->getDBName(), strlen(ds->getDBName())), who, xsink)) {
 	    // close datasource and remove private data
 	    ds->close();
 	    return -1;
 	 }
 
 	 //printd(0, "QoreOracleStatement::execute() returned from OCILogon() status=%d\n", status);
-	 status = OCIStmtExecute(d_ora->svchp, stmthp, d_ora->errhp, is_select ? 0 : 1, 0, 0, 0, OCI_DEFAULT);
-	 if (status && d_ora->checkerr(status, who, xsink))
+	 status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, is_select ? 0 : 1, 0, 0, 0, OCI_DEFAULT);
+	 if (status && conn->checkerr(status, who, xsink))
 	    return -1;
       }
       else {
 	 //printd(0, "QoreOracleStatement::execute() error, but it's connected; status=%d who=%s\n", status, who);
-	 d_ora->checkerr(status, who, xsink);
+	 conn->checkerr(status, who, xsink);
 	 return -1;
       }
    }
-   else if (status && d_ora->checkerr(status, who, xsink))
+   else if (status && conn->checkerr(status, who, xsink))
       return -1;
 
    return 0;      
 }
 
-QoreHashNode *QoreOracleStatement::fetchRow(OraColumns &columns, ExceptionSink *xsink) {
+QoreHashNode *QoreOracleStatement::fetchRow(OraResultSet &resultset, ExceptionSink *xsink) {
    // set up hash for row
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
 
    // copy data or perform per-value processing if needed
-   for (clist_t::iterator i = columns.clist.begin(), e = columns.clist.end(); i != e; ++i) {
-      OraColumn *w = *i;
+   for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
+      OraColumnBuffer *w = *i;
       // assign value to hash
       h->setKeyValue(w->name, w->getValue(true, xsink), xsink);
       if (*xsink)
@@ -95,25 +95,25 @@ QoreHashNode *QoreOracleStatement::fetchRow(OraColumns &columns, ExceptionSink *
 }
 
 QoreListNode *QoreOracleStatement::fetchRows(ExceptionSink *xsink) {
-   ColumnHelper columns(*this, "QoreOracleStatement::fetchRows():params", xsink);
+   OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchRows():params", xsink);
    if (*xsink)
       return 0;
 
-   return fetchRows(**columns, -1, xsink);
+   return fetchRows(**resultset, -1, xsink);
 }
 
-QoreListNode *QoreOracleStatement::fetchRows(OraColumns &columns, int rows, ExceptionSink *xsink) {
+QoreListNode *QoreOracleStatement::fetchRows(OraResultSet &resultset, int rows, ExceptionSink *xsink) {
    ReferenceHolder<QoreListNode> l(new QoreListNode, xsink);
 
    // setup temporary row to accept values
-   if (columns.define("QoreOracleStatement::fetchRows():define", xsink))
+   if (resultset.define("QoreOracleStatement::fetchRows():define", xsink))
       return 0;
 
    int num_rows = 0;
    
    // now finally fetch the data
    while (next(xsink)) {
-      QoreHashNode *h = fetchRow(columns, xsink);
+      QoreHashNode *h = fetchRow(resultset, xsink);
       if (!h)
 	 return 0;
 
@@ -124,32 +124,32 @@ QoreListNode *QoreOracleStatement::fetchRows(OraColumns &columns, int rows, Exce
       if (rows > 0 && num_rows == rows)
 	 break;
    }
-   //printd(2, "QoreOracleStatement::fetchRows(): %d column(s), %d row(s) retrieved as output\n", columns.size(), l->size());
+   //printd(2, "QoreOracleStatement::fetchRows(): %d column(s), %d row(s) retrieved as output\n", resultset.size(), l->size());
    return *xsink ? 0 : l.release();
 }
 
 // retrieve results from statement and return hash
 QoreHashNode *QoreOracleStatement::fetchColumns(ExceptionSink *xsink) {
-   ColumnHelper columns(*this, "QoreOracleStatement::fetchColumns():params", xsink);
+   OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchColumns():params", xsink);
    if (*xsink)
       return 0;
 
-   return fetchColumns(**columns, -1, xsink);
+   return fetchColumns(**resultset, -1, xsink);
 }
 
 // retrieve results from statement and return hash
-QoreHashNode *QoreOracleStatement::fetchColumns(OraColumns &columns, int rows, ExceptionSink *xsink) {
+QoreHashNode *QoreOracleStatement::fetchColumns(OraResultSet &resultset, int rows, ExceptionSink *xsink) {
    // allocate result hash for result value
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
       
    // create hash elements for each column, assign empty list
-   for (clist_t::iterator i = columns.clist.begin(), e = columns.clist.end(); i != e; ++i) {
+   for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
       //printd(5, "QoreOracleStatement::fetchColumns() allocating list for '%s' column\n", w->name);
       h->setKeyValue((*i)->name, new QoreListNode, xsink);
    }
    
    // setup temporary row to accept values
-   if (columns.define("QoreOracleStatement::fetchColumns():define", xsink))
+   if (resultset.define("QoreOracleStatement::fetchColumns():define", xsink))
       return 0;
 
    int num_rows = 0;
@@ -157,8 +157,8 @@ QoreHashNode *QoreOracleStatement::fetchColumns(OraColumns &columns, int rows, E
    // now finally fetch the data
    while (next(xsink)) {
       // copy data or perform per-value processing if needed
-      for (unsigned i = 0; i < columns.clist.size(); ++i) {
-	 OraColumn *w = columns.clist[i];
+      for (unsigned i = 0; i < resultset.clist.size(); ++i) {
+	 OraColumnBuffer *w = resultset.clist[i];
 	 // get pointer to value of target node
 	 QoreListNode *l = reinterpret_cast<QoreListNode *>(h->getKeyValue(w->name, xsink));
 	 if (!l)
@@ -172,6 +172,6 @@ QoreHashNode *QoreOracleStatement::fetchColumns(OraColumns &columns, int rows, E
       if (rows > 0 && num_rows == rows)
 	 break;
    }
-   //printd(2, "QoreOracleStatement::fetchColumns(): %d column(s), %d row(s) retrieved as output\n", columns.size(), num_rows);
+   //printd(2, "QoreOracleStatement::fetchColumns(): %d column(s), %d row(s) retrieved as output\n", resultset.size(), num_rows);
    return *xsink ? 0 : h.release();
 }
