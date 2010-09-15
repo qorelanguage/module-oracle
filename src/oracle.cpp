@@ -144,7 +144,7 @@ OraColumns::OraColumns(QoreOracleStatement &n_stmt, const char *str, ExceptionSi
    }
 }
 
-void OraColumns::define(const char *str, ExceptionSink *xsink) {
+int OraColumns::define(const char *str, ExceptionSink *xsink) {
    //QORE_TRACE("OraColumns::define()");
    //    printd(0, "OraColumns::define()\n");
 
@@ -191,7 +191,7 @@ void OraColumns::define(const char *str, ExceptionSink *xsink) {
 	 case SQLT_DATE:
 	    w->buf.odt = NULL;
             if (d_ora->descriptorAlloc((dvoid **)&w->buf.odt, QORE_DTYPE_TIMESTAMP, str, xsink))
-               return;
+               return -1;
 	    //printd(5, "OraColumns::define() got TIMESTAMP handle: %p size: %d\n", w->buf.odt, sizeof(w->buf.odt));
 	    stmt.defineByPos(w->defp, i + 1, &w->buf.odt, sizeof(w->buf.odt), QORE_SQLT_TIMESTAMP, &w->ind, xsink);
 	    break;
@@ -199,7 +199,7 @@ void OraColumns::define(const char *str, ExceptionSink *xsink) {
 	 case SQLT_INTERVAL_YM:
 	    w->buf.oi = NULL;
             if (d_ora->descriptorAlloc((dvoid **)&w->buf.oi, OCI_DTYPE_INTERVAL_YM, str, xsink))
-               return;
+               return -1;
 	    //printd(5, "OraColumns::define() got TIMESTAMP handle %p\n", w->buf.odt);
 	    stmt.defineByPos(w->defp, i + 1, &w->buf.oi, sizeof(w->buf.oi), SQLT_INTERVAL_YM, &w->ind, xsink);
 	    break;
@@ -207,7 +207,7 @@ void OraColumns::define(const char *str, ExceptionSink *xsink) {
 	 case SQLT_INTERVAL_DS:
 	    w->buf.oi = NULL;
             if (d_ora->descriptorAlloc((dvoid **)&w->buf.oi, OCI_DTYPE_INTERVAL_DS, str, xsink))
-               return;
+               return -1;
 	    //printd(5, "OraColumns::define() got TIMESTAMP handle %p\n", w->buf.odt);
 	    stmt.defineByPos(w->defp, i + 1, &w->buf.oi, sizeof(w->buf.oi), SQLT_INTERVAL_DS, &w->ind, xsink);
 	    break;
@@ -223,7 +223,7 @@ void OraColumns::define(const char *str, ExceptionSink *xsink) {
 	    w->buf.ptr = 0;
 	    w->dtype = SQLT_LVB;
 	    if (d_ora->checkerr(OCIRawResize(d_ora->envhp, d_ora->errhp, size, (OCIRaw**)&w->buf.ptr), "OraColumns::define() setup binary buffer", xsink))
-	       return;
+	       return -1;
 
 	    stmt.defineByPos(w->defp, i + 1, w->buf.ptr, size + sizeof(int), SQLT_LVB, &w->ind, xsink);
 	    break;
@@ -232,8 +232,8 @@ void OraColumns::define(const char *str, ExceptionSink *xsink) {
 	 case SQLT_BLOB:
 	 case SQLT_CLOB:
 	    w->buf.ptr = 0;
-            d_ora->descriptorAlloc(&w->buf.ptr, OCI_DTYPE_LOB, str, xsink);
-	    if (*xsink) return;
+            if (d_ora->descriptorAlloc(&w->buf.ptr, OCI_DTYPE_LOB, str, xsink))
+               return -1;
 	    //printd(5, "OraColumns::define() got LOB locator handle %p\n", w->buf.ptr);
 	    stmt.defineByPos(w->defp, i + 1, &w->buf.ptr, 0, w->dtype, &w->ind, xsink);
 	    break;
@@ -241,8 +241,8 @@ void OraColumns::define(const char *str, ExceptionSink *xsink) {
 	 case SQLT_RSET:
 	    w->buf.ptr = 0;
 	    // allocate statement handle for result list
-	    d_ora->handleAlloc(&w->buf.ptr, OCI_HTYPE_STMT, str, xsink);
-	    if (*xsink) return;
+	    if (d_ora->handleAlloc(&w->buf.ptr, OCI_HTYPE_STMT, str, xsink))
+               return -1;
 	    stmt.defineByPos(w->defp, i + 1, &w->buf.ptr, 0, w->dtype, &w->ind, xsink);
 	    break;
 
@@ -253,7 +253,7 @@ void OraColumns::define(const char *str, ExceptionSink *xsink) {
             if (w->subdtype == SQLT_NTY_OBJECT) {
                 w->buf.oraObj = objPlaceholderQore(d_ora, w->subdtypename.getBuffer(), xsink);
 		if (*xsink)
-		   return;
+		   return -1;
 
                 stmt.defineByPos(w->defp, i + 1, 0, 0, w->dtype, &w->ind, xsink);
                 d_ora->checkerr(OCIDefineObject((OCIDefine *) w->defp,
@@ -279,7 +279,7 @@ void OraColumns::define(const char *str, ExceptionSink *xsink) {
 
             } else {
                 xsink->raiseException("DEFINE-NTY-ERROR", "An attempt to define unknown NTY type");
-                return;
+                return -1;
             }
             break;
          } // SQLT_NTY
@@ -290,8 +290,10 @@ void OraColumns::define(const char *str, ExceptionSink *xsink) {
             //printd(0, "OraColumns::define() i=%d, buf=%p, maxsize=%d\n", i + 1, w->buf.ptr, w->maxsize);
 	    stmt.defineByPos(w->defp, i + 1, w->buf.ptr, w->maxsize + 1, SQLT_STR, &w->ind, xsink);
       }
-      if (*xsink) return;
+      if (*xsink) return -1;
    }
+
+   return 0;
 }
 
 static DateTimeNode *convert_date_time(unsigned char *str) {
@@ -1290,7 +1292,7 @@ AbstractQoreNode *OraBindGroup::select(ExceptionSink *xsink) {
    if (execute("OraBindGroup::select()", xsink))
       return 0;
 
-   ReferenceHolder<QoreHashNode> h(fetchColumns(xsink), xsink);
+   ReferenceHolder<QoreHashNode> h(QoreOracleStatement::fetchColumns(xsink), xsink);
    if (*xsink)
       return 0;
 
@@ -1305,7 +1307,7 @@ AbstractQoreNode *OraBindGroup::selectRows(ExceptionSink *xsink) {
    if (execute("OraBindGroup::selectRows()", xsink))
       return 0;
 
-   ReferenceHolder<QoreListNode> l(fetchRows(xsink), xsink);
+   ReferenceHolder<QoreListNode> l(QoreOracleStatement::fetchRows(xsink), xsink);
    if (*xsink)
       return 0;
 
@@ -1316,18 +1318,40 @@ AbstractQoreNode *OraBindGroup::selectRows(ExceptionSink *xsink) {
    return l.release();
 }
 
-bool OraBindGroup::next(ExceptionSink *xsink) {
-   return fetch(xsink) ? false : true;
-}
-
 QoreHashNode *OraBindGroup::fetchRow(ExceptionSink *xsink) {
+   assert(columns);
+/*
    if (!columns) {
       columns = new OraColumns(*this, "OraBindGroup::fetchRow", xsink);
       if (*xsink || fetch(xsink))
          return 0;
    }
-
+*/
    return QoreOracleStatement::fetchRow(*columns, xsink);
+}
+
+QoreListNode *OraBindGroup::fetchRows(int rows, ExceptionSink *xsink) {
+   assert(columns);
+/*
+   if (!columns) {
+      columns = new OraColumns(*this, "OraBindGroup::fetchRows", xsink);
+      if (*xsink)
+         return 0;
+   }
+*/
+   return QoreOracleStatement::fetchRows(*columns, rows, xsink);
+}
+
+QoreHashNode *OraBindGroup::fetchColumns(int rows, ExceptionSink *xsink) {
+   assert(columns);
+/*
+   if (!columns) {
+      columns = new OraColumns(*this, "OraBindGroup::fetchColumns", xsink);
+      if (*xsink)
+         return 0;
+   }
+*/
+   return QoreOracleStatement::fetchColumns(*columns, rows, xsink);
 }
 
 #ifdef _QORE_HAS_PREPARED_STATMENT_API
@@ -1410,6 +1434,20 @@ static QoreHashNode *oracle_stmt_fetch_row(SQLStatement *stmt, ExceptionSink *xs
    assert(bg);
 
    return bg->fetchRow(xsink);
+}
+
+static QoreListNode *oracle_stmt_fetch_rows(SQLStatement *stmt, int rows, ExceptionSink *xsink) {
+   OraBindGroup *bg = (OraBindGroup *)stmt->getPrivateData();
+   assert(bg);
+
+   return bg->fetchRows(rows, xsink);
+}
+
+static QoreHashNode *oracle_stmt_fetch_columns(SQLStatement *stmt, int rows, ExceptionSink *xsink) {
+   OraBindGroup *bg = (OraBindGroup *)stmt->getPrivateData();
+   assert(bg);
+
+   return bg->fetchColumns(rows, xsink);
 }
 
 static bool oracle_stmt_next(SQLStatement *stmt, ExceptionSink *xsink) {
@@ -1737,6 +1775,8 @@ QoreStringNode *oracle_module_init() {
    methods.add(QDBI_METHOD_STMT_EXEC, oracle_stmt_exec);
    methods.add(QDBI_METHOD_STMT_DEFINE, oracle_stmt_define);
    methods.add(QDBI_METHOD_STMT_FETCH_ROW, oracle_stmt_fetch_row);
+   methods.add(QDBI_METHOD_STMT_FETCH_ROWS, oracle_stmt_fetch_rows);
+   methods.add(QDBI_METHOD_STMT_FETCH_COLUMNS, oracle_stmt_fetch_columns);
    methods.add(QDBI_METHOD_STMT_NEXT, oracle_stmt_next);
    methods.add(QDBI_METHOD_STMT_CLOSE, oracle_stmt_close);
    methods.add(QDBI_METHOD_STMT_AFFECTED_ROWS, oracle_stmt_affected_rows);

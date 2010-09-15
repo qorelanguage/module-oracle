@@ -209,7 +209,7 @@ public:
       return clist.size();
    }
 
-   DLLLOCAL void define(const char *str, ExceptionSink *xsink);
+   DLLLOCAL int define(const char *str, ExceptionSink *xsink);
 };
 
 class ColumnHelper {
@@ -465,9 +465,9 @@ public:
       return getOutputHash(true, xsink);
    }
 
-   DLLLOCAL bool next(ExceptionSink *xsink);
-
    DLLLOCAL QoreHashNode *fetchRow(ExceptionSink *xsink);
+   DLLLOCAL QoreListNode *fetchRows(int rows, ExceptionSink *xsink);
+   DLLLOCAL QoreHashNode *fetchColumns(int rows, ExceptionSink *xsink);
 
    DLLLOCAL AbstractQoreNode *execWithPrologue(bool rows, ExceptionSink *xsink);
 

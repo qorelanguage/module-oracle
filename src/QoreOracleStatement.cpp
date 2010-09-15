@@ -95,60 +95,70 @@ QoreHashNode *QoreOracleStatement::fetchRow(OraColumns &columns, ExceptionSink *
 }
 
 QoreListNode *QoreOracleStatement::fetchRows(ExceptionSink *xsink) {
-   // setup column structure for output columns
    ColumnHelper columns(*this, "QoreOracleStatement::fetchRows():params", xsink);
    if (*xsink)
       return 0;
 
+   return fetchRows(**columns, -1, xsink);
+}
+
+QoreListNode *QoreOracleStatement::fetchRows(OraColumns &columns, int rows, ExceptionSink *xsink) {
    ReferenceHolder<QoreListNode> l(new QoreListNode, xsink);
 
    // setup temporary row to accept values
-   columns->define("QoreOracleStatement::fetchRows():define", xsink);
+   if (columns.define("QoreOracleStatement::fetchRows():define", xsink))
+      return 0;
 
+   int num_rows = 0;
+   
    // now finally fetch the data
-   while (true) {
-      if (fetch(xsink))
-	 break;
-
-      QoreHashNode *h = fetchRow(**columns, xsink);
+   while (next(xsink)) {
+      QoreHashNode *h = fetchRow(columns, xsink);
       if (!h)
 	 return 0;
 
       // add row to list
       l->push(h);
+
+      ++num_rows;
+      if (rows > 0 && num_rows == rows)
+	 break;
    }
-   //printd(2, "QoreOracleStatement::fetchRows(): %d column(s), %d row(s) retrieved as output\n", columns->size(), l->size());
+   //printd(2, "QoreOracleStatement::fetchRows(): %d column(s), %d row(s) retrieved as output\n", columns.size(), l->size());
    return *xsink ? 0 : l.release();
 }
 
+// retrieve results from statement and return hash
 QoreHashNode *QoreOracleStatement::fetchColumns(ExceptionSink *xsink) {
-   // retrieve results from statement and return hash
    ColumnHelper columns(*this, "QoreOracleStatement::fetchColumns():params", xsink);
    if (*xsink)
       return 0;
-   
+
+   return fetchColumns(**columns, -1, xsink);
+}
+
+// retrieve results from statement and return hash
+QoreHashNode *QoreOracleStatement::fetchColumns(OraColumns &columns, int rows, ExceptionSink *xsink) {
    // allocate result hash for result value
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
       
    // create hash elements for each column, assign empty list
-   for (clist_t::iterator i = columns->clist.begin(), e = columns->clist.end(); i != e; ++i) {
+   for (clist_t::iterator i = columns.clist.begin(), e = columns.clist.end(); i != e; ++i) {
       //printd(5, "QoreOracleStatement::fetchColumns() allocating list for '%s' column\n", w->name);
       h->setKeyValue((*i)->name, new QoreListNode, xsink);
    }
    
-   //int num_rows = 0;
-   
    // setup temporary row to accept values
-   columns->define("QoreOracleStatement::fetchColumns():define", xsink);
+   if (columns.define("QoreOracleStatement::fetchColumns():define", xsink))
+      return 0;
+
+   int num_rows = 0;
    
    // now finally fetch the data
-   while (true) {
-      if (fetch(xsink))
-	 break;
-      
+   while (next(xsink)) {
       // copy data or perform per-value processing if needed
-      for (unsigned i = 0; i < columns->clist.size(); ++i) {
-	 OraColumn *w = columns->clist[i];
+      for (unsigned i = 0; i < columns.clist.size(); ++i) {
+	 OraColumn *w = columns.clist[i];
 	 // get pointer to value of target node
 	 QoreListNode *l = reinterpret_cast<QoreListNode *>(h->getKeyValue(w->name, xsink));
 	 if (!l)
@@ -158,8 +168,10 @@ QoreHashNode *QoreOracleStatement::fetchColumns(ExceptionSink *xsink) {
 	    break;
       }
 
-      //++num_rows;
+      ++num_rows;
+      if (rows > 0 && num_rows == rows)
+	 break;
    }
-   //printd(2, "QoreOracleStatement::fetchColumns(): %d column(s), %d row(s) retrieved as output\n", columns->size(), num_rows);
+   //printd(2, "QoreOracleStatement::fetchColumns(): %d column(s), %d row(s) retrieved as output\n", columns.size(), num_rows);
    return *xsink ? 0 : h.release();
 }

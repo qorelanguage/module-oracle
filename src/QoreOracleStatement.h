@@ -156,10 +156,16 @@ public:
 
    DLLLOCAL int execute(const char *who, ExceptionSink *xsink);
 
+   DLLLOCAL bool next(ExceptionSink *xsink) {
+      return fetch(xsink) ? false : true;
+   }
+
    DLLLOCAL QoreHashNode *fetchRow(OraColumns &columns, ExceptionSink *xsink);
 
+   DLLLOCAL QoreListNode *fetchRows(OraColumns &columns, int rows, ExceptionSink *xsink);
    DLLLOCAL QoreListNode *fetchRows(ExceptionSink *xsink);
 
+   DLLLOCAL QoreHashNode *fetchColumns(OraColumns &columns, int rows, ExceptionSink *xsink);
    DLLLOCAL QoreHashNode *fetchColumns(ExceptionSink *xsink);
 
    DLLLOCAL Datasource *getDatasource() const {
