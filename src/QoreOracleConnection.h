@@ -25,6 +25,40 @@
 
 #define _QORE_ORACLEDATA_H
 
+#define QORE_OCI_FLAGS (OCI_DEFAULT|OCI_THREADED|OCI_NO_MUTEX|OCI_OBJECT)
+
+class QoreOracleEnvironment {
+protected:
+   OCIEnv *envhp;
+   bool valid;
+
+public:
+   DLLLOCAL QoreOracleEnvironment() {
+      valid = OCIEnvCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0) == OCI_SUCCESS;
+   }
+   DLLLOCAL QoreOracleEnvironment(unsigned short charset) {
+      valid = OCIEnvNlsCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0, charset, charset) == OCI_SUCCESS;
+   }
+   DLLLOCAL ~QoreOracleEnvironment() {
+      if (valid)
+         OCIHandleFree(envhp, OCI_HTYPE_ENV);
+   }
+   DLLLOCAL operator bool() const {
+      return valid;
+   }
+   DLLLOCAL int nlsNameMap(const char *name, QoreString &out) {
+      out.clear();
+      out.reserve(OCI_NLS_MAXBUFSZ);
+
+      return OCINlsNameMap(envhp, (oratext *)out.getBuffer(), OCI_NLS_MAXBUFSZ, (oratext *)name, OCI_NLS_CS_IANA_TO_ORA);
+   }
+
+   DLLLOCAL unsigned short nlsCharSetNameToId(const char *name) {
+      return OCINlsCharSetNameToId(envhp, (oratext *)name);
+   }
+
+};
+
 class QoreOracleConnection {
   protected:
    DLLLOCAL static sb4 readClobCallback(void *sp, CONST dvoid *bufp, ub4 len, ub1 piece) {
@@ -47,16 +81,12 @@ public:
    // "fake" connection for OCILIB stuff
    OCI_Connection *ocilib_cn;
    Datasource &ds;
+   bool ocilib_init;
 
    OCI_Library ocilib;
 
-   DLLLOCAL QoreOracleConnection(Datasource &n_ds) : envhp(0), errhp(0), svchp(0), ocilib_cn(0), ds(n_ds) {
-   }
-
-   DLLLOCAL ~QoreOracleConnection() {
-      // c++ will ignore "delete NULL;"
-      delete ocilib_cn;
-   }
+   DLLLOCAL QoreOracleConnection(Datasource &n_ds, QoreString &cstr, ExceptionSink *xsink);
+   DLLLOCAL ~QoreOracleConnection();
 
    DLLLOCAL int checkerr(sword status, const char *query_name, ExceptionSink *xsink);
 

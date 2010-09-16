@@ -23,6 +23,146 @@
 
 #include "oracle.h"
 
+#include "ocilib_internal.h"
+
+QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, QoreString &cstr, ExceptionSink *xsink) : envhp(0), errhp(0), svchp(0), ocilib_cn(0), ds(n_ds),  ocilib_init(false) {
+   // locking is done on the level above with the Datasource class
+
+   bool set_charset = false;
+
+   QoreString encoding;
+
+   {
+      // create temporary environment handle
+      QoreOracleEnvironment tmpenv;
+      assert(tmpenv);
+      
+      if (ds.getDBEncoding()) {
+         encoding = ds.getDBEncoding();
+         set_charset = true;
+      }
+      else { // get Oracle character set name from OS character set name
+         if (tmpenv.nlsNameMap(QCS_DEFAULT->getCode(), encoding) != OCI_SUCCESS) {
+            xsink->raiseException("DBI:ORACLE:UNKNOWN-CHARACTER-ENCODING", "cannot map default OS encoding '%s' to Oracle character encoding", QCS_DEFAULT->getCode());
+            return;
+         }
+         ds.setDBEncoding(encoding.getBuffer());
+         ds.setQoreEncoding(QCS_DEFAULT);
+         // printd(5, "QoreOracleConnection::QoreOracleConnection() setting Oracle encoding to '%s' from default OS encoding '%s'\n", charset, QCS_DEFAULT->getCode());
+      }
+      
+      // get character set ID
+      charsetid = tmpenv.nlsCharSetNameToId(encoding.getBuffer());
+   }
+
+   if (!charsetid) {
+      xsink->raiseException("DBI:ORACLE:UNKNOWN-CHARACTER-ENCODING", "this installation of Oracle does not support the '%s' character encoding", ds.getDBEncoding());
+      return;
+   }
+
+   // printd(5, "Oracle character encoding '%s' has ID %d, OCI_FLAGS=%d\n", charset, charsetid, OCI_FLAGS);
+   // create environment with default character set
+   if (OCIEnvNlsCreate(&envhp, QORE_OCI_FLAGS, 0, NULL, NULL, NULL, 0, NULL, charsetid, charsetid) != OCI_SUCCESS) {
+      xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "error creating new environment handle with encoding '%s'", ds.getDBEncoding());
+      return;
+   }
+
+   //printd(0, "QoreOracleConnection::QoreOracleConnection() ds=%p allocated envhp=%p\n", ds, envhp);
+
+   // map the Oracle character set to a qore character set
+   if (set_charset) {
+      // map Oracle character encoding name to QORE/OS character encoding name
+      if ((OCINlsNameMap(envhp, (oratext *)encoding.getBuffer(), OCI_NLS_MAXBUFSZ, (oratext *)ds.getDBEncoding(), OCI_NLS_CS_ORA_TO_IANA) == OCI_SUCCESS)) {
+         //printd(5, "QoreOracleConnection::QoreOracleConnection() Oracle character encoding '%s' mapped to '%s' character encoding\n", ds.getDBEncoding(), encoding.getBuffer());
+	 ds.setQoreEncoding(encoding.getBuffer());
+      }
+      else {
+	 xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "error mapping Oracle character encoding '%s' to a qore encoding: unknown encoding", ds.getDBEncoding());
+	 return;
+      }
+   }
+
+   if (OCIHandleAlloc(envhp, (dvoid **) &errhp, OCI_HTYPE_ERROR, 0, 0) != OCI_SUCCESS) {
+      xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate error handle for connection");
+      return;
+   }
+
+   //printd(5, "QoreOracleConnection::QoreOracleConnection() about to call OCILogon()\n");
+   if (checkerr(OCILogon(envhp, errhp, &svchp, (text *)ds.getUsername(), strlen(ds.getUsername()), (text *)ds.getPassword(), strlen(ds.getPassword()), (text *)cstr.getBuffer(), cstr.strlen()), "<open>", xsink)) {
+      return;
+   }
+
+   //printd(5, "QoreOracleConnection::QoreOracleConnection() datasource %p for DB=%s open (envhp=%p)\n", ds, cstr.getBuffer(), envhp);
+   
+   if (!OCI_Initialize2(&ocilib, envhp, errhp, ocilib_err_handler, 0, QORE_OCI_FLAGS)) {
+      xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate OCILIB support handlers");
+      return;
+   }
+
+   ocilib_init = true;
+
+   //printd(5, "ocilib=%p mode=%d\n", &ocilib, ocilib.env_mode);
+   
+   ocilib_cn = new OCI_Connection;
+   // fake the OCI_Connection
+   ocilib_cn->err = errhp;
+   ocilib_cn->cxt = svchp;
+   ocilib_cn->tinfs = OCI_ListCreate2(&ocilib, OCI_IPC_TYPE_INFO);
+
+   // then reset unused attributes
+   ocilib_cn->db = 0;
+   ocilib_cn->user = 0;                           // user
+   ocilib_cn->pwd = 0;                            // password
+   ocilib_cn->stmts = 0;                          // list of statements
+   ocilib_cn->trsns = 0;                          // list of transactions
+
+   ocilib_cn->trs = 0;                            // pointer to current transaction object
+   ocilib_cn->pool = 0;                           // pointer to connection pool parent
+   ocilib_cn->svopt = 0;                          // Pointer to server output object
+   ocilib_cn->svr = 0;                            // OCI server handle
+
+   ocilib_cn->ses = 0;                            // OCI session handle
+   ocilib_cn->autocom = false;                    // auto commit mode
+   ocilib_cn->nb_files = 0;                       // number of OCI_File opened by the connection
+   ocilib_cn->mode = 0;                           // session mode
+   ocilib_cn->cstate = 0;                         // connection state
+   ocilib_cn->usrdata = 0;                        // user data
+
+   ocilib_cn->fmt_date = 0;                       // date string format for conversion
+   ocilib_cn->fmt_num = 0;                        // numeric string format for conversion
+   ocilib_cn->ver_str = 0;                        // string  server version
+   ocilib_cn->ver_num = ocilib.version_runtime;   // numeric server version
+   ocilib_cn->trace = 0;                          // trace information   
+}
+
+QoreOracleConnection::~QoreOracleConnection() {
+   //printd(0, "oracle_close() ds=%p envhp=%p ocilib envhp=%p\n", ds, conn->envhp, OCILib.env);
+
+   //printd(0, "oracle_close(): connection to %s closed.\n", ds->getDBName());
+   //printd(0, "oracle_close(): ptr: %p\n", conn);
+   //printd(0, "oracle_close(): conn->svchp, conn->errhp: %p, %p\n", conn->svchp, conn->errhp);
+   if (svchp) {
+      OCILogoff(svchp, errhp);
+      OCIHandleFree(svchp, OCI_HTYPE_SVCCTX);
+   }
+
+   if (ocilib_cn) {
+      OCI_ListForEach(&ocilib, ocilib_cn->tinfs, (boolean (*)(void *)) OCI_TypeInfoClose);
+      OCI_ListFree(&ocilib, ocilib_cn->tinfs);
+
+      delete ocilib_cn;
+   }
+
+   if (ocilib_init)
+      OCI_Cleanup2(&ocilib);
+
+   if (errhp)
+      OCIHandleFree(errhp, OCI_HTYPE_ERROR);
+
+   if (envhp)
+      OCIHandleFree(envhp, OCI_HTYPE_ENV);
+}
+
 int QoreOracleConnection::checkerr(sword status, const char *query_name, ExceptionSink *xsink) {
    sb4 errcode = 0;
 

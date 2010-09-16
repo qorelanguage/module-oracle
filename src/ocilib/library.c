@@ -1292,8 +1292,10 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
        with OCI_HandleAlloc()
     */
 
+    /*
     if (pOCILib->env != NULL)
         OCIHandleFree(pOCILib->env, OCI_HTYPE_ENV);
+    */
 
 #ifdef OCI_IMPORT_RUNTIME
 #error

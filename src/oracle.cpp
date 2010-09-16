@@ -26,12 +26,6 @@
 #include "oracle.h"
 #include "oracle-module.h"
 #include "oracleobject.h"
-#include "ocilib_checks.h"
-#include "ocilib_defs.h"
-#include "ocilib_internal.h"
-#include "ocilib_types.h"
-#include "oci_loader.h"
-#include "oci_types.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -145,139 +139,11 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
    //    printd(5, "oracle_open(): user=%s pass=%s db=%s (oracle encoding=%s)\n",
    // 	  ds->getUsername(), ds->getPassword(), db.getBuffer(), ds->getDBEncoding() ? ds->getDBEncoding() : "(none)");
 
-   std::auto_ptr<QoreOracleConnection> conn(new QoreOracleConnection(*ds));
-
-   // locking is done on the level above with the Datasource class
-   int oci_flags = OCI_DEFAULT|OCI_THREADED|OCI_NO_MUTEX|OCI_OBJECT;
-
-   const char *charset;
-
-   // FIXME: maybe I don't need a temporary environment handle?
-   // create temporary environment handle
-   OCIEnv *tmpenvhp;
-   OCIEnvCreate(&tmpenvhp, oci_flags | OCI_NO_UCB, 0, 0, 0, 0, 0, 0);
-   // declare temporary buffer
-   char nbuf[OCI_NLS_MAXBUFSZ];
-   int need_to_set_charset = 0;
-
-   if (ds->getDBEncoding()) {
-      charset = ds->getDBEncoding();
-      need_to_set_charset = 1;
-   }
-   else { // get Oracle character set name from OS character set name
-      if ((OCINlsNameMap(tmpenvhp, (oratext *)nbuf, OCI_NLS_MAXBUFSZ, (oratext *)QCS_DEFAULT->getCode(), OCI_NLS_CS_IANA_TO_ORA) != OCI_SUCCESS)) {
-	 OCIHandleFree(tmpenvhp, OCI_HTYPE_ENV);
-	 xsink->raiseException("DBI:ORACLE:UNKNOWN-CHARACTER-SET", 
-			       "cannot map default OS encoding '%s' to Oracle character encoding",
-			       QCS_DEFAULT->getCode());
-	 return -1;
-      }
-      ds->setDBEncoding(nbuf);
-      ds->setQoreEncoding(QCS_DEFAULT);
-      charset = nbuf;
-//       printd(5, "oracle_open() setting Oracle encoding to '%s' from default OS encoding '%s'\n",
-// 	     charset, QCS_DEFAULT->getCode());
-   }
-
-#ifndef HAVE_OCIENVNLSCREATE
-#error need to define HAVE_OCIENVNLSCREATE (with Oracle 9i+)
-#endif // HAVE_OCIENVNLSCREATE
-
-   // get character set ID
-   conn->charsetid = OCINlsCharSetNameToId(tmpenvhp, (oratext *)charset);
-   // delete temporary environmental handle
-   OCIHandleFree(tmpenvhp, OCI_HTYPE_ENV);
-
-   if (!conn->charsetid) {
-      xsink->raiseException("DBI:ORACLE:UNKNOWN-CHARACTER-SET", "this installation of Oracle does not support the '%s' character encoding", 
-			    ds->getDBEncoding());
+   std::auto_ptr<QoreOracleConnection> conn(new QoreOracleConnection(*ds, db, xsink));
+   if (*xsink)
       return -1;
-   }
-
-//    printd(5, "Oracle character encoding '%s' has ID %d, oci_flags=%d\n", charset, conn->charsetid, oci_flags);
-   // create environment with default character set
-   if (OCIEnvNlsCreate(&conn->envhp, oci_flags, 0, NULL, NULL, NULL, 0, NULL, conn->charsetid, conn->charsetid) != OCI_SUCCESS) {
-      xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "error creating new environment handle with encoding '%s'", ds->getDBEncoding());
-      return -1;
-   }
-
-   //printd(0, "oracle_open() ds=%p allocated envhp=%p\n", ds, conn->envhp);
-
-   // map the Oracle character set to a qore character set
-   if (need_to_set_charset) {
-      // map Oracle character encoding name to QORE/OS character encoding name
-      if ((OCINlsNameMap(conn->envhp, (oratext *)nbuf, OCI_NLS_MAXBUFSZ, (oratext *)ds->getDBEncoding(), OCI_NLS_CS_ORA_TO_IANA) == OCI_SUCCESS)) {
-// 	 printd(5, "oracle_open() Oracle character encoding '%s' mapped to '%s' character encoding\n", ds->getDBEncoding(), nbuf);
-	 ds->setQoreEncoding(nbuf);
-      }
-      else {
-	 xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "error mapping Oracle encoding '%s' to a qore encoding: unknown encoding", ds->getDBEncoding());
-	 return -1;
-      }
-   }
-
-   if (OCIHandleAlloc(conn->envhp, (dvoid **) &conn->errhp, OCI_HTYPE_ERROR, 0, 0) != OCI_SUCCESS) {
-      OCIHandleFree(conn->envhp, OCI_HTYPE_ENV);
-      xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate error handle for connection");
-      return -1;
-   }
-   //printd(5, "oracle_open() about to call OCILogon()\n");
-   conn->checkerr(OCILogon(conn->envhp, conn->errhp, &conn->svchp, (text *)ds->getUsername(), strlen(ds->getUsername()), (text *)ds->getPassword(), strlen(ds->getPassword()), (text *)db.getBuffer(), db.strlen()), 
-                   "<open>", xsink);
-   if (*xsink) {
-      OCIHandleFree(conn->errhp, OCI_HTYPE_ERROR);
-      OCIHandleFree(conn->envhp, OCI_HTYPE_ENV);
-      return -1;
-   }
-
-//    printd(5, "oracle_open() datasource %p for DB=%s open (envhp=%p)\n", ds, db.getBuffer(), conn->envhp);
-   
-   if (!OCI_Initialize2(&conn->ocilib, conn->envhp, conn->errhp, ocilib_err_handler, NULL, oci_flags)) {
-       xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate OCILIB support handlers");
-       return -1;
-   }
-
-   //printd(5, "conn->ocilib=%p mode=%d\n", &conn->ocilib, conn->ocilib.env_mode);
-   
-   conn->ocilib_cn = new OCI_Connection;
-   // fake the OCI_Connection
-   conn->ocilib_cn->err = conn->errhp;
-   conn->ocilib_cn->cxt = conn->svchp;
-   conn->ocilib_cn->tinfs = OCI_ListCreate2(&conn->ocilib, OCI_IPC_TYPE_INFO);
-   // then reset unused attributes
-   conn->ocilib_cn->db = 0;
-   conn->ocilib_cn->user = 0;      /* user */
-   conn->ocilib_cn->pwd = 0;       /* password */
-   conn->ocilib_cn->stmts = 0;     /* list of statements */
-   conn->ocilib_cn->trsns = 0;     /* list of transactions */
-
-   conn->ocilib_cn->trs=0;       /* pointer to current transaction object */
-   conn->ocilib_cn->pool=0;      /* pointer to connection pool parent */
-   conn->ocilib_cn->svopt=0;     /* Pointer to server output object */
-   conn->ocilib_cn->svr=0;       /* OCI server handle */
-
-   /* OCI session handle */
-//    conn->checkerr(
-//                 OCI_HandleAlloc((dvoid *) OCILib.env,
-//                                                   (dvoid **) (void *) &conn->ocilib_cn->ses,
-//                                                   (ub4) OCI_HTYPE_SESSION,
-//                                                   (size_t) 0, (dvoid **) NULL),
-//                 "oracle_open OCI_HTYPE_SESSION", xsink);
-   conn->ocilib_cn->ses=0;       /* OCI session handle */
-   conn->ocilib_cn->autocom=false;   /* auto commit mode */
-   conn->ocilib_cn->nb_files=0;  /* number of OCI_File opened by the connection */
-   conn->ocilib_cn->mode=0;      /* session mode */
-   conn->ocilib_cn->cstate = 0;    /* connection state */
-   conn->ocilib_cn->usrdata=0;   /* user data */
-
-   conn->ocilib_cn->fmt_date = 0;  /* date string format for conversion */
-   conn->ocilib_cn->fmt_num = 0;   /* numeric string format for conversion */
-   conn->ocilib_cn->ver_str=0;   /* string  server version*/
-   conn->ocilib_cn->ver_num = conn->ocilib.version_runtime;   /* numeric server version */
-   conn->ocilib_cn->trace=0;     /* trace information */
 
    ds->setPrivateData((void *)conn.release());
-
    return 0;
 }
 
@@ -285,20 +151,6 @@ static int oracle_close(Datasource *ds) {
    QORE_TRACE("oracle_close()");
 
    QoreOracleConnection *conn = (QoreOracleConnection *)ds->getPrivateData();
-
-   //printd(0, "oracle_close() ds=%p envhp=%p ocilib envhp=%p\n", ds, conn->envhp, OCILib.env);
-
-//    printd(0, "oracle_close(): connection to %s closed.\n", ds->getDBName());
-//    printd(0, "oracle_close(): ptr: %p\n", conn);
-//    printd(0, "oracle_close(): conn->svchp, conn->errhp: %p, %p\n", conn->svchp, conn->errhp);
-   OCILogoff(conn->svchp, conn->errhp);
-   OCIHandleFree(conn->svchp, OCI_HTYPE_SVCCTX);
-//    OCIHandleFree(conn->errhp, OCI_HTYPE_ERROR); // deleted in OCI_Cleanup
-//    OCIHandleFree(conn->envhp, OCI_HTYPE_ENV); // OCI_Cleanup
-   OCI_ListForEach(&conn->ocilib, conn->ocilib_cn->tinfs, (boolean (*)(void *)) OCI_TypeInfoClose);
-   OCI_ListFree(&conn->ocilib, conn->ocilib_cn->tinfs);
-
-   OCI_Cleanup2(&conn->ocilib);
 
    delete conn;
 
