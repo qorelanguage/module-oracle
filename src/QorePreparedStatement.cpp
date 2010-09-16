@@ -104,12 +104,13 @@ int OraBindNode::setDateDescriptor(const DateTime &d, ExceptionSink *xsink) {
    sprintf(&tz[4], "%02d", se / 60);   
 
    //printd(5, "OraBindNode::setDateDescriptor(year=%d, month=%d, day=%d, hour=%d, minute=%d, second=%d, us=%d, tz=%s) %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, tz, info.regionName());
-   if (conn->checkerr(OCIDateTimeConstruct(conn->envhp, conn->errhp, buf.odt, (sb2)info.year, (ub1)info.month, (ub1)info.day,
+   // FIXME: move to connection class
+   if (conn->checkerr(OCIDateTimeConstruct(*conn->env, conn->errhp, buf.odt, (sb2)info.year, (ub1)info.month, (ub1)info.day,
                                             (ub1)info.hour, (ub1)info.minute, (ub1)info.second, (ub4)(info.us * 1000), (OraText*)tz, 6), 
                        "OraBindNode::setDateDescriptor()", xsink))
       return -1;   
 #else
-   if (conn->checkerr(OCIDateTimeConstruct(conn->envhp, conn->errhp, buf.odt, (sb2)d.getYear(), (ub1)d.getMonth(), (ub1)d.getDay(),
+   if (conn->checkerr(OCIDateTimeConstruct(*conn->env, conn->errhp, buf.odt, (sb2)d.getYear(), (ub1)d.getMonth(), (ub1)d.getDay(),
                                             (ub1)d.getHour(), (ub1)d.getMinute(), (ub1)d.getSecond(),
                                             (ub4)(d.getMillisecond() * 1000000), NULL, 0), "OraBindNode::setDateDescriptor()", xsink))
       return -1;
@@ -338,7 +339,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
 
 	 /*
 	 if (conn->checkerr(
-			  OCIDateTimeConstruct(conn->envhp, conn->errhp, buf.odt, (sb2)d->getYear(), (ub1)d->getMonth(), (ub1)d->getDay(),
+			  OCIDateTimeConstruct(*conn->env, conn->errhp, buf.odt, (sb2)d->getYear(), (ub1)d->getMonth(), (ub1)d->getDay(),
 					       (ub1)d->getHour(), (ub1)d->getMinute(), (ub1)d->getSecond(),
 					       (ub4)(d->getMillisecond() * 1000), NULL, 0), "OraBindNode::bindPlaceholder() setup timestamp", xsink))
 	    return;
@@ -367,7 +368,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
 	    
 	    data.ph.maxsize = size;
 
-	    if (conn->checkerr(OCIRawAssignBytes(conn->envhp, conn->errhp, (const ub1*)bin->getPtr(), bin->size(), (OCIRaw**)&buf.ptr), "OraBindNode::bindPlaceholder() bind binary value", xsink)) {
+	    if (conn->checkerr(OCIRawAssignBytes(*conn->env, conn->errhp, (const ub1*)bin->getPtr(), bin->size(), (OCIRaw**)&buf.ptr), "OraBindNode::bindPlaceholder() bind binary value", xsink)) {
 	       return;	    
 	    }
 	 }
@@ -384,7 +385,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
 	    
 	    data.ph.maxsize = size;
 
-	    if (conn->checkerr(OCIRawAssignBytes(conn->envhp, conn->errhp, (const ub1*)str->getBuffer(), str->strlen(), (OCIRaw**)&buf.ptr), "OraBindNode::bindPlaceholder() bind binary value from string", xsink))
+	    if (conn->checkerr(OCIRawAssignBytes(*conn->env, conn->errhp, (const ub1*)str->getBuffer(), str->strlen(), (OCIRaw**)&buf.ptr), "OraBindNode::bindPlaceholder() bind binary value from string", xsink))
 	       return;
 	 }
       }
@@ -392,7 +393,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
 	 data.ph.maxsize = ORA_RAW_SIZE;
 	 buf.ptr = 0;
 
-	 if (conn->checkerr(OCIRawResize(conn->envhp, conn->errhp, ORA_RAW_SIZE, (OCIRaw**)&buf.ptr), "OraBindNode::bindPlaceholder() setup binary placeholder", xsink))
+	 if (conn->checkerr(OCIRawResize(*conn->env, conn->errhp, ORA_RAW_SIZE, (OCIRaw**)&buf.ptr), "OraBindNode::bindPlaceholder() setup binary placeholder", xsink))
 	    return;
       }
 
@@ -441,12 +442,10 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
       dtype = SQLT_RSET;
 
       // allocate statement handle for result list
-      conn->checkerr(OCIHandleAlloc(conn->envhp, (dvoid **)&buf.ptr, OCI_HTYPE_STMT, 0, 0), "OraBindNode::bindPlaceHolder() allocate statement handle", xsink);
-
-      if (!*xsink)
-         stmt.bindByPos(bndp, pos, &buf.ptr, 0, SQLT_RSET, xsink, &ind);
+      if (conn->handleAlloc(&buf.ptr, OCI_HTYPE_STMT, "OraBindNode::bindPlaceHolder() allocate statement handle", xsink))
+	 buf.ptr = 0;
       else
-	 buf.ptr = NULL;
+         stmt.bindByPos(bndp, pos, &buf.ptr, 0, SQLT_RSET, xsink, &ind);
    }
    else if (!strcmp(data.ph.type, ORACLE_OBJECT)) {
        subdtype = SQLT_NTY_OBJECT;

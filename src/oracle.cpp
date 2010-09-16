@@ -130,16 +130,7 @@ static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
       return -1;
    }   
 
-   QoreString db;
-   if (port)
-      db.sprintf("//%s:%d/%s", ds->getHostName(), port, ds->getDBName());
-   else
-      db.concat(ds->getDBName());
-
-   //    printd(5, "oracle_open(): user=%s pass=%s db=%s (oracle encoding=%s)\n",
-   // 	  ds->getUsername(), ds->getPassword(), db.getBuffer(), ds->getDBEncoding() ? ds->getDBEncoding() : "(none)");
-
-   std::auto_ptr<QoreOracleConnection> conn(new QoreOracleConnection(*ds, db, xsink));
+   std::auto_ptr<QoreOracleConnection> conn(new QoreOracleConnection(*ds, xsink));
    if (*xsink)
       return -1;
 

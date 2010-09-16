@@ -30,33 +30,45 @@
 class QoreOracleEnvironment {
 protected:
    OCIEnv *envhp;
-   bool valid;
 
 public:
-   DLLLOCAL QoreOracleEnvironment() {
-      valid = OCIEnvCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0) == OCI_SUCCESS;
+   DLLLOCAL QoreOracleEnvironment() : envhp(0) {
    }
-   DLLLOCAL QoreOracleEnvironment(unsigned short charset) {
-      valid = OCIEnvNlsCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0, charset, charset) == OCI_SUCCESS;
-   }
+
    DLLLOCAL ~QoreOracleEnvironment() {
-      if (valid)
+      if (envhp)
          OCIHandleFree(envhp, OCI_HTYPE_ENV);
    }
-   DLLLOCAL operator bool() const {
-      return valid;
+
+   DLLLOCAL int init() {
+      return OCIEnvCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0) == OCI_SUCCESS ? 0 : -1;
    }
+
+   DLLLOCAL int init(unsigned short charset) {
+      return OCIEnvNlsCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0, charset, charset) == OCI_SUCCESS ? 0 : -1;
+   }
+
    DLLLOCAL int nlsNameMap(const char *name, QoreString &out) {
+      assert(envhp);
+
       out.clear();
       out.reserve(OCI_NLS_MAXBUFSZ);
 
-      return OCINlsNameMap(envhp, (oratext *)out.getBuffer(), OCI_NLS_MAXBUFSZ, (oratext *)name, OCI_NLS_CS_IANA_TO_ORA);
+      return OCINlsNameMap(envhp, (oratext *)out.getBuffer(), OCI_NLS_MAXBUFSZ, (oratext *)name, OCI_NLS_CS_IANA_TO_ORA) == OCI_SUCCESS ? 0 : -1;
    }
 
    DLLLOCAL unsigned short nlsCharSetNameToId(const char *name) {
+      assert(envhp);
       return OCINlsCharSetNameToId(envhp, (oratext *)name);
    }
 
+   DLLLOCAL operator bool() const {
+      return envhp;
+   }
+
+   DLLLOCAL OCIEnv *operator*() const {
+      return envhp;
+   }
 };
 
 class QoreOracleConnection {
@@ -74,7 +86,7 @@ class QoreOracleConnection {
    }
 
 public:
-   OCIEnv *envhp;
+   QoreOracleEnvironment env;
    OCIError *errhp;
    OCISvcCtx *svchp;
    ub2 charsetid;
@@ -85,7 +97,9 @@ public:
 
    OCI_Library ocilib;
 
-   DLLLOCAL QoreOracleConnection(Datasource &n_ds, QoreString &cstr, ExceptionSink *xsink);
+   QoreString cstr; // connection string
+
+   DLLLOCAL QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsink);
    DLLLOCAL ~QoreOracleConnection();
 
    DLLLOCAL int checkerr(sword status, const char *query_name, ExceptionSink *xsink);
@@ -94,6 +108,21 @@ public:
 
    DLLLOCAL int handleAlloc(void **descpp, unsigned type, const char *who, ExceptionSink *xsink);
 
+   DLLLOCAL int logon(ExceptionSink *xsink) {
+      const std::string &user = ds.getUsernameStr();
+      const std::string &pass = ds.getPasswordStr();
+      return checkerr(OCILogon(*env, errhp, &svchp, (text *)user.c_str(), user.size(), (text *)pass.c_str(), pass.size(), (text *)cstr.getBuffer(), cstr.strlen()), "QoreOracleConnection::logon()", xsink);
+   }
+
+   // logoff but do not process error return values
+   DLLLOCAL int logoff() {
+      assert(svchp);
+      int rc = OCILogoff(svchp, errhp);
+      OCIHandleFree(svchp, OCI_HTYPE_SVCCTX);
+      svchp = 0;
+      return rc;
+   }
+
    DLLLOCAL int commit(ExceptionSink *xsink);
    DLLLOCAL int rollback(ExceptionSink *xsink);
 
@@ -101,7 +130,7 @@ public:
 
    DLLLOCAL DateTimeNode *getIntervalYearMonth(OCIInterval *oi, ExceptionSink *xsink) {
       sb4 year, month;
-      if (checkerr(OCIIntervalGetYearMonth(envhp, errhp, &year, &month, oi), "QoreOracleConnection::getIntervalYearMonth()", xsink))
+      if (checkerr(OCIIntervalGetYearMonth(*env, errhp, &year, &month, oi), "QoreOracleConnection::getIntervalYearMonth()", xsink))
 	 return 0;
 
       return new DateTimeNode(year, month, 0, 0, 0, 0, 0, true);
@@ -110,7 +139,7 @@ public:
    DLLLOCAL DateTimeNode *getIntervalDaySecond(OCIInterval *oi, ExceptionSink *xsink) {
 	 //printd(5, "QoreOracleConnection::getIntervalDaySecond() using INTERVAL_DS handle %p\n", buf.oi);
 	 sb4 day, hour, minute, second, nanosecond;
-	 if (checkerr(OCIIntervalGetDaySecond(envhp, errhp, &day, &hour, &minute, &second, &nanosecond, oi), "QoreOracleConnection::getIntervalDaySecond()", xsink))
+	 if (checkerr(OCIIntervalGetDaySecond(*env, errhp, &day, &hour, &minute, &second, &nanosecond, oi), "QoreOracleConnection::getIntervalDaySecond()", xsink))
 	    return 0;
 
 #ifdef _QORE_HAS_TIME_ZONES
@@ -122,12 +151,12 @@ public:
 
    DLLLOCAL BinaryNode *getBinary(OCIRaw *rawp) {
       BinaryNode *b = new BinaryNode;
-      b->append(OCIRawPtr(envhp, rawp), OCIRawSize(envhp, rawp));
+      b->append(OCIRawPtr(*env, rawp), OCIRawSize(*env, rawp));
       return b;
    }
 
    DLLLOCAL int rawResize(OCIRaw **rawp, unsigned short size, ExceptionSink *xsink) {
-      return checkerr(OCIRawResize(envhp, errhp, size, rawp), "QoreOracleConnection::rawResize()", xsink);
+      return checkerr(OCIRawResize(*env, errhp, size, rawp), "QoreOracleConnection::rawResize()", xsink);
    }
 
    DLLLOCAL int rawFree(OCIRaw **rawp, ExceptionSink *xsink) {

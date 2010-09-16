@@ -25,8 +25,21 @@
 
 #include "ocilib_internal.h"
 
-QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, QoreString &cstr, ExceptionSink *xsink) : envhp(0), errhp(0), svchp(0), ocilib_cn(0), ds(n_ds),  ocilib_init(false) {
+QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsink) : errhp(0), svchp(0), ocilib_cn(0), ds(n_ds), ocilib_init(false) {
    // locking is done on the level above with the Datasource class
+
+#ifdef QORE_HAS_DATASOURCE_PORT
+   int port = ds.getPort();
+#else
+   int port = 0;
+#endif
+
+   if (port)
+      cstr.sprintf("//%s:%d/%s", ds.getHostName(), port, ds.getDBName());
+   else
+      cstr.concat(ds.getDBName());
+
+   //printd(5, "QoreOracleConnection::QoreOracleConnection(): user=%s pass=%s db=%s (oracle encoding=%s)\n", ds.getUsername(), ds.getPassword(), db.getBuffer(), ds.getDBEncoding() ? ds.getDBEncoding() : "(none)");
 
    bool set_charset = false;
 
@@ -35,11 +48,13 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, QoreString &cstr, E
    {
       // create temporary environment handle
       QoreOracleEnvironment tmpenv;
-      assert(tmpenv);
+      tmpenv.init();
       
       if (ds.getDBEncoding()) {
-         encoding = ds.getDBEncoding();
          set_charset = true;
+
+         // get character set ID
+         charsetid = tmpenv.nlsCharSetNameToId(ds.getDBEncoding());
       }
       else { // get Oracle character set name from OS character set name
          if (tmpenv.nlsNameMap(QCS_DEFAULT->getCode(), encoding) != OCI_SUCCESS) {
@@ -48,11 +63,11 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, QoreString &cstr, E
          }
          ds.setDBEncoding(encoding.getBuffer());
          ds.setQoreEncoding(QCS_DEFAULT);
+
+         // get character set ID
+         charsetid = tmpenv.nlsCharSetNameToId(encoding.getBuffer());
          // printd(5, "QoreOracleConnection::QoreOracleConnection() setting Oracle encoding to '%s' from default OS encoding '%s'\n", charset, QCS_DEFAULT->getCode());
       }
-      
-      // get character set ID
-      charsetid = tmpenv.nlsCharSetNameToId(encoding.getBuffer());
    }
 
    if (!charsetid) {
@@ -62,17 +77,17 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, QoreString &cstr, E
 
    // printd(5, "Oracle character encoding '%s' has ID %d, OCI_FLAGS=%d\n", charset, charsetid, OCI_FLAGS);
    // create environment with default character set
-   if (OCIEnvNlsCreate(&envhp, QORE_OCI_FLAGS, 0, NULL, NULL, NULL, 0, NULL, charsetid, charsetid) != OCI_SUCCESS) {
+   if (env.init(charsetid)) {
       xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "error creating new environment handle with encoding '%s'", ds.getDBEncoding());
       return;
    }
 
-   //printd(0, "QoreOracleConnection::QoreOracleConnection() ds=%p allocated envhp=%p\n", ds, envhp);
+   //printd(0, "QoreOracleConnection::QoreOracleConnection() ds=%p allocated envhp=%p\n", ds, *env);
 
    // map the Oracle character set to a qore character set
    if (set_charset) {
       // map Oracle character encoding name to QORE/OS character encoding name
-      if ((OCINlsNameMap(envhp, (oratext *)encoding.getBuffer(), OCI_NLS_MAXBUFSZ, (oratext *)ds.getDBEncoding(), OCI_NLS_CS_ORA_TO_IANA) == OCI_SUCCESS)) {
+      if (env.nlsNameMap(ds.getDBEncoding(), encoding)) {
          //printd(5, "QoreOracleConnection::QoreOracleConnection() Oracle character encoding '%s' mapped to '%s' character encoding\n", ds.getDBEncoding(), encoding.getBuffer());
 	 ds.setQoreEncoding(encoding.getBuffer());
       }
@@ -82,19 +97,19 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, QoreString &cstr, E
       }
    }
 
-   if (OCIHandleAlloc(envhp, (dvoid **) &errhp, OCI_HTYPE_ERROR, 0, 0) != OCI_SUCCESS) {
+   // cannot use handleAlloc() here as we are allocating errhp now
+   if (OCIHandleAlloc(*env, (dvoid **) &errhp, OCI_HTYPE_ERROR, 0, 0) != OCI_SUCCESS) {
       xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate error handle for connection");
       return;
    }
 
    //printd(5, "QoreOracleConnection::QoreOracleConnection() about to call OCILogon()\n");
-   if (checkerr(OCILogon(envhp, errhp, &svchp, (text *)ds.getUsername(), strlen(ds.getUsername()), (text *)ds.getPassword(), strlen(ds.getPassword()), (text *)cstr.getBuffer(), cstr.strlen()), "<open>", xsink)) {
+   if (logon(xsink))
       return;
-   }
 
-   //printd(5, "QoreOracleConnection::QoreOracleConnection() datasource %p for DB=%s open (envhp=%p)\n", ds, cstr.getBuffer(), envhp);
+   //printd(5, "QoreOracleConnection::QoreOracleConnection() datasource %p for DB=%s open (envhp=%p)\n", ds, cstr.getBuffer(), *env);
    
-   if (!OCI_Initialize2(&ocilib, envhp, errhp, ocilib_err_handler, 0, QORE_OCI_FLAGS)) {
+   if (!OCI_Initialize2(&ocilib, *env, errhp, ocilib_err_handler, 0, QORE_OCI_FLAGS)) {
       xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate OCILIB support handlers");
       return;
    }
@@ -136,15 +151,13 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, QoreString &cstr, E
 }
 
 QoreOracleConnection::~QoreOracleConnection() {
-   //printd(0, "oracle_close() ds=%p envhp=%p ocilib envhp=%p\n", ds, conn->envhp, OCILib.env);
+   //printd(0, "oracle_close() ds=%p envhp=%p ocilib envhp=%p\n", ds, *env, OCILib.env);
 
-   //printd(0, "oracle_close(): connection to %s closed.\n", ds->getDBName());
+   //printd(0, "oracle_close(): connection to %s closed.\n", ds.getDBName());
    //printd(0, "oracle_close(): ptr: %p\n", conn);
-   //printd(0, "oracle_close(): conn->svchp, conn->errhp: %p, %p\n", conn->svchp, conn->errhp);
-   if (svchp) {
-      OCILogoff(svchp, errhp);
-      OCIHandleFree(svchp, OCI_HTYPE_SVCCTX);
-   }
+   //printd(0, "oracle_close(): svchp, errhp: %p, %p\n", svchp, errhp);
+   if (svchp)
+      logoff();
 
    if (ocilib_cn) {
       OCI_ListForEach(&ocilib, ocilib_cn->tinfs, (boolean (*)(void *)) OCI_TypeInfoClose);
@@ -158,9 +171,6 @@ QoreOracleConnection::~QoreOracleConnection() {
 
    if (errhp)
       OCIHandleFree(errhp, OCI_HTYPE_ERROR);
-
-   if (envhp)
-      OCIHandleFree(envhp, OCI_HTYPE_ENV);
 }
 
 int QoreOracleConnection::checkerr(sword status, const char *query_name, ExceptionSink *xsink) {
@@ -214,11 +224,11 @@ int QoreOracleConnection::checkerr(sword status, const char *query_name, Excepti
 }
 
 int QoreOracleConnection::descriptorAlloc(void **descpp, unsigned type, const char *who, ExceptionSink *xsink) {
-   return checkerr(OCIDescriptorAlloc(envhp, descpp, type, 0, 0), who, xsink);
+   return checkerr(OCIDescriptorAlloc(*env, descpp, type, 0, 0), who, xsink);
 }
 
 int QoreOracleConnection::handleAlloc(void **hndlpp, unsigned type, const char *who, ExceptionSink *xsink) {
-   return checkerr(OCIHandleAlloc(envhp, hndlpp, type, 0, 0), who, xsink);
+   return checkerr(OCIHandleAlloc(*env, hndlpp, type, 0, 0), who, xsink);
 }
 
 int QoreOracleConnection::commit(ExceptionSink *xsink) {
@@ -233,12 +243,12 @@ DateTimeNode *QoreOracleConnection::getTimestamp(bool get_tz, OCIDateTime *odt, 
    //printd(5, "QoreOracleConnection::getTimestamp() using TIMESTAMP handle %p\n", odt);
    sb2 year;
    ub1 month, day;
-   if (checkerr(OCIDateTimeGetDate(envhp, errhp, odt, &year, &month, &day), "OCIDateTimeGetDate()", xsink))
+   if (checkerr(OCIDateTimeGetDate(*env, errhp, odt, &year, &month, &day), "OCIDateTimeGetDate()", xsink))
       return 0;
 
    ub1 hour, minute, second;
    ub4 ns; // nanoseconds
-   if (checkerr(OCIDateTimeGetTime(envhp, errhp, odt, &hour, &minute, &second, &ns), "OCIDateTimeGetTime()", xsink))
+   if (checkerr(OCIDateTimeGetTime(*env, errhp, odt, &hour, &minute, &second, &ns), "OCIDateTimeGetTime()", xsink))
       return 0;
 
 #ifdef _QORE_HAS_TIME_ZONES
@@ -249,7 +259,7 @@ DateTimeNode *QoreOracleConnection::getTimestamp(bool get_tz, OCIDateTime *odt, 
       // try to get time zone from date value
       // time zone offset, hour and minute
       sb1 oh = 0, om = 0;
-      sword err = OCIDateTimeGetTimeZoneOffset(envhp, errhp, odt, &oh, &om);
+      sword err = OCIDateTimeGetTimeZoneOffset(*env, errhp, odt, &oh, &om);
       if (err == OCI_SUCCESS) {
 	 //printd(5, "err=%d, oh=%d, om=%d, se=%d\n", err, (int)oh, (int)om, oh * 3600 + om * 60);
 	 zone = findCreateOffsetZone(oh * 3600 + om * 60);

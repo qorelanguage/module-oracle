@@ -52,10 +52,10 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
 	 }
 
 	 // otherwise try to reconnect
-	 OCILogoff(conn->svchp, conn->errhp);
+	 conn->logoff();
 
 	 //printd(0, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect\n");
-	 if (conn->checkerr(OCILogon(conn->envhp, conn->errhp, &conn->svchp, (text *)ds->getUsername(), strlen(ds->getUsername()), (text *)ds->getPassword(), strlen(ds->getPassword()), (text *)ds->getDBName(), strlen(ds->getDBName())), who, xsink)) {
+	 if (conn->logon(xsink)) {
 	    // close datasource and remove private data
 	    ds->close();
 	    return -1;
