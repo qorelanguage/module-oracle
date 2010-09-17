@@ -151,11 +151,9 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
 }
 
 QoreOracleConnection::~QoreOracleConnection() {
-   //printd(0, "oracle_close() ds=%p envhp=%p ocilib envhp=%p\n", ds, *env, OCILib.env);
-
-   //printd(0, "oracle_close(): connection to %s closed.\n", ds.getDBName());
-   //printd(0, "oracle_close(): ptr: %p\n", conn);
-   //printd(0, "oracle_close(): svchp, errhp: %p, %p\n", svchp, errhp);
+   //printd(0, "QoreOracleConnection::~QoreOracleConnection() ds=%p envhp=%p ocilib envhp=%p\n", ds, *env, OCILib.env);
+   //printd(0, "QoreOracleConnection::~QoreOracleConnection(): connection to %s closed.\n", ds.getDBName());
+   //printd(0, "QoreOracleConnection::~QoreOracleConnection(): svchp, errhp: %p, %p\n", svchp, errhp);
    if (svchp)
       logoff();
 

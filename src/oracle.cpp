@@ -80,22 +80,24 @@ static AbstractQoreNode *oracle_exec_raw(Datasource *ds, const QoreString *qstr,
 }
 #endif
 
-static AbstractQoreNode *oracle_select(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink) {
+#ifdef _QORE_HAS_DBI_EXECRAWROWS
+static AbstractQoreNode *oracle_exec_raw_rows(Datasource *ds, const QoreString *qstr, ExceptionSink *xsink) {
    QorePreparedStatementHelper bg(ds, xsink);
 
-   if (bg.prepare(qstr, args, true, xsink))
+   if (bg.prepare(qstr, 0, false, xsink))
       return 0;
 
-   return bg.select(xsink);
+   return bg.execWithPrologue(true, xsink);
 }
+#endif
 
-static AbstractQoreNode *oracle_select_rows(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink) {
+static AbstractQoreNode *oracle_exec_rows(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink) {
    QorePreparedStatementHelper bg(ds, xsink);
 
    if (bg.prepare(qstr, args, true, xsink))
       return 0;
 
-   return bg.selectRows(xsink);
+   return bg.execWithPrologue(true, xsink);
 }
 
 static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
@@ -307,11 +309,14 @@ QoreStringNode *oracle_module_init() {
    qore_dbi_method_list methods;
    methods.add(QDBI_METHOD_OPEN, oracle_open);
    methods.add(QDBI_METHOD_CLOSE, oracle_close);
-   methods.add(QDBI_METHOD_SELECT, oracle_select);
-   methods.add(QDBI_METHOD_SELECT_ROWS, oracle_select_rows);
+   methods.add(QDBI_METHOD_SELECT, oracle_exec);
+   methods.add(QDBI_METHOD_SELECT_ROWS, oracle_exec_rows);
    methods.add(QDBI_METHOD_EXEC, oracle_exec);
 #ifdef _QORE_HAS_DBI_EXECRAW
    methods.add(QDBI_METHOD_EXECRAW, oracle_exec_raw);
+#endif   
+#ifdef _QORE_HAS_DBI_EXECRAWROWS
+   methods.add(QDBI_METHOD_EXECRAW, oracle_exec_raw_rows);
 #endif   
    methods.add(QDBI_METHOD_COMMIT, oracle_commit);
    methods.add(QDBI_METHOD_ROLLBACK, oracle_rollback);

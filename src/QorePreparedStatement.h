@@ -150,8 +150,6 @@ public:
    DLLLOCAL AbstractQoreNode *getValue(bool horizontal, ExceptionSink *xsink);
 
    DLLLOCAL int setupDateDescriptor(ExceptionSink *xsink);
-
-   DLLLOCAL int setDateDescriptor(const DateTime &d, ExceptionSink *xsink);
 };
 
 typedef std::vector<OraBindNode *> node_list_t;
@@ -228,9 +226,6 @@ public:
    DLLLOCAL QoreHashNode *fetchColumns(int rows, ExceptionSink *xsink);
 
    DLLLOCAL AbstractQoreNode *execWithPrologue(bool rows, ExceptionSink *xsink);
-
-   DLLLOCAL AbstractQoreNode *select(ExceptionSink *xsink);
-   DLLLOCAL AbstractQoreNode *selectRows(ExceptionSink *xsink);
 
    // rows = true means get a list of hashes, otherwise the default is a hash of lists
    DLLLOCAL QoreHashNode *getOutputHash(bool rows, ExceptionSink *xsink);

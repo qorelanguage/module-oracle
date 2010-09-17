@@ -163,6 +163,42 @@ public:
       return rawResize(rawp, 0, xsink);
    }
 
+   DLLLOCAL int dateTimeConstruct(OCIDateTime *odt, short year, unsigned char month, unsigned char day, unsigned char hour, unsigned char minute,
+                                  unsigned char second, unsigned ns, const char *tz, ExceptionSink *xsink) {
+      return checkerr(OCIDateTimeConstruct(*env, errhp, odt, year, month, day, hour, minute, second, ns, 0, 0), "QoreOracleConnection::dateTimeConstruct()", xsink);
+   }
+
+   DLLLOCAL int dateTimeConstruct(OCIDateTime *odt, const DateTime &d, ExceptionSink *xsink) {
+#ifdef _QORE_HAS_TIME_ZONES
+      // get broken-down time information in the current time zone
+      qore_tm info;
+      d.getInfo(currentTZ(), info);
+      
+      // setup time zone string
+      char tz[7];
+      int se = info.utc_secs_east;
+
+      if (se < 0) {
+         tz[0] = '-';
+         se = -se;
+      }
+      else
+         tz[0] = '+';
+
+      int hours = se / 3600;
+      sprintf(&tz[1], "%02d:", hours);
+
+      se %= 3600;
+      sprintf(&tz[4], "%02d", se / 60);   
+
+      //printd(5, "QoreOracleConnection::dateTimeConstruct(year=%d, month=%d, day=%d, hour=%d, minute=%d, second=%d, us=%d, tz=%s) %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, tz, info.regionName());
+      return checkerr(OCIDateTimeConstruct(*env, errhp, odt, info.year, info.month, info.day, info.hour, info.minute, info.second, (info.us * 1000), (oratext *)tz, 6), "QoreOracleConnection::dateTimeConstruct()", xsink);
+#else
+      return checkerr(OCIDateTimeConstruct(*env, errhp, odt, d.getYear(), d.getMonth(), d.getDay(), d.getHour(), d.getMinute(), d.getSecond(),
+                                           (d.getMillisecond() * 1000000), 0, 0), "QoreOracleConnection::dateTimeConstruct()", xsink))
+#endif
+   }
+
    DLLLOCAL BinaryNode *readBlob(OCILobLocator *lobp, ExceptionSink *xsink);
    DLLLOCAL QoreStringNode *readClob(OCILobLocator *lobp, const QoreEncoding *enc, ExceptionSink *xsink);
 

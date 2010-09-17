@@ -69,53 +69,13 @@ int OraBindNode::setupDateDescriptor(ExceptionSink *xsink) {
    dtype = QORE_SQLT_TIMESTAMP;
    buf.odt = NULL;
 
-   if (conn->descriptorAlloc((dvoid **)&buf.odt, QORE_DTYPE_TIMESTAMP, "OraBindNode::bindValue() TIMESTAMP", xsink))
+   if (conn->descriptorAlloc((dvoid **)&buf.odt, QORE_DTYPE_TIMESTAMP, "OraBindNode::setupDateDecriptor()", xsink))
       return -1;
    return 0;
 }
 
 int OraBindNode::bindDate(int pos, ExceptionSink *xsink) {
    return stmt.bindByPos(bndp, pos, &buf.odt, 0, QORE_SQLT_TIMESTAMP, xsink);
-}
-
-int OraBindNode::setDateDescriptor(const DateTime &d, ExceptionSink *xsink) {
-   QoreOracleConnection *conn = (QoreOracleConnection *)stmt.getData();
-
-#ifdef _QORE_HAS_TIME_ZONES
-   // get broken-down time information in the current time zone
-   qore_tm info;
-   d.getInfo(currentTZ(), info);
-
-   // setup time zone string
-   char tz[7];
-   int se = info.utc_secs_east;
-
-   if (se < 0) {
-      tz[0] = '-';
-      se = -se;
-   }
-   else
-      tz[0] = '+';
-
-   int hours = se / 3600;
-   sprintf(&tz[1], "%02d:", hours);
-
-   se %= 3600;
-   sprintf(&tz[4], "%02d", se / 60);   
-
-   //printd(5, "OraBindNode::setDateDescriptor(year=%d, month=%d, day=%d, hour=%d, minute=%d, second=%d, us=%d, tz=%s) %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, tz, info.regionName());
-   // FIXME: move to connection class
-   if (conn->checkerr(OCIDateTimeConstruct(*conn->env, conn->errhp, buf.odt, (sb2)info.year, (ub1)info.month, (ub1)info.day,
-                                            (ub1)info.hour, (ub1)info.minute, (ub1)info.second, (ub4)(info.us * 1000), (OraText*)tz, 6), 
-                       "OraBindNode::setDateDescriptor()", xsink))
-      return -1;   
-#else
-   if (conn->checkerr(OCIDateTimeConstruct(*conn->env, conn->errhp, buf.odt, (sb2)d.getYear(), (ub1)d.getMonth(), (ub1)d.getDay(),
-                                            (ub1)d.getHour(), (ub1)d.getMinute(), (ub1)d.getSecond(),
-                                            (ub4)(d.getMillisecond() * 1000000), NULL, 0), "OraBindNode::setDateDescriptor()", xsink))
-      return -1;
-#endif
-   return 0;
 }
 
 void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
@@ -192,7 +152,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
       if (setupDateDescriptor(xsink))
 	 return;
 
-      if (setDateDescriptor(*d, xsink))
+      if (conn->dateTimeConstruct(buf.odt, *d, xsink))
 	 return;
 
       bindDate(pos, xsink);
@@ -325,25 +285,14 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
    else if (!strcmp(data.ph.type, "date")) {
       //       printd(5, "oraBindNode::bindPlaceholder() this=%p, timestamp dtype=%d\n", this, QORE_SQLT_TIMESTAMP);
 
-      dtype = QORE_SQLT_TIMESTAMP;
-      buf.odt = NULL;
-      conn->descriptorAlloc((dvoid **)&buf.odt, QORE_DTYPE_TIMESTAMP, "OraBindNode::bindPlaceholder() allocate timestamp descriptor", xsink);
-      if (*xsink)
+      if (setupDateDescriptor(xsink))
 	 return;
 
       if (value) {
 	 DateTimeNodeValueHelper d(value);
 
-	 if (setDateDescriptor(*(*d), xsink))
+	 if (conn->dateTimeConstruct(buf.odt, **d, xsink))
 	    return;
-
-	 /*
-	 if (conn->checkerr(
-			  OCIDateTimeConstruct(*conn->env, conn->errhp, buf.odt, (sb2)d->getYear(), (ub1)d->getMonth(), (ub1)d->getDay(),
-					       (ub1)d->getHour(), (ub1)d->getMinute(), (ub1)d->getSecond(),
-					       (ub4)(d->getMillisecond() * 1000), NULL, 0), "OraBindNode::bindPlaceholder() setup timestamp", xsink))
-	    return;
-	 */
       }
 
       //conn->checkerr(OCIBindByPos(stmthp, &bndp, conn->errhp, pos, &buf.odt, 0, QORE_SQLT_TIMESTAMP, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() timestamp", xsink);
@@ -776,7 +725,15 @@ AbstractQoreNode *QorePreparedStatement::execWithPrologue(bool rows, ExceptionSi
    ReferenceHolder<AbstractQoreNode> rv(xsink);
 
    // if there are output variables, then fix values if necessary and return
-   if (hasOutput)
+   if (is_select) {
+      if (rows)
+	 rv = QoreOracleStatement::fetchRows(xsink);
+      else
+         rv = QoreOracleStatement::fetchColumns(xsink);
+
+      if (*xsink)
+	 return 0;
+   } else if (hasOutput)
       rv = getOutputHash(rows, xsink);
    else {
       // get row count
@@ -795,36 +752,6 @@ int QorePreparedStatement::affectedRows(ExceptionSink *xsink) {
    int rc = 0;
    getData()->checkerr(OCIAttrGet(stmthp, OCI_HTYPE_STMT, &rc, 0, OCI_ATTR_ROW_COUNT, getData()->errhp), "QorePreparedStatement::affectedRows()", xsink);
    return rc;
-}
-
-AbstractQoreNode *QorePreparedStatement::select(ExceptionSink *xsink) {
-   if (execute("QorePreparedStatement::select()", xsink))
-      return 0;
-
-   ReferenceHolder<QoreHashNode> h(QoreOracleStatement::fetchColumns(xsink), xsink);
-   if (*xsink)
-      return 0;
-
-   // commit transaction if autocommit set for datasource
-   if (ds->getAutoCommit() && getData()->commit(xsink))
-      return 0;
-
-   return h.release();
-}
-
-AbstractQoreNode *QorePreparedStatement::selectRows(ExceptionSink *xsink) {
-   if (execute("QorePreparedStatement::selectRows()", xsink))
-      return 0;
-
-   ReferenceHolder<QoreListNode> l(QoreOracleStatement::fetchRows(xsink), xsink);
-   if (*xsink)
-      return 0;
-
-   // commit transaction if autocommit set for datasource
-   if (ds->getAutoCommit() && getData()->commit(xsink))
-      return 0;
-
-   return l.release();
 }
 
 QoreHashNode *QorePreparedStatement::fetchRow(ExceptionSink *xsink) {
