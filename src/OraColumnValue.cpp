@@ -84,6 +84,8 @@ void OraColumnValue::del(ExceptionSink *xsink) {
             OCIDescriptorFree(buf.odt, OCI_DTYPE_INTERVAL_DS);
          break;
 
+      case SQLT_BIN:
+      case SQLT_LBI:
       case SQLT_LVB: {
          QoreOracleConnection *conn = stmt.getData();
          //printd(5, "freeing binary pointer for SQLT_LVB %p\n", buf.ptr);
@@ -145,6 +147,7 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
          return stmt.getData()->getIntervalDaySecond(buf.oi, xsink);
 
       case SQLT_LVB:
+         //printd(5, "OraColumnValue::getValue() this=%p SQLT_LVB ptr=%p\n", this, buf.ptr);
          return stmt.getData()->getBinary((OCIRaw*)buf.ptr);
 
       case SQLT_CLOB:

@@ -109,7 +109,7 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
    // iterate column list
    for (unsigned i = 0; i < clist.size(); ++i) {
       OraColumnBuffer *w = clist[i];
-      //printd(5, "OraResultSet::define() %s: w->dtype=%d\n", w->name, w->dtype);
+      //printd(5, "OraResultSet::define() %s: w->dtype=%d\n", w->name.getBuffer(), w->dtype);
       switch (w->dtype) {
 	 case SQLT_INT:
 	 case SQLT_UIN:
@@ -171,17 +171,16 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
 	 // handle raw data
 	 case SQLT_BIN:
 	 case SQLT_LBI: {
-	    //printd(5, "OraResultSet::define() maxsize=%d\n", w->maxsize);
 	    int size = w->maxsize;
 	    if (!size)
 	       size = ORA_RAW_SIZE;
 
 	    w->buf.ptr = 0;
-	    w->dtype = SQLT_LVB;
             if (conn->rawResize((OCIRaw**)&w->buf.ptr, size, xsink))
 	       return -1;
 
 	    stmt.defineByPos(w->defp, i + 1, w->buf.ptr, size + sizeof(int), SQLT_LVB, &w->ind, xsink);
+	    //printd(5, "OraResultSet::define() w=%p SQLT_LVB size=%d ptr=%p\n", w, size, w->buf.ptr);
 	    break;
 	 }
 
