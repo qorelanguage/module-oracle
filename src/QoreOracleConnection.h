@@ -48,13 +48,24 @@ public:
       return OCIEnvNlsCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0, charset, charset) == OCI_SUCCESS ? 0 : -1;
    }
 
-   DLLLOCAL int nlsNameMap(const char *name, QoreString &out) {
+   DLLLOCAL int nlsNameMapToOracle(const char *name, QoreString &out) {
+      return nlsNameMap(name, out, OCI_NLS_CS_IANA_TO_ORA);
+   }
+
+   DLLLOCAL int nlsNameMapToQore(const char *name, QoreString &out) {
+      return nlsNameMap(name, out, OCI_NLS_CS_ORA_TO_IANA);
+   }
+
+   DLLLOCAL int nlsNameMap(const char *name, QoreString &out, int dir) {
       assert(envhp);
 
       out.clear();
       out.reserve(OCI_NLS_MAXBUFSZ);
-
-      return OCINlsNameMap(envhp, (oratext *)out.getBuffer(), OCI_NLS_MAXBUFSZ, (oratext *)name, OCI_NLS_CS_IANA_TO_ORA) == OCI_SUCCESS ? 0 : -1;
+      
+      int rc = OCINlsNameMap(envhp, (oratext *)out.getBuffer(), OCI_NLS_MAXBUFSZ, (oratext *)name, dir) == OCI_SUCCESS ? 0 : -1;
+      if (!rc)
+         out.terminate(strlen(out.getBuffer()));
+      return rc;
    }
 
    DLLLOCAL unsigned short nlsCharSetNameToId(const char *name) {

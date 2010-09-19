@@ -57,7 +57,7 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
          charsetid = tmpenv.nlsCharSetNameToId(ds.getDBEncoding());
       }
       else { // get Oracle character set name from OS character set name
-         if (tmpenv.nlsNameMap(QCS_DEFAULT->getCode(), encoding) != OCI_SUCCESS) {
+         if (tmpenv.nlsNameMapToOracle(QCS_DEFAULT->getCode(), encoding) != OCI_SUCCESS) {
             xsink->raiseException("DBI:ORACLE:UNKNOWN-CHARACTER-ENCODING", "cannot map default OS encoding '%s' to Oracle character encoding", QCS_DEFAULT->getCode());
             return;
          }
@@ -87,8 +87,9 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
    // map the Oracle character set to a qore character set
    if (set_charset) {
       // map Oracle character encoding name to QORE/OS character encoding name
-      if (env.nlsNameMap(ds.getDBEncoding(), encoding)) {
-         //printd(5, "QoreOracleConnection::QoreOracleConnection() Oracle character encoding '%s' mapped to '%s' character encoding\n", ds.getDBEncoding(), encoding.getBuffer());
+      if (!env.nlsNameMapToQore(ds.getDBEncoding(), encoding)) {
+         //printd(0, "QoreOracleConnection::QoreOracleConnection() Oracle character encoding '%s' mapped to '%s' character encoding\n", ds.getDBEncoding(), encoding.getBuffer());
+         assert(encoding.strlen());
 	 ds.setQoreEncoding(encoding.getBuffer());
       }
       else {
