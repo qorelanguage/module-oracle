@@ -146,6 +146,8 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
       case SQLT_INTERVAL_DS:
          return stmt.getData()->getIntervalDaySecond(buf.oi, xsink);
 
+      case SQLT_BIN:
+      case SQLT_LBI:
       case SQLT_LVB:
          //printd(5, "OraColumnValue::getValue() this=%p SQLT_LVB ptr=%p\n", this, buf.ptr);
          return stmt.getData()->getBinary((OCIRaw*)buf.ptr);
