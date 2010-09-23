@@ -149,10 +149,12 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
    ocilib_cn->ver_str = 0;                        // string  server version
    ocilib_cn->ver_num = ocilib.version_runtime;   // numeric server version
    ocilib_cn->trace = 0;                          // trace information   
+
+   //printd(0, "QoreOracleConnection::QoreOracleConnection() this=%p ds=%p envhp=%p svchp=%p errhp=%p\n", this, &ds, *env, svchp, errhp);
 }
 
 QoreOracleConnection::~QoreOracleConnection() {
-   //printd(0, "QoreOracleConnection::~QoreOracleConnection() ds=%p envhp=%p ocilib envhp=%p\n", ds, *env, OCILib.env);
+   //printd(0, "QoreOracleConnection::~QoreOracleConnection() this=%p ds=%p envhp=%p svchp=%p ocilib envhp=%p\n", this, &ds, *env, svchp, ocilib.env);
    //printd(0, "QoreOracleConnection::~QoreOracleConnection(): connection to %s closed.\n", ds.getDBName());
    //printd(0, "QoreOracleConnection::~QoreOracleConnection(): svchp, errhp: %p, %p\n", svchp, errhp);
    if (svchp)

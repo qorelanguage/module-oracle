@@ -215,7 +215,8 @@ public:
    }
 
    DLLLOCAL QoreStringNode *getServerVersion(ExceptionSink *xsink) {
-      // buffer for version information                                                                                                                 
+      //printd(0, "QoreOracleConnection::getServerVersion() this=%p ds=%p envhp=%p svchp=%p errhp=%p\n", this, &ds, *env, svchp, errhp);
+      // buffer for version information
       char version_buf[VERSION_BUF_SIZE + 1];
 
       // execute OCIServerVersion and check status code
