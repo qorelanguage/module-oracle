@@ -152,20 +152,10 @@ static int oracle_close(Datasource *ds) {
    return 0;
 }
 
-#define VERSION_BUF_SIZE 512
 static AbstractQoreNode *oracle_get_server_version(Datasource *ds, ExceptionSink *xsink) {
    // get private data structure for connection
    QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
-   
-   // buffer for version information
-   char version_buf[VERSION_BUF_SIZE + 1];
-   
-   // execute OCIServerVersion and check status code
-   if (conn.checkerr(OCIServerVersion(conn.svchp, conn.errhp, (OraText *)version_buf, VERSION_BUF_SIZE, OCI_HTYPE_SVCCTX),
-                     "oracle_get_server_version", xsink))      
-      return 0;
-   
-   return new QoreStringNode(version_buf);   
+   return conn.getServerVersion(xsink);
 }
 
 #ifdef HAVE_OCICLIENTVERSION

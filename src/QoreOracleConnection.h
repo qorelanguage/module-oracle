@@ -27,6 +27,10 @@
 
 #define QORE_OCI_FLAGS (OCI_DEFAULT|OCI_THREADED|OCI_NO_MUTEX|OCI_OBJECT)
 
+#ifndef VERSION_BUF_SIZE
+#define VERSION_BUF_SIZE 512
+#endif
+
 class QoreOracleEnvironment {
 protected:
    OCIEnv *envhp;
@@ -208,6 +212,17 @@ public:
       return checkerr(OCIDateTimeConstruct(*env, errhp, odt, d.getYear(), d.getMonth(), d.getDay(), d.getHour(), d.getMinute(), d.getSecond(),
                                            (d.getMillisecond() * 1000000), 0, 0), "QoreOracleConnection::dateTimeConstruct()", xsink))
 #endif
+   }
+
+   DLLLOCAL QoreStringNode *getServerVersion(ExceptionSink *xsink) {
+      // buffer for version information                                                                                                                 
+      char version_buf[VERSION_BUF_SIZE + 1];
+
+      // execute OCIServerVersion and check status code
+      if (checkerr(OCIServerVersion(svchp, errhp, (OraText *)version_buf, VERSION_BUF_SIZE, OCI_HTYPE_SVCCTX), "QoreOracleConnection::getServerVersion()", xsink))
+         return 0;
+
+      return new QoreStringNode(version_buf);
    }
 
    DLLLOCAL BinaryNode *readBlob(OCILobLocator *lobp, ExceptionSink *xsink);
