@@ -33,7 +33,7 @@ static int get_char_width(const QoreEncoding *enc, int num) {
 #endif
 }
 
-OraResultSet::OraResultSet(QoreOracleStatement &n_stmt, const char *str, ExceptionSink *xsink) : stmt(n_stmt) {
+OraResultSet::OraResultSet(QoreOracleStatement &n_stmt, const char *str, ExceptionSink *xsink) : stmt(n_stmt), defined(false) {
    QORE_TRACE("OraResultSet::OraResultSet()");
 
    QoreOracleConnection *conn = stmt.getData();
@@ -66,8 +66,8 @@ OraResultSet::OraResultSet(QoreOracleStatement &n_stmt, const char *str, Excepti
 
       //printd(0, "OraResultSet::OraResultSet() column %s: type=%d char_len=%d size=%d (SQLT_STR=%d)\n", col_name, dtype, col_char_len, col_max_size, SQLT_STR);
       if (dtype == SQLT_NTY) {
-          char * tname; // type name
-          char * sname; // schema name
+          char *tname; // type name
+          char *sname; // schema name
 
           if (stmt.attrGet(parmp, &sname, OCI_ATTR_SCHEMA_NAME, xsink))
              return;
@@ -104,12 +104,17 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
    //QORE_TRACE("OraResultSet::define()");
    //    printd(0, "OraResultSet::define()\n");
 
+   if (defined)
+      return 0;
+
+   defined = true;
+
    QoreOracleConnection *conn = stmt.getData();
 
    // iterate column list
    for (unsigned i = 0; i < clist.size(); ++i) {
       OraColumnBuffer *w = clist[i];
-      //printd(5, "OraResultSet::define() %s: w->dtype=%d\n", w->name.getBuffer(), w->dtype);
+      //printd(5, "OraResultSet::define() this=%p %s: w->dtype=%d\n", this, w->name.getBuffer(), w->dtype);
       switch (w->dtype) {
 	 case SQLT_INT:
 	 case SQLT_UIN:
@@ -148,7 +153,7 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
 	    w->buf.odt = NULL;
             if (conn->descriptorAlloc((dvoid **)&w->buf.odt, QORE_DTYPE_TIMESTAMP, str, xsink))
                return -1;
-	    //printd(5, "OraResultSet::define() got TIMESTAMP handle: %p size: %d\n", w->buf.odt, sizeof(w->buf.odt));
+	    //printd(5, "OraResultSet::define() this=%p got TIMESTAMP handle: %p size: %d\n", this, w->buf.odt, sizeof(w->buf.odt));
 	    stmt.defineByPos(w->defp, i + 1, &w->buf.odt, sizeof(w->buf.odt), QORE_SQLT_TIMESTAMP, &w->ind, xsink);
 	    break;
 
@@ -156,7 +161,7 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
 	    w->buf.oi = NULL;
             if (conn->descriptorAlloc((dvoid **)&w->buf.oi, OCI_DTYPE_INTERVAL_YM, str, xsink))
                return -1;
-	    //printd(5, "OraResultSet::define() got TIMESTAMP handle %p\n", w->buf.odt);
+	    //printd(5, "OraResultSet::define() got INTERVAL_YM handle %p\n", w->buf.oi);
 	    stmt.defineByPos(w->defp, i + 1, &w->buf.oi, sizeof(w->buf.oi), SQLT_INTERVAL_YM, &w->ind, xsink);
 	    break;
 
@@ -164,7 +169,7 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
 	    w->buf.oi = NULL;
             if (conn->descriptorAlloc((dvoid **)&w->buf.oi, OCI_DTYPE_INTERVAL_DS, str, xsink))
                return -1;
-	    //printd(5, "OraResultSet::define() got TIMESTAMP handle %p\n", w->buf.odt);
+	    //printd(5, "OraResultSet::define() got INTERVAL_DS handle %p\n", w->buf.oi);
 	    stmt.defineByPos(w->defp, i + 1, &w->buf.oi, sizeof(w->buf.oi), SQLT_INTERVAL_DS, &w->ind, xsink);
 	    break;
 

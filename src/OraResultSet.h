@@ -61,6 +61,7 @@ typedef std::vector<OraColumnBuffer *> clist_t;
 class OraResultSet {
 protected:
    QoreOracleStatement &stmt;
+   bool defined;
 
 public:
    clist_t clist;
@@ -77,6 +78,7 @@ public:
          delete (*i);
       }
       clist.clear();
+      defined = false;
    }
 
    DLLLOCAL void add(const char *name, int nlen, int maxsize, ub2 dtype, ub2 char_len, int subtype=SQLT_NTY_NONE, QoreString subdtn = "") {
