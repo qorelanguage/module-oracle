@@ -113,10 +113,14 @@ public:
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
       if ((status = OCIStmtFetch2(stmthp, conn.errhp, rows, OCI_FETCH_NEXT, 0, OCI_DEFAULT))) {
-	 if (status == OCI_NO_DATA)
+	 if (status == OCI_NO_DATA) {
+            //printd(5, "QoreOracleStatement::fetch() this=%p no more data\n", this);
 	    return 1;
-	 else if (conn.checkerr(status, "QoreOracleStatement::fetch()", xsink))
+         }
+	 else if (conn.checkerr(status, "QoreOracleStatement::fetch()", xsink)) {
+            //printd(5, "QoreOracleStatement::fetch() this=%p exception\n", this);
             return -1;
+         }
       }
       return 0;
    }
