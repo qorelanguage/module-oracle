@@ -99,6 +99,7 @@ void OraColumnValue::del(ExceptionSink *xsink) {
          freeObject();
          break;
 
+      case SQLT_NUM:
       default:
          if (buf.ptr)
             free(buf.ptr);

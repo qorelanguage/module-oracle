@@ -244,11 +244,19 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
             break;
          } // SQLT_NTY
             
+         case SQLT_NUM:
+            w->maxsize = ORACLE_NUMBER_STR_LEN;
+	    w->buf.ptr = malloc(sizeof(char) * (w->maxsize + 1));
+	    stmt.defineByPos(w->defp, i + 1, w->buf.ptr, w->maxsize + 1, SQLT_STR, &w->ind, xsink);
+            break;
+
          default: // treated as a string
-	    if (w->charlen) w->maxsize = get_char_width(stmt.getEncoding(), w->charlen); 
+	    if (w->charlen)
+               w->maxsize = get_char_width(stmt.getEncoding(), w->charlen); 
 	    w->buf.ptr = malloc(sizeof(char) * (w->maxsize + 1));
             //printd(0, "OraResultSet::define() i=%d, buf=%p, maxsize=%d\n", i + 1, w->buf.ptr, w->maxsize);
 	    stmt.defineByPos(w->defp, i + 1, w->buf.ptr, w->maxsize + 1, SQLT_STR, &w->ind, xsink);
+            break;
       }
       if (*xsink) return -1;
    }
