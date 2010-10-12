@@ -57,9 +57,13 @@ void OraColumnValue::del(ExceptionSink *xsink) {
 
       case SQLT_CLOB:
       case SQLT_BLOB:
-      case SQLT_RDD:
          if (buf.ptr)
             OCIDescriptorFree(buf.ptr, OCI_DTYPE_LOB);
+         break;
+
+      case SQLT_RDD:
+         if (buf.ptr)
+            OCIDescriptorFree(buf.ptr, OCI_DTYPE_ROWID);
          break;
 
       case SQLT_RSET:
