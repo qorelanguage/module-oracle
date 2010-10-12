@@ -3,6 +3,8 @@ version 2.0
 ***********
 
 object and collection support
+support for binding and retrieving ROWID column values
+fixed retrieving NUMBER values with over 30 digits
 
 
 ***********

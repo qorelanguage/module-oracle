@@ -57,6 +57,7 @@ void OraColumnValue::del(ExceptionSink *xsink) {
 
       case SQLT_CLOB:
       case SQLT_BLOB:
+      case SQLT_RDD:
          if (buf.ptr)
             OCIDescriptorFree(buf.ptr, OCI_DTYPE_LOB);
          break;
@@ -106,6 +107,8 @@ void OraColumnValue::del(ExceptionSink *xsink) {
          break;            
    }
 }
+
+#define ORA_ROWID_LEN 25
 
 AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal, bool destructive) {
    // SQL NULL returned
@@ -194,6 +197,22 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
          }
          break;
       } // SQLT_NTY
+
+#ifdef SQLT_RDD
+      case SQLT_RDD: {
+         SimpleRefHolder<QoreStringNode> str(new QoreStringNode(stmt.getEncoding()));
+         str->reserve(ORA_ROWID_LEN);
+
+         QoreOracleConnection *conn = stmt.getData();
+
+         ub2 len = ORA_ROWID_LEN;
+         if (conn->checkerr(OCIRowidToChar((OCIRowid *)buf.ptr, (OraText *)str->getBuffer(), &len, conn->errhp), "OraColumnValue::getValue() ROWID", xsink))
+            return 0;
+
+         str->terminate(len);
+         return str.release();
+      }
+#endif
 
       // treat as string
       default:

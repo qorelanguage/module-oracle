@@ -244,6 +244,16 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
             break;
          } // SQLT_NTY
             
+#ifdef SQLT_RDD
+         case SQLT_RDD:
+	    w->buf.ptr = 0;
+            if (conn->descriptorAlloc(&w->buf.ptr, OCI_DTYPE_ROWID, str, xsink))
+               return -1;
+	    //printd(5, "OraResultSet::define() got ROWID descriptor %p\n", w->buf.ptr);
+	    stmt.defineByPos(w->defp, i + 1, &w->buf.ptr, 0, w->dtype, &w->ind, xsink);
+	    break;
+#endif
+
          case SQLT_NUM:
             w->maxsize = ORACLE_NUMBER_STR_LEN;
 	    w->buf.ptr = malloc(sizeof(char) * (w->maxsize + 1));
