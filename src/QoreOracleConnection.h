@@ -31,6 +31,9 @@
 #define VERSION_BUF_SIZE 512
 #endif
 
+// date format used when creating OCIDateTime values with year < 2 as OCIDateTimeConstruct will fail
+#define ORA_BACKUP_DATE_FMT "YYYYMMDDHH24MISSFF6"
+
 class QoreOracleEnvironment {
 protected:
    OCIEnv *envhp;
@@ -188,26 +191,39 @@ public:
       // get broken-down time information in the current time zone
       qore_tm info;
       d.getInfo(currentTZ(), info);
-      
-      // setup time zone string
-      char tz[7];
-      int se = info.utc_secs_east;
 
-      if (se < 0) {
-         tz[0] = '-';
-         se = -se;
+      // only use OCIDateTimeConstruct if the year > 0001
+      if (info.year > 1) {
+         char tz[7];
+
+         // setup time zone string
+         int se = info.utc_secs_east;
+
+         if (se < 0) {
+            tz[0] = '-';
+            se = -se;
+         }
+         else
+            tz[0] = '+';
+
+         int hours = se / 3600;
+         sprintf(&tz[1], "%02d:", hours);
+
+         se %= 3600;
+         sprintf(&tz[4], "%02d", se / 60);   
+
+         //printd(5, "QoreOracleConnection::dateTimeConstruct(year=%d, month=%d, day=%d, hour=%d, minute=%d, second=%d, us=%d, tz=%s) %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, tz, info.regionName());
+         return checkerr(OCIDateTimeConstruct(*env, errhp, odt, info.year, info.month, info.day, info.hour, info.minute, info.second, (info.us * 1000), (oratext *)tz, 6), "QoreOracleConnection::dateTimeConstruct()", xsink);
       }
-      else
-         tz[0] = '+';
+      
+      QoreString dstr;
+      dstr.sprintf("%04d%02d%02d%02d%02d%06d", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us);
 
-      int hours = se / 3600;
-      sprintf(&tz[1], "%02d:", hours);
+      //printd(5, "QoreOracleConnection::dateTimeConstruct() d=%s (%s)\n", dstr.getBuffer(), ORA_BACKUP_DATE_FMT);
 
-      se %= 3600;
-      sprintf(&tz[4], "%02d", se / 60);   
-
-      //printd(5, "QoreOracleConnection::dateTimeConstruct(year=%d, month=%d, day=%d, hour=%d, minute=%d, second=%d, us=%d, tz=%s) %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, tz, info.regionName());
-      return checkerr(OCIDateTimeConstruct(*env, errhp, odt, info.year, info.month, info.day, info.hour, info.minute, info.second, (info.us * 1000), (oratext *)tz, 6), "QoreOracleConnection::dateTimeConstruct()", xsink);
+      return checkerr(OCIDateTimeFromText(*env, errhp, (OraText *)dstr.getBuffer(),
+                                          dstr.strlen(), (OraText *)ORA_BACKUP_DATE_FMT,
+                                          sizeof(ORA_BACKUP_DATE_FMT), 0, 0, odt), "QoreORacleConnection::dateTimeConstruct() fromText", xsink);
 #else
       return checkerr(OCIDateTimeConstruct(*env, errhp, odt, d.getYear(), d.getMonth(), d.getDay(), d.getHour(), d.getMinute(), d.getSecond(),
                                            (d.getMillisecond() * 1000000), 0, 0), "QoreOracleConnection::dateTimeConstruct()", xsink))
