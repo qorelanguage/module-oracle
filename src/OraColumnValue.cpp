@@ -222,7 +222,8 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
       default:
          //printd(5, "OraColumnValue::getValue() type=%d\n", dtype);
          // must be string data
-         remove_trailing_blanks((char *)buf.ptr);
+         if (dtype == SQLT_AFC || dtype == SQLT_AVC)
+            remove_trailing_blanks((char *)buf.ptr);
          if (!destructive)
             return new QoreStringNode((const char *)buf.ptr, stmt.getEncoding());
          int len = strlen((char *)buf.ptr);
