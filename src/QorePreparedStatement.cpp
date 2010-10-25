@@ -283,8 +283,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
       stmt.bindByPos(bndp, pos, buf.ptr, data.ph.maxsize + 1, SQLT_STR, xsink, &ind);
    }
    else if (!strcmp(data.ph.type, "date")) {
-      //       printd(5, "oraBindNode::bindPlaceholder() this=%p, timestamp dtype=%d\n", this, QORE_SQLT_TIMESTAMP);
-
+      //printd(5, "oraBindNode::bindPlaceholder() this=%p, timestamp dtype=%d\n", this, QORE_SQLT_TIMESTAMP);
       if (setupDateDescriptor(xsink))
 	 return;
 
@@ -472,6 +471,12 @@ void OraBindNode::resetValue(ExceptionSink *xsink) {
    }
    else if (dtype == SQLT_NTY)
       freeObject();
+   else if (dtype == QORE_SQLT_TIMESTAMP) {
+      if (buf.odt) {
+         //printd(5, "OraBindNode::resetValue() freeing timestamp descriptor type %d ptr %p\n", QORE_DTYPE_TIMESTAMP, buf.odt);
+         OCIDescriptorFree(buf.odt, QORE_DTYPE_TIMESTAMP);
+      }
+   }
 }
 
 AbstractQoreNode *OraBindNode::getValue(bool horizontal, ExceptionSink *xsink) {
