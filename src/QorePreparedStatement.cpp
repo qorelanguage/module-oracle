@@ -204,55 +204,55 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
    }
 
    if (ntype == NT_HASH) {
-//        printd(0, "hash structure in the Oracle IN attribute\n");
-       const QoreHashNode * h = reinterpret_cast<const QoreHashNode*>(value);
-       if (!h->existsKey("type") || !h->existsKey("^oratype^") || !h->existsKey("^values^")) {
-           xsink->raiseException("ORACLE-BIND-VALUE-ERROR",
-                                 "Plain hash/list cannot be bound as an Oracle Object/Collection. Use bindOracleObject()/bindOracleCollection()");
-           return;
-       }
-       
-       const QoreStringNode * t = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("type"));
-       if (t->compare(ORACLE_OBJECT) == 0) {
-//            printd(0, "binding hash as an oracle object\n");
-           subdtype = SQLT_NTY_OBJECT;
-           dtype = SQLT_NTY;
-           buf.oraObj = objBindQore(conn, h, xsink);
-           if (*xsink || !buf.oraObj)
-               return;
-
-           stmt.bindByPos(bndp, pos, 0, 0, SQLT_NTY, xsink);
-
-           conn->checkerr(OCIBindObject(bndp, conn->errhp,
-                                         buf.oraObj->typinf->tdo, (void**)&buf.oraObj->handle, 0,
-                                         0, 0 // NULL struct
-                              ),
-                           "OraBindNode::bindValue() OCIBindObject", xsink);
-           return;
-       }
-       else if (t->compare(ORACLE_COLLECTION) == 0) {
-//            printd(0, "binding list as an oracle collection\n");
-
-           subdtype = SQLT_NTY_COLLECTION;
-           dtype = SQLT_NTY;
-           buf.oraColl = collBindQore(conn, h, xsink);
-           if (*xsink || !buf.oraColl)
-               return;
-
-           stmt.bindByPos(bndp, pos, 0, 0, SQLT_NTY, xsink);
+      //printd(0, "hash structure in the Oracle IN attribute\n");
+      const QoreHashNode * h = reinterpret_cast<const QoreHashNode*>(value);
+      if (!h->existsKey("type") || !h->existsKey("^oratype^") || !h->existsKey("^values^")) {
+         xsink->raiseException("ORACLE-BIND-VALUE-ERROR",
+                               "Plain hash/list cannot be bound as an Oracle Object/Collection. Use bindOracleObject()/bindOracleCollection()");
+         return;
+      }
       
-           conn->checkerr(OCIBindObject(bndp, conn->errhp,
-                                         buf.oraColl->typinf->tdo, (void**)&buf.oraColl->handle, 0,
-                                         0, 0 // NULL struct
-                              ),
-                           "OraBindNode::bindValue() OCIBindObject", xsink);
-           return;
-       }
-       else {
-          xsink->raiseException("ORACLE-BIND-VALUE-ERROR",
-                                 "Only Objects (hash) or collections (list) are allowed. Use bindOracleObject()/bindOracleCollection()");
-          return;
-       }
+      const QoreStringNode * t = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("type"));
+      if (t->compare(ORACLE_OBJECT) == 0) {
+         //printd(0, "binding hash as an oracle object\n");
+         subdtype = SQLT_NTY_OBJECT;
+         dtype = SQLT_NTY;
+         buf.oraObj = objBindQore(conn, h, xsink);
+         if (*xsink || !buf.oraObj)
+            return;
+
+         stmt.bindByPos(bndp, pos, 0, 0, SQLT_NTY, xsink);
+
+         conn->checkerr(OCIBindObject(bndp, conn->errhp,
+                                      buf.oraObj->typinf->tdo, (void**)&buf.oraObj->handle, 0,
+                                      0, 0 // NULL struct
+                           ),
+                        "OraBindNode::bindValue() OCIBindObject", xsink);
+         return;
+      }
+      else if (t->compare(ORACLE_COLLECTION) == 0) {
+         //printd(0, "binding list as an oracle collection\n");
+
+         subdtype = SQLT_NTY_COLLECTION;
+         dtype = SQLT_NTY;
+         buf.oraColl = collBindQore(conn, h, xsink);
+         if (*xsink || !buf.oraColl)
+            return;
+
+         stmt.bindByPos(bndp, pos, 0, 0, SQLT_NTY, xsink);
+      
+         conn->checkerr(OCIBindObject(bndp, conn->errhp,
+                                      buf.oraColl->typinf->tdo, (void**)&buf.oraColl->handle, 0,
+                                      0, 0 // NULL struct
+                           ),
+                        "OraBindNode::bindValue() OCIBindObject", xsink);
+         return;
+      }
+      else {
+         xsink->raiseException("ORACLE-BIND-VALUE-ERROR",
+                               "Only Objects (hash) or collections (list) are allowed. Use bindOracleObject()/bindOracleCollection()");
+         return;
+      }
    }
 
    xsink->raiseException("ORACLE-BIND-VALUE-ERROR", "type '%s' is not supported for SQL binding", value->getTypeName());
@@ -477,6 +477,8 @@ void OraBindNode::resetValue(ExceptionSink *xsink) {
          OCIDescriptorFree(buf.odt, QORE_DTYPE_TIMESTAMP);
       }
    }
+
+   dtype = 0;
 }
 
 AbstractQoreNode *OraBindNode::getValue(bool horizontal, ExceptionSink *xsink) {
