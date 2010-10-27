@@ -8,7 +8,7 @@ our hash $o.verbose = True;
 #$o.info = True;
 
 sub main() {
-    my DatasourcePool $ds("oracle", "omquser", "omquser", "qube");
+    my DatasourcePool $ds("oracle", "omq", "omq", "stimpy11");
 
     my SQLStatement $drop_stmt($ds);
     $drop_stmt.prepare("drop table test");
@@ -28,11 +28,21 @@ sub main() {
     my SQLStatement $delete_stmt($ds);
     $delete_stmt.prepare("delete from test");
 
+    my SQLStatement $plsql($ds);
+    $plsql.prepare("
+declare
+    var number;
+begin
+    select count(1) into var from user_objects where status = %v;
+    :an_output := var;
+end;");
+
     create_table($drop_stmt);
     test1($insert_stmt, $select_stmt);
     test2($select_into_stmt);
     test3($select_err_stmt);
     test4($delete_stmt, $select_stmt);
+    test5($plsql);
 }
 
 sub info(string $msg) {
@@ -176,7 +186,7 @@ sub test3(SQLStatement $stmt) {
 }
 
 sub test4(SQLStatement $delete_stmt, SQLStatement $select_stmt) {
-    info("test1");
+    info("test4");
     {
 	$delete_stmt.beginTransaction();
 	on_success $delete_stmt.commit();
@@ -190,6 +200,18 @@ sub test4(SQLStatement $delete_stmt, SQLStatement $select_stmt) {
     my any $rv = $select_stmt.fetchRows();
     test_value($rv, (), "select after delete");
     #info("test: %N", $stmt.fetchRows());
+}
+
+sub test5(SQLStatement $plsql) {
+    info("test5");
+    {
+        $plsql.beginTransaction();
+        on_success $plsql.commit();
+        my hash $ret = $plsql.execArgs( ('VALID', Type::String) );
+        printf("%N\n", $ret);
+        $plsql.close();
+    }
+    info("fetch done");
 }
 
 main();
