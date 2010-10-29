@@ -207,8 +207,9 @@ sub test5(SQLStatement $plsql) {
     {
         $plsql.beginTransaction();
         on_success $plsql.commit();
-        my hash $ret = $plsql.execArgs( ('VALID', Type::String) );
-        printf("%N\n", $ret);
+        $plsql.execArgs( ('VALID', Type::String) );
+        my hash $ret = $plsql.getOutput();
+        #printf("%N\n", $ret);
         $plsql.close();
     }
     info("fetch done");
