@@ -44,19 +44,6 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
 
       //printd(0, "QoreOracleStatement::execute() server_status=%d (OCI_SERVER_NOT_CONNECTED=%d)\n", server_status, OCI_SERVER_NOT_CONNECTED);
       if (server_status == OCI_SERVER_NOT_CONNECTED) {
-	 // first try to reconnect
-	 conn->logoff();
-
-	 //printd(0, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect\n");
-	 if (conn->logon(xsink)) {
-            if (ds->isInTransaction())
-               ds->connectionAborted();
-
-	    // close datasource and remove private data
-	    ds->close();
-	    return -1;
-	 }
-
 	 // check if a transaction was in progress
 #ifdef _QORE_HAS_DATASOURCE_ACTIVETRANSACTION
          if (ds->activeTransaction()) {
@@ -65,8 +52,21 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
 #endif
 	    ds->connectionAborted();
 	    xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server lost while in a transaction; transaction has been lost");
+	 }
+
+	 // try to reconnect
+	 conn->logoff();
+
+	 //printd(0, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect\n");
+	 if (conn->logon(xsink)) {
+	    // close datasource and remove private data
+	    ds->close();
 	    return -1;
 	 }
+
+         // don't execute again if the connection was aborted while in a transaction
+         if (ds->wasConnectionAborted())
+	    return -1;
 
 	 //printd(0, "QoreOracleStatement::execute() returned from OCILogon() status=%d\n", status);
 	 status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, is_select ? 0 : 1, 0, 0, 0, OCI_DEFAULT);
