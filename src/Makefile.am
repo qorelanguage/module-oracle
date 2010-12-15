@@ -5,27 +5,29 @@ ORACLE_SOURCES = oracle.cpp \
 	QorePreparedStatement.cpp \
 	OraColumnValue.cpp \
 	OraResultSet.cpp \
-	ocilib/exception.c \
-	ocilib/string.c \
-	ocilib/timestamp.c \
-	ocilib/collection.c \
-	ocilib/element.c \
-	ocilib/library.c \
-	ocilib/number.c \
-	ocilib/typeinfo.c \
-	ocilib/column.c \
-	ocilib/error.c \
-	ocilib/list.c \
-	ocilib/memory.c \
-	ocilib/lob.c \
-	ocilib/object.c \
-	ocilib/interval.c \
-	ocilib/date.c \
-	ocilib/threadkey.c \
-	ocilib/mutex.c
+	ocilib/exception.cpp \
+	ocilib/string.cpp \
+	ocilib/timestamp.cpp \
+	ocilib/collection.cpp \
+	ocilib/element.cpp \
+	ocilib/library.cpp \
+	ocilib/number.cpp \
+	ocilib/typeinfo.cpp \
+	ocilib/column.cpp \
+	ocilib/error.cpp \
+	ocilib/list.cpp \
+	ocilib/memory.cpp \
+	ocilib/lob.cpp \
+	ocilib/object.cpp \
+	ocilib/interval.cpp \
+	ocilib/date.cpp \
+	ocilib/threadkey.cpp \
+	ocilib/mutex.cpp \
+	ocilib/ref.cpp \
+	ocilib/file.cpp \
+	ocilib/connection.cpp
 
-#	ocilib/hash.c 
-#	ocilib/long.c
+#	ocilib/long.cpp
 
 
 lib_LTLIBRARIES = oracle.la

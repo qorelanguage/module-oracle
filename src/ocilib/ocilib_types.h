@@ -809,9 +809,9 @@ typedef struct OCI_SQLCmdInfo OCI_SQLCmdInfo;
 //extern OCI_Library OCILib;
 extern OCI_SQLCmdInfo SQLCmds[];
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 #if 0
 }
 #endif
@@ -1033,7 +1033,7 @@ double OCI_API OCI_ObjectGetDouble2(OCI_Library *pOCILib, OCI_Object *obj, const
 boolean OCI_API OCI_IntervalFree2(OCI_Library *pOCILib, OCI_Interval *itv);
 
 #ifdef __cplusplus
-}
+//}
 #endif
 
 #endif /* OCILIB_OCILIB_TYPES_H_INCLUDED */

@@ -277,7 +277,7 @@ void * OCI_GetInputString(OCI_Library *pOCILib, void *src, int *size, size_t siz
                     {
                         /* widechar to multibytes */
 
-                        char_count = (int) wcstombs(dest, src, (size_t) (char_count+1));
+		       char_count = (int) wcstombs((char*)dest, (const wchar_t*)src, (size_t) (char_count+1));
                     }
                 }
                 else
@@ -287,17 +287,17 @@ void * OCI_GetInputString(OCI_Library *pOCILib, void *src, int *size, size_t siz
                     {
                         /* UTF16 to UTF32 */
                   
-                        char_count = OCI_StringCopy2to4bytes
-                                     (
-                                        (unsigned short *) src,  char_count, 
-                                        (unsigned int   *) dest, char_count
-                                     );
+		       char_count = OCI_StringCopy2to4bytes
+			  (
+			     (unsigned short *) src,  char_count, 
+			     (unsigned int   *) dest, char_count
+			     );
                     }
                     else
                     {
                         /* multibytes to widechar */
 
-                        char_count = (int) mbstowcs(dest, src, (size_t) (char_count+1));
+		       char_count = (int) mbstowcs((wchar_t*)dest, (const char*)src, (size_t) (char_count+1));
                     }
                 }
            }
@@ -349,7 +349,7 @@ void OCI_GetOutputString(void *src, void *dest, int *size, size_t size_char_in,
             {
                 /* widechar to multibytes */
 
-                char_count = (int) wcstombs(dest, src, (size_t) (char_count+1));
+	       char_count = (int) wcstombs((char*)dest, (const wchar_t*)src, (size_t) (char_count+1));
             }
         }
         else
@@ -369,7 +369,7 @@ void OCI_GetOutputString(void *src, void *dest, int *size, size_t size_char_in,
             {
                 /* multibytes to widechar */
 
-                char_count = (int) mbstowcs(dest, src, (size_t) (char_count+1));
+	       char_count = (int) mbstowcs((wchar_t*)dest, (const char*)src, (size_t) (char_count+1));
             }
         }
 

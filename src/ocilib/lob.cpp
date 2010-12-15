@@ -441,7 +441,7 @@ boolean OCI_API OCI_LobWrite2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
         {
             if (pOCILib->nls_utf8 == TRUE)
             {
-               (*byte_count) = (unsigned int) strlen(buffer);
+               (*byte_count) = (unsigned int) strlen((const char*)buffer);
             }
             else
             {
@@ -884,7 +884,7 @@ boolean OCI_API OCI_LobAppend2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
         {
             if (pOCILib->nls_utf8 == TRUE)
             {
-                (*byte_count) = (unsigned int) strlen(buffer);
+	       (*byte_count) = (unsigned int) strlen((const char*)buffer);
             }
             else
             {

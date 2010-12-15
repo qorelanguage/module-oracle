@@ -8,7 +8,7 @@ our hash $o.verbose = True;
 #$o.info = True;
 
 sub main() {
-    my DatasourcePool $ds("oracle", "omq", "omq", "stimpy11");
+    my DatasourcePool $ds("oracle", "omquser", "omquser", "quark");
 
     my SQLStatement $drop_stmt($ds);
     $drop_stmt.prepare("drop table test");

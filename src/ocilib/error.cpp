@@ -44,7 +44,7 @@
 
 OCI_Error * OCI_ErrorCreate(void)
 {
-    OCI_Error *err = calloc(1, sizeof(*err));
+   OCI_Error *err = (OCI_Error*)calloc(1, sizeof(*err));
 
     return err;
 }

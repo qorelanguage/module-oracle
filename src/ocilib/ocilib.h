@@ -35,9 +35,9 @@
 #ifndef OCILIB_H_INCLUDED
 #define OCILIB_H_INCLUDED
 
-#ifdef __cplusplus
-extern "C" {
-#endif  /* __cplusplus */
+//#ifdef __cplusplus
+//extern "C" {
+//#endif  /* __cplusplus */
 
 /**
  * @mainpage
@@ -2483,13 +2483,13 @@ OCI_EXPORT const mtext * OCI_API OCI_GetDefaultFormatDate
  * with the given format, an error will be raised
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_SetDefaultFormatNumeric
 (
     OCI_Connection *con,
     const mtext *format
 );
-
+*/
 /**
  * @brief
  * Return the current numeric format for implicit string / numeric conversions
@@ -2500,12 +2500,12 @@ OCI_EXPORT boolean OCI_API OCI_SetDefaultFormatNumeric
  *  See OCI_SetFormatNumeric() for possible values
  *
  */
-
+/*
 OCI_EXPORT const mtext * OCI_API OCI_GetDefaultFormatNumeric
 (
     OCI_Connection *con
 );
-
+*/
 /**
  * @brief
  * Return the current transaction of the connection
@@ -9198,11 +9198,12 @@ OCI_EXPORT OCI_File * OCI_API OCI_FileCreate
  * TRUE on success otherwise FALSE
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_FileFree
 (
     OCI_File *file
 );
+*/
 
 /**
  * @brief
@@ -11461,13 +11462,13 @@ OCI_EXPORT double OCI_API OCI_ObjectGetDouble
  * Attribute value or NULL on failure or wrong attribute type
  *
  */
-
+       /*
 OCI_EXPORT const dtext * OCI_API OCI_ObjectGetString
 (
     OCI_Object *obj,
     const mtext *attr
 );
-
+*/
 /**
  * @brief
  * Return the raw attribute value of the given object attribute into the
@@ -12171,12 +12172,12 @@ OCI_EXPORT OCI_Ref * OCI_API OCI_RefCreate
  * TRUE on success otherwise FALSE
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_RefFree
 (
     OCI_Ref *ref
 );
-
+*/
 /**
  * @brief
  * Create an array of Ref object
@@ -12280,12 +12281,12 @@ OCI_EXPORT OCI_Object * OCI_API OCI_RefGetObject
  * TRUE if it does not point to a valid object otherwise FALSE
  *
  */
-
+/*
 OCI_EXPORT boolean OCI_API OCI_RefIsNull
 (
     OCI_Ref *ref
 );
-
+*/
 /**
  * @brief
  * Nullify the given Ref handle
@@ -14711,7 +14712,7 @@ OCI_EXPORT const void * OCI_API OCI_HandleGetSubscription
  */
 
 #ifdef  __cplusplus
-}
+//}
 #endif
 
 /**

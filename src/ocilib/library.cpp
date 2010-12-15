@@ -34,6 +34,8 @@
 
 #include "ocilib_internal.h"
 
+#include <assert.h>
+
 /* ************************************************************************ *
  *                             INTERNAL VARIABLES
  * ************************************************************************ */
@@ -392,12 +394,6 @@ OCILOBWRITEAPPEND2           OCILobWriteAppend2           = NULL;
  * OCI_KeyMapFree
  * ------------------------------------------------------------------------ */
 /*
-boolean OCI_KeyMapFree(void)
-{
-    return OCI_KeyMapFree2(&OCILib);
-}
-*/
-
 boolean OCI_KeyMapFree2(OCI_Library *pOCILib)
 {
     boolean res      = TRUE;
@@ -435,7 +431,7 @@ boolean OCI_KeyMapFree2(OCI_Library *pOCILib)
 
     return res;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_SetStatus
  * ------------------------------------------------------------------------ */
@@ -1238,7 +1234,8 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
 
     /* free objects */
 
-    OCI_KeyMapFree2(pOCILib);
+    assert(!pOCILib->key_map);
+    //OCI_KeyMapFree2(pOCILib);
 
     OCI_ListFree(pOCILib, pOCILib->cons);
     OCI_ListFree(pOCILib, pOCILib->pools);
@@ -1458,16 +1455,7 @@ void OCI_API OCI_SetErrorHandler2(OCI_Library *pOCILib, POCI_ERROR handler)
  * ------------------------------------------------------------------------ */
 
 /*
-boolean OCI_API OCI_DatabaseStartup(const mtext *db,  const mtext *user,
-                                    const mtext *pwd, unsigned int sess_mode,
-                                    unsigned int start_mode, unsigned int start_flag,
-                                    const mtext *spfile)
-{
-   return OCI_DatabaseStartup2(&OCILib, db, user, pwd, sess_mode, start_mode, start_flag, spfile);
-}
-*/
-
-boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  const mtext *user,
+boolean OCI_API OCI_DatabaseStartup(OCI_Library *pOCILib, const mtext *db,  const mtext *user,
                                     const mtext *pwd, unsigned int sess_mode,
                                     unsigned int start_mode, unsigned int start_flag,
                                     const mtext *spfile)
@@ -1483,7 +1471,7 @@ boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  con
     {
         OCIAdmin *adm = NULL;
 
-        /* connect with prelim authenfication mode */
+        // connect with prelim authenfication mode
 
         con = OCI_ConnectionCreate(db, user, pwd, sess_mode | OCI_PRELIM_AUTH);
     
@@ -1494,14 +1482,14 @@ boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  con
                 void *ostr  = NULL;
                 int osize   = -1;
 
-                /* allocate admin handle */
+                // allocate admin handle
 
                 res = (OCI_SUCCESS == OCI_HandleAlloc2(pOCILib, (dvoid *) pOCILib->env,
                                                       (dvoid **) (void *) &adm,
                                                       (ub4) OCI_HTYPE_ADMIN,
                                                       (size_t) 0, (dvoid **) NULL));
 
-                /* set client spfile if provided */
+                // set client spfile if provided
 
                 ostr  = OCI_GetInputMetaString(pOCILib, spfile, &osize);
 
@@ -1517,7 +1505,7 @@ boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  con
                 OCI_ReleaseMetaString(ostr);
             }
 
-            /* startup DB */
+            // startup DB
 
             OCI_CALL2
             (
@@ -1527,14 +1515,14 @@ boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  con
                              OCI_DEFAULT, start_flag)
             )
 
-            /* release security admin handle */
+            // release security admin handle
 
             if (adm != NULL)
             {
                 OCI_HandleFree2(pOCILib, pOCILib->err, OCI_HTYPE_ADMIN);
             }
 
-            /* disconnect */
+            // disconnect
 
             OCI_ConnectionFree(con);
         }
@@ -1544,29 +1532,29 @@ boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  con
 
     if (res == TRUE)
     {
-        /* connect without prelim mode */
+        // connect without prelim mode
 
         con = OCI_ConnectionCreate(db, user, pwd, sess_mode);
 
-        /* alter database */
+        // alter database
 
         if (con != NULL)
         {
             OCI_Statement *stmt = OCI_StatementCreate(con);
 
-            /* mount database */
+            // mount database
 
             if (start_mode & OCI_DB_SPM_MOUNT)
                 res = (res && OCI_ExecuteStmt(stmt, MT("ALTER DATABASE MOUNT")));
 
-            /* open database */
+            // open database
 
             if (start_mode & OCI_DB_SPM_OPEN)
                 res = (res && OCI_ExecuteStmt(stmt, MT("ALTER DATABASE OPEN")));
 
             OCI_StatementFree(stmt);
 
-            /* disconnect */
+            // disconnect
 
             OCI_ConnectionFree(con);
         }
@@ -1593,21 +1581,10 @@ boolean OCI_API OCI_DatabaseStartup2(OCI_Library *pOCILib, const mtext *db,  con
 
     return res;
 }
-
-/* ------------------------------------------------------------------------ *
- * OCI_DatabaseShutdown
- * ------------------------------------------------------------------------ */
-/*
-boolean OCI_API OCI_DatabaseShutdown(const mtext *db, const mtext *user,
-                                     const mtext *pwd, unsigned int sess_mode,
-                                     unsigned int shut_mode, unsigned int shut_flag
-)
-{
-   return OCI_DatabaseShutdown2(&OCILib, db, user, pwd, sess_mode, shut_mode, shut_flag);
-}
 */
 
-boolean OCI_API OCI_DatabaseShutdown2(OCI_Library *pOCILib, const mtext *db, const mtext *user,
+ /*
+boolean OCI_API OCI_DatabaseShutdown(OCI_Library *pOCILib, const mtext *db, const mtext *user,
                                      const mtext *pwd, unsigned int sess_mode,
                                      unsigned int shut_mode, unsigned int shut_flag
 )
@@ -1619,13 +1596,13 @@ boolean OCI_API OCI_DatabaseShutdown2(OCI_Library *pOCILib, const mtext *db, con
 
 #if OCI_VERSION_COMPILE >= OCI_10_2
 
-    /* connect to server */
+    // connect to server
 
     con = OCI_ConnectionCreate(db, user, pwd, sess_mode);
 
     if (con != NULL)
     {
-        /* delete current transaction before the abort */
+        // delete current transaction before the abort
 
         if ((con->trs != NULL) && (shut_flag == OCI_DB_SDF_ABORT))
         {
@@ -1634,11 +1611,11 @@ boolean OCI_API OCI_DatabaseShutdown2(OCI_Library *pOCILib, const mtext *db, con
             con->trs = NULL;
         }
 
-        /* start shutdown */
+        // start shutdown
 
         if (shut_mode & OCI_DB_SDM_SHUTDOWN)
         {
-            /* start shutdown process */
+  	    // start shutdown process
 
             OCI_CALL2
             (
@@ -1648,25 +1625,25 @@ boolean OCI_API OCI_DatabaseShutdown2(OCI_Library *pOCILib, const mtext *db, con
             )
         }
 
-        /* alter database if we are not in abort mode */
+        // alter database if we are not in abort mode
 
         if ((res == TRUE) && (shut_flag != OCI_DB_SDF_ABORT))
         {
             OCI_Statement *stmt = OCI_StatementCreate(con);
 
-            /* close database */
+            // close database
 
             if (shut_mode & OCI_DB_SDM_CLOSE)
                 res = (res && OCI_ExecuteStmt(stmt, MT("ALTER DATABASE CLOSE NORMAL")));
    
-            /* unmount database */
+            // unmount database
     
             if (shut_mode & OCI_DB_SDM_DISMOUNT)
                 res = (res && OCI_ExecuteStmt(stmt,MT( "ALTER DATABASE DISMOUNT")));
 
             OCI_StatementFree(stmt);
       
-            /* delete current transaction before the shutdown */
+            // delete current transaction before the shutdown
 
             if (con->trs != NULL)
             {
@@ -1675,7 +1652,7 @@ boolean OCI_API OCI_DatabaseShutdown2(OCI_Library *pOCILib, const mtext *db, con
                 con->trs = NULL;
             }
 
-            /* do the final shutdown if we are not in abort mode */
+            // do the final shutdown if we are not in abort mode
         
             OCI_CALL2
             (
@@ -1685,7 +1662,7 @@ boolean OCI_API OCI_DatabaseShutdown2(OCI_Library *pOCILib, const mtext *db, con
             )
         }
 
-        /* disconnect */
+        // disconnect
 
         OCI_ConnectionFree(con);
     }
@@ -1710,3 +1687,4 @@ boolean OCI_API OCI_DatabaseShutdown2(OCI_Library *pOCILib, const mtext *db, con
 
     return res;
 }
+ */

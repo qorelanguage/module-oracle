@@ -164,6 +164,8 @@ QoreOracleConnection::~QoreOracleConnection() {
       OCI_ListForEach(&ocilib, ocilib_cn->tinfs, (boolean (*)(void *)) OCI_TypeInfoClose);
       OCI_ListFree(&ocilib, ocilib_cn->tinfs);
 
+      OCI_FREE(ocilib_cn->fmt_num);
+
       delete ocilib_cn;
    }
 

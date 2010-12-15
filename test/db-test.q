@@ -11,6 +11,7 @@ our ($o, $errors, $test_count);
 
 const opts = 
     ( "help"    : "h,help",
+      "ds"      : "D,datasource=s",
       "host"    : "H,host=s",
       "pass"    : "p,pass=s",
       "db"      : "d,db=s",
@@ -22,19 +23,19 @@ const opts =
       "leave"   : "l,leave"
  );
 
-sub usage()
-{
+sub usage() {
     printf("usage: %s [options]
- -h,--help          this help text
- -u,--user=ARG      set username
- -p,--pass=ARG      set password
- -d,--db=ARG        set database name
- -P,--port=ARG      set database port
- -e,--encoding=ARG  set database character set encoding (i.e. \"utf8\")
- -H,--host=ARG      set hostname (for MySQL and PostgreSQL connections)
- -t,--type          set database driver (default mysql)
- -v,--verbose       more v's = more information
- -l,--leave         leave test tables in schema at end\n",
+ -h,--help            this help text
+ -D,--datasource=ARG  set datasource: user/pass@db
+ -u,--user=ARG        set username
+ -p,--pass=ARG        set password
+ -d,--db=ARG          set database name
+ -P,--port=ARG        set database port
+ -e,--encoding=ARG    set database character set encoding (i.e. \"utf8\")
+ -H,--host=ARG        set hostname (for MySQL and PostgreSQL connections)
+ -t,--type            set database driver (default oracle)
+ -v,--verbose         more v's = more information
+ -l,--leave           leave test tables in schema at end\n",
 	   basename($ENV."_"));
     exit();
 }
@@ -318,20 +319,22 @@ const mssql_mssql_tables = (
 	image_f image not null
 )" );
 
-sub parse_command_line()
-{
-    my $g = new GetOpt(opts);
+sub parse_command_line() {
+    my GetOpt $g(opts);
     $o = $g.parse(\$ARGV);
     if ($o.help)
 	usage();
 
-    if (!strlen($o.db))
-    {
-	stderr.printf("set the login parameters with -u,-p,-d, etc (-h for help)\n");
+    if (exists $o.ds) {
+	$o += parseDatasource($o.ds);
+	$o.enc = remove $o.charset;
+    }
+
+    if (!strlen($o.db)) {
+	stderr.printf("set the login parameters with -D or -u,-p,-d, etc (-h for help)\n");
 	exit(1);
     }
-    if (elements $ARGV)
-    {
+    if (elements $ARGV) {
 	stderr.printf("excess arguments on command-line (%n): -h for help\n", $ARGV);
 	exit(1);
     }
@@ -339,8 +342,7 @@ sub parse_command_line()
 	$o.type = "oracle";
 }
 
-sub create_datamodel($db)
-{
+sub create_datamodel($db) {
     drop_test_datamodel($db);
   
     my $driver = $db.getDriverName();

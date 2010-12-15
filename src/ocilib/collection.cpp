@@ -59,7 +59,7 @@ OCI_Coll * OCI_CollInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_Coll **pc
         coll = *pcoll;
 
         coll->con    = con;
-        coll->handle = handle;
+        coll->handle = (OCIColl*)handle;
         coll->typinf = typinf;
 
         if ((coll->handle == NULL) || (coll->hstate == OCI_OBJECT_ALLOCATED_ARRAY))

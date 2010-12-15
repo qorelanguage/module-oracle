@@ -189,7 +189,7 @@ boolean OCI_ElemGetNumber2(OCI_Library *pOCILib, OCI_Elem *elem, void *value, uw
     }
     else if (elem->typinf->cols[0].type == OCI_CDT_TEXT)
     {
-        const mtext *fmt = OCI_GetDefaultFormatNumeric(elem->con);
+       const mtext *fmt = OCI_GetDefaultFormatNumeric(pOCILib, elem->con);
         ub4 fmt_size     = (ub4) mtslen(fmt);
         dtext *data      = (dtext *) OCI_ElemGetString2(pOCILib, elem);
 
@@ -262,7 +262,7 @@ boolean OCI_API OCI_ElemFree2(OCI_Library *pOCILib, OCI_Elem *elem)
 
             case OCI_CDT_FILE:
 
-                OCI_FileFree((OCI_File *) elem->obj);
+	       OCI_FileFree(pOCILib, (OCI_File *) elem->obj);
                 break;
 
             case OCI_CDT_OBJECT:
@@ -287,7 +287,7 @@ boolean OCI_API OCI_ElemFree2(OCI_Library *pOCILib, OCI_Elem *elem)
             
             case OCI_CDT_REF:
 
-                OCI_RefFree((OCI_Ref *) elem->obj);
+	       OCI_RefFree(pOCILib, (OCI_Ref *) elem->obj);
                 break;       
         }
     }

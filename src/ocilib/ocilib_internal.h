@@ -39,8 +39,7 @@
 #include "ocilib_checks.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+//extern "C" {
 #endif
 
 /* ************************************************************************ *
@@ -800,8 +799,57 @@ boolean OCI_API OCI_MutexFree(OCI_Library * pOCILib, OCI_Mutex *mutex);
 boolean OCI_API OCI_MutexAcquire(OCI_Library * pOCILib, OCI_Mutex *mutex);
 boolean OCI_API OCI_MutexRelease(OCI_Library * pOCILib, OCI_Mutex *mutex);
 
+OCI_Ref * OCI_RefInit
+(
+    OCI_Library *pOCILib,
+    OCI_Connection *con,
+    OCI_TypeInfo *typeinf,
+    OCI_Ref **pref,
+    void *handle
+);
+
+boolean OCI_RefPin
+(
+    OCI_Library *pOCILib,
+    OCI_Ref *ref
+);
+
+boolean OCI_RefUnpin
+(
+    OCI_Library *pOCILib,
+    OCI_Ref *ref
+);
+
+boolean OCI_FileFree
+(
+    OCI_Library *pOCILib,
+    OCI_File *file
+);
+
+boolean OCI_RefFree
+(
+    OCI_Library *pOCILib,
+    OCI_Ref *ref
+);                                                                                                                                                                           
+boolean OCI_RefIsNull
+(
+    OCI_Library *pOCILib,
+    OCI_Ref *ref
+);
+
+const mtext *OCI_GetDefaultFormatNumeric
+(
+    OCI_Library *pOCILib,
+    OCI_Connection *con
+);
+
+boolean OCI_SetDefaultFormatNumeric
+(
+    OCI_Connection *con,
+    const mtext *format
+);                                                                                                                                                                           
 #ifdef  __cplusplus
-}
+//}
 #endif
 
 
