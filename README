@@ -2,6 +2,7 @@ oracle module for Qore
 by David Nichols
 
 Requires qore 0.7.1 and oracle 9i+ headers and libraries to build (or instant client - see BUILD AND INSTALL below)
+For Qore's SQLStatement (prepared statement API) support, Qore 0.8.1+ is required to build and run.
 
 The "oracle" DBI driver is stable and has been extensively tested.
 *) transaction management is supported
@@ -20,6 +21,8 @@ ex: $db = new Datasource("oracle");
 Documentation in docs/oracle-module-doc.html
 
 test/example script: test/db-test.q
+
+Note that a highly modified form of ocilib (http://orclib.sourceforge.net) is included here to provide most of the named type and collection support to the module.  ocilib was written by Vincent Rogier and the code is included here under the terms of the LGPL 2.1 (same license as the rest of this module).
 
 
 BUILD AND INSTALL

@@ -1,2 +1,4 @@
-written by David Nichols
-david_nichols@users.sourceforge.net
+David Nichols <david@qore.org> - original author
+Petr Vanek <petr.vanek@qoretechnologies.com> - named types, collection support, ocilib integration
+
+Note that a highly modified form of ocilib (http://orclib.sourceforge.net) is included here to provide most of the named type and collection support to the module.  ocilib was written by Vincent Rogier and the code is included here under the terms of the LGPL 2.1 (same license as the rest of this module).

@@ -594,8 +594,8 @@ You can reach me at: mailto:david_nichols@users.sourceforge.net</pre>
 [[Binding and Types]]
 </pre>
 </div>
-<div title="Introduction" modifier="DavidNichols" created="200808200719" modified="200911231218" changecount="51">
-<pre>The oracle module provides an Oracle driver to Qore's DBI system, allowing Qore programs to take access Oracle databases through the Qore's {{{Datasource}}} and {{{DatasourcePool}}} classes.
+<div title="Introduction" modifier="YourName" created="200808200719" modified="201012251816" changecount="52">
+<pre>The oracle module provides an Oracle driver to Qore's DBI system, allowing Qore programs to take access Oracle databases through the Qore's {{{Datasource}}}, {{{DatasourcePool}}}, and {{{SQLStatement}}} classes.
 
 This module is released under the [[LGPL 2.1|http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html]] and is tagged as such in the module's header (meaning it can be loaded unconditionally regardless of how the Qore library was initialized).
 
@@ -607,7 +607,7 @@ Example of creating an Oracle Datasource (note that db_encoding, host, and port 
 $db = new Datasource(SQL::DSOracle, $user, $pass, $db, $db_encoding, $host, $port);
 }}}
 
-This driver supports the following DBI capabilities: {{{DBI_CAP_TRANSACTION_MANAGEMENT}}}, {{{DBI_CAP_STORED_PROCEDURES}}}, {{{DBI_CAP_CHARSET_SUPPORT}}}, {{{DBI_CAP_LOB_SUPPORT}}}, {{{DBI_CAP_BIND_BY_VALUE}}}, {{{DBI_CAP_BIND_BY_PLACEHOLDER}}}.
+This driver supports the following DBI capabilities: {{{DBI_CAP_TRANSACTION_MANAGEMENT}}}, {{{DBI_CAP_STORED_PROCEDURES}}}, {{{DBI_CAP_CHARSET_SUPPORT}}}, {{{DBI_CAP_LOB_SUPPORT}}}, {{{DBI_CAP_BIND_BY_VALUE}}}, {{{DBI_CAP_BIND_BY_PLACEHOLDER}}}, {{{DBI_CAP_HAS_EXECRAW}}}, {{{DBI_CAP_HAS_STATEMENT}}}.
 
 The {{{Datasource::getServerVersion()}}} and {{{Datasource::getClientVersion()}}} methods are implemented for this driver. {{{Datasource::getServerVersion()}}} returns a string giving server information similar to the following:
 
@@ -617,7 +617,10 @@ Oracle Database 10g Release 10.2.0.1.0 - 64bit Production
 
 The {{{Datasource::getClientVersion()}}} returns a hash giving version information in the following keys: {{{major}}}, {{{minor}}}, {{{update}}}, {{{patch}}}, {{{port_update}}}.
 
-Note: There seems to be a bug in Oracle 9i and earlier in the streaming {{{OCILobRead()}}} function, where the LOB buffer must be at least twice as big as the LOB data to be read. This bug does not affect versions of the Qore oracle module linked with Oracle 10g libraries.</pre>
+Note: There seems to be a bug in Oracle 9i and earlier in the streaming {{{OCILobRead()}}} function, where the LOB buffer must be at least twice as big as the LOB data to be read. This bug does not affect versions of the Qore oracle module linked with Oracle 10g libraries.
+
+Note: Object (Oracle named type) and collection support is supplied courtesy of {{{ocilib}}} (http://orclib.sourceforge.net/), note that {{{ocilib}}} was highly modified to be usable in this module, mostly due to the fact that we use a separate environment data structure for each connection to ensure maximum thread scalability - the Oracle docs say that all operations on an environment handle or any handle derived from an environment handle (i.e. statement handles, etc) must be either wrapped in a mutex (when initialized with {{{OCI_NO_MUTEX}}}) or will be wrapped in a mutex by oracle (with {{{OCI_THREADED}}} and without {{{OCI_NO_MUTEX}}}).
+</pre>
 </div>
 <div title="MainMenu" modifier="PetrVanek" created="200808200730" modified="201008121110" changecount="30">
 <pre>[[Introduction]]
@@ -627,7 +630,7 @@ Note: There seems to be a bug in Oracle 9i and earlier in the streaming {{{OCILo
 [[Placeholder Type Mappings]]
 [[Named Types]]</pre>
 </div>
-<div title="Named Types" creator="YourName" modifier="YourName" created="201008121108" changecount="1">
+<div title="Named Types" creator="YourName" modifier="YourName" created="201008121108" modified="201012251821" changecount="5">
 <pre>Qore Oracle driver supports Oracle objects and collections (NTY in the following text).
 
 Special initialization of the driver is mandatory to use NTY in Qore scripts:
@@ -636,20 +639,19 @@ Special initialization of the driver is mandatory to use NTY in Qore scripts:
 %requires oracle
 }}}
 
-This statement imports additional functions for NTY binding and fetching.
-
+This statement imports additional functions for NTY binding and fetching and therefore is required in Qore code that wants to use these functions - the automatic loading of DBI drivers on reference happens at run-time, therefore any references to the functions provided by this module can only be resolved at parse time if the module is explicitly required as above..
 
 |!Function|!Description|h
-|{{{hash bindOracleObject ( string $typename, hash $value )}}}|Binds a Qore [[value]] as a Object type [[value]]. Hash keys are object attributes. Returned hash is used in the driver only.|
-|{{{hash placeholderOracleObject ( string $typename )}}}|Allows to fetch Object type [[typename]]. The returned hash is plain Qore hash with keys set as a object's attributes.|
-|{{{hash bindOracleCollection ( string $typename, list $value )}}}|Binds [[value]] as a Collection [[typename]]. Returned hash is used in the driver only.|
-|{{{list placeholderOracleCollection ( string $typename )}}}|Allows to fetch Collection [[typename]]. The returned list is plain Qore list of values with collection's type.|
+|{{{hash bindOracleObject(string $typename, hash $value)}}}|Binds a Qore [[value]] as a Object type [[value]]. Hash keys are object attributes|
+|{{{hash placeholderOracleObject(string $typename)}}}|Allows fetching Object type [[typename]]. The returned hash is a plain Qore hash with keys set as the object's attributes|
+|{{{hash bindOracleCollection(string $typename, list $value)}}}|Binds [[value]] as a Collection [[typename]]|
+|{{{list placeholderOracleCollection(string $typename )}}}|Allows fetching a Collection [[typename]]. The returned list is a plain Qore list of values with the collection's type|
 
 Type names ([[strings]]) are case insensitive.
 
-Key names in [[value]] hashes are case sensitive and should follow Oracle uppercase naming convention. Keys which are not found in the keys-attribute mappings are silently ignored. If there is a missing key for any attribute an exception is thrown.
+Key names in [[value]] hashes are case sensitive and should follow Oracle uppercase naming convention.  Keys which are not found in the keys-attribute mappings are silently ignored. If there is a missing key for any attribute, an exception is thrown.
 
-Functions are able to be nested so there can be for example list (collection) of objects and vice versa:
+Functions can be nested so there can be for example list (collection) of objects and vice versa:
 
 Sample named types defined in the DB:
 {{{
@@ -684,7 +686,6 @@ hash: (
 )
 }}}
 
-
 ''Known Issues''
 
 Oracle Metalink Bug #3604465 - bind named type by placeholder can cause ORA-21525 (attribute number or (collection element at index) %s violated its constraints) if the object contains numbers with size constraint. An example:
@@ -694,7 +695,8 @@ TYPE a_object AS OBJECT (
   my_num2 number     -- it will work
 )
 }}}
-Unfotunately it cannot be fixed in the Qore driver, it's a bug in the underlying Qracle C Interface (OCI) library.
+
+Unfortunately it cannot be fixed in the Qore driver, it's a bug in the underlying Oracle C Interface (OCI) library.
 </pre>
 </div>
 <div title="Placeholder Type Mappings" modifier="DavidNichols" created="200809060750" modified="200911231000" changecount="18">

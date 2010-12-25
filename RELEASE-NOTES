@@ -2,9 +2,19 @@
 version 2.0
 ***********
 
-object and collection support
-support for binding and retrieving ROWID column values
-fixed retrieving NUMBER values with over 30 digits
+* support for Qore's prepared statement API with Qore 0.8.1+
+* object and collection support courtesy of ocilib
+  (http://orclib.sourceforge.net/), note that ocilib was highly modified to be
+  usable in this module, mostly due to the fact that we use a separate
+  environment data structure for each connection to ensure maximum thread
+  scalability - the Oracle docs say that all operations on an environment
+  handle or any handle derived from an environment handle (i.e. statement
+  handles, etc) must be either wrapped in a mutex (when initialized with
+  OCI_NO_MUTEX) or will be wrapped in a mutex by oracle (with OCI_THREADED and
+  without OCI_NO_MUTEX).
+  collections of collections of object, etc are supported
+* support for binding and retrieving ROWID column values
+* fixed retrieving NUMBER values with over 30 digits
 
 
 ***********
