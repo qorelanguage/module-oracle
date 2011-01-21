@@ -139,6 +139,37 @@ QoreListNode *QoreOracleStatement::fetchRows(OraResultSet &resultset, int rows, 
    return *xsink ? 0 : l.release();
 }
 
+#ifdef _QORE_HAS_DBI_SELECT_ROW
+QoreHashNode *QoreOracleStatement::fetchSingleRow(ExceptionSink *xsink) {
+   OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchRow():params", xsink);
+   if (*xsink)
+      return 0;
+
+   ReferenceHolder<QoreHashNode> rv(xsink);
+
+   // setup temporary row to accept values
+   if (resultset->define("QoreOracleStatement::fetchRows():define", xsink))
+      return 0;
+
+   //printd(2, "QoreOracleStatement::fetchRow(): %d column(s) retrieved as output\n", resultset->size());
+
+   // now finally fetch the data
+   if (!next(xsink))
+      return 0;
+
+   rv = fetchRow(**resultset, xsink);
+   if (!rv)
+      return 0;
+
+   if (next(xsink)) {
+      xsink->raiseExceptionArg("ORACLE-SELECT-ROW-ERROR", rv.release(), "SQL passed to selectRow() returned more than 1 row");
+      return 0;
+   }
+
+   return rv.release();
+}
+#endif
+
 // retrieve results from statement and return hash
 QoreHashNode *QoreOracleStatement::fetchColumns(ExceptionSink *xsink) {
    OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchColumns():params", xsink);

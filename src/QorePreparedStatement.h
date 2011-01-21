@@ -227,6 +227,10 @@ public:
 
    DLLLOCAL AbstractQoreNode *execWithPrologue(bool rows, ExceptionSink *xsink);
 
+#ifdef _QORE_HAS_DBI_SELECT_ROW
+   DLLLOCAL QoreHashNode *selectRow(ExceptionSink *xsink);
+#endif
+
    // rows = true means get a list of hashes, otherwise the default is a hash of lists
    DLLLOCAL QoreHashNode *getOutputHash(bool rows, ExceptionSink *xsink);
 };

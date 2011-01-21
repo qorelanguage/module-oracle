@@ -91,6 +91,17 @@ static AbstractQoreNode *oracle_exec_raw_rows(Datasource *ds, const QoreString *
 }
 #endif
 
+#ifdef _QORE_HAS_DBI_SELECT_ROW
+static QoreHashNode *oracle_select_row(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink) {
+   QorePreparedStatementHelper bg(ds, xsink);
+
+   if (bg.prepare(qstr, args, true, xsink))
+      return 0;
+
+   return bg.selectRow(xsink);
+}
+#endif
+
 static AbstractQoreNode *oracle_exec_rows(Datasource *ds, const QoreString *qstr, const QoreListNode *args, ExceptionSink *xsink) {
    QorePreparedStatementHelper bg(ds, xsink);
 
@@ -301,6 +312,9 @@ QoreStringNode *oracle_module_init() {
    methods.add(QDBI_METHOD_CLOSE, oracle_close);
    methods.add(QDBI_METHOD_SELECT, oracle_exec);
    methods.add(QDBI_METHOD_SELECT_ROWS, oracle_exec_rows);
+#ifdef _QORE_HAS_DBI_SELECT_ROW
+   methods.add(QDBI_METHOD_SELECT_ROW, oracle_select_row);
+#endif
    methods.add(QDBI_METHOD_EXEC, oracle_exec);
 #ifdef _QORE_HAS_DBI_EXECRAW
    methods.add(QDBI_METHOD_EXECRAW, oracle_exec_raw);

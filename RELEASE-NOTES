@@ -1,4 +1,11 @@
 ***********
+version 2.1
+***********
+
+* added support for the selectRow() method when compiled with Qore 0.8.2+
+
+
+***********
 version 2.0
 ***********
 

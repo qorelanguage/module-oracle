@@ -725,6 +725,20 @@ QoreHashNode *QorePreparedStatement::getOutputHash(bool rows, ExceptionSink *xsi
    return *xsink ? 0 : h.release();
 }
 
+#ifdef _QORE_HAS_DBI_SELECT_ROW
+QoreHashNode *QorePreparedStatement::selectRow(ExceptionSink *xsink) {
+   if (!is_select) {
+      xsink->raiseException("ORACLE-SELECT-ROW-ERROR", "the SQL passed to the selectRow() method is not a select statement");
+      return 0;
+   }
+
+   if (exec(xsink))
+      return 0;
+
+   return fetchSingleRow(xsink);
+}
+#endif
+
 AbstractQoreNode *QorePreparedStatement::execWithPrologue(bool rows, ExceptionSink *xsink) {
    if (exec(xsink))
       return 0;

@@ -165,7 +165,9 @@ public:
    }
 
    DLLLOCAL QoreHashNode *fetchRow(OraResultSet &columns, ExceptionSink *xsink);
-
+#ifdef _QORE_HAS_DBI_SELECT_ROW
+   DLLLOCAL QoreHashNode *fetchSingleRow(ExceptionSink *xsink);
+#endif
    DLLLOCAL QoreListNode *fetchRows(OraResultSet &columns, int rows, ExceptionSink *xsink);
    DLLLOCAL QoreListNode *fetchRows(ExceptionSink *xsink);
 
