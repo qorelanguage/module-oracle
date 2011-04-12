@@ -354,7 +354,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
       if (conn->descriptorAlloc(&buf.ptr, OCI_DTYPE_LOB, "OraBindNode::bindPlaceholder() allocate clob descriptor", xsink))
 	 return;
 
-      //       printd(5, "OraBindNode::bindPlaceholder() got LOB locator handle %p\n", buf.ptr);
+      // printd(5, "OraBindNode::bindPlaceholder() got LOB locator handle %p\n", buf.ptr);
       stmt.bindByPos(bndp, pos, &buf.ptr, 0, SQLT_CLOB, xsink, &ind);
    }
    else if (!strcmp(data.ph.type, "blob")) {
@@ -364,7 +364,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
       conn->descriptorAlloc(&buf.ptr, OCI_DTYPE_LOB, "OraBindNode::bindPlaceholder() allocate blob descriptor", xsink);
 
       if (*xsink) return;
-//       printd(5, "bindPalceholder() got LOB locator handle %p\n", buf.ptr);
+      // printd(5, "bindPalceholder() got LOB locator handle %p\n", buf.ptr);
 
       stmt.bindByPos(bndp, pos, &buf.ptr, 0, SQLT_BLOB, xsink, &ind);
    }

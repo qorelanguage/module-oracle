@@ -197,7 +197,7 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
 	    //printd(5, "OraResultSet::define() got LOB locator handle %p\n", w->buf.ptr);
 	    stmt.defineByPos(w->defp, i + 1, &w->buf.ptr, 0, w->dtype, &w->ind, xsink);
 	    break;
-	    
+
 	 case SQLT_RSET:
 	    w->buf.ptr = 0;
 	    // allocate statement handle for result list
@@ -224,7 +224,6 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
                                                 (void **) &w->buf.oraObj->tab_ind,
                                                 (ub4   *) NULL),
                                 str, xsink);
-
             } else if (w->subdtype == SQLT_NTY_COLLECTION) {
                 w->buf.oraColl = collPlaceholderQore(conn, w->subdtypename.getBuffer(), xsink);
                 stmt.defineByPos(w->defp, i + 1, 0, 0, w->dtype, &w->ind, xsink);
@@ -236,7 +235,6 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
                                                 (void **) &w->buf.oraColl->tab_ind,
                                                 (ub4   *) NULL),
                                 str, xsink);
-
             } else {
                 xsink->raiseException("DEFINE-NTY-ERROR", "An attempt to define unknown NTY type");
                 return -1;
