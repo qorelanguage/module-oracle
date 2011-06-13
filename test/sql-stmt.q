@@ -10,9 +10,6 @@ our hash $o.verbose = True;
 sub main() {
     my DatasourcePool $ds("oracle", shift $ARGV, shift $ARGV, shift $ARGV);
 
-    my SQLStatement $drop_stmt($ds);
-    $drop_stmt.prepare("drop table test");
-
     my SQLStatement $insert_stmt($ds);
     $insert_stmt.prepare("insert into test values (%v, %v, %v, %v, %v)");
 
@@ -37,7 +34,7 @@ begin
     :an_output := var;
 end;");
 
-    create_table($drop_stmt);
+    create_table($ds);
     test1($insert_stmt, $select_stmt);
     test2($select_into_stmt);
     test3($select_err_stmt);
@@ -63,20 +60,25 @@ sub test_value(any $v1, any $v2, string $msg) {
     $thash.$msg = True;
 }
 
-sub create_table(SQLStatement $stmt) {
+sub create_table(DatasourcePool $dsp) {
+    my SQLStatement $drop_stmt($dsp);
+    $drop_stmt.prepare("drop table test");
+
+    on_exit $drop_stmt.commit();
+
     try {
-	$stmt.exec();
+	$drop_stmt.exec();
     }
     catch () {
 	info("ignoring drop table error");
     }
 
-    $stmt.prepare("create table test (ts timestamp, tstz timestamp with time zone, tsltz timestamp with local time zone, d date, r raw(64))");
-    $stmt.exec();
+    $drop_stmt.prepare("create table test (ts timestamp, tstz timestamp with time zone, tsltz timestamp with local time zone, d date, r raw(64))");
+    $drop_stmt.exec();
 }
 
 sub test1(SQLStatement $insert_stmt, SQLStatement $select_stmt) {
-    info("test4");
+    info("test1");
     #TimeZone::setRegion("America/Chicago");
 
     my date $now = now_us();
@@ -110,7 +112,7 @@ sub test1(SQLStatement $insert_stmt, SQLStatement $select_stmt) {
     }
     info("commit done");
 
-    on_exit $select_stmt.close();
+    on_exit $select_stmt.commit();
 
     $select_stmt.exec();
     my int $rows;
@@ -136,12 +138,17 @@ sub test1(SQLStatement $insert_stmt, SQLStatement $select_stmt) {
     $select_stmt.exec();
     $v = $select_stmt.fetchColumns(-1);
     test_value(elements $v, 5, "fetch columns");
+
+    $select_stmt.exec();
+    $v = $select_stmt.fetchColumns(-1);
+    test_value(elements $v, 5, "fetch columns 2");
+
     info("columns=%N", $v);
 }
 
 sub test2(SQLStatement $stmt) {
     info("test2");
-    #on_exit $stmt.close();
+    on_exit $stmt.commit();
 
     $stmt.bindPlaceholders(Type::Date);
     #$stmt.exec();
@@ -197,6 +204,7 @@ sub test4(SQLStatement $delete_stmt, SQLStatement $select_stmt) {
     info("commit done");
 
     $select_stmt.exec();
+    on_exit $select_stmt.commit();
     my any $rv = $select_stmt.fetchRows();
     test_value($rv, (), "select after delete");
     #info("test: %N", $stmt.fetchRows());
