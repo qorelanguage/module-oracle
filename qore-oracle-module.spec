@@ -85,7 +85,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc COPYING README RELEASE-NOTES ChangeLog AUTHORS test/db-test.q docs/oracle-module-doc.html
 
 %changelog
-* Fri Jan 21 2010 David Nichols <david@qore.org>
+* Fri Jan 21 2011 David Nichols <david@qore.org>
 - updated to version 2.1
 
 * Tue Aug 3 2010 David Nichols <david@qore.org>
