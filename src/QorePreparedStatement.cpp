@@ -68,14 +68,14 @@ int OraBindNode::setupDateDescriptor(ExceptionSink *xsink) {
 
    dtype = QORE_SQLT_TIMESTAMP;
    buf.odt = NULL;
-
+    
    if (conn->descriptorAlloc((dvoid **)&buf.odt, QORE_DTYPE_TIMESTAMP, "OraBindNode::setupDateDecriptor()", xsink))
       return -1;
    return 0;
 }
 
 int OraBindNode::bindDate(int pos, ExceptionSink *xsink) {
-   return stmt.bindByPos(bndp, pos, &buf.odt, 0, QORE_SQLT_TIMESTAMP, xsink);
+   return stmt.bindByPos(bndp, pos, &buf.odt, 0, QORE_SQLT_TIMESTAMP, xsink, pIndicator);
 }
 
 void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
@@ -87,7 +87,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
 
    // bind a NULL
    if (is_nothing(value) || is_null(value)) {
-      stmt.bindByPos(bndp, pos, 0, 0, SQLT_STR, xsink);
+      stmt.bindByPos(bndp, pos, 0, 0, SQLT_STR, xsink, pIndicator);
       return;
    }
 
@@ -136,11 +136,11 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
                              "OraBindNode::bindValue() write CLOB", xsink))
 	    return;
 
-         stmt.bindByPos(bndp, pos, &strlob, 0, SQLT_CLOB, xsink);
+         stmt.bindByPos(bndp, pos, &strlob, 0, SQLT_CLOB, xsink, pIndicator);
       }
       else {	 
 	 // bind as a string
-         stmt.bindByPos(bndp, pos, buf.ptr, len + 1, SQLT_STR, xsink);
+         stmt.bindByPos(bndp, pos, buf.ptr, len + 1, SQLT_STR, xsink, pIndicator);
       }
 
       return;
@@ -163,14 +163,14 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
       const BinaryNode *b = reinterpret_cast<const BinaryNode *>(value);
       printd(5, "OraBindNode::bindValue() BLOB ptr=%p size=%d\n", b->getPtr(), b->size());
 
-      stmt.bindByPos(bndp, pos, (void *)b->getPtr(), b->size(), SQLT_BIN, xsink);
+      stmt.bindByPos(bndp, pos, (void *)b->getPtr(), b->size(), SQLT_BIN, xsink, pIndicator);
       return;
    }
 
    if (ntype == NT_BOOLEAN) {
       buf.i4 = reinterpret_cast<const QoreBoolNode *>(value)->getValue();
 
-      stmt.bindByPos(bndp, pos, &buf.i4, sizeof(int), SQLT_INT, xsink);
+      stmt.bindByPos(bndp, pos, &buf.i4, sizeof(int), SQLT_INT, xsink, pIndicator);
       return;
    }
 
@@ -179,7 +179,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
       if (b->val <= MAXINT32 && b->val >= -MAXINT32) {
 	 buf.i4 = b->val;
 
-         stmt.bindByPos(bndp, pos, &buf.i4, sizeof(int), SQLT_INT, xsink);
+         stmt.bindByPos(bndp, pos, &buf.i4, sizeof(int), SQLT_INT, xsink, pIndicator);
       }
       else { // bind as a string value
 	 dtype = SQLT_STR;
@@ -189,16 +189,16 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
 	 data.v.tstr = tstr;
 
 	 //printd(5, "binding number '%s'\n", buf.ptr);
-         stmt.bindByPos(bndp, pos, (char *)tstr->getBuffer(), tstr->strlen() + 1, SQLT_STR, xsink);
+         stmt.bindByPos(bndp, pos, (char *)tstr->getBuffer(), tstr->strlen() + 1, SQLT_STR, xsink, pIndicator);
       }
       return;
    }
 
    if (ntype == NT_FLOAT) {
 #if defined(SQLT_BDOUBLE) && defined(USE_NEW_NUMERIC_TYPES)
-      stmt.bindByPos(bndp, pos, &(reinterpret_cast<QoreFloatNode *>(const_cast<AbstractQoreNode *>(value))->f), sizeof(double), SQLT_BDOUBLE, xsink);
+      stmt.bindByPos(bndp, pos, &(reinterpret_cast<QoreFloatNode *>(const_cast<AbstractQoreNode *>(value))->f), sizeof(double), SQLT_BDOUBLE, xsink, pIndicator);
 #else
-      stmt.bindByPos(bndp, pos, &(reinterpret_cast<QoreFloatNode *>(const_cast<AbstractQoreNode *>(value))->f), sizeof(double), SQLT_FLT, xsink);
+      stmt.bindByPos(bndp, pos, &(reinterpret_cast<QoreFloatNode *>(const_cast<AbstractQoreNode *>(value))->f), sizeof(double), SQLT_FLT, xsink, pIndicator);
 #endif
       return;
    }
@@ -221,7 +221,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
          if (*xsink || !buf.oraObj)
             return;
 
-         stmt.bindByPos(bndp, pos, 0, 0, SQLT_NTY, xsink);
+         stmt.bindByPos(bndp, pos, 0, 0, SQLT_NTY, xsink, pIndicator);
 
          conn->checkerr(OCIBindObject(bndp, conn->errhp,
                                       buf.oraObj->typinf->tdo, (void**)&buf.oraObj->handle, 0,
@@ -239,7 +239,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
          if (*xsink || !buf.oraColl)
             return;
 
-         stmt.bindByPos(bndp, pos, 0, 0, SQLT_NTY, xsink);
+         stmt.bindByPos(bndp, pos, 0, 0, SQLT_NTY, xsink, pIndicator);
       
          conn->checkerr(OCIBindObject(bndp, conn->errhp,
                                       buf.oraColl->typinf->tdo, (void**)&buf.oraColl->handle, 0,
@@ -283,9 +283,9 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
       stmt.bindByPos(bndp, pos, buf.ptr, data.ph.maxsize + 1, SQLT_STR, xsink, &ind);
    }
    else if (!strcmp(data.ph.type, "date")) {
-      //printd(5, "oraBindNode::bindPlaceholder() this=%p, timestamp dtype=%d\n", this, QORE_SQLT_TIMESTAMP);
+//      printd(5, "oraBindNode::bindPlaceholder() this=%p, timestamp dtype=%d\n", this, QORE_SQLT_TIMESTAMP);
       if (setupDateDescriptor(xsink))
-	 return;
+        return;
 
       if (value) {
 	 DateTimeNodeValueHelper d(value);
@@ -482,6 +482,9 @@ void OraBindNode::resetValue(ExceptionSink *xsink) {
 }
 
 AbstractQoreNode *OraBindNode::getValue(bool horizontal, ExceptionSink *xsink) {
+    //printd(0, "AbstractQoreNode *OraBindNode::getValue %d\n", indicator);
+    if (indicator != 0)
+        return null();
    return OraColumnValue::getValue(xsink, horizontal, true);
 }
 

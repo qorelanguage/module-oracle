@@ -116,11 +116,26 @@ public:
    bool clob_allocated;
    OCIBind *bndp;
 
+   // Variable indicator is used as a holder for QoreOracleStatement::bindByPos() indp argument
+   // which holds information about NULLs in the bound/placeholder-ed value. See:
+   //
+   // Pointer to an indicator variable or array. For all data types, this is a pointer to sb2 or an array of sb2s
+   // The only exception is SQLT_NTY, when this pointer is ignored and the actual pointer to the indicator structure
+   //or an array of indicator structures is initialized by OCIBindObject(). Ignored for dynamic binds.
+   //
+   // It prevents (for example) ORA-01405: fetched column value is NULL errors
+   // when is the Type::Date bound to OUT argument of PL/SQL procedure.
+   // See: OraBindNode::getValue() code.
+   sb2 indicator;
+   dvoid *pIndicator;
+   
    // for value nodes
    DLLLOCAL inline OraBindNode(QoreOracleStatement &stmt, const AbstractQoreNode *v) : 
       OraColumnValue(stmt), 
       bindtype(BN_VALUE), value(v ? v->refSelf() : 0), strlob(0), clob_allocated(false), bndp(0) {
       data.v.tstr = 0;
+      indicator = 0;
+      pIndicator = (dvoid *)&indicator;
    }
 
    // for placeholder nodes
@@ -130,6 +145,8 @@ public:
       data.ph.name = name;
       data.ph.maxsize = size;
       data.ph.type = typ ? strdup(typ) : 0;
+      indicator = 0;
+      pIndicator = (dvoid *)&indicator;
    }
 
    DLLLOCAL inline ~OraBindNode() {
