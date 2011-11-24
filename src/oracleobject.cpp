@@ -216,7 +216,8 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
 #endif
             {
                 // date
-                const DateTimeNode * dn = reinterpret_cast<const DateTimeNode*>(val);
+                DateTimeValueHelper dn(val);
+                
                 if (col->type == OCI_CDT_TIMESTAMP) {
                     OCI_Timestamp * dt = OCI_TimestampCreate2(&d->ocilib, d->ocilib_cn, col->subtype);
                     OCI_TimestampConstruct2(&d->ocilib, dt,
