@@ -236,6 +236,28 @@ AC_ARG_ENABLE([single-compilation-unit],
       esac],
   [enable_single_compilation_unit=yes])
 
+AC_ARG_WITH([doxygen],
+    [AS_HELP_STRING([--with-doxygen@<:@=PATH@:>@],
+                    [path to doxygen binary])],
+    [if test "${with_doxygen}" != "no" -a ! -x "${with_doxygen}"; then AC_MSG_ERROR(${with_doxygen} is not an executable in --with-doxygen); unset with_doxygen; fi ],
+    [with_doxygen=auto])
+
+if test "${with_doxygen}" = "auto"; then
+   AC_MSG_CHECKING([for doxygen to build API documentation])
+   # check for doxygen
+   with_doxygen=`which doxygen 2>/dev/null | grep -v "no doxygen in.*"`
+   if test -n "$with_doxygen"; then
+      doxy_version=`$with_doxygen --version`
+      AC_MSG_RESULT([found $with_doxygen $doxy_version])
+   else
+      AC_MSG_RESULT([not found])
+   fi
+fi
+
+if test -n "${with_doxygen}"; then
+   AC_SUBST(DOXYGEN_CMD, $with_doxygen)
+fi
+
 AC_ARG_WITH([oracle],
   [AS_HELP_STRING([--with-oracle@<:@=DIR@:>@],
                   [directory for Oracle support (defaults to $ORACLE_HOME)])],
@@ -675,6 +697,7 @@ AC_DEFINE_UNQUOTED([MODULE_TARGET_ARCH], "$ARCH", [host type])
 AC_DEFINE_UNQUOTED([MODULE_TARGET_OS], "$OS", [host type])
 AC_DEFINE_UNQUOTED([MODULE_TARGET_BITS], $bits, [32 or 64 bit build])
 
+AM_CONDITIONAL([COND_DOXYGEN],    [test -n "$with_doxygen"])
 AM_CONDITIONAL([COND_DEBUG],      [test "$enable_debug" = yes])
 AM_CONDITIONAL([COND_PROFILE],    [test "$enable_profile" = yes])
 AM_CONDITIONAL([COND_SINGLE_COMPILATION_UNIT], [test "$enable_single_compilation_unit" = yes])
