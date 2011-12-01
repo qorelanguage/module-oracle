@@ -67,6 +67,13 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
 	    ds->connectionAborted();
 	    return -1;
 	 }
+         if (conn->checkWarnings(xsink)) {
+             //printd(5, "QoreOracleStatement::execute() conn=%p reconnect failed, marking connection as closed\n", conn);
+            // close datasource and remove private data
+            ds->connectionAborted();
+            return -1;
+         }
+
 
          // don't execute again if the connection was aborted while in a transaction
          if (wasInTransaction(ds))

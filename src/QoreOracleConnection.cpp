@@ -107,6 +107,8 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
    //printd(5, "QoreOracleConnection::QoreOracleConnection() about to call OCILogon()\n");
    if (logon(xsink))
       return;
+   if (checkWarnings(xsink))
+      return;
 
    //printd(5, "QoreOracleConnection::QoreOracleConnection() datasource %p for DB=%s open (envhp=%p)\n", ds, cstr.getBuffer(), *env);
    

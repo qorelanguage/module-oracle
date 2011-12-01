@@ -132,6 +132,31 @@ public:
       const std::string &pass = ds.getPasswordStr();
       return checkerr(OCILogon(*env, errhp, &svchp, (text *)user.c_str(), user.size(), (text *)pass.c_str(), pass.size(), (text *)cstr.getBuffer(), cstr.strlen()), "QoreOracleConnection::logon()", xsink);
    }
+   
+   DLLLOCAL int checkWarnings(ExceptionSink *xsink) {
+      ub4 ix = 1;
+      int errcode;
+      text errbuf[512];
+      bool hasError = false;
+      while (OCIErrorGet(errhp, ix, (text *) NULL, &errcode, errbuf, (ub4)sizeof(errbuf), OCI_HTYPE_ERROR) != OCI_NO_DATA) {
+         fprintf(stderr, "Oracle OCI Warning - %.*s\n", 512, errbuf);
+         hasError = true;
+         ++ix;
+      }
+     
+#ifdef DARWIN
+      // ORA-28002: the password will expire within 20 days and probably all other warnings
+      // cause crashes (invalid handle) on macosx (client 10). I'm not sure if it's mac
+      // issue or client issue (all linux versions are running on 11 here)
+      if (hasError) {
+         char output[512];
+         sprintf(output, "Oracle OCI Warning - %.*s", 512, errbuf);
+         xsink->raiseException("OCI-WARNING-ERROR", output);
+         return -1;
+      }
+#endif
+      return 0;
+   }
 
    // logoff but do not process error return values
    DLLLOCAL int logoff() {
