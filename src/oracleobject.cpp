@@ -62,17 +62,18 @@ void ocilib_err_handler(OCI_Error *err) {
 boolean OCI_API OCI_CollGetStruct(OCI_Library *pOCILib, OCI_Coll *obj, void **pp_struct, void** pp_ind) {
    OCI_CHECK_PTR(pOCILib, OCI_IPC_OBJECT, obj, FALSE);
 
-    OCI_RESULT(pOCILib, TRUE);
+   OCI_RESULT(pOCILib, TRUE);
 
-    *pp_struct = (void *) obj->handle;
+   *pp_struct = (void *) obj->handle;
 
-    if (pp_ind)
-        *pp_ind = (void *) obj->tab_ind;
+   if (pp_ind)
+      *pp_ind = (void *) obj->tab_ind;
 
-    OCI_RESULT(pOCILib, TRUE);
+   OCI_RESULT(pOCILib, TRUE);
 
-    return TRUE;
+   return TRUE;
 }
+
 // return NTY object type - ORACLE_COLLECTION or ORACLE_OBJECT
 // should be called id it's sure it's a NTY (after ntyCheckType()
 // and/or in SQLT_NTY cases

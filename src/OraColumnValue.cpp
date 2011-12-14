@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2010 David Nichols
+  Copyright (C) 2003 - 2011 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -190,6 +190,7 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
 
          if (subdtype == SQLT_NTY_OBJECT) {
             OCI_ObjectGetStruct2(&conn->ocilib, buf.oraObj, (void**)&pp_struct, (void**)&pp_ind);
+            //printd(5, "OraColumnValue::getValue() allocated OBJECT: %p\n", buf.oraObj);
             if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
                return null();
             return objToQore(conn, buf.oraObj, stmt.getDatasource(), xsink);
@@ -197,6 +198,7 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
          else {
             assert(subdtype == SQLT_NTY_COLLECTION);
             OCI_CollGetStruct(&conn->ocilib, buf.oraColl, (void**)&pp_struct, (void**)&pp_ind);
+            //printd(5, "OraColumnValue::getValue() allocated COLLECTION: %p\n", buf.oraColl);
             if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
                return null();
             return collToQore(conn, buf.oraColl, stmt.getDatasource(), xsink);
@@ -246,8 +248,12 @@ void OraColumnValue::freeObject() {
 
    // printd(0, "deleting object (OraColumn) buf.oraObj: %p, buf.oraColl: %p\n", buf.oraObj, buf.oraColl);
    // objects are allocated in bind-methods and it has to be freed in any case
-   if (subdtype == SQLT_NTY_OBJECT)
+   if (subdtype == SQLT_NTY_OBJECT) {
+      //printd(5, "OraColumnValue::getValue() freed OBJECT: %p\n", buf.oraObj);
       OCI_ObjectFree2(&conn->ocilib, buf.oraObj);
-   else
+   }
+   else {
+      //printd(5, "OraColumnValue::freeObject() freed COLLECTION: %p\n", buf.oraColl);
       OCI_CollFree2(&conn->ocilib, buf.oraColl);
+   }
 }

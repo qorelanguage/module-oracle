@@ -262,11 +262,19 @@ OCI_Elem * OCI_API OCI_CollGetAt2(OCI_Library *pOCILib, OCI_Coll *coll, unsigned
 
         OCICollGetElem(pOCILib->env, coll->con->err, coll->handle, (sb4) index-1,
                        &exists, &data, (dvoid **) (dvoid *) &p_ind)
+
     )
+
+    //printf("OCICollGetElem() index: %d handle: %p exists: %d data: %p p_ind: %p coll->elem: %p\n", index, coll->handle, exists, data, p_ind, coll->elem);
 
     if (res == TRUE && exists == TRUE && data != NULL)
     {
-        elem = coll->elem = OCI_ElemInit2(pOCILib, coll->con, &coll->elem,
+       if (coll->elem) {
+	  coll->elem->hstate = OCI_OBJECT_FETCHED_DIRTY;
+	  OCI_ElemFree2(pOCILib, coll->elem);
+	  coll->elem = 0;
+       }
+       elem = coll->elem = OCI_ElemInit2(pOCILib, coll->con, &coll->elem,
                                          data, p_ind, coll->typinf);
     }
 
