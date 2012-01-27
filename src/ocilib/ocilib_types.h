@@ -38,6 +38,8 @@
 
 #include "ocilib_defs.h"
 
+#include <qore/Qore.h>
+
 /* ************************************************************************ *
  *                             PRIVATE TYPES
  * ************************************************************************ */
@@ -911,7 +913,7 @@ OCI_EXPORT short OCI_API OCI_ElemGetShort2(OCI_Library *pOCILib, OCI_Elem *elem)
 OCI_EXPORT unsigned short OCI_API OCI_ElemGetUnsignedShort2(OCI_Library *pOCILib, OCI_Elem *elem);
 OCI_EXPORT int OCI_API OCI_ElemGetInt2(OCI_Library *pOCILib, OCI_Elem *elem);
 OCI_EXPORT unsigned int OCI_API OCI_ElemGetUnsignedInt2(OCI_Library *pOCILib, OCI_Elem *elem);
-OCI_EXPORT big_int OCI_API OCI_ElemGetBigInt2(OCI_Library *pOCILib, OCI_Elem *elem);
+OCI_EXPORT int64 OCI_API OCI_ElemGetBigInt2(OCI_Library *pOCILib, OCI_Elem *elem);
 OCI_EXPORT big_uint OCI_API OCI_ElemGetUnsignedBigInt2(OCI_Library *pOCILib, OCI_Elem *elem);
 OCI_EXPORT boolean OCI_API OCI_DatabaseShutdown2(OCI_Library *pOCILib, const mtext *db, const mtext *user, const mtext *pwd, unsigned int sess_mode, unsigned int shut_mode, unsigned int shut_flag);
 OCI_EXPORT boolean OCI_NumberGet2(OCI_Library *pOCILib, OCI_Connection *con,  OCINumber *data, void *value, uword size, uword flag);
@@ -1027,7 +1029,7 @@ short OCI_API OCI_ObjectGetShort2(OCI_Library *pOCILib, OCI_Object *obj, const m
 unsigned short OCI_API OCI_ObjectGetUnsignedShort2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr);
 int OCI_API OCI_ObjectGetInt2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr);
 unsigned int OCI_API OCI_ObjectGetUnsignedInt2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr);
-big_int OCI_API OCI_ObjectGetBigInt2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr);
+int64 OCI_API OCI_ObjectGetBigInt2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr);
 big_uint OCI_API OCI_ObjectGetUnsignedBigInt2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr);
 double OCI_API OCI_ObjectGetDouble2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr);
 boolean OCI_API OCI_IntervalFree2(OCI_Library *pOCILib, OCI_Interval *itv);

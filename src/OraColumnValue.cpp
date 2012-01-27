@@ -124,6 +124,7 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
    switch (dtype) {
       case SQLT_INT:
       case SQLT_UIN:
+         //printd(5, "OraColumnValue::getValue() buf.i8: %lld\n", buf.i8);
 	 return new QoreBigIntNode(buf.i8);
 
       case SQLT_FLT:

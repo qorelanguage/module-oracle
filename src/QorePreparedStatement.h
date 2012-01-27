@@ -80,7 +80,7 @@ protected:
 	 // get and check size
 	 const AbstractQoreNode *sz = h->getKeyValue("size");
 	 int size = sz ? sz->getAsInt() : -1;
-	       
+
 	 //QoreStringValueHelper strdebug(v);
 	 //printd(5, "OraBindNode::setPlaceholder() adding placeholder name=%s, size=%d, type=%s, value=%s\n", tstr.getBuffer(), size, str->getBuffer(), strdebug->getBuffer());
 	 setPlaceholderIntern(size, str->getBuffer(), h, xsink);

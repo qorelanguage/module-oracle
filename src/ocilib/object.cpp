@@ -459,6 +459,8 @@ boolean OCI_ObjectGetNumber2(OCI_Library *pOCILib, OCI_Object *obj, const mtext 
 
     index = OCI_ObjectGetAttrIndex2(pOCILib, obj, attr, OCI_CDT_NUMERIC);
 
+    //printd(0, "OCI_ObjectGetNumber2() index: %d\n", index);
+
     if (index >= 0)
     {
         OCIInd *ind     = NULL;
@@ -667,13 +669,11 @@ unsigned int OCI_API OCI_ObjectGetUnsignedInt2(OCI_Library *pOCILib, OCI_Object 
  * OCI_ObjectGetBigInt
  * ------------------------------------------------------------------------ */
 
-big_int OCI_API OCI_ObjectGetBigInt2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr)
-{
-    big_int value = 0;
+int64 OCI_API OCI_ObjectGetBigInt2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr) {
+   int64 value = 0;
 
-    OCI_ObjectGetNumber2(pOCILib, obj, attr, &value, sizeof(value), OCI_NUM_BIGINT);
-
-    return value;
+   OCI_ObjectGetNumber2(pOCILib, obj, attr, &value, sizeof(value), OCI_NUM_BIGINT);
+   return value;
 }
 
 /* ------------------------------------------------------------------------ *

@@ -183,12 +183,15 @@ boolean OCI_ElemGetNumber2(OCI_Library *pOCILib, OCI_Elem *elem, void *value, uw
     
     if (elem->typinf->cols[0].type == OCI_CDT_NUMERIC)
     {
+       //printd(5, "OCI_ElemGetNumber2() OCI_CDT_NUMERIC\n");
         OCINumber *num  = (OCINumber *) elem->handle;
 
         res = OCI_NumberGet2(pOCILib, elem->con, num, value, size, flag);
     }
     else if (elem->typinf->cols[0].type == OCI_CDT_TEXT)
     {
+       //printd(5, "OCI_ElemGetNumber2() OCI_CDT_TEXT\n");
+
        const mtext *fmt = OCI_GetDefaultFormatNumeric(pOCILib, elem->con);
         ub4 fmt_size     = (ub4) mtslen(fmt);
         dtext *data      = (dtext *) OCI_ElemGetString2(pOCILib, elem);
@@ -202,6 +205,8 @@ boolean OCI_ElemGetNumber2(OCI_Library *pOCILib, OCI_Elem *elem, void *value, uw
     }
 
     OCI_RESULT(pOCILib, res);
+
+    //printd(5, "OCI_ElemGetNumber2() size: %d res: %d\n", size, res);
 
     return res;
 }
@@ -366,14 +371,11 @@ unsigned int OCI_API OCI_ElemGetUnsignedInt2(OCI_Library *pOCILib, OCI_Elem *ele
  * OCI_ElemGetBigInt
  * ------------------------------------------------------------------------ */
 
-big_int OCI_API OCI_ElemGetBigInt2(OCI_Library *pOCILib, OCI_Elem *elem)
-{
-    big_int value = 0;
-    
-    OCI_ElemGetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(big_int),
-                      (uword) OCI_NUM_BIGINT);
- 
-    return value;
+int64 OCI_API OCI_ElemGetBigInt2(OCI_Library *pOCILib, OCI_Elem *elem) {
+   int64 value = 0;
+
+   OCI_ElemGetNumber2(pOCILib, elem, (void *) &value, (uword) sizeof(int64), (uword) OCI_NUM_BIGINT);
+   return value;
 }
 
 /* ------------------------------------------------------------------------ *

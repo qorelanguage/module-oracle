@@ -3,7 +3,7 @@
 %requires oracle
 printf("\nQore named types test - objects\n\n");
 
-my $db = new Datasource("oracle", "omq", "omq", "quark");
+my $db = new Datasource("oracle", "omquser", "omquser", "qube");
 $db.open();
 
 printf("OBJECT IN\n");
@@ -15,11 +15,11 @@ my hash $obj = ("A_TEXT": "1",
                 "A_DATE" : now_ms(),
                 "A_TSTAMP" : now_ms(),
                 "A_TSTAMP_TZ" : now_ms(),
-                "A_OBJECT" : bindOracleObject("TEST_OBJECT_2", ("TEXT2" : "foobar", "NUMBER2" : 666))
+                "A_OBJECT" : bindOracleObject("TEST_OBJECT_2", ("TEXT2" : "foobar", "NUMBER2" : 5050553111079))
                 );
 
 my $r = $db.exec("begin qore_test.do_obj(%v, :retval); end;",
-                 bindOracleObject("OMQ.TEST_OBJECT", $obj),
+                 bindOracleObject("OMQUSER.TEST_OBJECT", $obj),
                  Type::String);
 printf("object: %N\n", $r);
 $db.rollback();
@@ -36,8 +36,8 @@ printf("\nOBJECT direct insert\n");
     on_error $db.rollback();
     my $rins = $db.exec("insert into t_object_test values (%v, %v, %v)",
                         1,
-                        bindOracleObject("OMQ.TEST_tab_OBJECT", $obj),
-                        bindOracleCollection("TEST_tab_coll", (2, 213,NULL, NOTHING, 666,))
+                        bindOracleObject("OMQUSER.TEST_tab_OBJECT", $obj),
+                        bindOracleCollection("TEST_tab_coll", (2, 5050553111079,NULL, NOTHING, 666,))
                        );
     printf("rins: %N\n", $rins);
 }
