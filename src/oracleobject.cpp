@@ -155,11 +155,11 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
 //         printf("Binding attribute: %s (%d/%d)\n", cname, i, n);
         if (! th->existsKey(cname)) {
             xsink->raiseException("BIND-ORACLE-OBJECT-ERROR", "Key %s (case sensitive) does not exist in the object hash", cname);
-            return obj;
+	    OCI_ObjectFree2(&d->ocilib, obj);
+            return 0;
         }
-        /*const*/ QoreString * key = new QoreString(cname);
         bool e;
-        const AbstractQoreNode * val = th->getKeyValueExistence(key, e, xsink);
+        const AbstractQoreNode *val = th->getKeyValueExistence(cname, e);
         
 //         qore_type_t ntype = val->getType();
         
@@ -168,8 +168,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
 	   continue;
         }
         
-        switch (col->ocode)
-        {
+        switch (col->ocode) {
             case SQLT_LNG: // long
             case SQLT_AFC:
             case SQLT_AVC:
@@ -262,7 +261,8 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                 }
                 else {
                     xsink->raiseException("BIND-NTY-ERROR", "Unknown DATE-like argument for %s (type: %d)", cname, col->type);
-                    return obj;
+		    OCI_ObjectFree2(&d->ocilib, obj);
+		    return 0;
                 }
                 break;
             }
@@ -321,8 +321,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
             case SQLT_NTY: {
                 const QoreHashNode * n = dynamic_cast<const QoreHashNode *>(val);
                 const char * t = ntyHashType(n);
-                if (t && !strcmp(t, ORACLE_OBJECT)) {
-                    
+                if (t && !strcmp(t, ORACLE_OBJECT)) {                    
                     OCI_Object * o = objBindQore(d, n, xsink);
                     OCI_ObjectSetObject2(&d->ocilib, obj, cname, o);
                     OCI_ObjectFree2(&d->ocilib, o);
@@ -334,24 +333,24 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                 }
                 else {
                     xsink->raiseException("BIND-NTY-ERROR", "Unknown NTY-like argument for %s (type: %d)", cname, col->type);
-                    return obj;
+		    OCI_ObjectFree2(&d->ocilib, obj);
+		    return 0;
                 }
                 break;
             }
 
             default:
                 xsink->raiseException("BIND-OBJECT-ERROR", "unknown datatype to bind as an attribute (unsupported): %s", cname);
-                return obj;
+		OCI_ObjectFree2(&d->ocilib, obj);
+		return 0;
         } // switch
-
-        delete key;
     }
 
     return obj;
 }
 
 AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Datasource *ds, ExceptionSink *xsink) {
-   QoreHashNode *rv = new QoreHashNode;
+   ReferenceHolder<QoreHashNode> rv(new QoreHashNode, xsink);
 
    int n = OCI_TypeInfoGetColumnCount2(&conn->ocilib, obj->typinf);
    for (int i = 1; i <= n; ++i) {
@@ -524,7 +523,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Datas
 
    }
     
-   return rv;
+   return rv.release();
 }
 
 OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, ExceptionSink * xsink) {
@@ -554,6 +553,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 //     const char * cname = OCI_GetColumnName(col);
 //     printf("Binding attribute: %s\n", cname);
    OCI_Elem * e = OCI_ElemCreate2(&d->ocilib, info);
+   ON_BLOCK_EXIT(OCI_ElemFree2, &d->ocilib, e);
     
    for (uint i = 0; i < th->size(); ++i) {
       const AbstractQoreNode * val = th->retrieve_entry(i);
@@ -657,7 +657,8 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	    }
 	    else {
 	       xsink->raiseException("BIND-NTY-ERROR", "Unknown DATE-like argument (type: %d)", col->type);
-	       return  obj;
+	       OCI_CollFree2(&d->ocilib, obj);
+	       return 0;
 	    }
 	    break;
 	 }
@@ -727,7 +728,8 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	    }
 	    else {
 	       xsink->raiseException("BIND-NTY-ERROR", "Unknown NTY-like argument (type: %d)", col->type);
-	       return obj;
+	       OCI_CollFree2(&d->ocilib, obj);
+	       return 0;
 	    }
 
 	    break;
@@ -735,21 +737,18 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 
 	 default:
 	    xsink->raiseException("BIND-COLLECTION-ERROR", "unknown datatype to bind as an attribute (unsupported): %s", col->typinf->name);
+	    OCI_CollFree2(&d->ocilib, obj);
+	    return 0;
       } // switch
         
-      if (*xsink)
-	 return obj;
-
       OCI_CollAppend2(&d->ocilib, obj, e);
    }
     
-   OCI_ElemFree2(&d->ocilib, e);
-
    return obj;
 }
 
 AbstractQoreNode* collToQore(QoreOracleConnection * conn, OCI_Coll * obj, Datasource *ds, ExceptionSink *xsink) {
-   QoreListNode *rv = new QoreListNode();
+   ReferenceHolder<QoreListNode> rv(new QoreListNode, xsink);
     
    OCI_Elem * e;
     
@@ -920,7 +919,7 @@ AbstractQoreNode* collToQore(QoreOracleConnection * conn, OCI_Coll * obj, Dataso
         
    }
 
-   return rv;
+   return rv.release();
 }
 
 OCI_Coll* collPlaceholderQore(QoreOracleConnection *conn, const char * tname, ExceptionSink *xsink) {

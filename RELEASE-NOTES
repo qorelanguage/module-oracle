@@ -3,7 +3,10 @@ version 2.1
 ***********
 
 * added support for the selectRow() method when compiled with Qore 0.8.2+
-
+* fixed retrieving a collection of objects; previously would return the first
+  object in every position of the list returned
+* fixed memory and handle leaks in exception handling related to named type
+  support
 
 ***********
 version 2.0
