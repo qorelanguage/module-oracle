@@ -82,7 +82,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %{module_dir}
-%doc COPYING README RELEASE-NOTES ChangeLog AUTHORS test/db-test.q docs/oracle-module-doc.html
+%doc COPYING README RELEASE-NOTES ChangeLog AUTHORS test/db-test.q docs/oracle/html
 
 %changelog
 * Fri Jan 21 2011 David Nichols <david@qore.org>

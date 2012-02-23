@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = foreign
 SUBDIRS = src
 
 DOXYGEN_QORE_API_FILTER=docs/doxygen-api-filter.q
-DOXYGEN_OUTPUT=docs/xml
+DOXYGEN_OUTPUT=docs/oracle
 
 DOXYFILES = docs/doxyfile \
 	docs/mainpage.doxygen
@@ -32,22 +32,21 @@ noinst_HEADERS = src/oracle-config.h \
 EXTRA_DIST = COPYING ChangeLog AUTHORS README \
 	RELEASE-NOTES \
 	test/db-test.q \
-	test/stmt.q \
-	docs/oracle-module-doc.html \
+	test/sql-stmt.q \
 	qore-oracle-module.spec
 
 ACLOCAL_AMFLAGS=-I m4
 
 if COND_DOXYGEN
 DX_CLEANFILES = ${DOXYFILES}
-docs/xml/html: $(DOXYFILES)
+docs/oracle/html: $(DOXYFILES)
 	cd docs; $(DOXYGEN_CMD) doxyfile;
 	$(DOXYGEN_QORE_API_FILTER) --post $(DOXYGEN_OUTPUT)/html/*html
 	$(DOXYGEN_QORE_API_FILTER) --post $(DOXYGEN_OUTPUT)/html/search/*html
 
-doxygen-doc: docs/xml/html
+doxygen-doc: docs/oracle/html
 
-EXTRA_DIST += docs/xml/html
+EXTRA_DIST += docs/oracle/html
 
 else
 doxygen-doc:
