@@ -221,6 +221,6 @@ QoreHashNode *QoreOracleStatement::fetchColumns(OraResultSet &resultset, int row
       if (rows > 0 && num_rows == rows)
 	 break;
    }
-   //printd(2, "QoreOracleStatement::fetchColumns(): %d column(s), %d row(s) retrieved as output\n", resultset.size(), num_rows);
+   //printd(2, "QoreOracleStatement::fetchColumns(rows: %d): %d column(s), %d row(s) retrieved as output\n", rows, resultset.size(), num_rows);
    return *xsink ? 0 : h.release();
 }
