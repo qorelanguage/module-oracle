@@ -7,7 +7,7 @@
     - @ref binding_by_placeholder
     - @ref default_oracle_to_qore_mapping
     - @ref named_types
-      - @ref named_types_issues
+    - @ref known_issues
 
 
     @section intro Introduction
@@ -237,11 +237,52 @@
         expectation. PL/SQL types cannot be used directly with Oracle \c OCI
         library. You can use custom wrappers or any other workarounds of course.
 
-    @subsection named_types_issues Named Types Known Issues
+    @section known_issues Known Issues
+
+    Unfortunately there are some known bugs in the Oracle Module which cannot be fixed
+    in the Qore driver right now. These are bugs in the underlying Oracle C Interface
+    (OCI) library mostly.
+
+    - Bind by placeholder using PL/SQL's \c type alias to \c CHAR does not use original dimension.
+    @code
+    CREATE TABLE t1 ( c CHAR(1) );
+    INSERT INTO t1 VALUES ('C');
+    COMMIT;
+
+    create or replace procedure foo(tmp out t1.c%type)
+    is
+    begin
+        select c into tmp from t1 where rownum < 2;
+    end;
+    /
+    @endcode
+    @code
+    my Datasource $d("oracle", "test", "test", "test");
+    on_exit $d.rollback();
+    my any $r = $d.exec("begin foo(:outchar); end;", Type::String);
+    printf("%N\n", $r);
+
+    Result:
+    hash: (1 member)
+    outchar: "C                                                                
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                                                               
+                                              "
+    while outchar : "C" is expected
+    @endcode
+
+    @subsection named_types_known_isseus Named Types Known Issues
     
-    Unfortunately there are some known bugs in the Named Types handling
-    which cannot be fixed in the Qore driver. Thise are bugs in the underlying
-    Oracle C Interface (OCI) library.
+    - Returning a collection of objects and Oracle client 10.x does not work correctly sometimes.
+      There is only one instance of object (a first one) used for all items in the
+      collection in some cases. Upgrade to Oracle client 11.x solves it.
+
+    - Binding a collection of objects can lost VARCHAR2 attribute values replacing
+      it with NULL. This behavior has been observed on Solaris SPARC architecture
+      using Oracle CLient 11.1.x. Upgrade to 11.2.x solves the issue.
 
     - Oracle Metalink Bug #3604465 - bind named type by placeholder can cause
       \c ORA-21525 (attribute number or (collection element at index) %s violated
