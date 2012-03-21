@@ -104,7 +104,12 @@ QoreHashNode *QoreOracleStatement::fetchRow(OraResultSet &resultset, ExceptionSi
    for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
       OraColumnBuffer *w = *i;
       // assign value to hash
-      h->setKeyValue(w->name, w->getValue(true, xsink), xsink);
+      AbstractQoreNode* n = w->getValue(true, xsink);
+      if (*xsink) {
+         assert(!n);
+         return 0;
+      }
+      h->setKeyValue(w->name, n, xsink);
       if (*xsink)
 	 return 0;
    }
@@ -212,7 +217,13 @@ QoreHashNode *QoreOracleStatement::fetchColumns(OraResultSet &resultset, int row
 	 QoreListNode *l = reinterpret_cast<QoreListNode *>(h->getKeyValue(w->name, xsink));
 	 if (!l)
 	    break;
-	 l->push(w->getValue(false, xsink));
+         AbstractQoreNode* n = w->getValue(false, xsink);
+         if (*xsink) {
+            assert(!n);
+            break;
+         }
+
+	 l->push(n);
 	 if (*xsink)
 	    break;
       }
