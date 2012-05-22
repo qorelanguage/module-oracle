@@ -498,7 +498,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Datas
 	 case SQLT_BLOB: {
 	    OCI_Lob * l = OCI_ObjectGetLob2(&conn->ocilib, obj, cname);
 	    // The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
-	    uint len = OCI_LobGetLength(&conn->ocilib, l);
+	    unsigned int len = OCI_LobGetLength(&conn->ocilib, l);
 	    void *buf = malloc(len);
 	    OCI_LobRead2(&conn->ocilib, l, buf, &len, &len);
 
@@ -580,7 +580,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
    OCI_Elem * e = OCI_ElemCreate2(&d->ocilib, info);
    ON_BLOCK_EXIT(OCI_ElemFree2, &d->ocilib, e);
     
-   for (uint i = 0; i < th->size(); ++i) {
+   for (size_t i = 0; i < th->size(); ++i) {
       const AbstractQoreNode * val = th->retrieve_entry(i);
 
       if (is_null(val) || is_nothing(val)) {
@@ -895,7 +895,7 @@ AbstractQoreNode* collToQore(QoreOracleConnection * conn, OCI_Coll * obj, Dataso
 	 case SQLT_BLOB: {
 	    OCI_Lob * l = OCI_ElemGetLob2(&conn->ocilib, e);
 	    // The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
-	    uint len = OCI_LobGetLength(&conn->ocilib, l);
+	    unsigned int len = OCI_LobGetLength(&conn->ocilib, l);
 	    void *buf = malloc(len);
 	    OCI_LobRead2(&conn->ocilib, l, buf, &len, &len);
 

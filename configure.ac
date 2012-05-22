@@ -91,6 +91,35 @@ case "${host_os}" in
 		fi
 		AC_DEFINE(HPUX, 1, if compiling on HP-UX)
 		;;
+     *cygwin*)  SHLIB_SUFFIX=dll
+     		CPPFLAGS=-mwin32
+		windows=yes
+     		;;
+     *mingw32*) SHLIB_SUFFIX=dll
+     		windows=yes
+		mingw=yes
+		#CPPFLAGS="$CPPFLAGS -D_WIN32_WINNT=0x0501"
+		LDFLAGS="$LDFLAGS -lwsock32 -lws2_32 -lgdi32 -lz -lsecur32"
+		#make_dll=yes
+		CPPFLAGS="$CPPFLAGS -DBUILDING_DLL=1"
+		MODULE_LDFLAGS="-no-undefined"
+		OS=Windows
+		# set LIB_PREFIX if not already set
+		if test -z "$LIB_PREFIX"; then
+   		   AC_MSG_CHECKING([for mingw32 library prefix])
+		   cc_loc=`which $CXX|head -1`
+		   mingw_base=`dirname $cc_loc|sed 's/\/@<:@^/@:>@*$//'`
+		   cc_targ=`echo $CXX|sed s/-g++$//`
+		   if test -d $mingw_base/$cc_targ; then
+		      LIB_PREFIX=$mingw_base/$cc_targ
+		      AC_MSG_RESULT([$LIB_PREFIX])
+		   else
+		      AC_MSG_RESULT([not found])
+		   fi
+		fi
+		;;
+     *)         AC_WARN(Unknown platform ${host_os})
+                ;;
 esac
 AC_SUBST(SHLIB_SUFFIX)
 if test -z "$MODULE_SUFFIX" ; then
@@ -230,6 +259,13 @@ fi
 CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
 #LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
 
+# allow the user to set a generic search prefix for libraries, includes, etc
+AC_ARG_WITH([lib-prefix],
+  [AS_HELP_STRING([--with-lib-prefix@<:@=DIR@:>@],
+                  [generic search prefix for libraries, includes, etc])],
+  [if test ! -d "${with_lib_prefix}"; then AC_MSG_ERROR([bad value ${with_lib_prefix} for --with-lib-prefix]); unset with_lib_prefix; fi],
+  [with_lib_prefix="$LIB_PREFIX"])
+
 AC_ARG_ENABLE([single-compilation-unit],
   [AS_HELP_STRING([--enable-single-compilation-unit],
                   [enable compilation as a single unit (default: on)])],
@@ -325,27 +361,30 @@ get_oracle_version() {
     ORACLE_VERSION=`grep '"ocommon"' $1/orainst/unix.rgs | sed "s/[ ][ ]*/:/g" | cut -d: -f 6 | cut -c 2-4`
     test -z "$ORACLE_VERSION" && ORACLE_VERSION=7.3
   else
-    lf=`ls $1/libclntsh.${SHLIB_SUFFIX}.@<:@1-9@:>@* 2>/dev/null|tail -1`
-    if test -z "$lf"; then
-       AC_MSG_ERROR([Oracle libraries not found in $1, check oracle installation])
-    fi
+    if test "$windows" = "yes"; then
+      if test -f $1/oraociei11.dll; then
+        ORACLE_VERSION=11
+      elif test -f $1/oraociei10.dll; then
+        ORACLE_VERSION=10
+      fi
+    else
+      lf=`ls $1/libclntsh.${SHLIB_SUFFIX}.@<:@1-9@:>@* 2>/dev/null|tail -1`
+      if test -z "$lf"; then
+        AC_MSG_ERROR([Oracle libraries not found in $1, check oracle installation])
+      fi
   
-    lf=`basename "$lf" | sed s/.*${SHLIB_SUFFIX}\.//`
-    case "$lf" in  
-       12*) ORACLE_VERSION=12 ;;
-       11*) ORACLE_VERSION=11 ;;
-       10*) ORACLE_VERSION=10 ;;
-       9*) ORACLE_VERSION=9 ;;
-       8*) ORACLE_VERSION=8 ;;
-    esac
+      lf=`basename "$lf" | sed s/.*${SHLIB_SUFFIX}\.//`
+      case "$lf" in  
+        12*) ORACLE_VERSION=12 ;;
+        11*) ORACLE_VERSION=11 ;;
+        10*) ORACLE_VERSION=10 ;;
+        9*) ORACLE_VERSION=9 ;;
+        8*) ORACLE_VERSION=8 ;;
+      esac
 
-    if test -z "$ORACLE_VERSION" -a -f $1/libclntsh.a; then
+      if test -z "$ORACLE_VERSION" -a -f $1/libclntsh.a; then
         ORACLE_VERSION=8
-    	#if test -f $1/libcore4.a; then
-    	#  ORACLE_VERSION=8.0
-    	#else
-    	#  ORACLE_VERSION=8.1
-    	#fi
+      fi
     fi
   fi
 
@@ -426,7 +465,11 @@ fi
 AC_SUBST(ORACLE_INCLUDES)
 
 case "$ORACLE_VERSION" in
-   9*|10*|11*|12*) ORACLE_LIBS="-L$oracle_lib_dir -lclntsh" ;; 
+   9*|10*|11*|12*) if test "$windows" = "yes"; then
+                     ORACLE_LIBS="-L$oracle_lib_dir -loci"
+		   else
+		     ORACLE_LIBS="-L$oracle_lib_dir -lclntsh" 
+		   fi ;; 
    *)      AC_MSG_ERROR(Unsupported Oracle version) ;;
 esac
 AC_SUBST(ORACLE_LIBS)
@@ -470,6 +513,12 @@ find_qore() {
             fi
             QORE_LDFLAGS="$QORE_LDFLAGS -lqore"
             AC_MSG_RESULT([$lib (shared)])
+       elif test "$mingw" = yes -a -f "$lib/libqore.${SHLIB_SUFFIX}.a"; then
+            if test "$lib" != "/lib" -a "$lib" != "/usr/lib"; then
+                QORE_LDFLAGS="-L$lib"
+            fi
+            QORE_LDFLAGS="$QORE_LDFLAGS -lqore"
+            AC_MSG_RESULT([$lib (shared)])
         elif test -f "$lib/libqore.a"; then
             if test "$lib" != "/lib" -a "$lib" != "/usr/lib"; then
                 QORE_LDFLAGS="-L$lib"
@@ -498,6 +547,11 @@ find_qore() {
 
     AC_SUBST(QORE_LDFLAGS)
     AC_SUBST(QORE_CPPFLAGS)
+
+    # add QORE_LDFLAGS to ORACLE_LIBS if on windows
+    if test "$windows" = yes; then
+      ORACLE_LIBS="$ORACLE_LIBS $QORE_LDFLAGS"
+    fi
 }
 
 # see if we can figure out where the qore library is
@@ -508,7 +562,7 @@ AC_ARG_WITH([qore-dir],
   [with_qore_dir="$QORE_DIR"])
 
 AC_MSG_CHECKING([for qore libraries and header files])
-for dir in "${with_qore_dir}" "${find_prefix}" /usr / /usr/local /opt/gnu /opt/qore /usr/local/qore /opt/local /sw /usr/sfw /opt/sfw; do
+for dir in "${with_qore_dir}" "${with_lib_prefix}" "${find_prefix}" /usr / /usr/local /opt/gnu /opt/qore /usr/local/qore /opt/local /sw /usr/sfw /opt/sfw; do
     find_qore $dir
     if test -n "$QORE_LDFLAGS"; then
         break
@@ -732,3 +786,11 @@ show_library_feature()
 show_library_feature optimizations $enable_optimization
 show_library_feature debug $enable_debug
 show_library_feature profiling $enable_profile
+
+# hack to use our libtool if on mingw to enable static libs to be linked in to the module
+if test "$mingw" = yes; then
+   # backup generated libtool
+   if test ! -e libtool.orig ; then cp libtool libtool.orig; fi
+   sed -e 's/deplibs_check_method=.*/deplibs_check_method=pass_all/g' -e 's/allow_undefined_flag=.*/allow_undefined_flag=yes/g' libtool > libtool.tmp
+   mv libtool.tmp libtool
+fi
