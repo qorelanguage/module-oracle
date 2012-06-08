@@ -9,7 +9,6 @@
     - @ref named_types
     - @ref known_issues
 
-
     @section intro Introduction
 
     The oracle module provides an Oracle driver to Qore's DBI system, allowing Qore
@@ -177,10 +176,10 @@
     explicitly required as above.
 
     |!Function|!Description|
-    |hash bindOracleObject(string $typename, hash $value)|Binds a Qore \c value as a Object type \c typename. Hash keys are object attributes|
-    |hash placeholderOracleObject(string $typename)|Allows fetching Object type \c typename. The returned hash is a plain Qore hash with keys set as the object's attributes|
-    |hash bindOracleCollection(string $typename, list $value)|Binds \c value as a Collection \c typename|
-    |list placeholderOracleCollection(string $typename )|Allows fetching a Collection \c typename. The returned list is a plain Qore list of values with the collection's type|
+    |Qore::Oracle::bindOracleObject()|Binds a Qore \c value as a Object type \c typename. Hash keys are object attributes
+    |Qore::Oracle::placeholderOracleObject()|Allows fetching Object type \c typename. The returned hash is a plain Qore hash with keys set as the object's attributes
+    |Qore::Oracle::bindOracleCollection()|Binds \c value as a Collection \c typename
+    |Qore::Oracle::placeholderOracleCollection()|Allows fetching a Collection \c typename. The returned list is a plain Qore list of values with the collection's type
 
     Type names (strings) are case insensitive.
     
@@ -233,9 +232,9 @@
         stored directly in the Oracle system catalogue. They are real SQL
         types - created with \c CREATE \c [ \c OR \c REPLACE \c ] \c TYPE
         command. It's a common misundrestanding that PL/SQL types created
-        for example in package specification can be used as NTY too. It's wrong
-        expectation. PL/SQL types cannot be used directly with Oracle \c OCI
-        library. You can use custom wrappers or any other workarounds of course.
+        for example in package specification can be used as NTY too, however this is an
+	incorrect assumption.  PL/SQL types cannot be used directly with the Oracle \c OCI
+        library, however you can use custom wrappers or any other workarounds, of course.
 
     @section known_issues Known Issues
 
@@ -271,8 +270,8 @@
                                                                                
                                                                                
                                               "
-    while outchar : "C" is expected
     @endcode
+    while <tt>outchar : "C"</tt> is expected
 
     @subsection named_types_known_isseus Named Types Known Issues
     
@@ -280,9 +279,9 @@
       There is only one instance of object (a first one) used for all items in the
       collection in some cases. Upgrade to Oracle client 11.x solves it.
 
-    - Binding a collection of objects can lost VARCHAR2 attribute values replacing
-      it with NULL. This behavior has been observed on Solaris SPARC architecture
-      using Oracle CLient 11.1.x. Upgrade to 11.2.x solves the issue.
+    - Binding a collection of objects can lose VARCHAR2 attribute values replacing
+      them with NULL. This behavior has been observed on Solaris SPARC architecture
+      using Oracle CLient 11.1.x. Upgrading to 11.2.x solves the issue.
 
     - Oracle Metalink Bug #3604465 - bind named type by placeholder can cause
       \c ORA-21525 (attribute number or (collection element at index) %s violated

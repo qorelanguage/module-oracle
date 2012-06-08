@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 # AC_PREREQ(2.59)
-AC_INIT([qore-oracle-module], [2.1],
+AC_INIT([qore-oracle-module], [2.2],
         [David Nichols <david@qore.org>],
         [qore-oracle-module])
 AM_INIT_AUTOMAKE([no-dist-gzip dist-bzip2])
@@ -598,8 +598,8 @@ else
       AC_DEFINE_UNQUOTED([QORE_VERSION_CODE], $qvc, [define when missing in Qore headers])
    fi
 
-   if test $qvc -lt 701; then
-      AC_MSG_ERROR([found $qore_version; this module requires at least version 0.7.1])
+   if test $qvc -lt 805; then
+      AC_MSG_ERROR([found $qore_version; this module requires at least version 0.8.5])
    fi
 
    AC_MSG_RESULT([${qore_version} OK])
@@ -746,6 +746,10 @@ MODULE_VERSION_MAJOR=`echo $PACKAGE_VERSION | cut -f3 -d\  | sed s/\"//g | cut -
 MODULE_VERSION_MINOR=`echo $PACKAGE_VERSION | cut -f3 -d\  | sed s/\"//g | cut -f2 -d.`
 MODULE_VERSION_SUB=`echo $PACKAGE_VERSION | cut -f3 -d\  | sed s/\"//g | cut -f3 -d.`
 
+# set user module directory
+mymodverdir=${qore_version}
+AC_SUBST([mymodverdir])
+
 # set version information
 AC_DEFINE_UNQUOTED([MODULE_VERSION_MAJOR], $MODULE_VERSION_MAJOR, [major version number])
 AC_DEFINE_UNQUOTED([MODULE_VERSION_MINOR], $MODULE_VERSION_MINOR, [minor version number])
@@ -758,8 +762,12 @@ AM_CONDITIONAL([COND_DOXYGEN],    [test -n "$with_doxygen"])
 AM_CONDITIONAL([COND_DEBUG],      [test "$enable_debug" = yes])
 AM_CONDITIONAL([COND_PROFILE],    [test "$enable_profile" = yes])
 AM_CONDITIONAL([COND_SINGLE_COMPILATION_UNIT], [test "$enable_single_compilation_unit" = yes])
+AM_CONDITIONAL([COND_MINGW],      [test "$mingw" = yes])
+
 AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT
+
+if test -n "$with_doxygen"; then enable_doxygen=yes; fi
 
 echo "*** MODULE FEATURES ***"
 printf "%-24s: %s %s" module "$OS" "$cpu_family"
@@ -769,8 +777,7 @@ else
    printf " (32-bit)\n"
 fi
 
-show_library_feature()
-{
+show_library_feature() {
    printf "%-24s: " "$1"
    if test "$2" = "yes"; then
       printf "%-8s" yes
@@ -786,6 +793,7 @@ show_library_feature()
 show_library_feature optimizations $enable_optimization
 show_library_feature debug $enable_debug
 show_library_feature profiling $enable_profile
+show_library_feature doxygen $enable_doxygen
 
 # hack to use our libtool if on mingw to enable static libs to be linked in to the module
 if test "$mingw" = yes; then

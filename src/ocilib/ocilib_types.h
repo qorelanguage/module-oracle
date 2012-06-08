@@ -801,7 +801,7 @@ typedef struct OCI_Datatype OCI_Datatype;
  struct OCI_SQLCmdInfo
 {
     unsigned int code; /* SQL command code */
-    mtext *verb;       /* SQL command verb */
+    const mtext *verb;       /* SQL command verb */
 };
 
 typedef struct OCI_SQLCmdInfo OCI_SQLCmdInfo;

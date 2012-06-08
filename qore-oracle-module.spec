@@ -1,3 +1,4 @@
+%define mod_ver 2.2
 %define module_api %(qore --latest-module-api 2>/dev/null)
 %define module_dir %{_libdir}/qore-modules
 
@@ -34,7 +35,7 @@
 
 Summary: Oracle DBI module for Qore
 Name: qore-oracle-module
-Version: 2.1
+Version: %{mod_ver}
 Release: 1%{dist}
 License: LGPL
 Group: Development/Languages
@@ -82,10 +83,26 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %{module_dir}
-%doc COPYING README RELEASE-NOTES ChangeLog AUTHORS test/db-test.q docs/oracle/html
+%doc COPYING README RELEASE-NOTES ChangeLog AUTHORS
+
+%package doc
+Summary: oracle module for Qore
+Group: Development/Languages
+
+%description doc
+Oracle module for the Qore Programming Language.
+
+This RPM provides API documentation, test and example programs
+
+%files doc
+%defattr(-,root,root,-)
+%doc docs/oracle/html test/db-test.q test/sql-stmt.q
 
 %changelog
-* Fri Jan 21 2011 David Nichols <david@qore.org>
+* Fri Jun 8 2012 David Nichols <david@qore.org> - 2.2
+- updated to version 2.2
+
+* Fri Jan 21 2011 David Nichols <david@qore.org> - 2.1
 - updated to version 2.1
 
 * Tue Aug 3 2010 David Nichols <david@qore.org>

@@ -48,6 +48,8 @@ DLLEXPORT qore_module_ns_init_t qore_module_ns_init = oracle_module_ns_init;
 DLLEXPORT qore_module_delete_t qore_module_delete = oracle_module_delete;
 DLLEXPORT qore_license_t qore_module_license = QL_LGPL;
 
+DLLLOCAL void init_oracle_functions(QoreNamespace& ns);
+
 DBIDriver *DBID_ORACLE = 0;
 
 static int oracle_commit(Datasource *ds, ExceptionSink *xsink) {
@@ -298,13 +300,12 @@ static int oracle_stmt_close(SQLStatement *stmt, ExceptionSink *xsink) {
 }
 #endif // _QORE_HAS_PREPARED_STATMENT_API
 
+QoreNamespace OraNS("Oracle");
+
 QoreStringNode *oracle_module_init() {
    QORE_TRACE("oracle_module_init()");
    
-   builtinFunctions.add2("bindOracleObject", f_oracle_object, QC_NO_FLAGS, QDOM_DATABASE, hashTypeInfo, 2, stringTypeInfo, QORE_PARAM_NO_ARG, hashTypeInfo, QORE_PARAM_NO_ARG);
-   builtinFunctions.add2("placeholderOracleObject", f_oracle_object_placeholder, QC_NO_FLAGS, QDOM_DATABASE, hashTypeInfo, 1, stringTypeInfo, QORE_PARAM_NO_ARG);
-   builtinFunctions.add2("bindOracleCollection", f_oracle_collection, QC_NO_FLAGS, QDOM_DATABASE, hashTypeInfo, 2, stringTypeInfo, QORE_PARAM_NO_ARG, listTypeInfo, QORE_PARAM_NO_ARG);
-   builtinFunctions.add2("placeholderOracleCollection", f_oracle_collection_placeholder, QC_NO_FLAGS, QDOM_DATABASE, hashTypeInfo, 1, stringTypeInfo, QORE_PARAM_NO_ARG);
+   init_oracle_functions(OraNS);
 
    // register driver with DBI subsystem
    qore_dbi_method_list methods;
@@ -354,6 +355,7 @@ QoreStringNode *oracle_module_init() {
 
 void oracle_module_ns_init(QoreNamespace *rns, QoreNamespace *qns) {
    QORE_TRACE("oracle_module_ns_init()");
+   qns->addInitialNamespace(OraNS.copy());
 }
 
 void oracle_module_delete() {

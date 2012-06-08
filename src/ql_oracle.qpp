@@ -1,0 +1,114 @@
+/* -*- mode: c++; indent-tabs-mode: nil -*- */
+/*
+  ql_oracle.qpp
+
+  Oracle OCI Interface to Qore DBI layer
+
+  Qore Programming Language
+
+  Copyright 2003 - 2012 David Nichols
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
+#include "oracle.h"
+#include "oracle-module.h"
+
+/** @defgroup oracle_functions Oracle Functions
+ */
+//@{
+namespace Qore::Oracle;
+//! returns a value to be used to bind a Qore value as an Oracle object
+/** @param tname the name of the Oracle type to bind
+    @param values a hash where the keys are Oracle object attributes
+    
+    @return a hash value which can be used to bind the given value as the given object in an SQL statement with the following keys:
+    - \c "type": a constant string \c "OracleObject"
+    - \c "^oratype^": the value of the \c tname argument
+    - \c "^values^": the value of the \c values argument
+
+    @par Example:
+    @code
+$db.exec("insert into object_table (obj) values (%v)", bindOracleObject("MY_OBJECT", $h));
+    @endcode
+ */
+hash bindOracleObject(string tname, hash values) [flags=CONSTANT] {
+    QoreHashNode * h = new QoreHashNode;
+    h->setKeyValue("type", new QoreStringNode(ORACLE_OBJECT), xsink);
+    h->setKeyValue("^oratype^", tname->refSelf(), xsink);
+    h->setKeyValue("^values^", values->refSelf(), xsink);
+    return h;
+}
+
+//! returns a value to be used to describe a placeholder buffer for retrieving an Oracle object as an output value
+/** @param tname the name of the Oracle object type to bind for the placeholder buffer
+    
+    @return a hash value which can be used to describe an output placeholder buffer as an object buffer of the given type in an SQL statement with the following keys:
+    - \c "type": a constant string \c "OracleObject"
+    - \c "value": the value of the \c tname argument
+
+    @par Example:
+    @code
+my hash $h = $db.exec("begin my_pkg.get_obj(:retval); end;", placeholderOracleObject("MY_OBJECT")).retval;
+    @endcode
+ */
+hash placeholderOracleObject(string tname) [flags=CONSTANT] {
+    QoreHashNode * h = new QoreHashNode;
+    h->setKeyValue("type", new QoreStringNode(ORACLE_OBJECT), xsink);
+    h->setKeyValue("value", tname->refSelf(), xsink);
+    return h;
+}
+
+//! returns a value to be used to bind a Qore value as an Oracle collection
+/** @param tname the name of the Oracle collection type to bind
+    @param values a list of values for the collection
+    
+    @return a hash value which can be used to bind the given value as the given collection in an SQL statement with the following keys:
+    - \c "type": a constant string \c "OracleCollection"
+    - \c "^oratype^": the value of the \c tname argument
+    - \c "^values^": the value of the \c values argument
+
+    @par Example:
+    @code
+$db.exec("insert into object_table (obj) values (%v)", bindOracleObject("MY_OBJECT", $h));
+    @endcode
+ */
+hash bindOracleCollection(string tname, list values) [flags=CONSTANT] {
+    QoreHashNode * h = new QoreHashNode;
+    h->setKeyValue("type", new QoreStringNode(ORACLE_COLLECTION), xsink);
+    h->setKeyValue("^oratype^", tname->refSelf(), xsink);
+    h->setKeyValue("^values^", values->refSelf(), xsink);
+    return h;
+}
+
+//! returns a value to be used to describe a placeholder buffer for retrieving an Oracle collection as an output value
+/** @param tname the name of the Oracle collection type to bind for the placeholder buffer
+    
+    @return a hash value which can be used to describe an output placeholder buffer as a collection buffer of the given type in an SQL statement with the following keys:
+    - \c "type": a constant string \c "OracleCollection"
+    - \c "value": the value of the \c tname argument
+
+    @par Example:
+    @code
+my hash $h = $db.exec("begin my_pkg.get_collection(:retval); end;", placeholderOracleCollection("MY_COLLECTION")).retval;
+    @endcode
+ */
+hash placeholderOracleCollection(string tname) [flags=CONSTANT] {
+    QoreHashNode * h = new QoreHashNode;
+    h->setKeyValue("type", new QoreStringNode(ORACLE_COLLECTION), xsink);
+    h->setKeyValue("value", tname->refSelf(), xsink);
+    return h;
+}
+//@}

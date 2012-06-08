@@ -38,7 +38,7 @@
  *                            STRINGS MESSAGES
  * ************************************************************************ */
 
-static mtext * OCILib_TypeNames[] =
+static const mtext * OCILib_TypeNames[] =
 {
     MT("generic pointer"),
     MT("short pointer"),
@@ -133,7 +133,7 @@ static mtext * OCILib_ErrorMsg[] =
 
 #else
 
-static mtext * OCILib_ErrorMsg[] =
+static const mtext * OCILib_ErrorMsg[] =
 {
     MT("No error"),
     MT("OCILIB has not been initialized"),
@@ -163,24 +163,24 @@ static mtext * OCILib_ErrorMsg[] =
 
 #endif
 
-static mtext * OCILib_OraFeatures[] =
+static const mtext * OCILib_OraFeatures[] =
 {
     MT("Oracle 9i support for Unicode data"),
     MT("Oracle 9i Timestamps and Intervals"),
     MT("Oracle 9i Direct path date caching"),
-    MT("Oracle 10g R1 LOBs size extensions")
-    MT("Oracle 10g R2 Database change notification")
+    MT("Oracle 10g R1 LOBs size extensions"),
+    MT("Oracle 10g R2 Database change notification"),
     MT("Oracle 10g R2 remote database startup/shutdown")
 };
 
-static mtext * OCILib_StmtStates[] =
+static const mtext * OCILib_StmtStates[] =
 {
     MT("closed"),
     MT("prepared"),
     MT("executed")
 };
 
-static mtext * OCILib_DirPathStates[] =
+static const mtext * OCILib_DirPathStates[] =
 {
     MT("non prepared"),
     MT("prepared"),
@@ -189,7 +189,7 @@ static mtext * OCILib_DirPathStates[] =
 };
 
 
-static mtext * OCILib_HandleNames[] =
+static const mtext * OCILib_HandleNames[] =
 {
     MT("OCI handle"),
     MT("OCI descriptors"),

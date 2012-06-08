@@ -1,12 +1,8 @@
+modverdir = $(libdir)/$(mymodverdir)
+
 AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS = src
-
-DOXYGEN_QORE_API_FILTER=docs/doxygen-api-filter.q
-DOXYGEN_OUTPUT=docs/oracle
-
-DOXYFILES = docs/doxyfile \
-	docs/mainpage.doxygen
 
 noinst_HEADERS = src/oracle-config.h \
 	src/oracle.h \
@@ -31,6 +27,7 @@ noinst_HEADERS = src/oracle-config.h \
 
 EXTRA_DIST = COPYING ChangeLog AUTHORS README \
 	RELEASE-NOTES \
+	src/ql_oracle.qpp \
 	test/db-test.q \
 	test/sql-stmt.q \
 	qore-oracle-module.spec
@@ -38,29 +35,51 @@ EXTRA_DIST = COPYING ChangeLog AUTHORS README \
 ACLOCAL_AMFLAGS=-I m4
 
 if COND_DOXYGEN
+DOX = oracle
+DOXYGEN_OUTOUT = docs/oracle/html
+
+DOXYFILES = docs/doxyfile docs/mainpage.doxygen
+DOXYFILES_SRC = docs/doxyfile.tmpl docs/footer_template.html
+QDX = qdx
 DX_CLEANFILES = ${DOXYFILES}
+
 docs/oracle/html: $(DOXYFILES)
 	cd docs; $(DOXYGEN_CMD) doxyfile;
-	$(DOXYGEN_QORE_API_FILTER) --post $(DOXYGEN_OUTPUT)/html/*html
-	$(DOXYGEN_QORE_API_FILTER) --post $(DOXYGEN_OUTPUT)/html/search/*html
+	$(QDX) --post $(DOXYGEN_OUTPUT)/*html
+	$(QDX) --post $(DOXYGEN_OUTPUT)/search/*html
 
-doxygen-doc: docs/oracle/html
+docs/mainpage.doxygen: docs/mainpage.doxygen.tmpl
+	$(QDX) -d $< $@
 
-EXTRA_DIST += docs/oracle/html
+docs/doxyfile: docs/doxyfile.tmpl
+	sed s/__VERSION__/${VERSION}/ $< > $@
+
+doxygen-doc: $(DOXYGEN_OUTPUT)
+
+EXTRA_DIST += $(DOXYGEN_OUTPUT)
+
+html-local: $(DOXYGEN_OUTPUT)
+
+install-html-local:
+	for dox in $(DOX); do $(MKDIR_P) $(DESTDIR)$(datadir)/$(PACKAGE)/docs/$$dox/html/search; done
+	for dir in $(DOXYGEN_OUTPUT); do \
+	   for f in $$dir/*; do if [ -f $$f ]; then $(INSTALL_DATA) $$f $(DESTDIR)$(datadir)/$(PACKAGE)/$$dir; fi; done; \
+	   for f in $$dir/search/*; do $(INSTALL_DATA) $$f $(DESTDIR)$(datadir)/$(PACKAGE)/$$dir/search; done; \
+	done
+
+clean-local:
+	$(RM) -rf $(DOXYGEN_OUTPUT)
+
+uninstall-local:
+	$(RM) -rf $(DESTDIR)$(datadir)/$(PACKAGE)/docs
+
+mostlyclean-local:
+	rm -rf ${DOXYGEN_OUTPUT} ${DX_CLEANFILES}
 
 else
 doxygen-doc:
 	echo no doxygen support
 endif
 
-mostlyclean-local:
-	rm -rf ${DOXYGEN_OUTPUT} ${DX_CLEANFILES}
-
 libtool: $(LIBTOOL_DEPS)
 	$(SHELL) ./config.status --recheck
-
-docs/mainpage.doxygen: docs/mainpage.doxygen.tmpl
-	$(DOXYGEN_QORE_API_FILTER) -l $<
-
-docs/doxyfile: docs/doxyfile.tmpl
-	sed s/__VERSION__/${VERSION}/ $< > $@

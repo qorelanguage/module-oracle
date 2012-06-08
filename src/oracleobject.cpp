@@ -27,46 +27,6 @@
 #include "oracle.h"
 #include "ocilib_types.h"
 
-DLLEXPORT AbstractQoreNode * f_oracle_object(const QoreListNode *params, ExceptionSink *xsink) {
-    const QoreStringNode * tname = HARD_QORE_STRING(params, 0);
-    const QoreHashNode * values = HARD_QORE_HASH(params, 1);
-    // Now create a new hash with ( "ORA_TYPE_NAME" : tname, "VALUES" : values )
-    // for binding
-    QoreHashNode * h = new QoreHashNode();
-    h->setKeyValue("type", new QoreStringNode(ORACLE_OBJECT), xsink);
-    h->setKeyValue("^oratype^", tname->refSelf(), xsink);
-    h->setKeyValue("^values^", values->refSelf(), xsink);
-    return h;
-}
-
-DLLEXPORT AbstractQoreNode * f_oracle_object_placeholder(const QoreListNode *params, ExceptionSink *xsink) {
-    const QoreStringNode * tname = HARD_QORE_STRING(params, 0);
-    QoreHashNode * h = new QoreHashNode();
-    h->setKeyValue("type", new QoreStringNode(ORACLE_OBJECT), xsink);
-    h->setKeyValue("value", tname->refSelf(), xsink);
-    return h;
-}
-
-DLLEXPORT AbstractQoreNode * f_oracle_collection(const QoreListNode *params, ExceptionSink *xsink) {
-    const QoreStringNode * tname = HARD_QORE_STRING(params, 0);
-    const QoreListNode * values = HARD_QORE_LIST(params, 1);
-    // Now create a new hash with ( "ORA_TYPE_NAME" : tname, "VALUES" : values )
-    // for binding
-    QoreHashNode * h = new QoreHashNode();
-    h->setKeyValue("type", new QoreStringNode(ORACLE_COLLECTION), xsink);
-    h->setKeyValue("^oratype^", tname->refSelf(), xsink);
-    h->setKeyValue("^values^", values->refSelf(), xsink);
-    return h;
-}
-
-DLLEXPORT AbstractQoreNode * f_oracle_collection_placeholder(const QoreListNode *params, ExceptionSink *xsink) {
-    const QoreStringNode * tname = HARD_QORE_STRING(params, 0);
-    QoreHashNode * h = new QoreHashNode();
-    h->setKeyValue("type", new QoreStringNode(ORACLE_COLLECTION), xsink);
-    h->setKeyValue("value", tname->refSelf(), xsink);
-    return h;
-}
-
 void ocilib_err_handler(OCI_Error *err) {
     // TODO/FIXME: xsink handling here.
     printf(     "internal OCILIB error:\n"

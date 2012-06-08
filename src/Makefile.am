@@ -1,3 +1,15 @@
+MNAME=oracle
+
+.qpp.cpp:
+	qpp $<
+
+GENERATED_SRC = ql_oracle.cpp
+CLEANFILES = $(GENERATED_SRC)
+
+if COND_SINGLE_COMPILATION_UNIT
+single-compilation-unit.cpp: $(GENERATED_SRC)
+ORACLE_SOURCES = single-compilation-unit.cpp
+else
 ORACLE_SOURCES = oracle.cpp \
 	oracleobject.cpp \
 	QoreOracleConnection.cpp \
@@ -26,9 +38,8 @@ ORACLE_SOURCES = oracle.cpp \
 	ocilib/ref.cpp \
 	ocilib/file.cpp \
 	ocilib/connection.cpp
-
-#	ocilib/long.cpp
-
+nodist_oracle_la_SOURCES = $(GENERATED_SRC)
+endif
 
 lib_LTLIBRARIES = oracle.la
 oracle_la_SOURCES = $(ORACLE_SOURCES)
@@ -47,6 +58,10 @@ AM_CFLAGS=-g
 endif
 endif
 
+if COND_MINGW
+RM_OTHER=$(DESTDIR)$(libdir)/$(MNAME).dll.a
+endif
+
 install-exec-hook:
-	mv $(DESTDIR)$(libdir)/oracle.$(MODULE_SUFFIX) $(DESTDIR)$(libdir)/oracle-api-$(MODULE_API).qmod
-	rm -f $(DESTDIR)$(libdir)/oracle.la $(libdir)/oracle.a
+	mv $(DESTDIR)$(libdir)/$(MNAME).$(MODULE_SUFFIX) $(DESTDIR)$(libdir)/$(MNAME)-api-$(MODULE_API).qmod
+	$(RM) $(DESTDIR)$(libdir)/$(MNAME).la $(RM_OTHER)
