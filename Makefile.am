@@ -36,7 +36,7 @@ ACLOCAL_AMFLAGS=-I m4
 
 if COND_DOXYGEN
 DOX = oracle
-DOXYGEN_OUTOUT = docs/oracle/html
+DOXYGEN_OUTPUT = docs/oracle/html
 
 DOXYFILES = docs/doxyfile docs/mainpage.doxygen
 DOXYFILES_SRC = docs/doxyfile.tmpl docs/footer_template.html

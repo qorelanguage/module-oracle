@@ -44,7 +44,7 @@ Source: http://prdownloads.sourceforge.net/qore/%{name}-%{version}.tar.bz2
 #Source0: %{name}-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: gcc-c++
-BuildRequires: qore-devel
+BuildRequires: qore-devel >= 0.8.5
 BuildRequires: qore
 BuildRequires: oracle-instantclient
 BuildRequires: oracle-instantclient-devel
