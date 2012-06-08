@@ -48,7 +48,7 @@ DLLEXPORT qore_module_ns_init_t qore_module_ns_init = oracle_module_ns_init;
 DLLEXPORT qore_module_delete_t qore_module_delete = oracle_module_delete;
 DLLEXPORT qore_license_t qore_module_license = QL_LGPL;
 
-DLLLOCAL void init_oracle_functions(QoreNamespace& ns);
+void init_oracle_functions(QoreNamespace& ns);
 
 DBIDriver *DBID_ORACLE = 0;
 

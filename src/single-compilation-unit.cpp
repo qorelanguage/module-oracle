@@ -1,3 +1,4 @@
+#include "ql_oracle.cpp"
 #include "oracle.cpp"
 #include "oracleobject.cpp"
 #include "QoreOracleConnection.cpp"
