@@ -3,7 +3,7 @@
 %requires oracle
 printf("\nQore named types test - collections\n\n");
 
-my $db = new Datasource("oracle", "omquser", "omquser", "orcl");
+my $db = new Datasource("oracle", "omquser", "omquser", "qube");
 $db.open();
 
 
@@ -70,9 +70,9 @@ my hash $obj = ("A_TEXT": "1",
                 "A_TSTAMP_TZ" : now_ms(),
                 "A_OBJECT" : bindOracleObject("TEST_OBJECT_2", ("TEXT2" : "foobar", "NUMBER2" : 666))
                 );
-my list $colo = bindOracleObject("OMQ.TEST_OBJECT", $obj),
-                bindOracleObject("OMQ.TEST_OBJECT", $obj),
-                bindOracleObject("OMQ.TEST_OBJECT", $obj);
+my list $colo = bindOracleObject("TEST_OBJECT", $obj),
+                bindOracleObject("TEST_OBJECT", $obj),
+                bindOracleObject("TEST_OBJECT", $obj);
 my $d = $db.exec("begin qore_test.do_coll_obj(%v, :retval); end;",
                  bindOracleCollection("COL_TEST_obj", $colo));
 printf("collection: %N\n", $d);

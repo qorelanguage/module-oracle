@@ -208,7 +208,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
       const QoreHashNode * h = reinterpret_cast<const QoreHashNode*>(value);
       if (!h->existsKey("type") || !h->existsKey("^oratype^") || !h->existsKey("^values^")) {
          xsink->raiseException("ORACLE-BIND-VALUE-ERROR",
-                               "Plain hash/list cannot be bound as an Oracle Object/Collection. Use bindOracleObject()/bindOracleCollection()");
+                               "Plain hash/list cannot be bound as an Oracle Object/Collection; use bindOracleObject()/bindOracleCollection()");
          return;
       }
       
@@ -232,7 +232,6 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
       }
       else if (t->compare(ORACLE_COLLECTION) == 0) {
          //printd(0, "binding list as an oracle collection\n");
-
          subdtype = SQLT_NTY_COLLECTION;
          dtype = SQLT_NTY;
          buf.oraColl = collBindQore(conn, h, xsink);
@@ -250,7 +249,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
       }
       else {
          xsink->raiseException("ORACLE-BIND-VALUE-ERROR",
-                               "Only Objects (hash) or collections (list) are allowed. Use bindOracleObject()/bindOracleCollection()");
+                               "Only Objects (hash) or collections (list) are allowed; use bindOracleObject()/bindOracleCollection()");
          return;
       }
    }

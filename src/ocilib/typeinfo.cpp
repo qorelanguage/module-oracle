@@ -383,6 +383,9 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
     if (res == FALSE)
     {
        OCI_TypeInfoFree2(pOCILib, typinf);
+       // delete item from item list
+       if (found == FALSE)
+	  OCI_ListRemove(pOCILib, con->tinfs, item->data);
        typinf = NULL;
     }
 

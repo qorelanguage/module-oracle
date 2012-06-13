@@ -1,4 +1,14 @@
 ***********
+version 2.2
+***********
+
+* fixed bugs in named type support - when an unknown named type is accessed
+  the first time, ocilib keeps an invalid entry for the named type in the type
+  list; the second time the type is accessed, a crash results
+* fixed memory bugs in handling named type bind parameters created by hand
+  where the value type is incorrect
+
+***********
 version 2.1
 ***********
 

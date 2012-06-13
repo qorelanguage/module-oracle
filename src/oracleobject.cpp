@@ -79,7 +79,7 @@ const char * ntyHashType(const QoreHashNode * n) {
 }
 
 // check if is the hash really oracle NTY object
-bool ntyCheckType(const char * tname, const QoreHashNode * n) {
+bool ntyCheckType(const char * tname, const QoreHashNode * n, qore_type_t t) {
     const QoreStringNode *s;
     s = dynamic_cast<const QoreStringNode*>(n->getKeyValue("type"));
     if (!s) {
@@ -91,6 +91,11 @@ bool ntyCheckType(const char * tname, const QoreHashNode * n) {
 //         printf("ntyCheckType() ^oratype^ %p\n", s);
         return false;
     }
+
+    const AbstractQoreNode* p = n->getKeyValue("^values^");
+    if (get_node_type(p) != t)
+       return false;
+
 //     printf("ntyCheckType() ^oratype^ %s\n", s->getBuffer());
     const char * givenName = ntyHashType(n);
 //     printf("ntyCheckType(%s, %s) strcmp(givenName, tname) != 0 => %d\n", givenName, tname, strcmp(givenName, tname) != 0);
@@ -114,9 +119,9 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
 //     QoreNodeAsStringHelper str(h, 1, xsink);
 //     printf("obj hash= %s\n", str->getBuffer());
 
-    if (!ntyCheckType(ORACLE_OBJECT, h)) {
+   if (!ntyCheckType(ORACLE_OBJECT, h, NT_HASH)) {
         xsink->raiseException("BIND-ORACLE-OBJECT-ERROR",
-                              "Hash is not passed with bindOracleObject()");
+                              "Bind value was not created with bindOracleObject()");
         return 0;
     }
 
@@ -515,12 +520,12 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 //     QoreNodeAsStringHelper str(h, 1, xsink);
 //     printf("list= %s\n", str->getBuffer());
 
-   if (!ntyCheckType(ORACLE_COLLECTION, h)) {
+   if (!ntyCheckType(ORACLE_COLLECTION, h, NT_LIST)) {
       xsink->raiseException("BIND-ORACLE-COLLECTION-ERROR",
-			    "List is not passed with bindOracleCollection()");
+			    "Bind value was not created with bindOracleCollection()");
       return 0;
    }
-    
+
    const QoreListNode * th = reinterpret_cast<const QoreListNode*>(h->getKeyValue("^values^"));
    const char * tname = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("^oratype^"))->getBuffer();
     
