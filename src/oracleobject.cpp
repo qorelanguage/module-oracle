@@ -154,7 +154,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
         
 //         qore_type_t ntype = val->getType();
         
-        if (is_null(val) || is_nothing(val)) {
+        if (!e || is_null(val) || is_nothing(val)) {
 	   OCI_ObjectSetNull2(&d->ocilib, obj, cname);
 	   continue;
         }

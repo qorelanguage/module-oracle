@@ -27,7 +27,6 @@ $db.rollback();
 
 printf("OBJECT IN\n");
 my hash $obj1 = ("A_TEXT": "1",
-                 "A_DATE": NOTHING,
                 );
 
 my $r2 = $db.exec("begin qore_test.do_obj(%v, :retval); end;",
