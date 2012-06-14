@@ -3,7 +3,7 @@
 %requires oracle
 printf("\nQore named types test - various errors checking\n\n");
 
-my $db = new Datasource("oracle", "omq", "omq", "ren1");
+my $db = new Datasource("oracle", "omq", "omq", "oraclexe11");
 $db.open();
 
 

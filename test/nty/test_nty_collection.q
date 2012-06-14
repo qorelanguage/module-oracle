@@ -3,7 +3,7 @@
 %requires oracle
 printf("\nQore named types test - collections\n\n");
 
-my $db = new Datasource("oracle", "omquser", "omquser", "qube");
+my $db = new Datasource("oracle", "omquser", "omquser", "oraclexe11");
 $db.open();
 
 

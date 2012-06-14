@@ -143,11 +143,12 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
         
         const char * cname = OCI_GetColumnName(&d->ocilib, col);
 //         printf("Binding attribute: %s (%d/%d)\n", cname, i, n);
-        if (! th->existsKey(cname)) {
-            xsink->raiseException("BIND-ORACLE-OBJECT-ERROR", "Key %s (case sensitive) does not exist in the object hash", cname);
-	    OCI_ObjectFree2(&d->ocilib, obj);
-            return 0;
-        }
+        // This test has been removed to allow binding of filtered hashes (only required attributes)
+        //if (! th->existsKey(cname)) {
+            //xsink->raiseException("BIND-ORACLE-OBJECT-ERROR", "Key %s (case sensitive) does not exist in the object hash", cname);
+	    //OCI_ObjectFree2(&d->ocilib, obj);
+            //return 0;
+        //}
         bool e;
         const AbstractQoreNode *val = th->getKeyValueExistence(cname, e);
         

@@ -3,7 +3,7 @@
 %requires oracle
 printf("\nQore named types test - objects\n\n");
 
-my $db = new Datasource("oracle", "omquser", "omquser", "qube");
+my $db = new Datasource("oracle", "omquser", "omquser", "oraclexe11");
 $db.open();
 
 printf("OBJECT IN\n");
@@ -23,6 +23,20 @@ my $r = $db.exec("begin qore_test.do_obj(%v, :retval); end;",
                  Type::String);
 printf("object: %N\n", $r);
 $db.rollback();
+
+
+printf("OBJECT IN\n");
+my hash $obj1 = ("A_TEXT": "1",
+                 "A_DATE": NOTHING,
+                );
+
+my $r2 = $db.exec("begin qore_test.do_obj(%v, :retval); end;",
+                 bindOracleObject("OMQUSER.TEST_OBJECT", $obj1),
+                 Type::String);
+printf("object: %N\n", $r2);
+$db.rollback();
+
+
 
 printf("\nOBJECT OUT\n");
 my $r1 = $db.exec("begin qore_test.get_obj(:retval); end;", placeholderOracleObject("TEST_OBJECT"));
