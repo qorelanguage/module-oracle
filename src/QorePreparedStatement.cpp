@@ -225,7 +225,8 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
 
          conn->checkerr(OCIBindObject(bndp, conn->errhp,
                                       buf.oraObj->typinf->tdo, (void**)&buf.oraObj->handle, 0,
-                                      0, 0 // NULL struct
+// TODO/FIXME: Indicator variables would allow to handle IN/OUT parameters too
+                                      (void**)&buf.oraObj->tab_ind, 0 // NULL struct
                            ),
                         "OraBindNode::bindValue() OCIBindObject", xsink);
          return;
@@ -242,7 +243,8 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
       
          conn->checkerr(OCIBindObject(bndp, conn->errhp,
                                       buf.oraColl->typinf->tdo, (void**)&buf.oraColl->handle, 0,
-                                      0, 0 // NULL struct
+// TODO/FIXME: examine "Indicator Variables for Named Data Types" for collections. It crashes with values now.
+                                      0/*(void**)&buf.oraObj->tab_ind*/, 0 // NULL struct
                            ),
                         "OraBindNode::bindValue() OCIBindObject", xsink);
          return;
@@ -413,7 +415,8 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
 
        conn->checkerr(OCIBindObject(bndp, conn->errhp,
                                      buf.oraObj->typinf->tdo, (void**)&buf.oraObj->handle, 0,
-                                     0, 0 // NULL struct
+// TODO/FIXME: examine "Indicator Variables for Named Data Types" for collections OUT. Using it overrides all values.
+                                     0/*&buf.oraObj->handle*/, 0 // NULL struct
                           ),
                        "OraBindNode::bindPlaceholder() OCIBindObject", xsink);
 
@@ -439,7 +442,8 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
        conn->checkerr(
                     OCIBindObject(bndp, conn->errhp,
                                  buf.oraColl->typinf->tdo, (void**)&buf.oraColl->handle, 0,
-                                 0, 0 // NULL struct
+// TODO/FIXME: examine "Indicator Variables for Named Data Types" for collections OUT. Using it overrides all values.
+                                 0/*(void**)&buf.oraObj->tab_ind*/, 0 // NULL struct
                                  ),
                     "OraBindNode::bindPalceholder() OCIBindObject collection", xsink);
 //         assert(0);

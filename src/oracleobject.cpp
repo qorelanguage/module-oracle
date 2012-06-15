@@ -151,7 +151,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
         //}
         bool e;
         const AbstractQoreNode *val = th->getKeyValueExistence(cname, e);
-        
+
 //         qore_type_t ntype = val->getType();
         
         if (!e || is_null(val) || is_nothing(val)) {

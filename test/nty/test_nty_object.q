@@ -3,7 +3,7 @@
 %requires oracle
 printf("\nQore named types test - objects\n\n");
 
-my $db = new Datasource("oracle", "omquser", "omquser", "oraclexe11");
+my $db = new Datasource("oracle", "omqtest", "omqtest", "stimpy");
 $db.open();
 
 printf("OBJECT IN\n");
@@ -19,7 +19,7 @@ my hash $obj = ("A_TEXT": "1",
                 );
 
 my $r = $db.exec("begin qore_test.do_obj(%v, :retval); end;",
-                 bindOracleObject("OMQUSER.TEST_OBJECT", $obj),
+                 bindOracleObject("TEST_OBJECT", $obj),
                  Type::String);
 printf("object: %N\n", $r);
 $db.rollback();
@@ -30,7 +30,7 @@ my hash $obj1 = ("A_TEXT": "1",
                 );
 
 my $r2 = $db.exec("begin qore_test.do_obj(%v, :retval); end;",
-                 bindOracleObject("OMQUSER.TEST_OBJECT", $obj1),
+                 bindOracleObject("TEST_OBJECT", $obj1),
                  Type::String);
 printf("object: %N\n", $r2);
 $db.rollback();
@@ -49,7 +49,7 @@ printf("\nOBJECT direct insert\n");
     on_error $db.rollback();
     my $rins = $db.exec("insert into t_object_test values (%v, %v, %v)",
                         1,
-                        bindOracleObject("OMQUSER.TEST_tab_OBJECT", $obj),
+                        bindOracleObject("TEST_tab_OBJECT", $obj),
                         bindOracleCollection("TEST_tab_coll", (2, 5050553111079,NULL, NOTHING, 666,))
                        );
     printf("rins: %N\n", $rins);
