@@ -55,8 +55,11 @@
 
 #define ORA_RAW_SIZE 65535
 
-// should be 32767
-#define CLOB_THRESHOLD 30000
+/* note that some operations will work with VARCHAR2 values up to 32767 bytes long, however
+   others will fail - basically VARCHAR2 columns cannot hold values > 4000 bytes and anything
+   else should be a CLOB in order to make everything work best
+*/
+#define CLOB_THRESHOLD 4000
 
 // with 10g on Linux the streaming *lob callback function would 
 // never get more than 1024 bytes of data at a time, however with a 9i
