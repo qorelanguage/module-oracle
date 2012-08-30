@@ -77,7 +77,7 @@ void OraColumnValue::del(ExceptionSink *xsink) {
       case SQLT_DATE:
          if (buf.odt) {
             //printd(5, "OraColumnValue::del() this=%p freeing TIMESTAMP descriptor %p\n", this, buf.odt);
-            OCIDescriptorFree(buf.odt, OCI_DTYPE_TIMESTAMP);
+            OCIDescriptorFree(buf.odt, QORE_DTYPE_TIMESTAMP);
          }
          break;
 
