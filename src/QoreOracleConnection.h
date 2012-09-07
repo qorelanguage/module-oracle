@@ -241,6 +241,7 @@ public:
 
          se %= 3600;
          sprintf(&tz[4], "%02d", se / 60);   
+         tz[6] = '\0';
 
          //printd(5, "QoreOracleConnection::dateTimeConstruct(year=%d, month=%d, day=%d, hour=%d, minute=%d, second=%d, us=%d, tz=%s) %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, tz, info.regionName());
          return checkerr(OCIDateTimeConstruct(*env, errhp, odt, info.year, info.month, info.day, info.hour, info.minute, info.second, (info.us * 1000), (oratext *)tz, 6), "QoreOracleConnection::dateTimeConstruct()", xsink);

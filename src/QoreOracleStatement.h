@@ -37,7 +37,8 @@ class QoreOracleStatement {
 protected:
    Datasource *ds;
    OCIStmt *stmthp;
-   bool is_select;
+   bool is_select,
+      fetch_done;
 
    DLLLOCAL void del() {
       // free OCI handle
@@ -45,7 +46,7 @@ protected:
    }
 
 public:
-   DLLLOCAL QoreOracleStatement(Datasource *n_ds, OCIStmt *n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), is_select(false) {
+   DLLLOCAL QoreOracleStatement(Datasource *n_ds, OCIStmt *n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), is_select(false), fetch_done(false) {
    }
 
    DLLLOCAL ~QoreOracleStatement() {
@@ -65,6 +66,7 @@ public:
       }
 
       is_select = false;
+      fetch_done = false;
    }
 
    DLLLOCAL int allocate(ExceptionSink *xsink) {
@@ -122,6 +124,8 @@ public:
             return -1;
          }
       }
+      if (!fetch_done)
+         fetch_done = true;
       return 0;
    }
 

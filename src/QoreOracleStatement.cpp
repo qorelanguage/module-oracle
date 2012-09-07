@@ -97,6 +97,11 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
 }
 
 QoreHashNode *QoreOracleStatement::fetchRow(OraResultSet &resultset, ExceptionSink *xsink) {
+   if (!fetch_done) {
+      xsink->raiseException("ORACLE-FETCH-ROW-ERROR", "call SQLStatement::next() before calling SQLStatement::fetchRow()");
+      return 0;
+   }
+
    // set up hash for row
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
 
@@ -148,7 +153,12 @@ QoreListNode *QoreOracleStatement::fetchRows(OraResultSet &resultset, int rows, 
 	 break;
    }
    //printd(2, "QoreOracleStatement::fetchRows(): %d column(s), %d row(s) retrieved as output\n", resultset.size(), l->size());
-   return *xsink ? 0 : l.release();
+   if (!*xsink) {
+      if (!fetch_done)
+         fetch_done = true;
+      return l.release();
+   }
+   return 0;
 }
 
 #ifdef _QORE_HAS_DBI_SELECT_ROW
@@ -172,6 +182,9 @@ QoreHashNode *QoreOracleStatement::fetchSingleRow(ExceptionSink *xsink) {
    rv = fetchRow(**resultset, xsink);
    if (!rv)
       return 0;
+
+   if (!fetch_done)
+      fetch_done = true;
 
    if (next(xsink)) {
       xsink->raiseExceptionArg("ORACLE-SELECT-ROW-ERROR", rv.release(), "SQL passed to selectRow() returned more than 1 row");
@@ -233,5 +246,10 @@ QoreHashNode *QoreOracleStatement::fetchColumns(OraResultSet &resultset, int row
 	 break;
    }
    //printd(2, "QoreOracleStatement::fetchColumns(rows: %d): %d column(s), %d row(s) retrieved as output\n", rows, resultset.size(), num_rows);
-   return *xsink ? 0 : h.release();
+   if (!*xsink) {
+      if (!fetch_done)
+         fetch_done = true;
+      return h.release();
+   }
+   return 0;
 }

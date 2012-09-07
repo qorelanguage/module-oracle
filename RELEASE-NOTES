@@ -7,6 +7,9 @@ version 2.2
   list; the second time the type is accessed, a crash results
 * fixed memory bugs in handling named type bind parameters created by hand
   where the value type is incorrect
+* throws an exception if SQLStatement::fetchRow() is called before 
+  SQLStatement::next()
+
 
 ***********
 version 2.1
