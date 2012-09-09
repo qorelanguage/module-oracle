@@ -24,7 +24,6 @@ noinst_HEADERS = src/oracle-config.h \
 	src/ocilib/ocilib.h \
 	src/ocilib/oci_loader.h
 
-
 EXTRA_DIST = COPYING ChangeLog AUTHORS README \
 	RELEASE-NOTES \
 	src/ql_oracle.qpp \
