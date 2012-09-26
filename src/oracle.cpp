@@ -39,7 +39,7 @@
 DLLEXPORT char qore_module_name[] = "oracle";
 DLLEXPORT char qore_module_version[] = PACKAGE_VERSION;
 DLLEXPORT char qore_module_description[] = "Oracle database driver";
-DLLEXPORT char qore_module_author[] = "David Nichols";
+DLLEXPORT char qore_module_author[] = "David Nichols <david@qore.org>";
 DLLEXPORT char qore_module_url[] = "http://qore.org";
 DLLEXPORT int qore_module_api_major = QORE_MODULE_API_MAJOR;
 DLLEXPORT int qore_module_api_minor = QORE_MODULE_API_MINOR;
@@ -51,6 +51,25 @@ DLLEXPORT qore_license_t qore_module_license = QL_LGPL;
 void init_oracle_functions(QoreNamespace& ns);
 
 DBIDriver *DBID_ORACLE = 0;
+
+// capabilities of this driver
+static int dbi_oracle_caps = (
+   DBI_CAP_TRANSACTION_MANAGEMENT
+   |DBI_CAP_STORED_PROCEDURES
+   |DBI_CAP_CHARSET_SUPPORT
+   |DBI_CAP_LOB_SUPPORT
+   |DBI_CAP_BIND_BY_VALUE
+   |DBI_CAP_BIND_BY_PLACEHOLDER
+#ifdef _QORE_HAS_DBI_EXECRAW
+   |DBI_CAP_HAS_EXECRAW
+#endif
+#ifdef _QORE_HAS_TIME_ZONES
+   |DBI_CAP_TIME_ZONE_SUPPORT
+#endif
+#ifdef _QORE_HAS_NUMBER_TYPE
+   | DBI_CAP_HAS_NUMBER_SUPPORT
+#endif
+   );
 
 static int oracle_commit(Datasource *ds, ExceptionSink *xsink) {
    QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
@@ -300,6 +319,21 @@ static int oracle_stmt_close(SQLStatement *stmt, ExceptionSink *xsink) {
 }
 #endif // _QORE_HAS_PREPARED_STATMENT_API
 
+#ifdef _QORE_HAS_DBI_OPTIONS
+static int oracle_opt_set(Datasource* ds, const char* opt, const AbstractQoreNode* val, ExceptionSink* xsink) {
+   // get private data structure for connection
+   QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+   conn.setOption(opt, val);
+   return 0;
+}
+
+static AbstractQoreNode* oracle_opt_get(const Datasource* ds, const char* opt) {
+   // get private data structure for connection
+   QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+   return conn.getOption(opt);
+}
+#endif
+
 QoreNamespace OraNS("Oracle");
 
 QoreStringNode *oracle_module_init() {
@@ -347,8 +381,17 @@ QoreStringNode *oracle_module_init() {
    methods.add(QDBI_METHOD_STMT_GET_OUTPUT, oracle_stmt_get_output);
    methods.add(QDBI_METHOD_STMT_GET_OUTPUT_ROWS, oracle_stmt_get_output_rows);
 #endif // _QORE_HAS_PREPARED_STATMENT_API
-   
-   DBID_ORACLE = DBI.registerDriver("oracle", methods, DBI_ORACLE_CAPS);
+
+#ifdef _QORE_HAS_DBI_OPTIONS
+   methods.add(QDBI_METHOD_OPT_SET, oracle_opt_set);
+   methods.add(QDBI_METHOD_OPT_GET, oracle_opt_get);
+
+   methods.registerOption(DBI_OPT_NUMBER_OPT, "when set, number values are returned as integers if possible, otherwise as arbitrary-precision number values; the argument is ignored; setting this option turns it on and turns off 'string-numbers' and 'numeric-numbers'");
+   methods.registerOption(DBI_OPT_NUMBER_STRING, "when set, number values are returned as strings for backwards-compatibility; the argument is ignored; setting this option turns it on and turns off 'optimal-numbers' and 'numeric-numbers'");
+   methods.registerOption(DBI_OPT_NUMBER_NUMERIC, "when set, number values are returned as arbitrary-precision number values; the argument is ignored; setting this option turns it on and turns off 'string-numbers' and 'optimal-numbers'");
+#endif
+
+   DBID_ORACLE = DBI.registerDriver("oracle", methods, dbi_oracle_caps);
 
    return 0;
 }

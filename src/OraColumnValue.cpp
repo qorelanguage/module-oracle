@@ -104,7 +104,6 @@ void OraColumnValue::del(ExceptionSink *xsink) {
          freeObject();
          break;
 
-      case SQLT_NUM:
       default:
          if (buf.ptr) {
             //printd(5, "freeing pointer with free(%p)\n", buf.ptr);
@@ -223,22 +222,50 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
       }
 #endif
 
-      // treat as string
-      default:
-         //printd(5, "OraColumnValue::getValue() type=%d\n", dtype);
-         // must be string data
-         if (dtype == SQLT_AFC || dtype == SQLT_AVC)
-            remove_trailing_blanks((char *)buf.ptr);
-         if (!destructive)
-            return new QoreStringNode((const char *)buf.ptr, stmt.getEncoding());
-         int len = strlen((char *)buf.ptr);
-         QoreStringNode *str = new QoreStringNode((char *)buf.ptr, len, len + 1, stmt.getEncoding());
-         buf.ptr = 0;
-         return str;
+#ifdef _QORE_HAS_NUMBER_TYPE
+      case SQLT_VNU:
+      case SQLT_NUM: {
+         int nopt = stmt.getData()->getNumberOption();
+         switch (nopt) {
+            case OPT_NUM_OPTIMAL: {
+               const char* p = (const char*)buf.ptr;
+               // see if the value can fit in an int
+               size_t len = strlen(p);
+               bool sign = p[0] == '-';
+               if (sign)
+                  --len;
+               if ((len < 19
+                    || (len == 19 && 
+                        ((!sign && strcmp(p, "9223372036854775807") <= 0)
+                         ||(sign && strcmp(p, "-9223372036854775808") >= 0)))))
+                  return new QoreBigIntNode(strtoll(p, 0, 10));
+
+               return new QoreNumberNode(p);
+            }
+            case OPT_NUM_STRING:
+               return doReturnString(destructive);
+         }
+         assert(nopt == OPT_NUM_NUMERIC);
+         return new QoreNumberNode((const char*)buf.ptr);
+      }
+#endif
    }
-   
-   assert(false);
-   return 0;
+
+   // default: treat as string
+   //printd(5, "OraColumnValue::getValue() type=%d\n", dtype);
+   // must be string data
+   if (dtype == SQLT_AFC || dtype == SQLT_AVC)
+      remove_trailing_blanks((char *)buf.ptr);
+   return doReturnString(destructive);   
+}
+
+QoreStringNode* OraColumnValue::doReturnString(bool destructive) {
+   if (!destructive)
+      return new QoreStringNode((const char *)buf.ptr, stmt.getEncoding());
+   int len = strlen((char *)buf.ptr);
+   QoreStringNode *str = new QoreStringNode((char *)buf.ptr, len, len + 1, stmt.getEncoding());
+   buf.ptr = 0;
+   return str;
 }
 
 void OraColumnValue::freeObject() {

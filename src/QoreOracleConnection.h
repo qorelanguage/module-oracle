@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2010 David Nichols
+  Copyright (C) 2003 - 2012 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -90,6 +90,18 @@ public:
    }
 };
 
+#define OPT_NUM_OPTIMAL 0  // return numbers as int64 if it fits or "number" if not
+#define OPT_NUM_STRING  1  // always return number types as strings
+#define OPT_NUM_NUMERIC 2  // always return number types as "number"
+
+#ifdef _QORE_HAS_DBI_OPTIONS
+// return optimal numeric values if options are supported
+#define OPT_NUM_DEFAULT OPT_NUM_OPTIMAL
+#else
+// return numeric values as strings if options are not supported -- for backwards-compatibility
+#define OPT_NUM_DEFAULT OPT_NUM_STRING
+#endif
+
 class QoreOracleConnection {
   protected:
    DLLLOCAL static sb4 readClobCallback(void *sp, CONST dvoid *bufp, ub4 len, ub1 piece) {
@@ -117,6 +129,7 @@ public:
    OCI_Library ocilib;
 
    QoreString cstr; // connection string
+   int number_support;
 
    DLLLOCAL QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsink);
    DLLLOCAL ~QoreOracleConnection();
@@ -275,6 +288,34 @@ public:
 
    DLLLOCAL BinaryNode *readBlob(OCILobLocator *lobp, ExceptionSink *xsink);
    DLLLOCAL QoreStringNode *readClob(OCILobLocator *lobp, const QoreEncoding *enc, ExceptionSink *xsink);
+
+   DLLLOCAL void setOption(const char* opt, const AbstractQoreNode* val) {
+      if (!strcasecmp(opt, DBI_OPT_NUMBER_OPT)) {
+         number_support = OPT_NUM_OPTIMAL;
+         return;
+      }
+      if (!strcasecmp(opt, DBI_OPT_NUMBER_STRING)) {
+         number_support = OPT_NUM_STRING;
+         return;
+      }
+      assert(!strcasecmp(opt, DBI_OPT_NUMBER_NUMERIC));
+      number_support = OPT_NUM_NUMERIC;
+   }
+
+   DLLLOCAL AbstractQoreNode* getOption(const char* opt) {
+      if (!strcasecmp(opt, DBI_OPT_NUMBER_OPT))
+         return get_bool_node(number_support == OPT_NUM_OPTIMAL);
+
+      if (!strcasecmp(opt, DBI_OPT_NUMBER_STRING))
+         return get_bool_node(number_support == OPT_NUM_STRING);
+
+      assert(!strcasecmp(opt, DBI_OPT_NUMBER_NUMERIC));
+      return get_bool_node(number_support == OPT_NUM_NUMERIC);
+   }
+
+   DLLLOCAL int getNumberOption() const {
+      return number_support;
+   }
 
    DLLLOCAL static void descriptorFree(void *descp, unsigned type) {
       OCIDescriptorFree(descp, type);

@@ -25,7 +25,7 @@
 
 #include "ocilib_internal.h"
 
-QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsink) : errhp(0), svchp(0), ocilib_cn(0), ds(n_ds), ocilib_init(false) {
+QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsink) : errhp(0), svchp(0), ocilib_cn(0), ds(n_ds), ocilib_init(false), number_support(OPT_NUM_DEFAULT) {
    // locking is done on the level above with the Datasource class
 
 #ifdef QORE_HAS_DATASOURCE_PORT

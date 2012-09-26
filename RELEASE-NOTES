@@ -9,6 +9,18 @@ version 2.2
   where the value type is incorrect
 * throws an exception if SQLStatement::fetchRow() is called before 
   SQLStatement::next()
+* supports the arbitrary-precision numeric type in qore 0.8.6+
+* supports DBI options with qore 0.8.6+; options supported:
+  + "optimal-numbers": return NUMBER values as an integer if possible, if not
+                       as an arbitrary-precision number
+  + "string-numbers": return NUMBER values as strings (for backwards-
+                      compatibility)
+  + "numeric-numbers": return NUMBER values as arbitrary-precision number
+                       values
+* the default is now "optimal-numbers" - meaning that numeric values are
+  retrieved as "int" if possible, otherwise as a "number" type is returned.
+  For backwards-compatibility, set the "string-numbers" option to return
+  NUMBER values as strings
 
 
 ***********

@@ -94,7 +94,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
    qore_type_t ntype = value->getType();
    
    if (ntype == NT_STRING) {
-      const QoreStringNode *bstr = reinterpret_cast<const QoreStringNode *>(value);
+      const QoreStringNode *bstr = reinterpret_cast<const QoreStringNode*>(value);
       dtype = SQLT_STR;
 
       qore_size_t len;
@@ -147,7 +147,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
    }
 
    if (ntype == NT_DATE) {
-      const DateTimeNode *d = reinterpret_cast<const DateTimeNode *>(value);
+      const DateTimeNode *d = reinterpret_cast<const DateTimeNode*>(value);
 
       if (setupDateDescriptor(xsink))
 	 return;
@@ -160,7 +160,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
    }
 
    if (ntype == NT_BINARY) {
-      const BinaryNode *b = reinterpret_cast<const BinaryNode *>(value);
+      const BinaryNode *b = reinterpret_cast<const BinaryNode*>(value);
       printd(5, "OraBindNode::bindValue() BLOB ptr=%p size=%d\n", b->getPtr(), b->size());
 
       stmt.bindByPos(bndp, pos, (void *)b->getPtr(), b->size(), SQLT_BIN, xsink, pIndicator);
@@ -168,14 +168,14 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
    }
 
    if (ntype == NT_BOOLEAN) {
-      buf.i4 = reinterpret_cast<const QoreBoolNode *>(value)->getValue();
+      buf.i4 = reinterpret_cast<const QoreBoolNode*>(value)->getValue();
 
       stmt.bindByPos(bndp, pos, &buf.i4, sizeof(int), SQLT_INT, xsink, pIndicator);
       return;
    }
 
    if (ntype == NT_INT) {
-      const QoreBigIntNode *b = reinterpret_cast<const QoreBigIntNode *>(value);
+      const QoreBigIntNode *b = reinterpret_cast<const QoreBigIntNode*>(value);
       if (b->val <= MAXINT32 && b->val >= -MAXINT32) {
 	 buf.i4 = b->val;
 
@@ -194,11 +194,27 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
       return;
    }
 
+#ifdef _QORE_HAS_NUMBER_TYPE
+   if (ntype == NT_NUMBER) {
+      const QoreNumberNode* n = reinterpret_cast<const QoreNumberNode*>(value);
+      // bind as a string value
+      dtype = SQLT_STR;
+
+      QoreString *tstr = new QoreString(stmt.getEncoding());
+      n->getStringRepresentation(*tstr);
+      data.v.tstr = tstr;
+
+      //printd(5, "binding number '%s'\n", buf.ptr);
+      stmt.bindByPos(bndp, pos, (char *)tstr->getBuffer(), tstr->strlen() + 1, SQLT_STR, xsink, pIndicator);
+      return;
+   }
+#endif
+
    if (ntype == NT_FLOAT) {
 #if defined(SQLT_BDOUBLE) && defined(USE_NEW_NUMERIC_TYPES)
-      stmt.bindByPos(bndp, pos, &(reinterpret_cast<QoreFloatNode *>(const_cast<AbstractQoreNode *>(value))->f), sizeof(double), SQLT_BDOUBLE, xsink, pIndicator);
+      stmt.bindByPos(bndp, pos, &(reinterpret_cast<QoreFloatNode*>(const_cast<AbstractQoreNode*>(value))->f), sizeof(double), SQLT_BDOUBLE, xsink, pIndicator);
 #else
-      stmt.bindByPos(bndp, pos, &(reinterpret_cast<QoreFloatNode *>(const_cast<AbstractQoreNode *>(value))->f), sizeof(double), SQLT_FLT, xsink, pIndicator);
+      stmt.bindByPos(bndp, pos, &(reinterpret_cast<QoreFloatNode*>(const_cast<AbstractQoreNode*>(value))->f), sizeof(double), SQLT_FLT, xsink, pIndicator);
 #endif
       return;
    }
@@ -305,7 +321,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
 
       if (value) {
 	 if (value->getType() == NT_BINARY) {
-	    const BinaryNode *bin = reinterpret_cast<const BinaryNode *>(value);
+	    const BinaryNode *bin = reinterpret_cast<const BinaryNode*>(value);
 	    // if too big, raise an exception (not likely to happen)
 	    if (bin->size() > 0x7fffffff) {
 	       xsink->raiseException("BIND-ERROR", "value passed for binding is %lld bytes long, which is too big to bind as a long binary value, maximum size is %d bytes", bin->size(), 0x7fffffff);
