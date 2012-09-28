@@ -4,12 +4,14 @@
 
     Contents of this documentation:
     - @ref intro
+    - @ref options
     - @ref bindings_and_types
     - @ref binding_by_value
     - @ref binding_by_placeholder
     - @ref default_oracle_to_qore_mapping
     - @ref named_types
     - @ref known_issues
+    - @ref releasenotes
 
     @section intro Introduction
 
@@ -30,14 +32,17 @@
     @endcode
 
     This driver supports the following DBI capabilities:
-     - \c DBI_CAP_TRANSACTION_MANAGEMENT
-     - \c DBI_CAP_STORED_PROCEDURES
-     - \c DBI_CAP_CHARSET_SUPPORT
-     - \c DBI_CAP_LOB_SUPPORT
-     - \c DBI_CAP_BIND_BY_VALUE
-     - \c DBI_CAP_BIND_BY_PLACEHOLDER
-     - \c DBI_CAP_HAS_EXECRAW
-     - \c DBI_CAP_HAS_STATEMENT.
+    - \c DBI_CAP_TRANSACTION_MANAGEMENT
+    - \c DBI_CAP_STORED_PROCEDURES
+    - \c DBI_CAP_CHARSET_SUPPORT
+    - \c DBI_CAP_LOB_SUPPORT
+    - \c DBI_CAP_BIND_BY_VALUE
+    - \c DBI_CAP_BIND_BY_PLACEHOLDER
+    - \c DBI_CAP_HAS_EXECRAW
+    - \c DBI_CAP_HAS_STATEMENT
+    - \c DBI_CAP_HAS_SELECT_ROW
+    - \c DBI_CAP_HAS_NUMBER_SUPPORT
+    - \c DBI_CAP_HAS_OPTION_SUPPORT
 
     The \c Datasource::getServerVersion() and \c Datasource::getClientVersion()
     methods are implemented for this driver. \c Datasource::getServerVersion()
@@ -67,6 +72,20 @@
     be wrapped in a mutex by oracle (with \c OCI_THREADED and
     without \c OCI_NO_MUTEX).
 
+    @section options Driver Options
+
+    When compiled again Qore 0.8.6+ the pgsql driver support the following DBI options:
+    - \c "optimal-numbers": return <tt>NUMBER</tt> types as an integer if possible, if not as an arbitrary-precision number
+    - \c "string-numbers": return <tt>NUMBER</tt> types as strings (for backwards-compatibility)
+    - \c "numeric-numbers": return <tt>NUMBER</tt> types as arbitrary-precision number values
+
+    The default if no other option is explicitly set is \c "optimal-numbers".  Note that this represents a change from previous numbers where Oracle <tt>NUMBER</tt> values were returned as strings in order to avoid the loss of information.  To set the old behavior, set the \c "string-numbers" option when creating the \c Datasource or \c DatasourcePool object.
+
+    Options can be set in the \c Datasource or \c DatasourcePool constructors as in the following examples:
+    @code
+    my Dataource $ds("oracle:user/pass@db{numeric-numbers}");
+    my DataourcePool $dsp("oracle:user/pass@db%host.internal:1521{optimal-numbers}");
+    @endcode
 
     @section bindings_and_types Binding and types
     
@@ -112,7 +131,7 @@
     hash: (3 members)
         status_code : 0
         error_code : 0
-        error_description : &lt;NULL&gt;
+        error_description : <NULL>;
     @endcode
 
     
@@ -204,7 +223,7 @@
         attr_varchar varchar2(20)
     );
     CREATE OR REPLACE TYPE test_collection IS TABLE OF test_object;
-    @code
+    @endcode
 
     Example of binding NTY:
 
@@ -308,4 +327,19 @@
     OCI-21710: argument is expecting a valid memory address of an object
     @endcode
 
+    @section releasenotes Release Notes
+
+    @subsection oracle22 oracle Driver Version 2.2
+
+    <b>New Features and Bug Fixes</b>
+    - fixed bugs in named type support - when an unknown named type is accessed for the first time, ocilib keeps an invalid entry for the named type in the type list; the second time the type is accessed, a crash results (bug reported and already fixed in upstream ocilib)
+    - fixed memory bugs in handling named type bind parameters created by hand where the value type is incorrect
+    - now the driver throws an exception if SQLStatement::fetchRow() is called before SQLStatement::next() (before it would return garbage data)
+    - supports the arbitrary-precision numeric type in qore 0.8.6+
+    - supports DBI options with qore 0.8.6+; options supported:
+      - \c "optimal-numbers": return <tt>NUMBER</tt> values as an integer if possible, if not as an arbitrary-precision number
+      - \c "string-numbers": return <tt>NUMBER</tt> values as strings (for backwards-compatibility)
+      - \c "numeric-numbers": return <tt>NUMBER</tt> values as arbitrary-precision number values
+    - the default is now "optimal-numbers" - meaning that numeric values are retrieved as <tt>int</tt> if possible, otherwise as a <tt>number</tt> type is returned.\n
+      For backwards-compatibility, set the \c "string-numbers" option to return <tt>NUMBER</tt> values as strings
 */
