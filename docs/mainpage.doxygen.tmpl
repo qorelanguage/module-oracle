@@ -43,6 +43,7 @@
     - \c DBI_CAP_HAS_SELECT_ROW
     - \c DBI_CAP_HAS_NUMBER_SUPPORT
     - \c DBI_CAP_HAS_OPTION_SUPPORT
+    - \c DBI_CAP_SERVER_TIME_ZONE
 
     The \c Datasource::getServerVersion() and \c Datasource::getClientVersion()
     methods are implemented for this driver. \c Datasource::getServerVersion()
@@ -82,7 +83,7 @@
 
     Options can be set in the \c Datasource or \c DatasourcePool constructors as in the following examples:
     @code
-    my Dataource $ds("oracle:user/pass@db{numeric-numbers}");
+    my Dataource $ds("oracle:user/pass@db{numeric-numbers,timezone=Europe/Vienna}");
     my DataourcePool $dsp("oracle:user/pass@db%host.internal:1521{optimal-numbers}");
     @endcode
 
@@ -92,7 +93,7 @@
 
     The number options (\c "optimal-numbers", \c "string-numbers", and \c "numeric-numbers") are all mutually-exclusive; setting one automatically disables the others.   These options also ignore their arguments; the last one set takes effect (also note that setting it with any value sets the option, even @ref False).
 
-    The default if no other option is explicitly set is \c "optimal-numbers".  Note that this represents a change from previous numbers where Oracle <tt>NUMBER</tt> values were returned as strings in order to avoid the loss of information.  To set the old behavior, set the \c "string-numbers" option when creating the \c Datasource or \c DatasourcePool object.
+    The default if no other option is explicitly set is \c "optimal-numbers".  Note that this represents a change from previous versions where Oracle <tt>NUMBER</tt> values were returned as strings in order to avoid the loss of information.  To set the old behavior, set the \c "string-numbers" option when creating the \c Datasource or \c DatasourcePool object.
 
     @section bindings_and_types Binding and types
     
@@ -355,6 +356,7 @@
       - \c "optimal-numbers": return <tt>NUMBER</tt> values as an integer if possible, if not as an arbitrary-precision number
       - \c "string-numbers": return <tt>NUMBER</tt> values as strings (for backwards-compatibility)
       - \c "numeric-numbers": return <tt>NUMBER</tt> values as arbitrary-precision number values
-    - the default is now "optimal-numbers" - meaning that numeric values are retrieved as <tt>int</tt> if possible, otherwise as a <tt>number</tt> type is returned.\n
+      - \c "timezone": accepts a string argument that can be either a region name (ex: \c "Europe/Prague") or a UTC offset (ex: \c "+01:00") to set the server's time zone rules; this is useful if connecting to a database server in a different time zone.  If this option is not set then the server's time zone is assumed to be the same as the client's time zone; see @ref timezone.
+    - the default for the number options (see @ref number_options) is now "optimal-numbers" - meaning that <tt>NUMBER</tt> values are retrieved as <tt>int</tt> if possible, otherwise as a <tt>number</tt> type is returned.\n
       For backwards-compatibility, set the \c "string-numbers" option to return <tt>NUMBER</tt> values as strings
 */
