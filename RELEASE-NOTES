@@ -17,10 +17,16 @@ version 2.2
                       compatibility)
   + "numeric-numbers": return NUMBER values as arbitrary-precision number
                        values
-* the default is now "optimal-numbers" - meaning that numeric values are
-  retrieved as "int" if possible, otherwise as a "number" type is returned.
-  For backwards-compatibility, set the "string-numbers" option to return
-  NUMBER values as strings
+  + "timezone": accepts a string argument that can be either a region name 
+                (ex: "Europe/Prague") or a UTC offset (ex: "+01:00") to set
+		the server's time zone rules; this is useful if connecting to
+		a database server in a different time zone.  If this option is
+		not set then the server's time zone is assumed to be the same
+		as the client's time zone
+* the default fopr the number options is now "optimal-numbers" - meaning that
+  numeric values are retrieved as "int" if possible, otherwise as a "number"
+  type is returned.  For backwards-compatibility, set the "string-numbers"
+  option to return NUMBER values as strings
 
 
 ***********
