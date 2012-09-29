@@ -125,7 +125,7 @@ public:
    OCI_Connection *ocilib_cn;
    Datasource &ds;
    bool ocilib_init;
-#ifdef _QORE_HAS_TIME_ZONES
+#ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
    const AbstractQoreZoneInfo* server_tz;
 #endif
 
