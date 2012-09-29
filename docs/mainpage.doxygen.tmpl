@@ -74,18 +74,25 @@
 
     @section options Driver Options
 
-    When compiled again Qore 0.8.6+ the pgsql driver support the following DBI options:
+    When compiled again Qore 0.8.6+ the oracle driver support the following DBI options on each connection:
     - \c "optimal-numbers": return <tt>NUMBER</tt> types as an integer if possible, if not as an arbitrary-precision number
     - \c "string-numbers": return <tt>NUMBER</tt> types as strings (for backwards-compatibility)
     - \c "numeric-numbers": return <tt>NUMBER</tt> types as arbitrary-precision number values
-
-    The default if no other option is explicitly set is \c "optimal-numbers".  Note that this represents a change from previous numbers where Oracle <tt>NUMBER</tt> values were returned as strings in order to avoid the loss of information.  To set the old behavior, set the \c "string-numbers" option when creating the \c Datasource or \c DatasourcePool object.
+    - \c "timezone": accepts a string argument that can be either a region name (ex: \c "Europe/Prague") or a UTC offset (ex: \c "+01:00") to set the server's time zone rules; this is useful if connecting to a database server in a different time zone.  If this option is not set then the server's time zone is assumed to be the same as the client's time zone; see @ref timezone.
 
     Options can be set in the \c Datasource or \c DatasourcePool constructors as in the following examples:
     @code
     my Dataource $ds("oracle:user/pass@db{numeric-numbers}");
     my DataourcePool $dsp("oracle:user/pass@db%host.internal:1521{optimal-numbers}");
     @endcode
+
+    Options are stored separately for each connection.
+
+    @subsection number_options Number Options
+
+    The number options (\c "optimal-numbers", \c "string-numbers", and \c "numeric-numbers") are all mutually-exclusive; setting one automatically disables the others.   These options also ignore their arguments; the last one set takes effect (also note that setting it with any value sets the option, even @ref False).
+
+    The default if no other option is explicitly set is \c "optimal-numbers".  Note that this represents a change from previous numbers where Oracle <tt>NUMBER</tt> values were returned as strings in order to avoid the loss of information.  To set the old behavior, set the \c "string-numbers" option when creating the \c Datasource or \c DatasourcePool object.
 
     @section bindings_and_types Binding and types
     
@@ -105,7 +112,7 @@
     Oracle \c TIMESTAMP data supports time resolution to the microsecond,
     however Qore's date/time value only supports a millisecond resolution.
     Any Oracle \c TIMESTAMP values are rounded to millisecond resolution
-    when converted to Qore data types.
+    when converted to Qore data types.  See also @ref timezone.
 
     PL/SQL code and stored procedure and function execution is supported;
     the following is an example of a stored procedure call using bind by
@@ -134,7 +141,16 @@
         error_description : <NULL>;
     @endcode
 
-    
+    @subsection timezone Time Zone Support
+
+    The driver now sets the server's time zone rules when the connection is established; this is taken from the current time zone settings of the calling Program object and can also be overridden/changed by setting the \c "timezone" driver option (see @ref options).
+
+    All date/time values bound by value are converted to the server's time zone before binding to ensure that date/time values are stored correctly in the server.
+
+    When selecting date/time values, the values returned are tagged with the server's time zone.
+
+    Note that the above rules are applied when the current Program's time zone settings are different than the connection's time zone settings at the time when the write operation (bind) read operation (select) is performed.  This is meant to provide consistent support to connecting to a database server in a different time zone.
+
     @section binding_by_value Binding by Value
     
     |!Argument|!OCI Type|!Description|
@@ -146,7 +162,6 @@
     |\c Type::Date|\c SQLT_TIMESTAMP|For use with \c DATE, \c TIMESTAMP, etc columns|
     |Wrapped \c Type::Hash and \c Type::List|\c SQLT_NTY|For use with @ref named_types|
 
-    
     @section binding_by_placeholder Binding by Placeholder
     
     |!Argument|!OCI Type|!Description|
