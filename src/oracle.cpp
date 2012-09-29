@@ -392,7 +392,7 @@ QoreStringNode *oracle_module_init() {
    methods.registerOption(DBI_OPT_NUMBER_STRING, "when set, number values are returned as strings for backwards-compatibility; the argument is ignored; setting this option turns it on and turns off 'optimal-numbers' and 'numeric-numbers'");
    methods.registerOption(DBI_OPT_NUMBER_NUMERIC, "when set, number values are returned as arbitrary-precision number values; the argument is ignored; setting this option turns it on and turns off 'string-numbers' and 'optimal-numbers'");
 #endif
-   methods.registerOption(DBI_OPT_TIMEZONE, "set the server-side timezone, value must be a string in the format accepted by Timezone::constructor() on the client (ie either a region name or a UTV offset), if not set the server's time zone will be assumed to be the same as the client's", stringTypeInfo);
+   methods.registerOption(DBI_OPT_TIMEZONE, "set the server-side timezone, value must be a string in the format accepted by Timezone::constructor() on the client (ie either a region name or a UTC offset like \"+01:00\"), if not set the server's time zone will be assumed to be the same as the client's", stringTypeInfo);
 
    DBID_ORACLE = DBI.registerDriver("oracle", methods, dbi_oracle_caps);
 
