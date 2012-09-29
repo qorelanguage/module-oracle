@@ -67,7 +67,10 @@ static int dbi_oracle_caps = (
    |DBI_CAP_TIME_ZONE_SUPPORT
 #endif
 #ifdef _QORE_HAS_NUMBER_TYPE
-   | DBI_CAP_HAS_NUMBER_SUPPORT
+   |DBI_CAP_HAS_NUMBER_SUPPORT
+#endif
+#ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
+   |DBI_CAP_SERVER_TIME_ZONE
 #endif
    );
 
@@ -133,7 +136,7 @@ static AbstractQoreNode *oracle_exec_rows(Datasource *ds, const QoreString *qstr
 }
 
 static int oracle_open(Datasource *ds, ExceptionSink *xsink) {
-//    printd(5, "oracle_open() datasource %p for DB=%s open\n", ds, ds->getDBName());
+   //printd(5, "oracle_open() datasource %p for DB=%s open\n", ds, ds->getDBName());
 
    if (!ds->getUsername()) {
       xsink->raiseException("DATASOURCE-MISSING-USERNAME", "Datasource has an empty username parameter");
@@ -323,8 +326,7 @@ static int oracle_stmt_close(SQLStatement *stmt, ExceptionSink *xsink) {
 static int oracle_opt_set(Datasource* ds, const char* opt, const AbstractQoreNode* val, ExceptionSink* xsink) {
    // get private data structure for connection
    QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
-   conn.setOption(opt, val);
-   return 0;
+   return conn.setOption(opt, val, xsink);
 }
 
 static AbstractQoreNode* oracle_opt_get(const Datasource* ds, const char* opt) {
@@ -390,6 +392,7 @@ QoreStringNode *oracle_module_init() {
    methods.registerOption(DBI_OPT_NUMBER_STRING, "when set, number values are returned as strings for backwards-compatibility; the argument is ignored; setting this option turns it on and turns off 'optimal-numbers' and 'numeric-numbers'");
    methods.registerOption(DBI_OPT_NUMBER_NUMERIC, "when set, number values are returned as arbitrary-precision number values; the argument is ignored; setting this option turns it on and turns off 'string-numbers' and 'optimal-numbers'");
 #endif
+   methods.registerOption(DBI_OPT_TIMEZONE, "set the server-side timezone, value must be a string in the format accepted by Timezone::constructor() on the client (ie either a region name or a UTV offset), if not set the server's time zone will be assumed to be the same as the client's", stringTypeInfo);
 
    DBID_ORACLE = DBI.registerDriver("oracle", methods, dbi_oracle_caps);
 

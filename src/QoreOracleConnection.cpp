@@ -1,6 +1,6 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /*
-  QoreOracleConnection.h
+  QoreOracleConnection.cpp
 
   Qore Programming Language
 
@@ -25,7 +25,12 @@
 
 #include "ocilib_internal.h"
 
-QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsink) : errhp(0), svchp(0), ocilib_cn(0), ds(n_ds), ocilib_init(false), number_support(OPT_NUM_DEFAULT) {
+QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsink) 
+  : errhp(0), svchp(0), ocilib_cn(0), ds(n_ds), ocilib_init(false), 
+#ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
+    server_tz(currentTZ()),
+#endif
+    number_support(OPT_NUM_DEFAULT) {
    // locking is done on the level above with the Datasource class
 
 #ifdef QORE_HAS_DATASOURCE_PORT
@@ -244,7 +249,22 @@ int QoreOracleConnection::rollback(ExceptionSink *xsink) {
    return checkerr(OCITransRollback(svchp, errhp, (ub4) 0), "QoreOracleConnection:rollback()", xsink);
 }
 
-DateTimeNode *QoreOracleConnection::getTimestamp(bool get_tz, OCIDateTime *odt, ExceptionSink *xsink) {
+DateTimeNode* QoreOracleConnection::getDate(OCIDate* dt) {
+   sb2 year;
+   ub1 month, day;
+   OCIDateGetDate(dt, &year, &month, &day);
+
+   ub1 hour, minute, second;
+   OCIDateGetTime(dt, &hour, &minute, &second);
+
+#ifdef _QORE_HAS_TIME_ZONES
+   return DateTimeNode::makeAbsolute(getTZ(), year, month, day, hour, minute, second, 0);
+#else
+   return new DateTimeNode(year, month, day, hour, minute, second, 0);
+#endif
+}
+
+DateTimeNode* QoreOracleConnection::getTimestamp(bool get_tz, OCIDateTime *odt, ExceptionSink *xsink) {
    //printd(5, "QoreOracleConnection::getTimestamp() using TIMESTAMP handle %p\n", odt);
    sb2 year;
    ub1 month, day;
@@ -259,7 +279,7 @@ DateTimeNode *QoreOracleConnection::getTimestamp(bool get_tz, OCIDateTime *odt, 
 #ifdef _QORE_HAS_TIME_ZONES
    const AbstractQoreZoneInfo *zone;
    if (!get_tz)
-      zone = currentTZ();
+      zone = getTZ();
    else {
       // try to get time zone from date value
       // time zone offset, hour and minute
@@ -272,7 +292,7 @@ DateTimeNode *QoreOracleConnection::getTimestamp(bool get_tz, OCIDateTime *odt, 
       else {
 	 //printd(5, "QoreOracleConnection::getTimestamp() this=%p time zone retrieval failed (%04d-%02d-%02d %02d:%02d:%02d)\n", this, year, month, day, hour, minute, second);
  	 // no time zone info, assume local time
-	 zone = currentTZ();
+	 zone = getTZ();
       }
    }
    return DateTimeNode::makeAbsolute(zone, year, month, day, hour, minute, second, ns / 1000);

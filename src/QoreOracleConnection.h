@@ -125,6 +125,9 @@ public:
    OCI_Connection *ocilib_cn;
    Datasource &ds;
    bool ocilib_init;
+#ifdef _QORE_HAS_TIME_ZONES
+   const AbstractQoreZoneInfo* server_tz;
+#endif
 
    OCI_Library ocilib;
 
@@ -187,7 +190,9 @@ public:
    DLLLOCAL int commit(ExceptionSink *xsink);
    DLLLOCAL int rollback(ExceptionSink *xsink);
 
-   DLLLOCAL DateTimeNode *getTimestamp(bool get_tz, OCIDateTime *odt, ExceptionSink *xsink);
+   DLLLOCAL DateTimeNode* getTimestamp(bool get_tz, OCIDateTime *odt, ExceptionSink *xsink);
+   
+   DLLLOCAL DateTimeNode* getDate(OCIDate* dt);
 
    DLLLOCAL DateTimeNode *getIntervalYearMonth(OCIInterval *oi, ExceptionSink *xsink) {
       sb4 year, month;
@@ -224,16 +229,11 @@ public:
       return rawResize(rawp, 0, xsink);
    }
 
-   DLLLOCAL int dateTimeConstruct(OCIDateTime *odt, short year, unsigned char month, unsigned char day, unsigned char hour, unsigned char minute,
-                                  unsigned char second, unsigned ns, const char *tz, ExceptionSink *xsink) {
-      return checkerr(OCIDateTimeConstruct(*env, errhp, odt, year, month, day, hour, minute, second, ns, 0, 0), "QoreOracleConnection::dateTimeConstruct()", xsink);
-   }
-
    DLLLOCAL int dateTimeConstruct(OCIDateTime *odt, const DateTime &d, ExceptionSink *xsink) {
 #ifdef _QORE_HAS_TIME_ZONES
-      // get broken-down time information in the current time zone
+      // get broken-down time information in the server's time zone
       qore_tm info;
-      d.getInfo(currentTZ(), info);
+      d.getInfo(getTZ(), info);
 
       // only use OCIDateTimeConstruct if the year > 0001
       if (info.year > 1) {
@@ -289,17 +289,31 @@ public:
    DLLLOCAL BinaryNode *readBlob(OCILobLocator *lobp, ExceptionSink *xsink);
    DLLLOCAL QoreStringNode *readClob(OCILobLocator *lobp, const QoreEncoding *enc, ExceptionSink *xsink);
 
-   DLLLOCAL void setOption(const char* opt, const AbstractQoreNode* val) {
+   DLLLOCAL int setOption(const char* opt, const AbstractQoreNode* val, ExceptionSink *xsink) {
       if (!strcasecmp(opt, DBI_OPT_NUMBER_OPT)) {
          number_support = OPT_NUM_OPTIMAL;
-         return;
+         return 0;
       }
       if (!strcasecmp(opt, DBI_OPT_NUMBER_STRING)) {
          number_support = OPT_NUM_STRING;
-         return;
+         return 0;
       }
-      assert(!strcasecmp(opt, DBI_OPT_NUMBER_NUMERIC));
-      number_support = OPT_NUM_NUMERIC;
+      if (!strcasecmp(opt, DBI_OPT_NUMBER_NUMERIC)) {
+         number_support = OPT_NUM_NUMERIC;
+         return 0;
+      }
+#ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
+      assert(!strcasecmp(opt, DBI_OPT_TIMEZONE));
+      assert(get_node_type(val) == NT_STRING);
+      const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(val);
+      const AbstractQoreZoneInfo* tz = find_create_timezone(str->getBuffer(), xsink);
+      if (*xsink)
+         return -1;
+      server_tz = tz;
+#else
+      assert(false);
+#endif
+      return 0;
    }
 
    DLLLOCAL AbstractQoreNode* getOption(const char* opt) {
@@ -309,9 +323,27 @@ public:
       if (!strcasecmp(opt, DBI_OPT_NUMBER_STRING))
          return get_bool_node(number_support == OPT_NUM_STRING);
 
-      assert(!strcasecmp(opt, DBI_OPT_NUMBER_NUMERIC));
-      return get_bool_node(number_support == OPT_NUM_NUMERIC);
+      if (!strcasecmp(opt, DBI_OPT_NUMBER_NUMERIC))
+         return get_bool_node(number_support == OPT_NUM_NUMERIC);
+
+#ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
+      assert(!strcasecmp(opt, DBI_OPT_TIMEZONE));
+      return new QoreStringNode(tz_get_region_name(server_tz));
+#else
+      assert(false);
+#endif
+      return 0;
    }
+
+#ifdef _QORE_HAS_TIME_ZONES
+   DLLLOCAL const AbstractQoreZoneInfo* getTZ() const {
+#ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
+      return server_tz;
+#else
+      return currentTZ();
+#endif
+   }
+#endif
 
    DLLLOCAL int getNumberOption() const {
       return number_support;

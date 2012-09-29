@@ -406,17 +406,15 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Datas
 	 {
 	    // timestamps-like dates
 	    if (col->type == OCI_CDT_TIMESTAMP) {
-	       OCI_Timestamp * dt = OCI_ObjectGetTimestamp2(&conn->ocilib, obj, cname);
+	       OCI_Timestamp *dt = OCI_ObjectGetTimestamp2(&conn->ocilib, obj, cname);
 	       // only SQLT_TIMESTAMP gets the default TZ
 //                     assert(0);
 	       rv->setKeyValue(cname, conn->getTimestamp(col->ocode != SQLT_TIMESTAMP, dt->handle, xsink), xsink);
 	    }
 	    // pure DATE like
 	    else if (col->type == OCI_CDT_DATETIME) {
-	       OCI_Date * dt = OCI_ObjectGetDate2(&conn->ocilib, obj, cname);
-	       int y, m, d, h, mi, s;
-	       OCI_DateGetDateTime(&conn->ocilib, dt, &y, &m, &d, &h, &mi, &s);
-	       DateTimeNode * dn = new DateTimeNode(y, m, d, h, mi, s);
+	       OCI_Date* dt = OCI_ObjectGetDate2(&conn->ocilib, obj, cname);
+	       DateTimeNode* dn = conn->getDate(dt->handle);
 	       rv->setKeyValue(cname, dn, xsink);
 	    }
 	    // intervals
@@ -811,9 +809,7 @@ AbstractQoreNode* collToQore(QoreOracleConnection * conn, OCI_Coll * obj, Dataso
 	    // pure DATE like
 	    else if (col->type == OCI_CDT_DATETIME) {
 	       OCI_Date * dt = OCI_ElemGetDate2(&conn->ocilib, e);
-	       int y, m, d, h, mi, s;
-	       OCI_DateGetDateTime(&conn->ocilib, dt, &y, &m, &d, &h, &mi, &s);
-	       DateTimeNode * dn = new DateTimeNode(y, m, d, h, mi, s);
+	       DateTimeNode* dn = conn->getDate(dt->handle);
 	       rv->set_entry(rv->size(), dn, xsink);
 	    }
 	    // intervals
