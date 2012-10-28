@@ -1,18 +1,22 @@
 oracle module for Qore
 by David Nichols
 
-Requires qore 0.7.1 and oracle 9i+ headers and libraries to build (or instant client - see BUILD AND INSTALL below)
-For Qore's SQLStatement (prepared statement API) support, Qore 0.8.1+ is required to build and run.
+Requires qore 0.8.6+ and oracle 9i+ headers and libraries to build in order to
+support the maximum feature set (oracle instant client is also supporteed - see
+BUILD AND INSTALL below)
 
 The "oracle" DBI driver is stable and has been extensively tested.
 *) transaction management is supported
 *) automatic transparent character set conversion is supported when necessary
 *) threading support
 *) it's possible to call functions and procedures
-*) all NUMBER fields are loaded as strings in selects in order to not lose any
-   data. Qore would need an arbitrary-precision Number type in order handle
-   this case better.
+*) the "optimal-numbers" option is set by default as of module version 2.2
+*) supports a server timezone setting for correctly handling date/time value
+   when communicating with a DB server in another time zone
 *) it's possible to bind and retrieve *LOB values
+*) named types, nested tables, collections are supported for binding by value
+   and retrieving on output
+*) the prepared statement API is support (SQLStatement class)
 
 The driver's name is "oracle" and the Datasource type constant is SQL::DSOracle
 ex: $db = new Datasource(DSOracle);
