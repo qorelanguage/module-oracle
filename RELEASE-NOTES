@@ -23,7 +23,7 @@ version 2.2
 		a database server in a different time zone.  If this option is
 		not set then the server's time zone is assumed to be the same
 		as the client's time zone
-* the default fopr the number options is now "optimal-numbers" - meaning that
+* the default for the number options is now "optimal-numbers" - meaning that
   numeric values are retrieved as "int" if possible, otherwise as a "number"
   type is returned.  For backwards-compatibility, set the "string-numbers"
   option to return NUMBER values as strings
