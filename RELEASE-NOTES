@@ -1,3 +1,12 @@
+*************
+version 2.2.1
+*************
+
+* fixed a bug where non-integer values were returned as integers
+* fixed a bug in returning negative integer values that were being returned as
+  arbitrary-precision numeric values instead of integers
+
+
 ***********
 version 2.2
 ***********
