@@ -63,7 +63,8 @@ const ora_tables = (
    person_id int not null,
    family_id int not null,
    name varchar2(250) not null,
-   dob date not null
+   dob date not null,
+   info clob not null
 )",
     "attributes" : "create table attributes (
    person_id int not null,
@@ -80,7 +81,8 @@ const mysql_tables = (
    person_id int not null,
    family_id int not null,
    name varchar(250) not null,
-   dob date not null
+   dob date not null,
+   info mediumtext not null
 ) type = innodb",
     "attributes" : "create table attributes (
    person_id int not null,
@@ -96,7 +98,9 @@ const pgsql_tables = (
    person_id int not null,
    family_id int not null,
    name varchar(250) not null,
-   dob date not null )",
+   dob date not null,
+   info text not null,
+)",
     "attributes" : "create table attributes (
    person_id int not null,
    attribute varchar(80) not null,
@@ -354,22 +358,19 @@ sub create_datamodel($db) {
         else
 	    $tables = mssql_mssql_tables;
 
-    foreach my $table in (keys $tables)
-    {
+    foreach my $table in (keys $tables) {
 	tprintf(2, "creating table %n\n", $table);
 	$db.exec($tables.$table);
     }
 
     # create procedures if any
-    foreach my $proc in (keys object_map.$driver.procs)
-    {
+    foreach my $proc in (keys object_map.$driver.procs) {
 	tprintf(2, "creating procedure %n\n", $proc);
 	$db.exec(object_map.$driver.procs.$proc);
     }
 
     # create functions if any
-    foreach my $func in (keys object_map.$driver.funcs)
-    {
+    foreach my $func in (keys object_map.$driver.funcs) {
 	tprintf(2, "creating function %n\n", $func);
 	$db.exec(object_map.$driver.funcs.$func);
     }
@@ -379,13 +380,13 @@ sub create_datamodel($db) {
 
     # we insert the dates here using binding by value so we don't have
     # to worry about each database's specific date format
-    $db.exec("insert into people values ( 1, 1, 'Arnie', %v)", 1983-05-13);
-    $db.exec("insert into people values ( 2, 1, 'Sylvia', %v)", 1994-11-10);
-    $db.exec("insert into people values ( 3, 1, 'Carol', %v)", 2003-07-23);
-    $db.exec("insert into people values ( 4, 1, 'Bernard', %v)", 1979-02-27);
-    $db.exec("insert into people values ( 5, 1, 'Isaac', %v)", 2000-04-04);
-    $db.exec("insert into people values ( 6, 2, 'Alan', %v)", 1992-06-04);
-    $db.exec("insert into people values ( 7, 2, 'John', %v)", 1995-03-23);
+    $db.exec("insert into people values ( 1, 1, 'Arnie', %v, 'x')", 1983-05-13);
+    $db.exec("insert into people values ( 2, 1, 'Sylvia', %v, 'x')", 1994-11-10);
+    $db.exec("insert into people values ( 3, 1, 'Carol', %v, 'x')", 2003-07-23);
+    $db.exec("insert into people values ( 4, 1, 'Bernard', %v, 'x')", 1979-02-27);
+    $db.exec("insert into people values ( 5, 1, 'Isaac', %v, 'x')", 2000-04-04);
+    $db.exec("insert into people values ( 6, 2, 'Alan', %v, 'x')", 1992-06-04);
+    $db.exec("insert into people values ( 7, 2, 'John', %v, 'x')", 1995-03-23);
 
     $db.exec("insert into attributes values ( 1, 'hair', 'blond' )");
     $db.exec("insert into attributes values ( 1, 'eyes', 'hazel' )");
@@ -404,8 +405,7 @@ sub create_datamodel($db) {
     $db.commit();
 }
 
-sub drop_test_datamodel($db)
-{
+sub drop_test_datamodel($db) {
     my $driver = $db.getDriverName();
     # drop the tables and ignore exceptions
     # the commits are needed for databases like postgresql, where errors will prohibit and further
@@ -416,14 +416,12 @@ sub drop_test_datamodel($db)
 	    $db.commit(); 
 	    tprintf(2, "dropped table %n\n", $table);
 	}
-        catch () 
-	{ 
+        catch () { 
 	    $db.commit(); 
 	}
     
     # drop procedures and ignore exceptions
-    foreach my $proc in (keys object_map.$driver.procs)
-    {
+    foreach my $proc in (keys object_map.$driver.procs) {
 	my $cmd = object_map.$driver.drop_proc_cmd;
 	if (!exists $cmd)
 	    $cmd = "drop procedure";
@@ -432,15 +430,13 @@ sub drop_test_datamodel($db)
 	    $db.commit(); 
 	    tprintf(2, "dropped procedure %n\n", $proc);
 	} 
-	catch () 
-	{ 
+	catch () { 
 	    $db.commit(); 
 	}
     }
 
     # drop functions and ignore exceptions
-    foreach my $func in (keys object_map.$driver.funcs)
-    {
+    foreach my $func in (keys object_map.$driver.funcs) {
 	my $cmd = object_map.$driver.drop_func_cmd;
 	if (!exists $cmd)
 	    $cmd = "drop function";
@@ -449,15 +445,13 @@ sub drop_test_datamodel($db)
 	    $db.commit(); 
 	    tprintf(2, "dropped function %n\n", $func);
 	} 
-	catch () 
-	{ 
+	catch () { 
 	    $db.commit(); 
 	}
     }
 }
 
-sub getDS()
-{
+sub getDS() {
     my $ds = new Datasource($o.type, $o.user, $o.pass, $o.db, $o.enc);
     if (strlen($o.host))
 	$ds.setHostName($o.host);
@@ -466,60 +460,63 @@ sub getDS()
     return $ds;
 }
 
-sub tprintf($v, $msg)
-{
+sub tprintf($v, $msg) {
     if ($v <= $o.verbose)
 	vprintf($msg, $argv);
 }
 
-sub test_value($v1, $v2, $msg)
-{
+sub test_value($v1, $v2, $msg) {
     ++$test_count;
     if ($v1 == $v2)
 	tprintf(1, "OK: %s test\n", $msg);
-    else
-    {
+    else {
         tprintf(0, "ERROR: %s test failed! (%n != %n)\n", $msg, $v1, $v2);
         $errors++;
     }
 }
 
 const family_hash = (
-  "Jones" : (
-      "people" : (
-	  "John" : (
-	      "dob" : 1995-03-23,
-	      "eyes" : "brown",
-	      "hair" : "brown" ),
-	  "Alan" : (
-	      "dob" : 1992-06-04,
-	      "eyes" : "blue",
-	      "hair" : "black" ) ) ),
+    "Jones" : (
+	"people" : (
+	    "John" : (
+		"info": "x",
+		"dob" : 1995-03-23,
+		"eyes" : "brown",
+		"hair" : "brown" ),
+	    "Alan" : (
+		"info": "x",
+		"dob" : 1992-06-04,
+		"eyes" : "blue",
+		"hair" : "black" ) ) ),
     "Smith" : (
 	"people" : (
 	    "Arnie" : (
+		"info": "x",
 		"dob" : 1983-05-13,
 		"eyes" : "hazel",
 		"hair" : "blond" ),
-	    "Carol" : ( 
+	    "Carol" : (
+		"info": "x",
 		"dob" : 2003-07-23,
 		"eyes" : "grey",
 		"hair" : "brown" ),
 	    "Isaac" : ( 
+		"info": "x",
 		"dob" : 2000-04-04,
 		"eyes" : "green",
 		"hair" : "red" ),
 	    "Bernard" : ( 
+		"info": "x",
 		"dob" : 1979-02-27,
 		"eyes" : "brown",
 		"hair" : "brown" ),
 	    "Sylvia" : (
+		"info": "x",
 		"dob" : 1994-11-10,
 		"eyes" : "blue",
 		"hair" : "blond" ) ) ) );
 
-sub context_test($db)
-{
+sub context_test($db) {
     # first we select all the data from the tables and then use 
     # context statements to order the output hierarchically
     
@@ -534,8 +531,7 @@ sub context_test($db)
 
     # display each family sorted by family name
     my $fl;
-    context family ($db.select("select * from family")) sortBy (%name)
-    {
+    context family ($db.select("select * from family")) sortBy (%name) {
 	my $pl;
 	tprintf(2, "Family %d: %s\n", %family_id, %name);
 
@@ -544,12 +540,10 @@ sub context_test($db)
 	    sortDescendingBy (find %value in $attributes 
 			      where (%attribute == "eyes" 
 				     && %person_id == %people:person_id)) 
-	    where (%family_id == %family:family_id)
-	{
+	    where (%family_id == %family:family_id) {
 	    my $al;
 	    tprintf(2, "  %s, born %s\n", %name, format_date("Month DD, YYYY", %dob));
-	    context ($attributes) sortBy (%attribute) where (%person_id == %people:person_id)
-	    {
+	    context ($attributes) sortBy (%attribute) where (%person_id == %people:person_id) {
 		$al.%attribute = %value;
 		tprintf(2, "    has %s %s\n", %value, %attribute);
 	    }
@@ -571,8 +565,7 @@ sub context_test($db)
 }
     
 
-sub test_timeout($db, $c)
-{
+sub test_timeout($db, $c) {
     $db.setTransactionLockTimeout(1ms);
     try {
 	# this should cause a TRANSACTION-LOCK-TIMEOUT exception to be thrown
@@ -580,16 +573,14 @@ sub test_timeout($db, $c)
 	test_value(True, False, "transaction timeout");
 	$db.exec("delete from family where name = 'Test'");
     }
-    catch ($ex)
-    {
+    catch ($ex) {
 	test_value(True, True, "transaction timeout");
     }
     # signal parent thread to continue
     $c.dec();
 }
 
-sub transaction_test($db)
-{
+sub transaction_test($db) {
     my $ndb = getDS();
     my $r;
     tprintf(2, "db.autocommit=%N, ndb.autocommit=%N\n", $db.getAutoCommit(), $ndb.getAutoCommit());
@@ -601,8 +592,7 @@ sub transaction_test($db)
 
     # now we verify that the new row is not visible to the other datasource
     # unless it's a sybase/ms sql server datasource, in which case this would deadlock :-(
-    if ($o.type != "sybase" && $o.type != "mssql")
-    {
+    if ($o.type != "sybase" && $o.type != "mssql") {
 	$r = $ndb.selectRow("select name from family where family_id = 3").name;
 	test_value($r, NOTHING, "first transaction");
     }
@@ -633,8 +623,7 @@ sub transaction_test($db)
     $ndb.commit();
 }
 
-sub oracle_test()
-{
+sub oracle_test() {
 }
 
 # here we use a little workaround for modules that provide functions, 
@@ -643,8 +632,7 @@ sub oracle_test()
 # in this script at run-time when the Datasource class is instantiated)
 # we use a Program object that we parse and run on demand to return the
 # value required
-sub get_val($code)
-{
+sub get_val($code) {
     my $p = new Program();
 
     my $str = sprintf("return %s;", $code);
@@ -652,8 +640,7 @@ sub get_val($code)
     return $p.run();
 }
 
-sub pgsql_test($db)
-{
+sub pgsql_test($db) {
     my $args = ( "int2_f"          : 258,
 		 "int4_f"          : 233932,
 		 "int8_f"          : 239392939458,
@@ -711,8 +698,7 @@ sub pgsql_test($db)
     $db.commit();
 }
 
-sub mysql_test()
-{
+sub mysql_test() {
 }
 
 const family_q = ( "family_id" : 1,
@@ -724,8 +710,7 @@ const person_q = ( "person_id" : 1,
 const params = ( "string" : "hello there",
 		 "int" : 150 );
 
-sub sybase_test($db)
-{
+sub sybase_test($db) {
     # simple stored proc test, bind by name
     my $x = $db.exec("exec find_family %v", "Smith");
     test_value($x, ("name": list("Smith"), "family_id" : list(1)), "simple stored proc");
@@ -813,8 +798,7 @@ exec get_values_and_multiple_select :string output, :int output");
     $db.commit();
 }
 
-sub mssql_test($db)
-{
+sub mssql_test($db) {
     # simple stored proc test, bind by name
     my $x = $db.exec("exec find_family %v", "Smith");
     test_value($x, ("name": list("Smith"), "family_id" : list(1)), "simple stored proc");
@@ -824,8 +808,7 @@ sub mssql_test($db)
     # this will be implemented in the next version of qore where the "mssql" driver will
     # be able to add custom methods to the Datasource class.  For now, we skip these tests
 
-    if ($db.is_sybase)
-    {
+    if ($db.is_sybase) {
 	$x = $db.exec("declare @string varchar(40), @int int
 exec get_values :string output, :int output");
 	test_value($x, params, "get_values");
@@ -844,8 +827,7 @@ exec get_values :string output, :int output");
     test_value($x, family_q, "simple stored proc");
 
     # stored proc execute with output params and select results
-    if ($db.is_sybase)
-    {
+    if ($db.is_sybase) {
 	$x = $db.selectRows("declare @string varchar(40), @int int
 exec get_values_and_select :string output, :int output");
 	test_value($x, ("query":family_q,"params":params), "get_values_and_select");
@@ -891,8 +873,7 @@ exec get_values_and_multiple_select :string output, :int output");
 		 "image_f"         : <cafebead> );
 
     # remove fields not supported by sql server
-    if (!$db.is_sybase)
-    {
+    if (!$db.is_sybase) {
 	delete $args.unitext_f;
 	delete $args.date_f;
 	delete $args.time_f;
@@ -926,8 +907,7 @@ exec get_values_and_multiple_select :string output, :int output");
     $db.commit();
 }
 
-sub main()
-{
+sub main() {
     my $test_map = 
 	( "sybase" : \sybase_test(),
 	  "mssql"  : \mssql_test(),

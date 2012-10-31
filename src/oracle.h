@@ -68,7 +68,7 @@
 #ifdef NEED_ORACLE_LOB_WORKAROUND
 #define LOB_BLOCK_SIZE 128*1024
 #else
-#define LOB_BLOCK_SIZE 1024
+#define LOB_BLOCK_SIZE 16384
 #endif
 
 // timestamp binding type

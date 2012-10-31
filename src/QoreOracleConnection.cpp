@@ -327,14 +327,90 @@ QoreStringNode *QoreOracleConnection::readClob(OCILobLocator *lobp, const QoreEn
 }
 
 int QoreOracleConnection::writeLob(OCILobLocator* lobp, void* bufp, oraub8 buflen, bool clob, const char* desc, ExceptionSink* xsink) {
-#ifdef HAVE_OCILOBWRITE2   
+#ifdef HAVE_OCILOBWRITE2
    oraub8 amtp = buflen;
-   if (checkerr(OCILobWrite2(svchp, errhp, lobp, &amtp, 0, 1, bufp, buflen, OCI_ONE_PIECE, 0, 0, charsetid, SQLCS_IMPLICIT), desc, xsink))
-      return -1;
+   if (buflen <= LOB_BLOCK_SIZE)
+      return checkerr(OCILobWrite2(svchp, errhp, lobp, &amtp, 0, 1, bufp, buflen, OCI_ONE_PIECE, 0, 0, charsetid, SQLCS_IMPLICIT), desc, xsink);
+
+   // retrieve *LOB data
+   void* dbuf = malloc(LOB_BLOCK_SIZE);
+   ON_BLOCK_EXIT(free, dbuf);
+
+   oraub8 offset = 0;
+   while (true) {
+      ub1 piece;
+      oraub8 len = buflen - offset;
+      if (len > LOB_BLOCK_SIZE) {
+         len = LOB_BLOCK_SIZE;
+         piece = offset ? OCI_NEXT_PIECE : OCI_FIRST_PIECE;
+         //printd(5, "QoreOracleConnection::writeLob() piece = %s\n", offset ? "OCI_NEXT_PIECE" : "OCI_FIRST_PIECE");
+      }
+      else {
+         piece = OCI_LAST_PIECE;
+         //printd(5, "QoreOracleConnection::writeLob() piece = OCI_LAST_PIECE\n");
+      }
+
+      // copy data to buffer
+      memcpy(dbuf, ((char*)bufp) + offset, len);
+
+      sword rc = OCILobWrite2(svchp, errhp, lobp, &amtp, 0, 1, dbuf, len, piece, 0, 0, charsetid, SQLCS_IMPLICIT);
+      //printd(5, "QoreOracleConnection::writeLob() offset: "QLLD" len: "QLLD" amtp: "QLLD" total: "QLLD" rc: %d\n", offset, len, amtp, buflen, (int)rc);
+      if (piece == OCI_LAST_PIECE) {
+         if (rc != OCI_SUCCESS) {
+            checkerr(rc, desc, xsink);
+            return -1;
+         }
+         break;
+      }
+      if (rc != OCI_NEED_DATA) {
+         checkerr(rc, desc, xsink);
+         assert(*xsink);
+         return -1;
+      }
+      offset += len;
+   }
 #else
    ub4 amtp = buflen;
-   if (checkerr(OCILobWrite(svchp, errhp, lobp, &amtp, 1, bufp, buflen, OCI_ONE_PIECE, 0, 0, charsetid, SQLCS_IMPLICIT), desc, xsink))
-      return -1;
+   if (buflen <= LOB_BLOCK_SIZE)
+      return checkerr(OCILobWrite(svchp, errhp, lobp, &amtp, 1, bufp, buflen, OCI_ONE_PIECE, 0, 0, charsetid, SQLCS_IMPLICIT), desc, xsink);
+
+   // retrieve *LOB data
+   void* dbuf = malloc(LOB_BLOCK_SIZE);
+   ON_BLOCK_EXIT(free, dbuf);
+
+   ub4 offset = 0;
+   while (true) {
+      ub1 piece;
+      ub4 len = buflen - offset;
+      if (len > LOB_BLOCK_SIZE) {
+         len = LOB_BLOCK_SIZE;
+         piece = offset ? OCI_NEXT_PIECE : OCI_FIRST_PIECE;
+         //printd(5, "QoreOracleConnection::writeLob() piece = %s\n", offset ? "OCI_NEXT_PIECE" : "OCI_FIRST_PIECE");
+      }
+      else {
+         piece = OCI_LAST_PIECE;
+         //printd(5, "QoreOracleConnection::writeLob() piece = OCI_LAST_PIECE\n");
+      }
+
+      // copy data to buffer
+      memcpy(dbuf, ((char*)bufp) + offset, len);
+
+      sword rc = OCILobWrite(svchp, errhp, lobp, &amtp, 1, dbuf, len, piece, 0, 0, charsetid, SQLCS_IMPLICIT);
+      //printd(5, "QoreOracleConnection::writeLob() offset: "QLLD" len: "QLLD" amtp: "QLLD" total: "QLLD" rc: %d\n", offset, len, amtp, buflen, (int)rc);
+      if (piece == OCI_LAST_PIECE) {
+         if (rc != OCI_SUCCESS) {
+            checkerr(rc, desc, xsink);
+            return -1;
+         }
+         break;
+      }
+      if (rc != OCI_NEED_DATA) {
+         checkerr(rc, desc, xsink);
+         assert(*xsink);
+         return -1;
+      }
+      offset += len;
+   }
 #endif
    return 0;
 }

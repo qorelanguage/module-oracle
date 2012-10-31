@@ -116,6 +116,20 @@ class QoreOracleConnection {
       return OCI_CONTINUE;
    }
 
+/*
+#ifdef HAVE_OCILOBWRITE2
+   DLLLOCAL static sb4 writeCLobCallback(void* ctxp, void* bufp, oraub8* lenp, ub1* piece, void** changed_bufpp, oraub8* changed_lenp) {
+       QoreString* str = reinterpret_cast<QoreString*>(ctxp);
+       return OCI_CONTINUE;
+   }
+#else
+   DLLLOCAL static sb4 writeCLobCallback(void* ctxp, void* bufp, ub4* lenp, ub1* piece) {
+       QoreString* str = reinterpret_cast<QoreString*>(ctxp);
+       return OCI_CONTINUE;
+   }
+#endif
+*/
+
 public:
    QoreOracleEnvironment env;
    OCIError *errhp;

@@ -498,7 +498,15 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
         ]])], with_oracle=yes, AC_MSG_ERROR(file 'oci.h' not found in '$ORACLE_INCLUDES'))
 AC_CHECK_FUNC([OCIClientVersion], [have_ociclientversion=yes], [have_ociclientversion=no])
 if test "$have_ociclientversion" = "yes"; then
-   AC_DEFINE(HAVE_OCICLIENTVERSION, 1, [define if OCIClientVersion is available])      
+   AC_DEFINE(HAVE_OCICLIENTVERSION, 1, [define if OCIClientVersion is available])
+fi
+AC_CHECK_FUNC([OCILobRead2], [have_ocilobread2=yes], [have_ocilobread2=no])
+if test "$have_ocilobread2" = "yes"; then
+   AC_DEFINE(HAVE_OCILOBREAD2, 1, [define if OCILobRead2 is available])
+fi
+AC_CHECK_FUNC([OCILobWrite2], [have_ocilobwrite2=yes], [have_ocilobwrite2=no])
+if test "$have_ocilobwrite2" = "yes"; then
+   AC_DEFINE(HAVE_OCILOBWRITE2, 1, [define if OCILobWrite2 is available])
 fi
 CXXFLAGS="$SAVE_CXXFLAGS"
 LDFLAGS="$SAVE_LDFLAGS"
