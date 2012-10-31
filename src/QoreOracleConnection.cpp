@@ -325,3 +325,16 @@ QoreStringNode *QoreOracleConnection::readClob(OCILobLocator *lobp, const QoreEn
       return 0;
    return str.release();
 }
+
+int QoreOracleConnection::writeLob(OCILobLocator* lobp, void* bufp, oraub8 buflen, bool clob, const char* desc, ExceptionSink* xsink) {
+#ifdef HAVE_OCILOBWRITE2   
+   oraub8 amtp = buflen;
+   if (checkerr(OCILobWrite2(svchp, errhp, lobp, &amtp, 0, 1, bufp, buflen, OCI_ONE_PIECE, 0, 0, charsetid, SQLCS_IMPLICIT), desc, xsink))
+      return -1;
+#else
+   ub4 amtp = buflen;
+   if (checkerr(OCILobWrite(svchp, errhp, lobp, &amtp, 1, bufp, buflen, OCI_ONE_PIECE, 0, 0, charsetid, SQLCS_IMPLICIT), desc, xsink))
+      return -1;
+#endif
+   return 0;
+}

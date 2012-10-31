@@ -123,7 +123,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
 	 if (conn->descriptorAlloc((dvoid **)&strlob, OCI_DTYPE_LOB, "OraBindNode::bindValue() alloc LOB descriptor", xsink))
 	    return;
 
-	 // create temporary BLOB
+	 // create temporary CLOB
 	 if (conn->checkerr(OCILobCreateTemporary(conn->svchp, conn->errhp, strlob, OCI_DEFAULT, OCI_DEFAULT, OCI_TEMP_CLOB, FALSE, OCI_DURATION_SESSION),
                              "OraBindNode::bindValue() create temporary CLOB", xsink))
 	    return;
@@ -131,10 +131,8 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
 	 clob_allocated = true;
 
 	 // write the buffer data into the CLOB
-	 ub4 amtp = len;
-	 if (conn->checkerr(OCILobWrite(conn->svchp, conn->errhp, strlob, &amtp, 1, buf.ptr, len + 1, OCI_ONE_PIECE, 0, 0, conn->charsetid, SQLCS_IMPLICIT),
-                             "OraBindNode::bindValue() write CLOB", xsink))
-	    return;
+         if (conn->writeLob(strlob, buf.ptr, len + 1, true, "OraBindNode::bindValue() write CLOB", xsink))
+            return;
 
          stmt.bindByPos(bndp, pos, &strlob, 0, SQLT_CLOB, xsink, pIndicator);
       }
@@ -177,7 +175,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
    if (ntype == NT_INT) {
       const QoreBigIntNode *b = reinterpret_cast<const QoreBigIntNode*>(value);
       if (b->val <= MAXINT32 && b->val >= -MAXINT32) {
-	 buf.i4 = b->val;
+	 buf.i4 = (int)b->val;
 
          stmt.bindByPos(bndp, pos, &buf.i4, sizeof(int), SQLT_INT, xsink, pIndicator);
       }

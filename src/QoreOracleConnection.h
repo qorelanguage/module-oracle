@@ -289,6 +289,8 @@ public:
    DLLLOCAL BinaryNode *readBlob(OCILobLocator *lobp, ExceptionSink *xsink);
    DLLLOCAL QoreStringNode *readClob(OCILobLocator *lobp, const QoreEncoding *enc, ExceptionSink *xsink);
 
+   DLLLOCAL int writeLob(OCILobLocator* lobp, void* bufp, oraub8 buflen, bool clob, const char* desc, ExceptionSink* xsink);
+
    DLLLOCAL int setOption(const char* opt, const AbstractQoreNode* val, ExceptionSink *xsink) {
       if (!strcasecmp(opt, DBI_OPT_NUMBER_OPT)) {
          number_support = OPT_NUM_OPTIMAL;
