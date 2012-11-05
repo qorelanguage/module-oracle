@@ -115,7 +115,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
       }
 
       // bind it
-      if (len > CLOB_THRESHOLD) {
+      if ((len + 1) > CLOB_THRESHOLD) {
 	 //printd(5, "binding string %p len=%lld as CLOB\n", buf.ptr, len);
 	 // bind as a CLOB
 
@@ -131,7 +131,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
 	 clob_allocated = true;
 
 	 // write the buffer data into the CLOB
-         if (conn->writeLob(strlob, buf.ptr, len + 1, true, "OraBindNode::bindValue() write CLOB", xsink))
+         if (conn->writeLob(strlob, buf.ptr, len, true, "OraBindNode::bindValue() write CLOB", xsink))
             return;
 
          stmt.bindByPos(bndp, pos, &strlob, 0, SQLT_CLOB, xsink, pIndicator);
