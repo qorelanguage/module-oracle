@@ -345,6 +345,13 @@
 
     @section releasenotes Release Notes
 
+    @subsection oracle221 oracle Driver Version 2.2.1
+
+    <b>Bug Fixes</b>
+    - fixed a bug where non-integer values were returned as integers
+    - fixed a bug in returning negative integer values that were being returned as arbitrary-precision numeric values instead of integers
+    - updated CLOB writing to use the streaming APIs instead of trying to write in one large block since there are bugs in some oracle client libraries related to trying to write large blocks, and using the streaming apis resolves the problem
+
     @subsection oracle22 oracle Driver Version 2.2
 
     <b>New Features and Bug Fixes</b>
