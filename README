@@ -19,8 +19,9 @@ The "oracle" DBI driver is stable and has been extensively tested.
 *) the prepared statement API is support (SQLStatement class)
 
 The driver's name is "oracle" and the Datasource type constant is SQL::DSOracle
-ex: $db = new Datasource(DSOracle);
-ex: $db = new Datasource("oracle");
+ex: my Datasource $db(DSOracle, $user, $pass, $db);
+ex: my Datasource $db(("type": "oracle", "user": $user, "pass": $pass, "db": $db));
+ex: my Datasource $db("oracle:user/pass@db(al32utf8)%host:1521{optimal-numbers}");
 
 Documentation in docs/oracle-module-doc.html
 
