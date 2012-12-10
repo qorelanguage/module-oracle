@@ -72,6 +72,9 @@ static int dbi_oracle_caps = (
 #ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
    |DBI_CAP_SERVER_TIME_ZONE
 #endif
+#ifdef DBI_CAP_AUTORECONNECT
+   |DBI_CAP_AUTORECONNECT
+#endif
    );
 
 static int oracle_commit(Datasource *ds, ExceptionSink *xsink) {

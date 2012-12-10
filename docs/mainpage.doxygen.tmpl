@@ -44,6 +44,7 @@
     - \c DBI_CAP_HAS_NUMBER_SUPPORT
     - \c DBI_CAP_HAS_OPTION_SUPPORT
     - \c DBI_CAP_SERVER_TIME_ZONE
+    - \c DBI_CAP_AUTORECONNECT
 
     The \c Datasource::getServerVersion() and \c Datasource::getClientVersion()
     methods are implemented for this driver. \c Datasource::getServerVersion()
@@ -344,6 +345,11 @@
     @endcode
 
     @section releasenotes Release Notes
+
+    @subsection oracle23 oracle Driver Version 2.3
+
+    <b>New Features and Bug Fixes</b>
+    - driver now claims support for DBI_CAP_AUTORECONNECT, however the underlying functionality has been present for a long time
 
     @subsection oracle221 oracle Driver Version 2.2.1
 
