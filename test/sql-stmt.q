@@ -8,7 +8,11 @@ our hash $o.verbose = True;
 #$o.info = True;
 
 sub main() {
-    my DatasourcePool $ds("oracle", shift $ARGV, shift $ARGV, shift $ARGV);
+    my string $dsstr = shift $ARGV;
+    if ($dsstr !~ /^[a-z0-9_]+:/)
+        $dsstr = "oracle:" + $dsstr;
+    my hash $dsh = parseDatasource($dsstr);
+    my DatasourcePool $ds($dsh);
 
     my SQLStatement $insert_stmt($ds);
     $insert_stmt.prepare("insert into test values (%v, %v, %v, %v, %v)");
@@ -91,7 +95,7 @@ sub test1(SQLStatement $insert_stmt, SQLStatement $select_stmt) {
 
 	my code $insert = sub () {
 	    $insert_stmt.bind($now, $now, $now, $now, $bin);
-	    info("bind done");
+	    info("bind done: %y", $now);
 
 	    $insert_stmt.beginTransaction();
 	    on_success $insert_stmt.commit();
