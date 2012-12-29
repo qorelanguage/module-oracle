@@ -492,6 +492,10 @@
 #define msizeof(s) (sizeof(s) / sizeof(mtext))
 #define dsizeof(s) (sizeof(s) / sizeof(dtext))
 
+#define OCI_ERR_AQ_LISTEN_TIMEOUT      25254
+#define OCI_ERR_AQ_DEQUEUE_TIMEOUT     25228
+
+#define OCI_DEFAUT_STMT_CACHE_SIZE     20
 
 #endif    /* OCILIB_OCILIB_DEFS_H_INCLUDED */
 

@@ -1,0 +1,260 @@
+/* -*- mode: c++; indent-tabs-mode: nil -*- */
+/*
+*/
+
+#include "AQMessagePriv.h"
+#include "AQQueuePriv.h"
+
+AQMessagePriv::AQMessagePriv(const QoreHashNode* obj) {
+    m_obj = 0;
+    setObject(obj);
+    m_attemptCount = 0;
+    m_enqueueDelay = 0;
+    m_expiration = -1;
+    m_state = -1;
+    m_priority = 1;
+    m_correlation = 0;
+}
+
+AQMessagePriv::~AQMessagePriv()
+{
+//    if (m_obj) m_obj->deref();
+}
+
+QoreHashNode* AQMessagePriv::getObject() {
+    return m_obj;
+}
+
+void AQMessagePriv::setObject(const QoreHashNode* obj) {
+    if (obj)
+        m_obj = obj->hashRefSelf();
+    else
+        m_obj = 0;
+    printf("OBJ> %p\n\n", obj);
+}
+
+int64 AQMessagePriv::getAttemptCount() {
+    return m_attemptCount;
+}
+
+int64 AQMessagePriv::getEnqueueDelay() {
+    return m_enqueueDelay;
+}
+
+void AQMessagePriv::setEnqueueDelay(int64 delay) {
+    m_enqueueDelay = delay;
+}
+
+//      OCI_Date* getEnqueueTime();
+
+int64 AQMessagePriv::getExpiration() {
+    return m_expiration;
+}
+
+void AQMessagePriv::setExpiration(int64 expiration ) {
+    m_expiration = expiration;
+}
+
+int64 AQMessagePriv::getState() {
+    return m_state;
+}
+
+int AQMessagePriv::getPriority() {
+    return m_priority;
+}
+
+void AQMessagePriv::setPriority(int64 prio) {
+    m_priority = prio;
+}
+
+//      void getID(void *id, unsigned int *len);
+
+const char * AQMessagePriv::getCorrelation() {
+    return m_correlation;
+}
+
+void AQMessagePriv::setCorrelation(const char* c) {
+    m_correlation = c;
+}
+
+
+/** @defgroup aqmessage_status_constants AQ Message Status Constants
+    String type constants as returned by type() and typename()
+*/
+//@{
+namespace Oracle;
+
+//! Unknown status
+const OCI_UNKNOWN 			= 0;
+
+//! Ready status
+const OCI_AMS_READY         = 1;
+
+//! Waiting status
+const OCI_AMS_WAITING       = 2;
+
+//! Processed status
+const OCI_AMS_PROCESSED     = 3;
+
+//! Expired status
+const OCI_AMS_EXPIRED       = 4;
+
+//@}
+
+
+//! Implementation of message to enqueue/dequeue from/to queues
+/** Advanced properties can be set to base hash.
+ */
+qclass AQMessage [dom=DATABASE; arg=AQMessagePriv* msg; ns=Qore::Oracle];
+
+//! Create a message object.
+/** @param obj \c hash, or \c NOTHING. An Oracle object created with \c bindOracleObject
+ */
+AQMessage::constructor(*hash obj) {
+   self->setPrivate(CID_AQMESSAGE, new AQMessagePriv(obj));
+}
+
+// //! TODO/FIXME
+// /** TODO/FIXME
+//  */
+//AQMessage::copy() {
+//   xsink->raiseException("AQMESSAGE-COPY-ERROR", "copying AQMessage objects is not allowed");
+//}
+
+//! Get the qore hash from the message (Oracle NTY object)
+/** @retval hash or NOTHING
+ */
+*hash AQMessage::getObject() {
+    return msg->getObject();
+}
+
+//! Set \c hash as Oracle object for this message instance
+/** @param obj \c hash, or \c NOTHING. An Oracle object created with \c bindOracleObject
+ */
+nothing AQMessage::setObject(hash h) {
+    msg->setObject(h);
+}
+
+//! Return the number of attempts that have been made to dequeue the message.
+/** @retval int the count of dequeue attempts
+ */
+int AQMessage::getAttemptCount() {
+    return msg->getAttemptCount();
+}
+
+//! Return the number of seconds that a message is delayed for dequeuing.
+/** @retval int a delay value
+ */
+int AQMessage::getEnqueueDelay() {
+    return msg->getEnqueueDelay();
+}
+
+//! Set the number of seconds to delay the enqueued message.
+/** @param delay Delay in seconds
+ *
+ * The delay represents the number of seconds after which a message is
+ * available for dequeuing. When the message is enqueued, its state is
+ * set to \c OCI_AMS_WAITING. When the delay expires, its state
+ * is set to \c OCI_AMS_READY.
+ *
+ * If parameter 'value' is set to zero (default value), the message will
+ * be immediately available for dequeuing
+ */
+nothing AQMessage::setEnqueueDelay(int delay) {
+	if (delay < 0) {
+		xsink->raiseException("AQMESSAGE-ERROR", "Value of the 'delay' argument must be greater than 0");
+		return 0;
+	}
+
+    msg->setEnqueueDelay(delay);
+}
+
+//date AQMessage::getEnqueueTime() {
+//    OCI_Date* dt = msg->getEnqueueTime();
+//    return msg->queue()->getDate(dt->handle);
+//}
+
+//! Return the duration that the message is available for dequeuing.
+/** @param int seconds count
+ */
+int AQMessage::getExpiration() {
+    return msg->getExpiration();
+}
+
+//! Set the duration that the message is available for dequeuing.
+/** @param exp a expiration in seconds or -1
+ *
+ * This parameter is an offset from the delay. While waiting for
+ * expiration, the message state is set to \c OCI_AMS_READY.
+ * If the message is not dequeued before it expires, it will be
+ * moved to the exception queue with the state \c OCI_AMS_EXPIRED.
+ * If parameter 'value' is set to -1 (default value), the message will not expire
+ */
+nothing AQMessage::setExpiration(int exp) {
+	if (exp < -1) {
+		xsink->raiseException("AQMESSAGE-ERROR", "Expiration argument has to be -1 or greater.");
+		return 0;
+	}
+    msg->setExpiration(exp);
+}
+
+//! Return the state of the message at the time of the dequeue.
+/** @retval int a state of message
+ *
+ * These constants are defined to handle this status:
+ * - OCI_UNKNOWN : the function has failed to get the message state
+ * - OCI_AMS_READY : the message is ready to be processed
+ * - OCI_AMS_WAITING : the message delay has not yet completed
+ * - OCI_AMS_PROCESSED : the message has been processed
+ * - OCI_AMS_EXPIRED : the message has moved to exception queue
+ */
+int AQMessage::getState() {
+    return msg->getState();
+}
+
+//! Return the priority of the message.
+/** @retval int a message priority
+ */
+int AQMessage::getPriority() {
+    return msg->getPriority();
+}
+
+//! Set the priority of the message.
+/** @param prio a priority value
+ *
+ * The priority can be any number, including negative numbers.
+ * A smaller number indicates higher priority.
+ * Default value is zero.
+ */
+nothing AQMessage::setPriority(int prio) {
+    msg->setPriority(prio);
+}
+
+//binary AQMessage::getID() {
+//    void *p = 0;
+//    unsigned int len;
+//    if (msg->getID(p, &len))
+//        return new BinaryNode(p, len);
+//    else {
+//        xsink->raiseException("AQMESSAGE-ERROR", "cannot get message id");
+//    }
+//}
+
+//! Get the correlation identifier of the message.
+/** @retval string a correlation identifier
+ */
+string AQMessage::getCorrelation() {
+#warning TODO/FIXME: encoding
+    return new QoreStringNode(msg->getCorrelation());
+}
+
+//! Set the correlation identifier of the message.
+/** @param c a message correlation text
+ *
+ * Special pattern matching characters, such as "%" or "_" can be used.
+ * If more than one message satisfies the pattern, the order of dequeuing
+ * is undetermined.
+ */
+nothing AQMessage::setCorrelation(string c) {
+    msg->setCorrelation(c->getBuffer());
+}

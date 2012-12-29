@@ -255,30 +255,39 @@ struct OCI_Pool
 
 struct OCI_Connection
 {
-    mtext              *db;        /* database */
-    mtext              *user;      /* user */
-    mtext              *pwd;       /* password */
-    OCI_List           *stmts;     /* list of statements */
-    OCI_List           *trsns;     /* list of transactions */
-    OCI_List           *tinfs;     /* list of type info objects */
-    OCI_Transaction    *trs;       /* pointer to current transaction object */
-    OCI_Pool           *pool;      /* pointer to parent pool object */
-    OCI_ServerOutput   *svopt;     /* Pointer to server output object */
-    OCIServer          *svr;       /* OCI server handle */
-    OCIError           *err;       /* OCI context handle */
-    OCISession         *ses;       /* OCI session handle */
-    OCISvcCtx          *cxt;       /* OCI context handle */
-    boolean             autocom;   /* auto commit mode */
-    unsigned int        nb_files;  /* number of OCI_File opened by the connection */
-    unsigned int        mode;      /* session mode */
-    int                 cstate;    /* connection state */
-    void               *usrdata;   /* user data */
-    mtext              *fmt_date;  /* date string format for conversion */
-    mtext              *fmt_num;   /* numeric string format for conversion */
-    mtext              *ver_str;   /* string  server version*/
-    unsigned int        ver_num;   /* numeric server version */
-    OCI_TraceInfo      *trace;     /* trace information */
-    mtext              *sess_tag;  /* session tag */
+    mtext            *db;           /* database */
+    mtext            *user;         /* user */
+    mtext            *pwd;          /* password */
+    OCI_List         *stmts;        /* list of statements */
+    OCI_List         *trsns;        /* list of transactions */
+    OCI_List         *tinfs;        /* list of type info objects */
+    OCI_Transaction  *trs;          /* pointer to current transaction object */
+    OCI_Pool         *pool;         /* pointer to parent pool object */
+    OCI_ServerOutput *svopt;        /* Pointer to server output object */
+    OCIServer        *svr;          /* OCI server handle */
+    OCIError         *err;          /* OCI context handle */
+    OCIEnv           *env;          /* OCI environment handle */
+    OCISession       *ses;          /* OCI session handle */
+    OCISvcCtx        *cxt;          /* OCI context handle */
+    boolean           autocom;      /* auto commit mode */
+    unsigned int      nb_files;     /* number of OCI_File opened by the connection */
+    boolean           alloc_handles;/* do new need to allocate OCI handles ? */
+    unsigned int      mode;         /* session mode */
+    int               cstate;       /* connection state */
+    void             *usrdata;      /* user data */
+    mtext            *fmt_date;     /* date string format for conversion */
+    mtext            *fmt_num;      /* numeric string format for conversion */
+    mtext            *ver_str;      /* string  server version*/
+    unsigned int      ver_num;      /* numeric server version */
+    OCI_TraceInfo    *trace;        /* trace information */
+    mtext            *sess_tag;     /* session tag */
+    POCI_TAF_HANDLER  taf_handler;  /* failover call back */
+    mtext            *db_name;      /* session tag */
+    mtext            *inst_name;    /* instance name */
+    mtext            *service_name; /* server service name */
+    mtext            *server_name;  /* server name (hostname) */
+    mtext            *domain_name; /* server domain name */
+    OCI_Timestamp    *inst_startup;/* instance startup timestamp */
 };
 
 /*
@@ -740,7 +749,73 @@ struct OCI_Subscription
     mtext               *saved_user; /* user for reconnection if needed */
     mtext               *saved_pwd;  /* password for reconnection if needed */
     OCI_Event            event;      /* event object for user callback */
-};  
+};
+
+/*
+ * Oracle A/Q Agent
+ *
+ */
+
+struct OCI_Agent
+{
+    OCIAQAgent     *handle;        /* OCI agent handle */
+    ub4             hstate;        /* object variable state */
+    OCI_Connection *con;           /* OCILIB connection handle */
+    mtext          *address;       /* agent address */
+    mtext          *name;          /* agent name */
+};
+
+/*
+ * Oracle A/Q message
+ *
+ */
+
+struct OCI_Msg
+{
+    OCI_TypeInfo       *typinf;        /* pointer to type info object */
+    OCIAQMsgProperties *proph;         /* OCI message properties handle */
+    void               *payload;       /* message payload (object handle or raw handle) */
+    OCIRaw             *id;            /* message identitier */
+    OCI_Date           *date;          /* enqueue date */
+    mtext              *correlation;   /* correlation string */
+    mtext              *except_queue;  /* exception queue name */
+    OCI_Agent          *sender;        /* sender */
+    OCI_Object         *obj;           /* OCILIB object handle for object payloads */
+    OCIInd              ind;           /* message payload indicator pointer */
+};
+
+/*
+ * Oracle A/Q enqueue
+ *
+ */
+
+struct OCI_Enqueue
+{
+    OCI_TypeInfo    *typinf;         /* pointer to type info object */
+    OCIAQEnqOptions *opth;           /* OCI enqueue options handle */
+    mtext           *name;           /* queue name */
+};
+
+/*
+ * Oracle A/Q Dequeue
+ *
+ */
+
+struct OCI_Dequeue
+{
+    OCI_TypeInfo        *typinf;         /* pointer to type info object */
+    OCIAQDeqOptions     *opth;           /* OCI dequeue options handle */
+    mtext               *name;           /* queue name */
+    mtext               *pattern;        /* queue name */
+    mtext               *consumer;       /* consumer name */
+    OCI_Msg             *msg;            /* message retrieved from queue */
+    OCIAQAgent         **agent_list;     /* array of agents objects */
+    ub4                  agent_count;    /* number of agents objects */
+    OCI_Agent           *agent;          /* pointer to agent object for listen call */
+    POCI_NOTIFY_AQ       callback;       /* user callback */
+    OCISubscription     *subhp;          /* AQ subscription for async dequeueing */
+};
+
 
 /*
  * oCILIB array

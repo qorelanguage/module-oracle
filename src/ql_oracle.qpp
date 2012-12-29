@@ -111,4 +111,5 @@ hash placeholderOracleCollection(string tname) [flags=CONSTANT] {
     h->setKeyValue("value", tname->refSelf(), xsink);
     return h;
 }
+
 //@}

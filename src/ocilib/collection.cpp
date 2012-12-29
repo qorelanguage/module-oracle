@@ -166,7 +166,7 @@ boolean OCI_API OCI_CollFree2(OCI_Library *pOCILib, OCI_Coll *coll)
     if ((coll->hstate == OCI_OBJECT_ALLOCATED      ) ||
         (coll->hstate == OCI_OBJECT_ALLOCATED_ARRAY))
     {
-       OCI_OCIObjectFree2(pOCILib, pOCILib->env, coll->typinf->con->err,
+       OCI_OCIObjectFree2(pOCILib, pOCILib->env, pOCILib->err,
                           coll->handle, OCI_OBJECTFREE_NONULL);
     }
 

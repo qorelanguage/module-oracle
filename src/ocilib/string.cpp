@@ -726,6 +726,138 @@ boolean OCI_StringToStringPtr(OCI_Library *pOCILib, OCIString **str, OCIError *e
     return res;
 }
 
+/* --------------------------------------------------------------------------------------------- *
+ * OCI_StringGetFromAttrHandle
+ * --------------------------------------------------------------------------------------------- */
+
+boolean OCI_StringGetFromAttrHandle
+(
+	OCI_Library *pOCILib,
+    OCI_Connection *con,
+    void           *handle,
+    unsigned int    type,
+    unsigned int    attr,
+    mtext         **str
+)
+{
+    boolean res      = TRUE;
+    void *ostr       = NULL;
+    int osize        = -1;
+    int size_char_in = (int) sizeof(mtext);
+
+    OCI_CHECK(str == NULL, FALSE);
+
+    OCI_CALL2
+    (
+        pOCILib, res, con,
+
+        OCIAttrGet((dvoid *) handle,
+                   (ub4    ) type,
+                   (dvoid *) &ostr,
+                   (ub4   *) &osize,
+                   (ub4    ) attr,
+                   con->err)
+    )
+
+    if ((res == TRUE) && (ostr != NULL))
+    {
+        /*  Oracle BUG using OCI in Unicode mode (once again...)
+            Some connection server handle attributes are returned
+            as ANSI buffer even when OCI is initialized in UTF16 mode
+            Some we check if the first character slot has any zero bytes set
+            to detect this defect ! */
+
+    #ifdef OCI_METADATA_WIDE
+
+            int i;
+
+            for (i = 0; i < sizeof(omtext); i ++)
+            {
+                if (((char*) ostr)[i] == 0)
+                {
+                    break;
+                }
+            }
+
+            if (i  >= sizeof(omtext))
+            {
+                /* ansi buffer returned instead of an UTF15 one ! */
+
+                size_char_in = 1;
+            }
+
+
+    #endif
+#warning "TODO/FIXME: (char*) user instead of original (void*). Just doublecheck it later."
+        *str = (char *) OCI_MemAlloc2(pOCILib, OCI_IPC_STRING,  sizeof(mtext),
+                                     (size_t) ((osize / size_char_in) + 1), TRUE);
+
+        if (*str != NULL)
+        {
+            OCI_CopyString(ostr, *str, &osize, size_char_in, sizeof(mtext));
+        }
+        else
+        {
+            res = FALSE;
+        }
+    }
+
+    return res;
+}
+
+/* --------------------------------------------------------------------------------------------- *
+ * OCI_StringSetToAttrHandle
+ * --------------------------------------------------------------------------------------------- */
+
+boolean OCI_StringSetToAttrHandle
+(
+    OCI_Library *pOCILib,
+    OCI_Connection *con,
+    void           *handle,
+    unsigned int    type,
+    unsigned int    attr,
+    mtext         **str,
+    const mtext    *value
+)
+{
+    boolean res = TRUE;
+    void *ostr  = NULL;
+    int osize   = -1;
+
+    ostr = OCI_GetInputMetaString(pOCILib, value, &osize);
+
+    if (osize == -1)
+    {
+        osize = 0;
+    }
+
+    OCI_CALL2
+    (
+        pOCILib, res, con,
+
+        OCIAttrSet((dvoid *) handle,
+                   (ub4    ) type,
+                   (dvoid *) ostr,
+                   (ub4    ) osize,
+                   (ub4    ) attr,
+                   con->err)
+    )
+
+    OCI_ReleaseMetaString(ostr);
+
+    if ((res == TRUE) && (str != NULL))
+    {
+        OCI_FREE(*str);
+
+        if (value != NULL)
+        {
+            *str = mtsdup(pOCILib, value);
+        }
+    }
+
+    return res;
+}
+
 /* ************************************************************************ *
  *                            PUBLIC FUNCTIONS
  * ************************************************************************ */

@@ -3,7 +3,7 @@ MNAME=oracle
 .qpp.cpp:
 	qpp $<
 
-GENERATED_SRC = ql_oracle.cpp
+GENERATED_SRC = ql_oracle.cpp QC_AQQueue.cpp QC_AQMessage.cpp
 CLEANFILES = $(GENERATED_SRC)
 
 if COND_SINGLE_COMPILATION_UNIT
@@ -37,7 +37,13 @@ ORACLE_SOURCES = oracle.cpp \
 	ocilib/mutex.cpp \
 	ocilib/ref.cpp \
 	ocilib/file.cpp \
-	ocilib/connection.cpp
+	ocilib/connection.cpp \
+	ocilib/msg.cpp \
+	ocilib/enqueue.cpp \
+	ocilib/dequeue.cpp \
+	ocilib/agent.cpp \
+	ocilib/callback.cpp
+
 nodist_oracle_la_SOURCES = $(GENERATED_SRC)
 endif
 

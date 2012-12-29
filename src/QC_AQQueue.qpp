@@ -1,0 +1,446 @@
+/* -*- mode: c++; indent-tabs-mode: nil -*- */
+/*
+*/
+
+#include <qore/Qore.h>
+#include "oracle.h"
+#include "ocilib_internal.h"
+#include "AQMessagePriv.h"
+
+#include "AQQueuePriv.h"
+
+// TODO/FIXME: better solution?
+static std::map<OCI_Dequeue*,QoreObject*> dequeueMap;
+
+
+void on_async_message(OCI_Dequeue *deq)
+{
+    QoreForeignThreadHelper qfth;
+
+    printf("DEBUG> message arrived\n");
+    printf("       deq: %p\n", deq);
+    assert(dequeueMap[deq]);
+    printf("       OCI_Dequeue instance: %p\n", deq);
+    printf("        QoreObject instance: %p\n\n", dequeueMap[deq]);
+
+    ExceptionSink xsink;
+    dequeueMap[deq]->evalMethod("onAsyncMessage", 0, &xsink);
+    if (xsink) { printf("EXCEPTION\n"); }
+}
+
+
+const char* check_hash_key(const QoreHashNode* h, const char* key, const char* err, ExceptionSink *xsink) {
+   const AbstractQoreNode* p = h->getKeyValue(key);
+   if (is_nothing(p))
+      return 0;
+
+   if (p->getType() != NT_STRING) {
+      xsink->raiseException(err, "'%s' key is not type 'string' but is type '%s'", key, get_type_name(p));
+      return 0;
+   }
+   return reinterpret_cast<const QoreStringNode* >(p)->getBuffer();
+}
+
+
+
+AQQueuePriv::AQQueuePriv(Datasource *ds, const char *tname, const char *qname, ExceptionSink *xsink)
+    : m_conn(0),
+      m_ds(ds),
+//      m_message(0),
+      m_enqueue(0),
+      m_dequeue(0)
+{
+    m_conn = ds->getPrivateData<QoreOracleConnection>();
+    assert(m_conn);
+    m_typeInfo = OCI_TypeInfoGet2(&m_conn->ocilib, m_conn->ocilib_cn, tname, OCI_TIF_TYPE);
+    m_qname = qname;
+
+    printf("AQQueuePriv CONNECTION> m_conn(%p)\n", m_conn);
+
+    char err[200];
+    sprintf(err, "Cannot get type info for '%s'", tname);
+    if (!m_typeInfo) {
+        xsink->raiseException("AQ-MESSAGE-ERROR", err);
+        return;
+    }
+}
+
+AQQueuePriv::~AQQueuePriv()
+{
+    dequeueMap.erase(m_dequeue); // TODO/FIXME: stopSubscription in qore destructor?
+    if (m_enqueue) OCI_EnqueueFree(&m_conn->ocilib, m_enqueue);
+    if (m_dequeue) OCI_DequeueFree(&m_conn->ocilib, m_dequeue);
+    if (m_typeInfo) OCI_TypeInfoFree2(&m_conn->ocilib, m_typeInfo);
+}
+
+bool AQQueuePriv::postMessage(AQMessagePriv *message, ExceptionSink *xsink)
+{
+    if (!m_enqueue) {
+        printf("Opening W queue: %s (%p)\n", m_qname, m_typeInfo);
+        m_enqueue = OCI_EnqueueCreate(&m_conn->ocilib, m_typeInfo, m_qname);
+    }
+
+    if (!m_enqueue) {
+        xsink->raiseException("AQQUEUE-ERROR", "failed to initialize queue");
+        return false;
+    }
+
+    if (message->getObject() == 0) {
+        xsink->raiseException("AQQUEUE-ERROR", "no oracle object (hash) provided in the message");
+        return false;
+    }
+
+    OCI_Object *o = objBindQore(m_conn, message->getObject(), xsink);
+    if (!o) {
+        xsink->raiseException("AQQUEUE-ERROR", "failed to create(bind) object");
+        return false;
+    }
+
+    bool ret = true;
+
+    OCI_Msg *m = OCI_MsgCreate(&m_conn->ocilib, m_typeInfo);
+    if (!m) {
+    	xsink->raiseException("AQQUEUE-ERROR", "cannot allocate message object");
+    	ret = false;
+    }
+
+    if (ret && !OCI_MsgSetObject(&m_conn->ocilib, m, o)) {
+    	xsink->raiseException("AQQUEUE-ERROR", "cannot se message object");
+    	ret = false;
+    }
+
+    if (ret && !OCI_MsgSetEnqueueDelay(&m_conn->ocilib, m, message->getEnqueueDelay())) {
+    	xsink->raiseException("AQQUEUE-ERROR", "failed to set message delay");
+    	ret = false;
+    }
+    if (ret && !OCI_MsgSetExpiration(&m_conn->ocilib, m, message->getExpiration())) {
+    	xsink->raiseException("AQQUEUE-ERROR", "failed to set expiration");
+    	ret = false;
+    }
+    if (ret && !OCI_MsgSetPriority(&m_conn->ocilib, m, message->getPriority())) {
+    	xsink->raiseException("AQQUEUE-ERROR", "failed to set priority");
+    	ret = false;
+    }
+    if (ret && !OCI_MsgSetCorrelation(&m_conn->ocilib, m, message->getCorrelation())) {
+    	xsink->raiseException("AQQUEUE-ERROR", "failed to set correlation");
+    	ret = false;
+    }
+
+    if (ret && !OCI_EnqueuePut(&m_conn->ocilib, m_enqueue, m)) {
+        xsink->raiseException("AQQUEUE-ERROR", "failed to enqueue object");
+        ret = false;
+    }
+
+    OCI_MsgFree(&m_conn->ocilib, m);
+    OCI_ObjectFree2(&m_conn->ocilib, o);
+
+    return ret;
+}
+
+bool AQQueuePriv::postObject(const QoreHashNode *h, ExceptionSink *xsink)
+{
+	OCI_Object * obj = objBindQore(m_conn, h, xsink);
+	if (!obj) {
+	    xsink->raiseException("AQQUEUE-ERROR", "failed to create(bind) object");
+	    return false;
+	}
+
+	bool ret = true;
+
+    OCI_Msg * msg = OCI_MsgCreate(&m_conn->ocilib, m_typeInfo);
+    if (!msg) {
+    	xsink->raiseException("AQQUEUE-ERROR", "cannot allocate message");
+    	ret = false;
+    }
+
+    if (ret && !OCI_MsgSetObject(&m_conn->ocilib, msg, obj)) {
+    	xsink->raiseException("AQQUEUE-ERROR", "cannot set message object");
+    	ret = false;
+    }
+
+    if (ret && !OCI_EnqueuePut(&m_conn->ocilib, m_enqueue, msg)) {
+        xsink->raiseException("AQQUEUE-ERROR", "failed to enqueue object");
+        ret = false;
+    }
+
+    OCI_ObjectFree2(&m_conn->ocilib, obj);
+    OCI_MsgFree(&m_conn->ocilib, msg);
+
+    return ret;
+}
+
+bool AQQueuePriv::commit(ExceptionSink *xsink) {
+    return m_conn->commit(xsink);
+}
+
+bool AQQueuePriv::rollback(ExceptionSink *xsink) {
+    return m_conn->rollback(xsink);
+}
+
+QoreObject* AQQueuePriv::getMessage(ExceptionSink *xsink)
+{
+    if (!checkDequeue(xsink))
+        return 0;
+
+    OCI_Msg *msg = OCI_DequeueGet(&m_conn->ocilib, m_dequeue);
+
+    if (msg == NULL) {
+        printf("Message is NULL. NOTHING returned.\n");
+//        return Nothing;
+//# TODO/FIXME: howto?
+        return 0;
+    }
+
+    bool res = true;
+
+    OCI_Object *o = OCI_MsgGetObject(&m_conn->ocilib, msg);
+
+    if (!o) {
+        xsink->raiseException("AQQUEUE-ERROR", "Cannot get object from message");
+        res = false;
+    }
+
+    AbstractQoreNode * obj = 0;
+    if (res) {
+    	obj = objToQore(m_conn, o, xsink);
+    	if (!obj) {
+    		xsink->raiseException("AQQUEUE-ERROR", "Cannot get qore hash from OCI object");
+    		res = false;
+    	}
+    }
+
+    OCI_ObjectFree2(&m_conn->ocilib, o);
+    OCI_MsgFree(&m_conn->ocilib, msg);
+
+    if (res) {
+    	AQMessagePriv *qop = new AQMessagePriv(reinterpret_cast<QoreHashNode*>(obj));
+    	QoreObject *qo = new QoreObject(QC_AQMESSAGE, getProgram(), qop);
+    	return qo;
+    }
+    else {
+    	return 0;
+    }
+}
+
+bool AQQueuePriv::checkDequeue(ExceptionSink *xsink)
+{
+    if (!m_dequeue) {
+        printf("Opening R queue: %s (%p)\n", m_qname, m_typeInfo);
+        m_dequeue = OCI_DequeueCreate(&m_conn->ocilib, m_typeInfo, m_qname);
+        if (!m_dequeue) {
+            xsink->raiseException("AQQUEUE-ERROR", "failed to initialize queue");
+            return false;
+        }
+        printf("DEQUEUE ptr: %p\n", m_dequeue);
+        if (!OCI_DequeueSetWaitTime(&m_conn->ocilib, m_dequeue, 0)) {
+            xsink->raiseException("AQQUEUE-ERROR", "failed to set dequeue timeout");
+            return false;
+        }
+    }
+    return true;
+    // TODO
+    //OCI_DequeueSetConsumer for list
+}
+
+void AQQueuePriv::startSubscription(QoreObject *qo, int64 port, int64 timeout, ExceptionSink *xsink)
+{
+    if (!checkDequeue(xsink))
+        return;
+
+    if (!OCI_DequeueSubscribe(&m_conn->ocilib, m_dequeue, port, timeout, on_async_message)) {
+        OCI_DequeueUnsubscribe(&m_conn->ocilib, m_dequeue);
+        xsink->raiseException("AQQUEUE-ERROR", "cannot start the subscription");
+        return;
+    }
+printf("QO> %s - %d\n", qo->getTypeName(), qo->validInstanceOf(CID_AQQUEUE));
+    dequeueMap[m_dequeue] = qo;
+    printf("SUBSCR DEQUEUE ptr: %p - %p\n", m_dequeue, qo);
+
+}
+
+void AQQueuePriv::stopSubscription(ExceptionSink *xsink)
+{
+    if (!checkDequeue(xsink))
+        return;
+
+    if (!OCI_DequeueUnsubscribe(&m_conn->ocilib, m_dequeue)) {
+        xsink->raiseException("AQQUEUE-ERROR", "cannot stop the subscription");
+        return;
+    }
+
+    dequeueMap.erase(m_dequeue);
+}
+
+
+
+
+//! Implementation of AQ Queue.
+/**
+ * AQ messages notification with Oracle Client 10gR2 or above
+ */
+qclass AQQueue [dom=DATABASE; arg=AQQueuePriv* priv; ns=Qore::Oracle];
+
+//! Construct a queue object for posting/getting messages.
+/** @param queueName a mandatory name of the queue in the database
+ * @param typeName a mandatory name of the type for this queue in the DB
+ * @param opts a mandatory login hash
+ */
+AQQueue::constructor(string queueName, string typeName, hash opts) {
+
+    const char *DSC_ERR = "AQQUEUE-CONSTRUCTOR-ERROR";
+
+    const char *str = check_hash_key(opts, "type", DSC_ERR, xsink);
+    if (*xsink) return;
+
+    if (str == 0)
+        str = "oracle";
+
+    if (strcmp(str, "oracle")) {
+       xsink->raiseException(DSC_ERR, "expecting a string value with the 'type' key giving the driver name 'oracle'");
+       return;
+    }
+
+    DBIDriver *db_driver = DBI.find(str, xsink);
+    if (!db_driver) {
+       if (!*xsink)
+          xsink->raiseException("DATASOURCE-UNSUPPORTED-DATABASE", "DBI driver '%s' cannot be loaded", str);
+       return;
+    }
+
+//    ReferenceHolder<Datasource> ds(new Datasource(db_driver), xsink);
+#warning "TODO/FIXME: deref on xsink somehow..."
+    Datasource *ds = new Datasource(db_driver);
+
+    str = check_hash_key(opts, "user", DSC_ERR, xsink);
+    if (*xsink) return;
+    if (str) ds->setPendingUsername(str);
+
+    str = check_hash_key(opts, "pass", DSC_ERR, xsink);
+    if (*xsink) return;
+    if (str) ds->setPendingPassword(str);
+
+    str = check_hash_key(opts, "db", DSC_ERR, xsink);
+    if (*xsink) return;
+    if (str) ds->setPendingDBName(str);
+
+    str = check_hash_key(opts, "charset", DSC_ERR, xsink);
+    if (*xsink) return;
+    if (str) ds->setPendingDBEncoding(str);
+
+    str = check_hash_key(opts, "host", DSC_ERR, xsink);
+    if (*xsink) return;
+    if (str) ds->setPendingHostName(str);
+
+    bool found;
+    int port = (int)opts->getKeyAsBigInt("port", found);
+    if (port) {
+       if (port < 0) {
+          xsink->raiseException(DSC_ERR, "port value must be zero (meaning use the default port) or positive (value given: %d)", port);
+          return;
+       }
+
+       ds->setPendingPort(port);
+    }
+    if (*xsink) {
+        return;
+    }
+
+    ds->open(xsink);
+    if (*xsink) {
+        return;
+    }
+
+    self->setPrivate(CID_AQQUEUE, new AQQueuePriv(ds, typeName->getBuffer(), queueName->getBuffer(), xsink));
+}
+
+//AQQueue::copy() {
+//   xsink->raiseException("AQQUEUE-COPY-ERROR", "copying AQQueue objects is not allowed");
+//}
+
+//! Post the AQMessage into the queue.
+/** @param msg a AQMessage instance
+ */
+nothing AQQueue::postMessage(AQMessage[AQMessagePriv] msg) {
+    priv->postMessage(msg, xsink);
+}
+
+//! Post the plain Oracle object hash into the queue.
+/** @param msg a qore hash (Oracle object)
+ *
+ * The hash/object will use default message properties. Use postMessage() with
+ * AQMessage instance if you need to modify message defaults.
+ */
+nothing AQQueue::postObject(hash msg) {
+	priv->postObject(msg, xsink);
+}
+
+//! Get message from queue
+/** @retval AQMessage or NOTHING
+ */
+*AQMessage AQQueue::getMessage() {
+//	AbstractQoreNode *n = priv->getMessage(xsink);
+//	if (!n)
+//		return 0;
+//
+//	if (n == Nothing)
+//		return Nothing;
+//	else
+//		return reinterpret_cast<QoreObject*>(n);
+	return priv->getMessage(xsink);
+}
+
+//! Subscribe for asynchronous messages notifications.
+/** @param port an optional port number
+ * @param timeout an optional timeout value
+ *
+ * <b>Timeout:</b> Any positive values in seconds are valid.
+ *
+ * The value 0 is accepted and means that it does not wait for messages
+ * and returns immediately if no messages are available
+ *
+ * The value -1 is accepted and means it waits for ever (until a message
+ * is available in the queue)
+ */
+nothing AQQueue::startSubscription(int port=0, int timeout=0) {
+	if (port < 0) {
+		xsink->raiseException("AQQUEUE-ERROR", "Port number has to be greater than 0");
+		return 0;
+	}
+
+	if (timeout < -1) {
+		xsink->raiseException("AQQUEUE-ERROR", "Timeout value has to be greater than -1");
+		return 0;
+	}
+
+    priv->startSubscription(self, port, timeout, xsink);
+}
+
+//! Unsubscribe for asynchronous messages notifications.
+/**
+ */
+nothing AQQueue::stopSubscription() {
+    priv->stopSubscription(xsink);
+}
+
+//! Commit the transaction.
+/** Confirm all posted or fetched messages.
+ */
+bool AQQueue::commit() {
+    return priv->commit(xsink);
+}
+
+//! Rollback the transaction.
+/** Rollback all posted or fetched messages.
+ */
+bool AQQueue::rollback() {
+    return priv->rollback(xsink);
+}
+
+//! Automatically called when is the subscription active on new message in the queue.
+/** A method which is called when there is a new message in the queue.
+ *
+ * Default implementation does not do anything.
+ */
+nothing AQQueue::onAsyncMessage() {
+    printf("Abstract nothing-doing implementation of onAsyncMessage called\n");
+}

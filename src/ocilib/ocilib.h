@@ -1055,6 +1055,56 @@ typedef struct OCI_Subscription OCI_Subscription;
 typedef struct OCI_Event OCI_Event;
 
 /**
+ * @struct OCI_Msg
+ *
+ * @brief
+ * OCILIB encapsulation of A/Q message
+ *
+ */
+
+typedef struct OCI_Msg OCI_Msg;
+
+/**
+ * @struct OCI_Agent
+ *
+ * @brief
+ * OCILIB encapsulation of A/Q Agent
+ *
+ */
+
+typedef struct OCI_Agent OCI_Agent;
+
+/**
+ * @struct OCI_Dequeue
+ *
+ * @brief
+ * OCILIB encapsulation of A/Q dequeuing operations
+ *
+ */
+
+typedef struct OCI_Dequeue OCI_Dequeue;
+
+/**
+ * @struct OCI_Enqueue
+ *
+ * @brief
+ * OCILIB encapsulation of A/Q enqueuing operations
+ *
+ */
+
+typedef struct OCI_Enqueue OCI_Enqueue;
+
+/**
+ * @var POCI_ERROR
+ *
+ * @brief
+ * Error procedure prototype
+ *
+ * @param err - Error handle
+ *
+ */
+
+/**
  * @}
  */
 
@@ -1093,18 +1143,111 @@ typedef void (*POCI_THREAD) (OCI_Thread *thread, void *arg);
 typedef void (*POCI_THREADKEYDEST) (void *data);
 
 /**
- * @typedef POCI_NOTIFY
+ * @var POCI_NOTIFY
  *
  * @brief
  * Database Change Notification User callback prototype.
  *
- * @note
- *
- * data is the thread key value
+ * @param event - Event handle
  *
  */
 
-typedef void (*POCI_NOTIFY) (OCI_Event *event);
+typedef void (*POCI_NOTIFY)
+(
+    OCI_Event *event
+);
+
+/**
+ * @var POCI_NOTIFY_AQ
+ *
+ * @brief
+ * AQ notification callback prototype.
+ *
+ * @param dequeue - dequeue handle
+ *
+ */
+typedef void (*POCI_NOTIFY_AQ)
+(
+    OCI_Dequeue *dequeue
+);
+
+
+/**
+ * @var POCI_TAF_HANDLER
+ *
+ * @brief
+ * Failover Notification User callback prototype.
+ *
+ * @param con   - Connection handle related to the event
+ * @param type  - Event type
+ * @param event - Event code
+ *
+ * @note
+ * Possible values for parameter 'type' :
+ *  - OCI_FOT_NONE
+ *  - OCI_FOT_SESSION
+ *  - OCI_FOT_SELECT
+ *
+ * @note
+ * Possible values for parameter 'event' :
+ *  - OCI_FOE_END
+ *  - OCI_FOE_ABORT
+ *  - OCI_FOE_REAUTH
+ *  - OCI_FOE_BEGIN
+ *  - OCI_FOE_ERROR
+ *
+ * @return
+ * User callback should return one iof the following value :
+ *  - OCI_FOC_OK
+ *  - OCI_FOC_RETRY
+ *
+ */
+
+typedef unsigned int (*POCI_TAF_HANDLER)
+(
+    OCI_Connection *con,
+    unsigned int    type,
+    unsigned int    event
+);
+
+/**
+ * @var POCI_HA_HANDLER
+ *
+ * @brief
+ * HA (High Availabality) events Notification User callback prototype.
+ *
+ * @param con    - Connection handle related to the event
+ * @param source - source of the event
+ * @param event  - type of the event
+ * @param time   - Timestamp of the event
+ *
+ * @note
+ * Currently, Oracle only send HA down events
+ *
+ * @note
+ * Possible values for parameter 'source' :
+ *  - OCI_HES_INSTANCE
+ *  - OCI_HES_DATABASE
+ *  - OCI_HES_NODE
+ *  - OCI_HES_SERVICE
+ *  - OCI_HES_SERVICE_MEMBER
+ *  - OCI_HES_ASM_INSTANCE
+ *  - OCI_HES_PRECONNECT
+ *
+ * @note
+ * Possible values for parameter 'event' :
+ *  - OCI_HET_DOWN : HA event type down
+ *  - OCI_HET_UP   : HA event type up
+ *
+ */
+
+typedef void (*POCI_HA_HANDLER)
+(
+    OCI_Connection *con,
+    unsigned int    source,
+    unsigned int    event,
+    OCI_Timestamp  *time
+);
 
 /* public structures */
 
@@ -12701,7 +12844,7 @@ OCI_EXPORT boolean OCI_ExecuteStmtFmt
  *
  * OCILIB uses hash tables internally for index/name columns mapping.
  *
- * OCILIB makes public its hash tableÆs implementation public for general purpose
+ * OCILIB makes public its hash tableï¿½s implementation public for general purpose
  * uses.
  *
  * OCI_HashTable objects manage string keys / values that can be :

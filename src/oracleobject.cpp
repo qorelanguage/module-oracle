@@ -340,7 +340,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
     return obj;
 }
 
-AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Datasource *ds, ExceptionSink *xsink) {
+AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, ExceptionSink *xsink) {
    ReferenceHolder<QoreHashNode> rv(new QoreHashNode, xsink);
 
    int n = OCI_TypeInfoGetColumnCount2(&conn->ocilib, obj->typinf);
@@ -473,7 +473,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Datas
 	    }
 	    else {
 	       // clobs
-	       QoreStringNodeHolder str(new QoreStringNode(ds->getQoreEncoding()));
+	       QoreStringNodeHolder str(new QoreStringNode(conn->ds.getQoreEncoding()));
 	       str->concat((const char*)buf, len);
 	       rv->setKeyValue(cname, str.release(), xsink);
 
@@ -498,10 +498,10 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Datas
 	 case SQLT_NTY:
 	    if (col->typinf->ccode) {
 	       // collection
-	       rv->setKeyValue(cname, collToQore(conn, OCI_ObjectGetColl2(&conn->ocilib, obj, cname), ds, xsink), xsink);
+	       rv->setKeyValue(cname, collToQore(conn, OCI_ObjectGetColl2(&conn->ocilib, obj, cname), xsink), xsink);
 	    } else {
 	       // object
-	       rv->setKeyValue(cname, objToQore(conn, OCI_ObjectGetObject2(&conn->ocilib, obj, cname), ds, xsink), xsink);
+	       rv->setKeyValue(cname, objToQore(conn, OCI_ObjectGetObject2(&conn->ocilib, obj, cname), xsink), xsink);
 	    }
 	    break;
 
@@ -736,7 +736,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
    return obj;
 }
 
-AbstractQoreNode* collToQore(QoreOracleConnection * conn, OCI_Coll * obj, Datasource *ds, ExceptionSink *xsink) {
+AbstractQoreNode* collToQore(QoreOracleConnection * conn, OCI_Coll * obj, ExceptionSink *xsink) {
    ReferenceHolder<QoreListNode> rv(new QoreListNode, xsink);
     
    OCI_Elem * e;
@@ -868,7 +868,7 @@ AbstractQoreNode* collToQore(QoreOracleConnection * conn, OCI_Coll * obj, Dataso
 	    }
 	    else {
 	       // clobs
-	       QoreStringNodeHolder str(new QoreStringNode(ds->getQoreEncoding()));
+	       QoreStringNodeHolder str(new QoreStringNode(conn->ds.getQoreEncoding()));
 	       str->concat((const char*)buf, len);
 	       rv->set_entry(rv->size(), str.release(), xsink);
 	    }
@@ -892,10 +892,10 @@ AbstractQoreNode* collToQore(QoreOracleConnection * conn, OCI_Coll * obj, Dataso
 	 case SQLT_NTY:
 	    if (col->typinf->ccode) {
 	       // collection
-	       rv->set_entry(rv->size(), collToQore(conn, OCI_ElemGetColl2(&conn->ocilib, e), ds, xsink), xsink);
+	       rv->set_entry(rv->size(), collToQore(conn, OCI_ElemGetColl2(&conn->ocilib, e), xsink), xsink);
 	    } else {
 	       // object
-	       rv->set_entry(rv->size(), objToQore(conn, OCI_ElemGetObject2(&conn->ocilib, e), ds, xsink), xsink);
+	       rv->set_entry(rv->size(), objToQore(conn, OCI_ElemGetObject2(&conn->ocilib, e), xsink), xsink);
 	    }
 	    break;
 

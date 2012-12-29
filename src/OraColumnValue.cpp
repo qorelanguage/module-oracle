@@ -193,7 +193,7 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
             //printd(5, "OraColumnValue::getValue() allocated OBJECT: %p\n", buf.oraObj);
             if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
                return null();
-            return objToQore(conn, buf.oraObj, stmt.getDatasource(), xsink);
+            return objToQore(conn, buf.oraObj, xsink);
          }
          else {
             assert(subdtype == SQLT_NTY_COLLECTION);
@@ -201,7 +201,7 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
             //printd(5, "OraColumnValue::getValue() allocated COLLECTION: %p\n", buf.oraColl);
             if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
                return null();
-            return collToQore(conn, buf.oraColl, stmt.getDatasource(), xsink);
+            return collToQore(conn, buf.oraColl, xsink);
          }
          break;
       } // SQLT_NTY

@@ -49,6 +49,8 @@ DLLEXPORT qore_module_delete_t qore_module_delete = oracle_module_delete;
 DLLEXPORT qore_license_t qore_module_license = QL_LGPL;
 
 void init_oracle_functions(QoreNamespace& ns);
+QoreClass* initAQMessageClass(QoreNamespace& ns);
+QoreClass* initAQQueueClass(QoreNamespace& ns);
 
 DBIDriver *DBID_ORACLE = 0;
 
@@ -345,6 +347,8 @@ QoreStringNode *oracle_module_init() {
    QORE_TRACE("oracle_module_init()");
    
    init_oracle_functions(OraNS);
+   OraNS.addSystemClass(initAQMessageClass(OraNS));
+   OraNS.addSystemClass(initAQQueueClass(OraNS));
 
    // register driver with DBI subsystem
    qore_dbi_method_list methods;

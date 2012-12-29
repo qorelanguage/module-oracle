@@ -10,6 +10,7 @@
     - @ref binding_by_placeholder
     - @ref default_oracle_to_qore_mapping
     - @ref named_types
+    - @ref aq
     - @ref known_issues
     - @ref releasenotes
 
@@ -274,6 +275,33 @@
 	incorrect assumption.  PL/SQL types cannot be used directly with the Oracle \c OCI
         library, however you can use custom wrappers or any other workarounds, of course.
 
+    @section aq Oracle Advanced Queueing (AQ)
+    
+    Oracle Advanced Queueing (AQ) is the Oracle database's queue management
+    feature. AQ provides a message queuing infrastructure as integral part
+    of the Oracle server engine. It provides an API for enqueing messages
+    to database queues. These messages can later be dequeued for asynchronous
+    processing. Oracle AQ also provides functionality to preserve, track,
+    document, correlate, and query messages in queues.
+    
+    Features:
+    
+    - synchronous message posting
+    - synchronouns message fetching
+    - asynchronous event-driven listening in the DB queue
+    
+    Special initialization of the driver is mandatory to use AQ in Qore scripts:
+
+    @code
+    %requires oracle
+    @endcode
+    
+    Qore Oracle module contains these classes to handle AQ:
+    
+    |!Class|!Description
+    |Qore::Oracle::AQQueue|Main queue handler
+    |Qore::Oracle::AQMessage|Enhanced features for message
+
     @section known_issues Known Issues
 
     Unfortunately there are some known bugs in the Oracle Module which cannot be fixed
@@ -311,7 +339,7 @@
     @endcode
     while <tt>outchar : "C"</tt> is expected
 
-    @subsection named_types_known_isseus Named Types Known Issues
+    @subsection named_types_known_issues Named Types Known Issues
     
     - Returning a collection of objects and Oracle client 10.x does not work correctly sometimes.
       There is only one instance of object (a first one) used for all items in the

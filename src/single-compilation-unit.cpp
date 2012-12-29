@@ -1,4 +1,6 @@
 #include "ql_oracle.cpp"
+#include "QC_AQMessage.cpp"
+#include "QC_AQQueue.cpp"
 #include "oracle.cpp"
 #include "oracleobject.cpp"
 #include "QoreOracleConnection.cpp"
@@ -27,3 +29,9 @@
 #include "ocilib/ref.cpp"
 #include "ocilib/file.cpp"
 #include "ocilib/connection.cpp"
+#include "ocilib/msg.cpp"
+#include "ocilib/enqueue.cpp"
+#include "ocilib/dequeue.cpp"
+#include "ocilib/agent.cpp"
+#include "ocilib/callback.cpp"
+

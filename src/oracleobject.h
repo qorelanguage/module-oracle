@@ -29,6 +29,13 @@ boolean OCI_CollGetStruct
    void** pp_ind
 );
 
+// return NTY object type - ORACLE_COLLECTION or ORACLE_OBJECT
+// should be called id it's sure it's a NTY (after ntyCheckType()
+// and/or in SQLT_NTY cases
+const char * ntyHashType(const QoreHashNode * n);
+
+// check if is provided hash required NTY object
+bool ntyCheckType(const char * tname, const QoreHashNode * n, qore_type_t t);
 
 /* Oracle Named Types - Objects
  */
@@ -61,13 +68,11 @@ OCI_Object* objPlaceholderQore(QoreOracleConnection * conn,
 /*! Convert an Oracle Object into Qore Hash node.
     The hash is plain Qore hash - no Object-hash structure is set.
     \param obj Oracle Object instance
-    \param ds DBI Datasource instance
     \param xsink exception hanlder
     \retval AbstractQoreNode* Plain Qore hash node
  */
 AbstractQoreNode* objToQore(QoreOracleConnection * conn,
                             OCI_Object * obj,
-                            Datasource *ds,
                             ExceptionSink *xsink);
 
 
@@ -101,48 +106,12 @@ OCI_Coll* collPlaceholderQore(QoreOracleConnection * conn,
 /*! Convert an Oracle Collection into Qore List node.
     The hash is plain Qore list - no Object-hash structure is set.
     \param obj Oracle Collection instance
-    \param ds DBI Datasource instance
     \param xsink exception hanlder
     \retval AbstractQoreNode* Plain Qore list node
  */
 AbstractQoreNode* collToQore(QoreOracleConnection *conn,
                              OCI_Coll * obj,
-                             Datasource *ds,
                              ExceptionSink *xsink);
-
-
-/* Binding functions
- */
-
-/*! Implementation of bindOracleObject(typename, hash)
-    Returning hash structure:
-    "type" : ORACLE_OBJECT string ("OracleObject")
-    "^oratype^" : type name
-    "^values^" : a plain hash with column_name : value
- */
-DLLEXPORT AbstractQoreNode * f_oracle_object(const QoreListNode *params, ExceptionSink *xsink);
-
-/*! Implementation of placeholderOracleObject(typename)
-    Returning hash structure (used in QorePreparedStatement::parseQuery):
-    "type" : ORACLE_OBJECT string ("OracleObject")
-    "value" : string node - type name
- */
-DLLEXPORT AbstractQoreNode * f_oracle_object_placeholder(const QoreListNode *params, ExceptionSink *xsink);
-
-/*! Implementation of bindOracleCollection(typename, list)
-    Returning hash structure:
-    "type" : ORACLE_COLLECTION string ("OracleCollection")
-    "^oratype^" : type name
-    "^values^" : a plain list with column_name : value
- */
-DLLEXPORT AbstractQoreNode * f_oracle_collection(const QoreListNode *params, ExceptionSink *xsink);
-
-/*! Implementation of placeholderOracleCollection(typename)
-    Returning hash structure (used in QorePreparedStatement::parseQuery):
-    "type" : ORACLE_COLLECTION string ("OracleCollection")
-    "value" : string node - type name
- */
-DLLEXPORT AbstractQoreNode * f_oracle_collection_placeholder(const QoreListNode *params, ExceptionSink *xsink);
 
 
 #endif

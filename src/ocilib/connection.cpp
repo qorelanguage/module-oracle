@@ -1539,45 +1539,53 @@ const dtext * OCI_API OCI_ServerGetOutput(OCI_Connection *con)
 }
 */
 
-/* ------------------------------------------------------------------------ *
+/* --------------------------------------------------------------------------------------------- *
  * OCI_SetTrace
- * ------------------------------------------------------------------------ */
-/*
-boolean OCI_API OCI_SetTrace(OCI_Connection *con, unsigned int trace,
-                             const mtext *value)
+ * --------------------------------------------------------------------------------------------- */
+
+boolean OCI_API OCI_SetTrace
+(
+    OCI_Library *pOCILib,
+    OCI_Connection *con,
+    unsigned int    trace,
+    const mtext    *value
+)
 {
     boolean res = TRUE;
     mtext *str  = NULL;
 
 #if OCI_VERSION_COMPILE >= OCI_10_1
-    ub4 attrib  = 0;
+
+    ub4 attrib = 0;
+
 #endif
 
-    OCI_CHECK_PTR(OCI_IPC_CONNECTION, con, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_CONNECTION, con, FALSE);
 
-    // allocate trace info structure only if trace functions are used
+    /* allocate trace info structure only if trace functions are used */
 
     if (con->trace == NULL)
     {
-        con->trace = (OCI_TraceInfo *) OCI_MemAlloc(OCI_IPC_TRACE_INFO,
-                                                    sizeof(*con->trace),
+        con->trace = (OCI_TraceInfo *) OCI_MemAlloc2(pOCILib, OCI_IPC_TRACE_INFO, sizeof(*con->trace),
                                                     (size_t) 1, TRUE);
         res = (con->trace != NULL);
     }
 
-    // set trace properties
+    /* set trace properties */
 
     if (con->trace != NULL)
     {
         switch (trace)
         {
             case OCI_TRC_IDENTITY:
+            {
 
-#if OCI_VERSION_COMPILE >= OCI_10_1
+            #if OCI_VERSION_COMPILE >= OCI_10_1
 
                 attrib = OCI_ATTR_CLIENT_IDENTIFIER;
 
-#endif
+            #endif
+
                 con->trace->identifier[0] = 0;
 
                 mtsncat(con->trace->identifier, value, OCI_SIZE_TRACE_ID);
@@ -1585,14 +1593,16 @@ boolean OCI_API OCI_SetTrace(OCI_Connection *con, unsigned int trace,
                 str = con->trace->identifier;
 
                 break;
-
+            }
             case OCI_TRC_MODULE:
+            {
 
- #if OCI_VERSION_COMPILE >= OCI_10_1
+            #if OCI_VERSION_COMPILE >= OCI_10_1
 
                 attrib = OCI_ATTR_MODULE;
 
-#endif
+            #endif
+
                 con->trace->module[0] = 0;
 
                 mtsncat(con->trace->module, value, OCI_SIZE_TRACE_MODULE);
@@ -1600,14 +1610,16 @@ boolean OCI_API OCI_SetTrace(OCI_Connection *con, unsigned int trace,
                 str = con->trace->module;
 
                 break;
-
+            }
             case OCI_TRC_ACTION:
+            {
 
-#if OCI_VERSION_COMPILE >= OCI_10_1
+            #if OCI_VERSION_COMPILE >= OCI_10_1
 
                 attrib = OCI_ATTR_ACTION;
 
-#endif
+            #endif
+
                 con->trace->action[0] = 0;
 
                 mtsncat(con->trace->action, value, OCI_SIZE_TRACE_ACTION);
@@ -1615,14 +1627,16 @@ boolean OCI_API OCI_SetTrace(OCI_Connection *con, unsigned int trace,
                 str = con->trace->action;
 
                 break;
-
+            }
             case OCI_TRC_DETAIL:
+            {
 
-#if OCI_VERSION_COMPILE >= OCI_10_1
+            #if OCI_VERSION_COMPILE >= OCI_10_1
 
                 attrib = OCI_ATTR_CLIENT_INFO;
 
-#endif
+            #endif
+
                 con->trace->info[0] = 0;
 
                 mtsncat(con->trace->info, value,  OCI_SIZE_TRACE_INF0);
@@ -1630,30 +1644,35 @@ boolean OCI_API OCI_SetTrace(OCI_Connection *con, unsigned int trace,
                 str = con->trace->info;
 
                 break;
-
+            }
             default:
-
+            {
                 res = FALSE;
+
+                break;
+            }
         }
     }
 
 #if OCI_VERSION_COMPILE >= OCI_10_1
 
-    // On success, we give the value to Oracle to record it in system session view
+    /* On success, we give the value to Oracle to record it in system session view */
 
     if (res == TRUE)
     {
-        void *ostr  = NULL;
-        int osize   = -1;
+        void *ostr = NULL;
+        int osize  = -1;
 
-        ostr  = OCI_GetInputMetaString(str, &osize);
+        ostr = OCI_GetInputMetaString(pOCILib, str, &osize);
 
         if (str == NULL)
+        {
             osize = 0;
+        }
 
         OCI_CALL2
         (
-            res, con,
+            pOCILib, res, con,
 
             OCIAttrSet((dvoid *) con->ses, (ub4) OCI_HTYPE_SESSION,
                        (dvoid *) ostr, (ub4) osize, attrib, con->err)
@@ -1664,58 +1683,64 @@ boolean OCI_API OCI_SetTrace(OCI_Connection *con, unsigned int trace,
 
 #endif
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return res;
 }
-*/
 
-/* ------------------------------------------------------------------------ *
+/* --------------------------------------------------------------------------------------------- *
  * OCI_TraceGet
- * ------------------------------------------------------------------------ */
-/*
-const mtext * OCI_API OCI_GetTrace(OCI_Connection *con, unsigned int trace)
+ * --------------------------------------------------------------------------------------------- */
+
+const mtext * OCI_API OCI_GetTrace
+(
+    OCI_Library *pOCILib,
+    OCI_Connection *con,
+    unsigned int    trace
+)
 {
     const mtext *str = NULL;
-    boolean res = TRUE;
+    boolean res      = TRUE;
 
-    OCI_CHECK_PTR(OCI_IPC_CONNECTION, con, NULL);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_CONNECTION, con, NULL);
 
     if (con->trace != NULL)
     {
         switch (trace)
         {
             case OCI_TRC_IDENTITY:
-
+            {
                 str = con->trace->identifier;
                 break;
-
+            }
             case OCI_TRC_MODULE:
-
+            {
                 str = con->trace->module;
                 break;
-
+            }
             case OCI_TRC_ACTION:
-
+            {
                 str = con->trace->action;
                 break;
-
+            }
             case OCI_TRC_DETAIL:
-
+            {
                 str = con->trace->info;
                 break;
-
+            }
             default:
-
+            {
                 res = FALSE;
+                break;
+            }
         }
     }
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return str;
 }
-*/
+
 /* ------------------------------------------------------------------------ *
  * OCI_Ping
  * ------------------------------------------------------------------------ */
