@@ -23,20 +23,20 @@ class AQQueuePriv : public AbstractPrivateData {
       DLLLOCAL AQQueuePriv(Datasource *ds, const char *tname, const char *qname, ExceptionSink *xsink);
 //      DLLLOCAL AQQueuePriv(QoreOracleConnection *conn, OCI_Msg *msg);
 
-      OCI_TypeInfo* typeInfo() { return m_typeInfo; }
-      QoreOracleConnection* connection() { return m_conn; }
-      DateTimeNode *getDate(OCIDate* handle) { return m_conn->getDate(handle); }
+      DLLLOCAL OCI_TypeInfo* typeInfo() { return m_typeInfo; }
+      DLLLOCAL QoreOracleConnection* connection() { return m_conn; }
+      DLLLOCAL DateTimeNode *getDate(OCIDate* handle) { return m_conn->getDate(handle); }
 
-      bool commit(ExceptionSink *xsink);
-      bool rollback(ExceptionSink *xsink);
+      DLLLOCAL bool commit(ExceptionSink *xsink);
+      DLLLOCAL bool rollback(ExceptionSink *xsink);
 
-      bool postMessage(AQMessagePriv *message, ExceptionSink *xsink);
-      bool postObject(const QoreHashNode *h, ExceptionSink *xsink);
+      DLLLOCAL bool postMessage(AQMessagePriv *message, ExceptionSink *xsink);
+      DLLLOCAL bool postObject(const QoreHashNode *h, ExceptionSink *xsink);
 
-      QoreObject* getMessage(ExceptionSink *xsink);
+      DLLLOCAL QoreObject* getMessage(ExceptionSink *xsink);
 
-      void startSubscription(QoreObject *qo, int64 port, int64 timeout, ExceptionSink *xsink);
-      void stopSubscription(ExceptionSink *xsink);
+      DLLLOCAL void startSubscription(QoreObject *qo, int64 port, int64 timeout, ExceptionSink *xsink);
+      DLLLOCAL void stopSubscription(ExceptionSink *xsink);
 
    private:
       QoreOracleConnection *m_conn;
@@ -48,7 +48,7 @@ class AQQueuePriv : public AbstractPrivateData {
       OCI_Enqueue *m_enqueue;
       OCI_Dequeue *m_dequeue;
 
-      bool checkDequeue(ExceptionSink *xsink);
+      DLLLOCAL bool checkDequeue(ExceptionSink *xsink);
 };
 
 #endif

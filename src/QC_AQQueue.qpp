@@ -9,6 +9,8 @@
 
 #include "AQQueuePriv.h"
 
+#include <memory>
+
 // TODO/FIXME: better solution?
 static std::map<OCI_Dequeue*,QoreObject*> dequeueMap;
 
@@ -271,8 +273,97 @@ void AQQueuePriv::stopSubscription(ExceptionSink *xsink)
     dequeueMap.erase(m_dequeue);
 }
 
+static int ds_set_options(Datasource& ds, const QoreHashNode* opts, ExceptionSink* xsink) {
+   ConstHashIterator hi(opts);
+   while (hi.next()) {
+      // skip "min" and "max" options
+      if (!strcmp(hi.getKey(), "min") || !strcmp(hi.getKey(), "max"))
+         continue;
 
+      if (ds.setOption(hi.getKey(), hi.getValue(), xsink))
+         return -1;
+   }
+   return 0;
+}
 
+static void aqqueue_constructor_hash(const QoreStringNode* queueName, const QoreStringNode* typeName, const QoreHashNode* opts, QoreObject* self, ExceptionSink* xsink) {
+   static const char *DSC_ERR = "AQQUEUE-CONSTRUCTOR-ERROR";
+
+   const char* str = check_hash_key(opts, "type", DSC_ERR, xsink);
+   if (*xsink) return;
+
+   if (str && strcmp(str, "oracle")) {
+      xsink->raiseException(DSC_ERR, "if the 'type' key is present, then it must be 'oracle'; value provided: '%s'", str);
+      return;
+   }
+
+   DBIDriver *db_driver = DBI.find("oracle", xsink);
+   // driver must be laoded because it's being executed now :)
+   assert(db_driver);
+
+   std::auto_ptr<Datasource> ds(new Datasource(db_driver));
+
+   str = check_hash_key(opts, "user", DSC_ERR, xsink);
+   if (*xsink) return;
+   if (str) ds->setPendingUsername(str);
+
+   str = check_hash_key(opts, "pass", DSC_ERR, xsink);
+   if (*xsink) return;
+   if (str) ds->setPendingPassword(str);
+
+   str = check_hash_key(opts, "db", DSC_ERR, xsink);
+   if (*xsink) return;
+   if (str) ds->setPendingDBName(str);
+
+   str = check_hash_key(opts, "charset", DSC_ERR, xsink);
+   if (*xsink) return;
+   if (str) ds->setPendingDBEncoding(str);
+
+   str = check_hash_key(opts, "host", DSC_ERR, xsink);
+   if (*xsink) return;
+   if (str) ds->setPendingHostName(str);
+
+   bool found;
+   int port = (int)opts->getKeyAsBigInt("port", found);
+   if (port) {
+      if (port < 0) {
+         xsink->raiseException(DSC_ERR, "port value must be zero (meaning use the default port) or positive (value given: %d)", port);
+         return;
+      }
+
+      ds->setPendingPort(port);
+   }
+
+   {
+      const AbstractQoreNode* p = opts->getKeyValue("options");
+
+      if (!is_nothing(p)) {
+         if (get_node_type(p) != NT_HASH) {
+            xsink->raiseException(DSC_ERR, "'options' key is not type 'hash' but is type '%s'", get_type_name(p));
+            return;
+         }
+         const QoreHashNode *oh = reinterpret_cast<const QoreHashNode*>(p);
+         if (ds_set_options(*ds.get(), oh, xsink))
+            return;
+      }
+   }
+
+   ds->open(xsink);
+   if (*xsink) {
+      return;
+   }
+
+   // can only call Datasource::getQoreEncoding() after the call to Datasource::open()
+   TempEncodingHelper tn(typeName, ds->getQoreEncoding(), xsink);
+   if (*xsink)
+      return;
+
+   TempEncodingHelper qn(queueName, ds->getQoreEncoding(), xsink);
+   if (*xsink)
+      return;
+
+   self->setPrivate(CID_AQQUEUE, new AQQueuePriv(ds.release(), tn->getBuffer(), qn->getBuffer(), xsink));
+}
 
 //! Implementation of AQ Queue.
 /**
@@ -280,82 +371,51 @@ void AQQueuePriv::stopSubscription(ExceptionSink *xsink)
  */
 qclass AQQueue [dom=DATABASE; arg=AQQueuePriv* priv; ns=Qore::Oracle];
 
-//! Construct a queue object for posting/getting messages.
+//! Construct a queue object for posting/getting messages from a datasource description string
 /** @param queueName a mandatory name of the queue in the database
- * @param typeName a mandatory name of the type for this queue in the DB
- * @param opts a mandatory login hash
+    @param typeName a mandatory name of the type for this queue in the DB
+    @param desc a datasource description string in the format that can be parsed by parse_datasource()
+
+    @throw AQQUEUE-CONSTRUCTOR-ERROR invalid arguments to constructor
+    @throw DBI-OPTION-ERROR unknown or unsupported option passed to the Oracle driver
  */
-AQQueue::constructor(string queueName, string typeName, hash opts) {
-
-    const char *DSC_ERR = "AQQUEUE-CONSTRUCTOR-ERROR";
-
-    const char *str = check_hash_key(opts, "type", DSC_ERR, xsink);
-    if (*xsink) return;
-
-    if (str == 0)
-        str = "oracle";
-
-    if (strcmp(str, "oracle")) {
-       xsink->raiseException(DSC_ERR, "expecting a string value with the 'type' key giving the driver name 'oracle'");
-       return;
-    }
-
-    DBIDriver *db_driver = DBI.find(str, xsink);
-    if (!db_driver) {
-       if (!*xsink)
-          xsink->raiseException("DATASOURCE-UNSUPPORTED-DATABASE", "DBI driver '%s' cannot be loaded", str);
-       return;
-    }
-
-//    ReferenceHolder<Datasource> ds(new Datasource(db_driver), xsink);
-#warning "TODO/FIXME: deref on xsink somehow..."
-    Datasource *ds = new Datasource(db_driver);
-
-    str = check_hash_key(opts, "user", DSC_ERR, xsink);
-    if (*xsink) return;
-    if (str) ds->setPendingUsername(str);
-
-    str = check_hash_key(opts, "pass", DSC_ERR, xsink);
-    if (*xsink) return;
-    if (str) ds->setPendingPassword(str);
-
-    str = check_hash_key(opts, "db", DSC_ERR, xsink);
-    if (*xsink) return;
-    if (str) ds->setPendingDBName(str);
-
-    str = check_hash_key(opts, "charset", DSC_ERR, xsink);
-    if (*xsink) return;
-    if (str) ds->setPendingDBEncoding(str);
-
-    str = check_hash_key(opts, "host", DSC_ERR, xsink);
-    if (*xsink) return;
-    if (str) ds->setPendingHostName(str);
-
-    bool found;
-    int port = (int)opts->getKeyAsBigInt("port", found);
-    if (port) {
-       if (port < 0) {
-          xsink->raiseException(DSC_ERR, "port value must be zero (meaning use the default port) or positive (value given: %d)", port);
-          return;
-       }
-
-       ds->setPendingPort(port);
-    }
-    if (*xsink) {
-        return;
-    }
-
-    ds->open(xsink);
-    if (*xsink) {
-        return;
-    }
-
-    self->setPrivate(CID_AQQUEUE, new AQQueuePriv(ds, typeName->getBuffer(), queueName->getBuffer(), xsink));
+AQQueue::constructor(string queueName, string typeName, string desc) {
+   ReferenceHolder<QoreHashNode> h(parseDatasource(desc->getBuffer(), xsink), xsink);
+   if (!h) {
+      assert(*xsink);
+      return;
+   }
+   aqqueue_constructor_hash(queueName, typeName, *h, self, xsink);
+   return;
 }
 
-//AQQueue::copy() {
-//   xsink->raiseException("AQQUEUE-COPY-ERROR", "copying AQQueue objects is not allowed");
-//}
+//! Construct a queue object for posting/getting messages.
+/** @param queueName a mandatory name of the queue in the database
+    @param typeName a mandatory name of the type for this queue in the DB
+    @param opts a hash giving parameters for the new dedicated connection to the Oracle database server with the following possible keys (the \c "type" key is optional, but if present, must be \c "oracle"):
+    - \c type: (@ref string_or_nothing_type "*string") The name of the database driver to use; this key is optional, but if present must be \c "oracle" or an exception will be raised
+    - \c user: (@ref string "string") The user name for the new connection
+    - \c pass: (@ref string "string") The password for the new connection
+    - \c db: (@ref string "string") The database name for the new connection
+    - \c charset: (@ref string_or_nothing_type "*string") The Oracle-specific name of the character encoding to use for the new connection. If no value is passed for this parameter, then the Oracle character encoding corresponding to the default character encoding for the %Qore process will be used instead.
+    - \c host: (@ref string_or_nothing_type "*string") The host name for the new connection
+    - \c port: (@ref softint_type "softint") The port number for the new connection. If this key is present and is 0 then an exception will be raised.
+    - \c options: (@ref hash_or_nothing_type "*hash") Any options for the new connection
+
+    @throw AQQUEUE-CONSTRUCTOR-ERROR invalid arguments to constructor    
+    @throw DBI-OPTION-ERROR unknown or unsupported option passed to the Oracle driver
+ */
+AQQueue::constructor(string queueName, string typeName, hash opts) {
+   aqqueue_constructor_hash(queueName, typeName, opts, self, xsink);
+}
+
+//! Copying objects of this class is not supported, an exception will be thrown
+/** 
+    @throw AQQUEUE-COPY-ERROR copying AQQueue objects is not yet supported
+ */
+AQQueue::copy() {
+   xsink->raiseException("AQQUEUE-COPY-ERROR", "copying AQQueue objects is currently not supported");
+}
 
 //! Post the AQMessage into the queue.
 /** @param msg a AQMessage instance
@@ -371,7 +431,7 @@ nothing AQQueue::postMessage(AQMessage[AQMessagePriv] msg) {
  * AQMessage instance if you need to modify message defaults.
  */
 nothing AQQueue::postObject(hash msg) {
-	priv->postObject(msg, xsink);
+   priv->postObject(msg, xsink);
 }
 
 //! Get message from queue
@@ -401,18 +461,18 @@ nothing AQQueue::postObject(hash msg) {
  * The value -1 is accepted and means it waits for ever (until a message
  * is available in the queue)
  */
-nothing AQQueue::startSubscription(int port=0, int timeout=0) {
-	if (port < 0) {
-		xsink->raiseException("AQQUEUE-ERROR", "Port number has to be greater than 0");
-		return 0;
-	}
-
-	if (timeout < -1) {
-		xsink->raiseException("AQQUEUE-ERROR", "Timeout value has to be greater than -1");
-		return 0;
-	}
-
-    priv->startSubscription(self, port, timeout, xsink);
+nothing AQQueue::startSubscription(int port = 0, int timeout = 0) {
+   if (port < 0) {
+      xsink->raiseException("AQQUEUE-ERROR", "Port number has to be greater than 0");
+      return 0;
+   }
+   
+   if (timeout < -1) {
+      xsink->raiseException("AQQUEUE-ERROR", "Timeout value has to be greater than -1");
+      return 0;
+   }
+   
+   priv->startSubscription(self, port, timeout, xsink);
 }
 
 //! Unsubscribe for asynchronous messages notifications.
