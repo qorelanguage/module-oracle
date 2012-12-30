@@ -336,7 +336,7 @@ boolean OCI_API OCI_EnqueueGetRelativeMsgID
 
     if (value != NULL)
     {
-        ub4 raw_lan = raw_len = OCIRawSize(pOCILib->env, value);
+        ub4 raw_len = OCIRawSize(pOCILib->env, value);
 
         if (*len > raw_len)
             *len = raw_len;
