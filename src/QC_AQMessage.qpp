@@ -5,9 +5,9 @@
 #include "AQMessagePriv.h"
 #include "AQQueuePriv.h"
 
-AQMessagePriv::AQMessagePriv(const QoreHashNode* obj) {
+AQMessagePriv::AQMessagePriv(const QoreHashNode* obj, ExceptionSink *xsink) {
     m_obj = 0;
-    setObject(obj);
+    setObject(obj, xsink);
     m_attemptCount = 0;
     m_enqueueDelay = 0;
     m_expiration = -1;
@@ -18,19 +18,21 @@ AQMessagePriv::AQMessagePriv(const QoreHashNode* obj) {
 
 AQMessagePriv::~AQMessagePriv()
 {
-//    if (m_obj) m_obj->deref();
 }
 
 QoreHashNode* AQMessagePriv::getObject() {
     return m_obj;
 }
 
-void AQMessagePriv::setObject(const QoreHashNode* obj) {
+void AQMessagePriv::setObject(const QoreHashNode* obj, ExceptionSink *xsink) {
+    if (m_obj) {
+        m_obj->deref(xsink);
+    }
+
     if (obj)
         m_obj = obj->hashRefSelf();
     else
         m_obj = 0;
-    printf("OBJ> %p\n\n", obj);
 }
 
 int64 AQMessagePriv::getAttemptCount() {
@@ -73,7 +75,10 @@ QoreStringNode* AQMessagePriv::getCorrelation() {
     return m_correlation;
 }
 
-void AQMessagePriv::setCorrelation(const QoreStringNode* c) {
+void AQMessagePriv::setCorrelation(const QoreStringNode* c, ExceptionSink *xsink) {
+    if (m_correlation)
+        m_correlation->deref(xsink);
+
     m_correlation = c->stringRefSelf();
 }
 
@@ -111,7 +116,7 @@ qclass AQMessage [dom=DATABASE; arg=AQMessagePriv* msg; ns=Qore::Oracle];
 /** @param obj \c hash, or \c NOTHING. An Oracle object created with \c bindOracleObject
  */
 AQMessage::constructor(*hash obj) {
-   self->setPrivate(CID_AQMESSAGE, new AQMessagePriv(obj));
+   self->setPrivate(CID_AQMESSAGE, new AQMessagePriv(obj, xsink));
 }
 
 // //! TODO/FIXME
@@ -132,7 +137,7 @@ AQMessage::constructor(*hash obj) {
 /** @param obj \c hash, or \c NOTHING. An Oracle object created with \c bindOracleObject
  */
 nothing AQMessage::setObject(hash h) {
-    msg->setObject(h);
+    msg->setObject(h, xsink);
 }
 
 //! Return the number of attempts that have been made to dequeue the message.
@@ -255,5 +260,5 @@ string AQMessage::getCorrelation() {
  * is undetermined.
  */
 nothing AQMessage::setCorrelation(string c) {
-    msg->setCorrelation(c);
+    msg->setCorrelation(c, xsink);
 }

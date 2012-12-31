@@ -17,10 +17,10 @@ protected:
    DLLLOCAL virtual ~AQMessagePriv();
 
 public:
-   DLLLOCAL AQMessagePriv(const QoreHashNode* obj = 0);
+   DLLLOCAL AQMessagePriv(const QoreHashNode* obj, ExceptionSink *xsink);
 
    DLLLOCAL QoreHashNode* getObject();
-   DLLLOCAL void setObject(const QoreHashNode* obj=0);
+   DLLLOCAL void setObject(const QoreHashNode* obj, ExceptionSink *xsink);
 
    DLLLOCAL int64 getAttemptCount();
 
@@ -40,7 +40,7 @@ public:
 //      DLLLOCAL void getID(void *id, unsigned int *len);
 
    DLLLOCAL QoreStringNode* getCorrelation();
-   DLLLOCAL void setCorrelation(const QoreStringNode* c);
+   DLLLOCAL void setCorrelation(const QoreStringNode* c, ExceptionSink *xsink);
 
    DLLLOCAL virtual void deref(ExceptionSink* xsink) {
       if (ROdereference()) {

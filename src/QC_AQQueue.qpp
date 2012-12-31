@@ -125,14 +125,10 @@ bool AQQueuePriv::postMessage(AQMessagePriv *message, ExceptionSink *xsink)
     }
     
     if (message->getCorrelation()) {
-        QoreStringNode* encoded = message->getCorrelation()->convertEncoding(m_conn->ds.getQoreEncoding(), xsink);
+        TempEncodingHelper encoded(message->getCorrelation(), m_conn->ds.getQoreEncoding(), xsink);
         if (*xsink)
             ret = false;
-        if (ret && !encoded) {
-            xsink->raiseException("AQQUEUE-ERROR", "cannot convert encoding");
-            ret = false;
-        }
-        if (ret && !OCI_MsgSetCorrelation(&m_conn->ocilib, m, message->getCorrelation()->getBuffer())) {
+        if (ret && !OCI_MsgSetCorrelation(&m_conn->ocilib, m, encoded->getBuffer())) {
     	    xsink->raiseException("AQQUEUE-ERROR", "failed to set correlation");
     	    ret = false;
         }
@@ -225,7 +221,7 @@ QoreObject* AQQueuePriv::getMessage(ExceptionSink *xsink)
     OCI_MsgFree(&m_conn->ocilib, msg);
 
     if (res) {
-    	AQMessagePriv *qop = new AQMessagePriv(reinterpret_cast<QoreHashNode*>(obj));
+    	AQMessagePriv *qop = new AQMessagePriv(reinterpret_cast<QoreHashNode*>(obj), xsink);
     	QoreObject *qo = new QoreObject(QC_AQMESSAGE, getProgram(), qop);
     	return qo;
     }
