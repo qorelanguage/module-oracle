@@ -11,13 +11,11 @@
 
 #include <memory>
 
-
-typedef std::map<OCI_Dequeue*,QoreObject*> m_map_t;
-
 class AQDequeueMap {
 
-    QoreThreadLock m_lock;
-    m_map_t m_map;
+   QoreThreadLock m_lock;
+   typedef std::map<OCI_Dequeue*,QoreObject*> m_map_t;
+   m_map_t m_map;
 
 public:
     DLLLOCAL AQDequeueMap() {
@@ -34,6 +32,7 @@ public:
             m_map[deq] = o;
             return 0;
         }
+        return -1;
     }
 
     DLLLOCAL QoreObject* get(OCI_Dequeue *deq) {
@@ -286,7 +285,10 @@ void AQQueuePriv::startSubscription(QoreObject *qo, int64 port, int64 timeout, E
     if (!checkDequeue(xsink))
         return;
 
-    dequeueMap.set(m_dequeue, qo);
+    if (dequeueMap.set(m_dequeue, qo)) {
+        xsink->raiseException("AQQUEUE-ERROR", "a subscription is already set with this AQQueue object; call AQQueue::stopSubscription() first before calling AQQueue::startSubscription()");
+        return;
+    }
 
     if (!OCI_DequeueSubscribe(&m_conn->ocilib, m_dequeue, port, timeout, on_async_message)) {
         dequeueMap.remove(m_dequeue);
@@ -490,15 +492,9 @@ nothing AQQueue::postObject(hash msg) {
 
 //! Subscribe for asynchronous messages notifications.
 /** @param port an optional port number
- * @param timeout an optional timeout value
- *
- * <b>Timeout:</b> Any positive values in seconds are valid.
- *
- * The value 0 is accepted and means that it does not wait for messages
- * and returns immediately if no messages are available
- *
- * The value -1 is accepted and means it waits for ever (until a message
- * is available in the queue)
+    @param timeout an optional timeout value in seconds; any positive value in seconds is valid. The value 0 is accepted and means that it does not wait for messages and returns immediately if no messages are available.  The value -1 is accepted and means it waits for ever (until a message is available in the queue)
+
+    @throw AQQUEUE-ERROR port or timeout value invalid; subscription already active for this object 
  */
 nothing AQQueue::startSubscription(int port = 0, int timeout = 0) {
    if (port < 0) {
