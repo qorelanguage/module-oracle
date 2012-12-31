@@ -69,11 +69,11 @@ void AQMessagePriv::setPriority(int64 prio) {
 
 //      void getID(void *id, unsigned int *len);
 
-const char * AQMessagePriv::getCorrelation() {
+const QoreString* AQMessagePriv::getCorrelation() {
     return m_correlation;
 }
 
-void AQMessagePriv::setCorrelation(const char* c) {
+void AQMessagePriv::setCorrelation(const QoreString* c) {
     m_correlation = c;
 }
 
@@ -244,7 +244,6 @@ nothing AQMessage::setPriority(int prio) {
 /** @retval string a correlation identifier
  */
 string AQMessage::getCorrelation() {
-#warning TODO/FIXME: encoding
     return new QoreStringNode(msg->getCorrelation());
 }
 
@@ -256,5 +255,5 @@ string AQMessage::getCorrelation() {
  * is undetermined.
  */
 nothing AQMessage::setCorrelation(string c) {
-    msg->setCorrelation(c->getBuffer());
+    msg->setCorrelation(c);
 }

@@ -14,7 +14,6 @@ DLLEXPORT extern qore_classid_t CID_AQQUEUE;
 DLLLOCAL extern QoreClass* QC_AQQUEUE;
 
 
-#warning "TODO/FIXME: AbstractThreadResource?"
 class AQQueuePriv : public AbstractPrivateData {
    protected:
       DLLLOCAL virtual ~AQQueuePriv();

@@ -123,7 +123,7 @@ bool AQQueuePriv::postMessage(AQMessagePriv *message, ExceptionSink *xsink)
     	xsink->raiseException("AQQUEUE-ERROR", "failed to set priority");
     	ret = false;
     }
-    if (ret && !OCI_MsgSetCorrelation(&m_conn->ocilib, m, message->getCorrelation())) {
+    if (ret && !OCI_MsgSetCorrelation(&m_conn->ocilib, m, message->getCorrelation()->getBuffer())) {
     	xsink->raiseException("AQQUEUE-ERROR", "failed to set correlation");
     	ret = false;
     }

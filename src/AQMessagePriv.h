@@ -40,8 +40,8 @@ class AQMessagePriv : public AbstractPrivateData {
 
 //      DLLLOCAL void getID(void *id, unsigned int *len);
 
-      DLLLOCAL const char * getCorrelation();
-      DLLLOCAL void setCorrelation(const char* c);
+      DLLLOCAL const QoreString* getCorrelation();
+      DLLLOCAL void setCorrelation(const QoreString* c);
 
 
    private:
@@ -51,7 +51,7 @@ class AQMessagePriv : public AbstractPrivateData {
       int64 m_expiration;
       int64 m_state;
       int64 m_priority;
-      const char * m_correlation;
+      const QoreString *m_correlation;
 };
 
 #endif
