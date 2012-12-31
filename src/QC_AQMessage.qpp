@@ -16,12 +16,11 @@ AQMessagePriv::AQMessagePriv(const QoreHashNode* obj, ExceptionSink *xsink) {
     m_correlation = 0;
 }
 
-AQMessagePriv::~AQMessagePriv()
-{
+AQMessagePriv::~AQMessagePriv() {
 }
 
 QoreHashNode* AQMessagePriv::getObject() {
-    return m_obj;
+   return m_obj ? m_obj->hashRefSelf() : 0;
 }
 
 void AQMessagePriv::setObject(const QoreHashNode* obj, ExceptionSink *xsink) {
@@ -72,7 +71,7 @@ void AQMessagePriv::setPriority(int64 prio) {
 //      void getID(void *id, unsigned int *len);
 
 QoreStringNode* AQMessagePriv::getCorrelation() {
-    return m_correlation;
+   return m_correlation ? m_correlation->stringRefSelf() : 0;
 }
 
 void AQMessagePriv::setCorrelation(const QoreStringNode* c, ExceptionSink *xsink) {

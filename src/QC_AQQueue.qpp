@@ -59,11 +59,11 @@ AQQueuePriv::AQQueuePriv(Datasource *ds, const char *tname, const char *qname, E
 
     printf("AQQueuePriv CONNECTION> m_conn(%p)\n", m_conn);
 
-    char err[200];
-    sprintf(err, "Cannot get type info for '%s'", tname);
     if (!m_typeInfo) {
-        xsink->raiseException("AQ-MESSAGE-ERROR", err);
-        return;
+       char err[200];
+       sprintf(err, "Cannot get type info for '%s'", tname);
+       xsink->raiseException("AQ-MESSAGE-ERROR", err);
+       return;
     }
 }
 
@@ -185,8 +185,7 @@ bool AQQueuePriv::rollback(ExceptionSink *xsink) {
     return m_conn->rollback(xsink);
 }
 
-QoreObject* AQQueuePriv::getMessage(ExceptionSink *xsink)
-{
+QoreObject* AQQueuePriv::getMessage(ExceptionSink *xsink) {
     if (!checkDequeue(xsink))
         return 0;
 
