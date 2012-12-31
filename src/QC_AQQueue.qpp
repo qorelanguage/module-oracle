@@ -22,13 +22,7 @@ public:
     }
 
     DLLLOCAL ~AQDequeueMap() {
-        {
-            AutoLocker al(m_lock);
-            std::map<OCI_Dequeue*,QoreObject*>::iterator it;
-            for (it = m_map.begin(); it != m_map.end(); ++it) {
-                (*it).second->tDeref();
-            }
-        }
+        assert(m_map.empty());
     }
 
     DLLLOCAL void set(OCI_Dequeue *deq, QoreObject *o) {
