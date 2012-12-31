@@ -14,9 +14,7 @@
 // TODO/FIXME: better solution?
 static std::map<OCI_Dequeue*,QoreObject*> dequeueMap;
 
-
-void on_async_message(OCI_Dequeue *deq)
-{
+void on_async_message(OCI_Dequeue *deq) {
     QoreForeignThreadHelper qfth;
 
     printf("DEBUG> message arrived\n");
@@ -30,7 +28,6 @@ void on_async_message(OCI_Dequeue *deq)
     if (xsink) { printf("EXCEPTION\n"); }
 }
 
-
 const char* check_hash_key(const QoreHashNode* h, const char* key, const char* err, ExceptionSink *xsink) {
    const AbstractQoreNode* p = h->getKeyValue(key);
    if (is_nothing(p))
@@ -42,8 +39,6 @@ const char* check_hash_key(const QoreHashNode* h, const char* key, const char* e
    }
    return reinterpret_cast<const QoreStringNode* >(p)->getBuffer();
 }
-
-
 
 AQQueuePriv::AQQueuePriv(Datasource *ds, const char *tname, const char *qname, ExceptionSink *xsink)
     : m_conn(0),
@@ -67,16 +62,15 @@ AQQueuePriv::AQQueuePriv(Datasource *ds, const char *tname, const char *qname, E
     }
 }
 
-AQQueuePriv::~AQQueuePriv()
-{
+AQQueuePriv::~AQQueuePriv() {
+   printd(0, "AQQueuePriv::~AQQueuePriv() this: %p m_dequeue: %p\n", this, m_dequeue);
     dequeueMap.erase(m_dequeue); // TODO/FIXME: stopSubscription in qore destructor?
     if (m_enqueue) OCI_EnqueueFree(&m_conn->ocilib, m_enqueue);
     if (m_dequeue) OCI_DequeueFree(&m_conn->ocilib, m_dequeue);
     if (m_typeInfo) OCI_TypeInfoFree2(&m_conn->ocilib, m_typeInfo);
 }
 
-bool AQQueuePriv::postMessage(AQMessagePriv *message, ExceptionSink *xsink)
-{
+bool AQQueuePriv::postMessage(AQMessagePriv *message, ExceptionSink *xsink) {
     if (!m_enqueue) {
         printf("Opening W queue: %s (%p)\n", m_qname, m_typeInfo);
         m_enqueue = OCI_EnqueueCreate(&m_conn->ocilib, m_typeInfo, m_qname);
@@ -145,8 +139,7 @@ bool AQQueuePriv::postMessage(AQMessagePriv *message, ExceptionSink *xsink)
     return ret;
 }
 
-bool AQQueuePriv::postObject(const QoreHashNode *h, ExceptionSink *xsink)
-{
+bool AQQueuePriv::postObject(const QoreHashNode *h, ExceptionSink *xsink) {
 	OCI_Object * obj = objBindQore(m_conn, h, xsink);
 	if (!obj) {
 	    xsink->raiseException("AQQUEUE-ERROR", "failed to create(bind) object");
@@ -189,6 +182,8 @@ QoreObject* AQQueuePriv::getMessage(ExceptionSink *xsink) {
     if (!checkDequeue(xsink))
         return 0;
 
+    printd(0, "AQQueuePriv::getMessage() this: %p dequeue: %p msg: %p msg->typinfo: %p (%s)\n", this, m_dequeue, m_dequeue->msg, m_dequeue->msg->typinf, m_dequeue->msg->typinf->name);
+
     OCI_Msg *msg = OCI_DequeueGet(&m_conn->ocilib, m_dequeue);
 
     if (msg == NULL) {
@@ -198,47 +193,37 @@ QoreObject* AQQueuePriv::getMessage(ExceptionSink *xsink) {
         return 0;
     }
 
-    bool res = true;
-
-    OCI_Object *o = OCI_MsgGetObject(&m_conn->ocilib, msg);
+    OCI_Object *o = OCI_MsgGetObject(&m_conn->ocilib, msg);    
 
     if (!o) {
         xsink->raiseException("AQQUEUE-ERROR", "Cannot get object from message");
-        res = false;
+        return 0;
     }
 
-    AbstractQoreNode * obj = 0;
-    if (res) {
-    	obj = objToQore(m_conn, o, xsink);
-    	if (!obj) {
-    		xsink->raiseException("AQQUEUE-ERROR", "Cannot get qore hash from OCI object");
-    		res = false;
-    	}
-    }
+    ON_BLOCK_EXIT(OCI_ObjectFree2, &m_conn->ocilib, o);
 
-    OCI_ObjectFree2(&m_conn->ocilib, o);
-    OCI_MsgFree(&m_conn->ocilib, msg);
+    AbstractQoreNode * obj = objToQore(m_conn, o, xsink);
+    if (!obj) {
+       xsink->raiseException("AQQUEUE-ERROR", "Cannot get qore hash from OCI object");
+       return 0;
+    }
+    assert(obj->getType() == NT_HASH);
 
-    if (res) {
-    	AQMessagePriv *qop = new AQMessagePriv(reinterpret_cast<QoreHashNode*>(obj), xsink);
-    	QoreObject *qo = new QoreObject(QC_AQMESSAGE, getProgram(), qop);
-    	return qo;
-    }
-    else {
-    	return 0;
-    }
+    AQMessagePriv *qop = new AQMessagePriv(reinterpret_cast<QoreHashNode*>(obj), xsink);
+    QoreObject *qo = new QoreObject(QC_AQMESSAGE, getProgram(), qop);
+    printd(0, "AQQueuePriv::getMessage() this: %p returning obj: %p\n", this, qo);
+    return qo;
 }
 
-bool AQQueuePriv::checkDequeue(ExceptionSink *xsink)
-{
+bool AQQueuePriv::checkDequeue(ExceptionSink *xsink) {
     if (!m_dequeue) {
-        printf("Opening R queue: %s (%p)\n", m_qname, m_typeInfo);
+       printd(0, "AQQueuePriv::checkDequeue() this: %p Opening R queue: %s (%p)\n", this, m_qname, m_typeInfo);
         m_dequeue = OCI_DequeueCreate(&m_conn->ocilib, m_typeInfo, m_qname);
         if (!m_dequeue) {
             xsink->raiseException("AQQUEUE-ERROR", "failed to initialize queue");
             return false;
         }
-        printf("DEQUEUE ptr: %p\n", m_dequeue);
+        printd(0, "AQQueuePriv::checkDequeue() this: %p DEQUEUE ptr: %p msg: %p m_typeInfo: %p msg->typinfo: %p (%s)\n", this, m_dequeue, m_dequeue->msg, m_typeInfo, m_dequeue->msg->typinf, m_dequeue->msg->typinf->name);
         if (!OCI_DequeueSetWaitTime(&m_conn->ocilib, m_dequeue, 0)) {
             xsink->raiseException("AQQUEUE-ERROR", "failed to set dequeue timeout");
             return false;
@@ -249,8 +234,7 @@ bool AQQueuePriv::checkDequeue(ExceptionSink *xsink)
     //OCI_DequeueSetConsumer for list
 }
 
-void AQQueuePriv::startSubscription(QoreObject *qo, int64 port, int64 timeout, ExceptionSink *xsink)
-{
+void AQQueuePriv::startSubscription(QoreObject *qo, int64 port, int64 timeout, ExceptionSink *xsink) {
     if (!checkDequeue(xsink))
         return;
 
@@ -265,8 +249,7 @@ printf("QO> %s - %d\n", qo->getTypeName(), qo->validInstanceOf(CID_AQQUEUE));
 
 }
 
-void AQQueuePriv::stopSubscription(ExceptionSink *xsink)
-{
+void AQQueuePriv::stopSubscription(ExceptionSink *xsink) {
     if (!checkDequeue(xsink))
         return;
 
@@ -451,6 +434,7 @@ nothing AQQueue::postObject(hash msg) {
 //		return Nothing;
 //	else
 //		return reinterpret_cast<QoreObject*>(n);
+
 	return priv->getMessage(xsink);
 }
 

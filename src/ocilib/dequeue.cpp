@@ -44,7 +44,7 @@
 
 OCI_Dequeue * OCI_API OCI_DequeueCreate
 (
-	OCI_Library *pOCILib,
+    OCI_Library *pOCILib,
     OCI_TypeInfo *typinf,
     const mtext  *name
 )
@@ -74,7 +74,7 @@ OCI_Dequeue * OCI_API OCI_DequeueCreate
                                                   (size_t) 0, (dvoid **) NULL));
 
         /* create local message for OCI_DequeueGet() */
-
+	
         if (res == TRUE)
         {
             dequeue->msg = OCI_MsgCreate(pOCILib, dequeue->typinf);
@@ -208,7 +208,7 @@ OCI_Agent * OCI_API OCI_DequeueListen
 
 OCI_Msg * OCI_API OCI_DequeueGet
 (
-	OCI_Library *pOCILib,
+    OCI_Library *pOCILib,
     OCI_Dequeue *dequeue
 )
 {
