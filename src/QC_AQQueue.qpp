@@ -11,22 +11,66 @@
 
 #include <memory>
 
-// TODO/FIXME: better solution?
-static std::map<OCI_Dequeue*,QoreObject*> dequeueMap;
+
+class AQDequeueMap {
+
+    QoreThreadLock *m_lock;
+    std::map<OCI_Dequeue*,QoreObject*> m_map;
+
+public:
+    AQDequeueMap() {
+        m_lock = new QoreThreadLock();
+    }
+
+    ~AQDequeueMap() {
+        {
+            AutoLocker al(m_lock);
+            std::map<OCI_Dequeue*,QoreObject*>::iterator it;
+            for (it = m_map.begin(); it != m_map.end(); ++it) {
+                (*it).second->tDeref();
+            }
+        }
+        delete m_lock;
+    }
+
+    void set(OCI_Dequeue *deq, QoreObject *o) {
+        AutoLocker al(m_lock);
+        o->tRef();
+        m_map[deq] = o;
+    }
+
+    QoreObject* get(OCI_Dequeue *deq) {
+        AutoLocker al(m_lock);
+        return m_map[deq];
+    }
+
+    void remove(OCI_Dequeue *deq) {
+        AutoLocker al(m_lock);
+        QoreObject *o = m_map[deq];
+        m_map.erase(deq);
+        o->tDeref();
+    }
+
+};
+
+
+static AQDequeueMap dequeueMap;
+
 
 void on_async_message(OCI_Dequeue *deq) {
     QoreForeignThreadHelper qfth;
 
     printf("DEBUG> message arrived\n");
     printf("       deq: %p\n", deq);
-    assert(dequeueMap[deq]);
+    assert(dequeueMap.get(deq));
     printf("       OCI_Dequeue instance: %p\n", deq);
-    printf("        QoreObject instance: %p\n\n", dequeueMap[deq]);
+    printf("        QoreObject instance: %p\n\n", dequeueMap.get(deq));
 
     ExceptionSink xsink;
-    dequeueMap[deq]->evalMethod("onAsyncMessage", 0, &xsink);
+    dequeueMap.get(deq)->evalMethod("onAsyncMessage", 0, &xsink);
     if (xsink) { printf("EXCEPTION\n"); }
 }
+
 
 const char* check_hash_key(const QoreHashNode* h, const char* key, const char* err, ExceptionSink *xsink) {
    const AbstractQoreNode* p = h->getKeyValue(key);
@@ -64,7 +108,7 @@ AQQueuePriv::AQQueuePriv(Datasource *ds, const char *tname, const char *qname, E
 
 AQQueuePriv::~AQQueuePriv() {
    printd(0, "AQQueuePriv::~AQQueuePriv() this: %p m_dequeue: %p\n", this, m_dequeue);
-    dequeueMap.erase(m_dequeue); // TODO/FIXME: stopSubscription in qore destructor?
+    dequeueMap.remove(m_dequeue); // TODO/FIXME: stopSubscription in qore destructor?
     if (m_enqueue) OCI_EnqueueFree(&m_conn->ocilib, m_enqueue);
     if (m_dequeue) OCI_DequeueFree(&m_conn->ocilib, m_dequeue);
     if (m_typeInfo) OCI_TypeInfoFree2(&m_conn->ocilib, m_typeInfo);
@@ -244,7 +288,7 @@ void AQQueuePriv::startSubscription(QoreObject *qo, int64 port, int64 timeout, E
         return;
     }
 printf("QO> %s - %d\n", qo->getTypeName(), qo->validInstanceOf(CID_AQQUEUE));
-    dequeueMap[m_dequeue] = qo;
+    dequeueMap.set(m_dequeue, qo);
     printf("SUBSCR DEQUEUE ptr: %p - %p\n", m_dequeue, qo);
 
 }
@@ -258,7 +302,7 @@ void AQQueuePriv::stopSubscription(ExceptionSink *xsink) {
         return;
     }
 
-    dequeueMap.erase(m_dequeue);
+    dequeueMap.remove(m_dequeue);
 }
 
 static int ds_set_options(Datasource& ds, const QoreHashNode* opts, ExceptionSink* xsink) {
