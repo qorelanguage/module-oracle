@@ -69,12 +69,12 @@ void AQMessagePriv::setPriority(int64 prio) {
 
 //      void getID(void *id, unsigned int *len);
 
-const QoreString* AQMessagePriv::getCorrelation() {
+QoreStringNode* AQMessagePriv::getCorrelation() {
     return m_correlation;
 }
 
-void AQMessagePriv::setCorrelation(const QoreString* c) {
-    m_correlation = c;
+void AQMessagePriv::setCorrelation(const QoreStringNode* c) {
+    m_correlation = c->stringRefSelf();
 }
 
 
@@ -85,7 +85,7 @@ void AQMessagePriv::setCorrelation(const QoreString* c) {
 namespace Oracle;
 
 //! Unknown status
-const OCI_UNKNOWN 			= 0;
+const OCI_UNKNOWN           = 0;
 
 //! Ready status
 const OCI_AMS_READY         = 1;
@@ -244,7 +244,7 @@ nothing AQMessage::setPriority(int prio) {
 /** @retval string a correlation identifier
  */
 string AQMessage::getCorrelation() {
-    return new QoreStringNode(msg->getCorrelation());
+    return msg->getCorrelation();
 }
 
 //! Set the correlation identifier of the message.
