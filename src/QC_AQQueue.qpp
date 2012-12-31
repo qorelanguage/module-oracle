@@ -14,15 +14,14 @@
 
 class AQDequeueMap {
 
-    QoreThreadLock *m_lock;
+    QoreThreadLock m_lock;
     std::map<OCI_Dequeue*,QoreObject*> m_map;
 
 public:
-    AQDequeueMap() {
-        m_lock = new QoreThreadLock();
+    DLLLOCAL AQDequeueMap() {
     }
 
-    ~AQDequeueMap() {
+    DLLLOCAL ~AQDequeueMap() {
         {
             AutoLocker al(m_lock);
             std::map<OCI_Dequeue*,QoreObject*>::iterator it;
@@ -30,24 +29,26 @@ public:
                 (*it).second->tDeref();
             }
         }
-        delete m_lock;
     }
 
-    void set(OCI_Dequeue *deq, QoreObject *o) {
+    DLLLOCAL void set(OCI_Dequeue *deq, QoreObject *o) {
         AutoLocker al(m_lock);
         o->tRef();
         m_map[deq] = o;
     }
 
-    QoreObject* get(OCI_Dequeue *deq) {
+    DLLLOCAL QoreObject* get(OCI_Dequeue *deq) {
         AutoLocker al(m_lock);
         return m_map[deq];
     }
 
-    void remove(OCI_Dequeue *deq) {
-        AutoLocker al(m_lock);
-        QoreObject *o = m_map[deq];
-        m_map.erase(deq);
+    DLLLOCAL void remove(OCI_Dequeue *deq) {
+        QoreObject *o;
+        {
+            AutoLocker al(m_lock);
+            o = m_map[deq];
+            m_map.erase(deq);
+        }
         o->tDeref();
     }
 
