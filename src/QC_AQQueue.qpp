@@ -12,10 +12,12 @@
 #include <memory>
 
 
+typedef std::map<OCI_Dequeue*,QoreObject*> m_map_t;
+
 class AQDequeueMap {
 
     QoreThreadLock m_lock;
-    std::map<OCI_Dequeue*,QoreObject*> m_map;
+    m_map_t m_map;
 
 public:
     DLLLOCAL AQDequeueMap() {
@@ -25,23 +27,30 @@ public:
         assert(m_map.empty());
     }
 
-    DLLLOCAL void set(OCI_Dequeue *deq, QoreObject *o) {
+    DLLLOCAL int set(OCI_Dequeue *deq, QoreObject *o) {
         AutoLocker al(m_lock);
-        o->tRef();
-        m_map[deq] = o;
+        if (m_map.find(deq) == m_map.end()) {
+            o->tRef();
+            m_map[deq] = o;
+            return 0;
+        }
     }
 
     DLLLOCAL QoreObject* get(OCI_Dequeue *deq) {
         AutoLocker al(m_lock);
-        return m_map[deq];
+        m_map_t::const_iterator i = m_map.find(deq);
+        assert(i != m_map.end());
+        return i->second;
     }
 
     DLLLOCAL void remove(OCI_Dequeue *deq) {
         QoreObject *o;
         {
             AutoLocker al(m_lock);
-            o = m_map[deq];
-            m_map.erase(deq);
+            m_map_t::iterator i = m_map.find(deq);
+            assert(i != m_map.end());
+            o = i->second;
+            m_map.erase(i);
         }
         o->tDeref();
     }
@@ -277,13 +286,15 @@ void AQQueuePriv::startSubscription(QoreObject *qo, int64 port, int64 timeout, E
     if (!checkDequeue(xsink))
         return;
 
+    dequeueMap.set(m_dequeue, qo);
+
     if (!OCI_DequeueSubscribe(&m_conn->ocilib, m_dequeue, port, timeout, on_async_message)) {
+        dequeueMap.remove(m_dequeue);
         OCI_DequeueUnsubscribe(&m_conn->ocilib, m_dequeue);
         xsink->raiseException("AQQUEUE-ERROR", "cannot start the subscription");
         return;
     }
-printf("QO> %s - %d\n", qo->getTypeName(), qo->validInstanceOf(CID_AQQUEUE));
-    dequeueMap.set(m_dequeue, qo);
+
     printf("SUBSCR DEQUEUE ptr: %p - %p\n", m_dequeue, qo);
 
 }
