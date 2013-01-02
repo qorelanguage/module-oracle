@@ -92,7 +92,8 @@ AQQueuePriv::AQQueuePriv(Datasource *ds, const QoreStringNode *tname, const Qore
       m_ds(ds),
       m_typeInfo(0),
       m_enqueue(0),
-      m_dequeue(0)
+      m_dequeue(0),
+      m_hasSubscription(false)
 {
     m_tname = tname->stringRefSelf();
     m_qname = qname->stringRefSelf();
@@ -117,7 +118,7 @@ void AQQueuePriv::disconnect() {
     printd(0, "AQQueuePriv::~disconnect() this: %p m_dequeue: %p\n", this, m_dequeue);
     if (m_enqueue) OCI_EnqueueFree(&m_conn->ocilib, m_enqueue);
     if (m_dequeue) {
-        dequeueMap.remove(m_dequeue); // TODO/FIXME: stopSubscription in qore destructor?
+        if (m_hasSubscription) dequeueMap.remove(m_dequeue); // TODO/FIXME: stopSubscription in qore destructor?
         OCI_DequeueFree(&m_conn->ocilib, m_dequeue);
     }
     if (m_typeInfo) OCI_TypeInfoFree2(&m_conn->ocilib, m_typeInfo);
@@ -332,6 +333,8 @@ void AQQueuePriv::startSubscription(QoreObject *qo, int64 port, int64 timeout, E
     if (!checkDequeue(xsink))
         return;
 
+    m_hasSubscription = true;
+
     if (dequeueMap.set(m_dequeue, qo)) {
         xsink->raiseException("AQQUEUE-ERROR", "a subscription is already set with this AQQueue object; call AQQueue::stopSubscription() first before calling AQQueue::startSubscription()");
         return;
@@ -358,6 +361,7 @@ void AQQueuePriv::stopSubscription(ExceptionSink *xsink) {
     }
 
     dequeueMap.remove(m_dequeue);
+    m_hasSubscription = false;
 }
 
 static int ds_set_options(Datasource& ds, const QoreHashNode* opts, ExceptionSink* xsink) {

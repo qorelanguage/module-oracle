@@ -50,6 +50,7 @@ class AQQueuePriv : public AbstractPrivateData {
       OCI_TypeInfo *m_typeInfo;
       OCI_Enqueue *m_enqueue;
       OCI_Dequeue *m_dequeue;
+      bool m_hasSubscription;
 
       DLLLOCAL bool checkDequeue(ExceptionSink *xsink);
 };
