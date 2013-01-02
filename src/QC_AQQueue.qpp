@@ -158,7 +158,8 @@ void AQQueuePriv::connect(ExceptionSink *xsink) {
 
     char value[64];
     sprintf(value, "Qore AQ Queue: %s", qn->getBuffer());
-    OCI_SetTrace(&m_conn->ocilib, m_conn->ocilib_cn, OCI_TRC_MODULE, value);
+    if (!OCI_SetTrace(&m_conn->ocilib, m_conn->ocilib_cn, OCI_TRC_MODULE, value))
+        printd(0, "TRACE FAILED\n\n\n");
 }
 
 bool AQQueuePriv::ping() {
@@ -343,6 +344,7 @@ void AQQueuePriv::startSubscription(QoreObject *qo, int64 port, int64 timeout, E
     if (!OCI_DequeueSubscribe(&m_conn->ocilib, m_dequeue, port, timeout, on_async_message)) {
         dequeueMap.remove(m_dequeue);
         OCI_DequeueUnsubscribe(&m_conn->ocilib, m_dequeue);
+        m_hasSubscription = false;
         xsink->raiseException("AQQUEUE-ERROR", "cannot start the subscription");
         return;
     }
