@@ -87,40 +87,87 @@ const char* check_hash_key(const QoreHashNode* h, const char* key, const char* e
    return reinterpret_cast<const QoreStringNode* >(p)->getBuffer();
 }
 
-AQQueuePriv::AQQueuePriv(Datasource *ds, const char *tname, const char *qname, ExceptionSink *xsink)
+AQQueuePriv::AQQueuePriv(Datasource *ds, const QoreStringNode *tname, const QoreStringNode *qname, ExceptionSink *xsink)
     : m_conn(0),
       m_ds(ds),
-//      m_message(0),
+      m_typeInfo(0),
       m_enqueue(0),
       m_dequeue(0)
 {
-    m_conn = ds->getPrivateData<QoreOracleConnection>();
+    m_tname = tname->stringRefSelf();
+    m_qname = qname->stringRefSelf();
+    connect(xsink);
+    printd(0, "PING> %d\n", ping());
+}
+
+AQQueuePriv::~AQQueuePriv() {
+    disconnect();
+}
+
+void AQQueuePriv::deref(ExceptionSink* xsink) {
+    if (ROdereference()) {
+        m_tname->deref(xsink);
+        m_qname->deref(xsink);
+        delete this;
+    }
+}
+
+
+void AQQueuePriv::disconnect() {
+    printd(0, "AQQueuePriv::~disconnect() this: %p m_dequeue: %p\n", this, m_dequeue);
+    if (m_enqueue) OCI_EnqueueFree(&m_conn->ocilib, m_enqueue);
+    if (m_dequeue) {
+        dequeueMap.remove(m_dequeue); // TODO/FIXME: stopSubscription in qore destructor?
+        OCI_DequeueFree(&m_conn->ocilib, m_dequeue);
+    }
+    if (m_typeInfo) OCI_TypeInfoFree2(&m_conn->ocilib, m_typeInfo);
+}
+
+void AQQueuePriv::connect(ExceptionSink *xsink) {
+    disconnect();
+
+    if (!m_conn)
+        m_conn = m_ds->getPrivateData<QoreOracleConnection>();
+
     assert(m_conn);
-    m_typeInfo = OCI_TypeInfoGet2(&m_conn->ocilib, m_conn->ocilib_cn, tname, OCI_TIF_TYPE);
-    m_qname = qname;
+    m_conn->ds.open(xsink);
+    if (*xsink) {
+        return;
+    }
+
+    // can only call Datasource::getQoreEncoding() after the call to Datasource::open()
+    TempEncodingHelper tn(m_tname, m_conn->ds.getQoreEncoding(), xsink);
+    if (*xsink)
+        return;
+
+    TempEncodingHelper qn(m_qname, m_conn->ds.getQoreEncoding(), xsink);
+    if (*xsink)
+        return;
+
+    m_typeInfo = OCI_TypeInfoGet2(&m_conn->ocilib, m_conn->ocilib_cn, tn->getBuffer(), OCI_TIF_TYPE);
 
     printf("AQQueuePriv CONNECTION> m_conn(%p)\n", m_conn);
 
     if (!m_typeInfo) {
        char err[200];
-       sprintf(err, "Cannot get type info for '%s'", tname);
+       sprintf(err, "Cannot get type info for '%s'", m_tname->getBuffer());
        xsink->raiseException("AQ-MESSAGE-ERROR", err);
        return;
     }
+
+    char value[64];
+    sprintf(value, "Qore AQ Queue: %s", qn->getBuffer());
+    OCI_SetTrace(&m_conn->ocilib, m_conn->ocilib_cn, OCI_TRC_MODULE, value);
 }
 
-AQQueuePriv::~AQQueuePriv() {
-   printd(0, "AQQueuePriv::~AQQueuePriv() this: %p m_dequeue: %p\n", this, m_dequeue);
-    dequeueMap.remove(m_dequeue); // TODO/FIXME: stopSubscription in qore destructor?
-    if (m_enqueue) OCI_EnqueueFree(&m_conn->ocilib, m_enqueue);
-    if (m_dequeue) OCI_DequeueFree(&m_conn->ocilib, m_dequeue);
-    if (m_typeInfo) OCI_TypeInfoFree2(&m_conn->ocilib, m_typeInfo);
+bool AQQueuePriv::ping() {
+    return OCI_Ping(&m_conn->ocilib, m_conn->ocilib_cn);
 }
 
 bool AQQueuePriv::postMessage(AQMessagePriv *message, ExceptionSink *xsink) {
     if (!m_enqueue) {
-        printf("Opening W queue: %s (%p)\n", m_qname, m_typeInfo);
-        m_enqueue = OCI_EnqueueCreate(&m_conn->ocilib, m_typeInfo, m_qname);
+        printf("Opening W queue: %s (%p)\n", m_qname->getBuffer(), m_typeInfo);
+        m_enqueue = OCI_EnqueueCreate(&m_conn->ocilib, m_typeInfo, m_qname->getBuffer());
     }
 
     if (!m_enqueue) {
@@ -264,8 +311,8 @@ QoreObject* AQQueuePriv::getMessage(ExceptionSink *xsink) {
 
 bool AQQueuePriv::checkDequeue(ExceptionSink *xsink) {
     if (!m_dequeue) {
-       printd(0, "AQQueuePriv::checkDequeue() this: %p Opening R queue: %s (%p)\n", this, m_qname, m_typeInfo);
-        m_dequeue = OCI_DequeueCreate(&m_conn->ocilib, m_typeInfo, m_qname);
+       printd(0, "AQQueuePriv::checkDequeue() this: %p Opening R queue: %s (%p)\n", this, m_qname->getBuffer(), m_typeInfo);
+        m_dequeue = OCI_DequeueCreate(&m_conn->ocilib, m_typeInfo, m_qname->getBuffer());
         if (!m_dequeue) {
             xsink->raiseException("AQQUEUE-ERROR", "failed to initialize queue");
             return false;
@@ -393,16 +440,7 @@ static void aqqueue_constructor_hash(const QoreStringNode* queueName, const Qore
       return;
    }
 
-   // can only call Datasource::getQoreEncoding() after the call to Datasource::open()
-   TempEncodingHelper tn(typeName, ds->getQoreEncoding(), xsink);
-   if (*xsink)
-      return;
-
-   TempEncodingHelper qn(queueName, ds->getQoreEncoding(), xsink);
-   if (*xsink)
-      return;
-
-   self->setPrivate(CID_AQQUEUE, new AQQueuePriv(ds.release(), tn->getBuffer(), qn->getBuffer(), xsink));
+   self->setPrivate(CID_AQQUEUE, new AQQueuePriv(ds.release(), typeName, queueName, xsink));
 }
 
 //! Implementation of AQ Queue.

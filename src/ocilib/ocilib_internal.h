@@ -46,6 +46,17 @@
                          PRIVATE FUNCTIONS PROTOTYPES
  * ************************************************************************ */
 
+boolean OCI_API OCI_SetTrace
+(
+    OCI_Library *pOCILib,
+    OCI_Connection *con,
+    unsigned int    trace,
+    const mtext    *value
+);
+
+boolean OCI_API OCI_Ping(OCI_Library *pOCILib, OCI_Connection *con);
+
+
 /* --------------------------------------------------------------------------------------------- *
  * agent.c
  * --------------------------------------------------------------------------------------------- */

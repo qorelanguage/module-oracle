@@ -1744,21 +1744,20 @@ const mtext * OCI_API OCI_GetTrace
 /* ------------------------------------------------------------------------ *
  * OCI_Ping
  * ------------------------------------------------------------------------ */
-/*
-boolean OCI_API OCI_Ping(OCI_Connection *con)
+boolean OCI_API OCI_Ping(OCI_Library *pOCILib, OCI_Connection *con)
 {
     boolean res = TRUE;
     boolean ret = FALSE;
 
-    OCI_CHECK_PTR(OCI_IPC_CONNECTION, con, FALSE);
+    OCI_CHECK_PTR(pOCILib, OCI_IPC_CONNECTION, con, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_10_2
 
-    if (OCILib.version_runtime >= OCI_10_2)
+    if (pOCILib->version_runtime >= OCI_10_2)
     {
         OCI_CALL2
         (
-            res, con,
+            pOCILib, res, con,
 
             OCIPing(con->cxt, con->err, (ub4) OCI_DEFAULT)
 
@@ -1769,8 +1768,8 @@ boolean OCI_API OCI_Ping(OCI_Connection *con)
 
 #endif
 
-    OCI_RESULT(res);
+    OCI_RESULT(pOCILib, res);
 
     return ret;
 }
-*/
+

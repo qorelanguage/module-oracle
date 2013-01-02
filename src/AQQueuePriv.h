@@ -19,8 +19,12 @@ class AQQueuePriv : public AbstractPrivateData {
       DLLLOCAL virtual ~AQQueuePriv();
 
    public:
-      DLLLOCAL AQQueuePriv(Datasource *ds, const char *tname, const char *qname, ExceptionSink *xsink);
-//      DLLLOCAL AQQueuePriv(QoreOracleConnection *conn, OCI_Msg *msg);
+      DLLLOCAL AQQueuePriv(Datasource *ds, const QoreStringNode* tname, const QoreStringNode* qname, ExceptionSink *xsink);
+      DLLLOCAL virtual void deref(ExceptionSink* xsink);
+
+      DLLLOCAL void connect(ExceptionSink *xsink);
+      DLLLOCAL void disconnect();
+      DLLLOCAL bool ping();
 
       DLLLOCAL OCI_TypeInfo* typeInfo() { return m_typeInfo; }
       DLLLOCAL QoreOracleConnection* connection() { return m_conn; }
@@ -41,9 +45,9 @@ class AQQueuePriv : public AbstractPrivateData {
       QoreOracleConnection *m_conn;
       Datasource *m_ds;
 
-      const char * m_qname;
+      QoreStringNode* m_tname;
+      QoreStringNode* m_qname;
       OCI_TypeInfo *m_typeInfo;
-//      OCI_Msg *m_message;
       OCI_Enqueue *m_enqueue;
       OCI_Dequeue *m_dequeue;
 

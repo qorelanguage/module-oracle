@@ -2753,14 +2753,15 @@ OCI_EXPORT unsigned int OCI_API OCI_GetVersionConnection
  * - OCI_TRC_DETAIL   : 64 bytes
  *
  */
-
-OCI_EXPORT boolean OCI_API OCI_SetTrace
+/*
+boolean OCI_API OCI_SetTrace
 (
+    OCI_Library *pOCILib,
     OCI_Connection *con,
-    unsigned int trace,
-    const mtext *value
+    unsigned int    trace,
+    const mtext    *value
 );
-
+*/
 
 /**
  * @brief
