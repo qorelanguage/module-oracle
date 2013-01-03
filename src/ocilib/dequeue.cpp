@@ -986,6 +986,8 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
 
     /* all attributes set, let's register the subscription ! */
 
+    dequeue->callback = callback;
+
     OCI_CALL3
     (
         pOCILib, res, con->err,
@@ -997,12 +999,11 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
 
     /* set callback on success */
 
-    if (res)
+    if (!res)
     {
-        dequeue->callback = callback;
-    }
-    else
-    {
+        /* clear callback on failure */
+        dequeue->callback = 0;
+
         /* clear subscription on failure */
 
         OCI_DequeueUnsubscribe(pOCILib, dequeue);

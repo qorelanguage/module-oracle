@@ -371,12 +371,13 @@ void AQQueuePriv::startSubscription(QoreObject *qo, int64 port, int64 timeout, E
 
    printd(0, "AQQueuePriv::startSubscription() this: %p dequeue: %p qo: %p port: %zd timeout: %zd\n", this, m_dequeue, qo, port, timeout);
 
-    if (!OCI_DequeueSubscribe(&m_conn->ocilib, m_dequeue, port, timeout, on_async_message)) {
-        xsink->raiseException("AQQUEUE-ERROR", "cannot start the subscription");
-        return;
-    }
-
    dequeueMap.set(m_dequeue, qo);
+   if (!OCI_DequeueSubscribe(&m_conn->ocilib, m_dequeue, port, timeout, on_async_message)) {
+      dequeueMap.remove(m_dequeue);
+      xsink->raiseException("AQQUEUE-ERROR", "cannot start the subscription");
+      return;
+   }
+
    m_hasSubscription = true;
    
    printd(0, "AQQueuePriv::startSubscription() this: %p dequeue: %p qo: %p callback: %p\n", this, m_dequeue, qo, m_dequeue->callback);
