@@ -83,7 +83,6 @@ void AQMessagePriv::setCorrelation(const QoreStringNode* c, ExceptionSink *xsink
 }
 
 /** @defgroup aqmessage_status_constants AQ Message Status Constants
-    String type constants as returned by type() and typename()
 */
 //@{
 namespace Oracle;

@@ -986,6 +986,7 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
 
     /* all attributes set, let's register the subscription ! */
 
+    /* set callback in anticipation of success */
     dequeue->callback = callback;
 
     OCI_CALL3
