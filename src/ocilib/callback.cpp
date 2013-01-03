@@ -237,7 +237,7 @@ ub4 OCI_ProcNotifyMessages
     OCI_Dequeue *dequeue = (OCI_Dequeue *) ctx;
 
     // cannot use printd here as the thread is not registered with qore yet
-    printf("OCI_ProcNotifyMessages() dequeue: %p callback: %p (valid thread: %s)\n", dequeue, dequeue->callback, is_valid_qore_thread() ? "true" : "false");
+    //printf("OCI_ProcNotifyMessages() dequeue: %p callback: %p (valid thread: %s)\n", dequeue, dequeue->callback, is_valid_qore_thread() ? "true" : "false");
 
     OCI_NOT_USED(paylen);
     OCI_NOT_USED(payload);

@@ -969,7 +969,7 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
                     (ub4) OCI_ATTR_SUBSCR_RECPTPROTO, con->err)
     )
 
-    //printd(0, "OCI_DequeueSubscribe() set protocol res: %d\n", (int)res);
+    //printd(5, "OCI_DequeueSubscribe() set protocol res: %d\n", (int)res);
 
     /* set presentation  */
 
@@ -982,7 +982,7 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
                     (ub4) OCI_ATTR_SUBSCR_RECPTPRES, con->err)
     )
 
-    //printd(0, "OCI_DequeueSubscribe() set presentation res: %d\n", (int)res);
+    //printd(5, "OCI_DequeueSubscribe() set presentation res: %d\n", (int)res);
 
     /* all attributes set, let's register the subscription ! */
 
@@ -996,13 +996,14 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
         OCISubscriptionRegister(con->cxt, &dequeue->subhp, (ub2) 1, con->err,(ub4) OCI_DEFAULT)
     )
 
-    //printd(0, "OCI_DequeueSubscribe() register subscription res: %d\n", (int)res);
+    //printd(5, "OCI_DequeueSubscribe() register subscription res: %d\n", (int)res);
 
     /* set callback on success */
 
     if (!res)
     {
         /* clear callback on failure */
+
         dequeue->callback = 0;
 
         /* clear subscription on failure */
