@@ -915,6 +915,8 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
         )
 
         OCI_ReleaseMetaString(ostr);
+
+	//printd(5, "OCI_DequeueSubscribe() name: '%s' res: %d\n", dequeue->name, (int)res);
     }
 
     /* set namespace  */
@@ -928,6 +930,8 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
                     (ub4) OCI_ATTR_SUBSCR_NAMESPACE, con->err)
     )
 
+    //printd(5, "OCI_DequeueSubscribe() set namespace res: %d\n", (int)res);
+
     /* set context pointer to dequeue structure */
 
     OCI_CALL3
@@ -938,6 +942,8 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
                     (dvoid *) dequeue, (ub4) 0,
                     (ub4) OCI_ATTR_SUBSCR_CTX, con->err)
     )
+
+    //printd(5, "OCI_DequeueSubscribe() set context to dequeue res: %d\n", (int)res);
 
     /* internal callback handler */
 
@@ -950,6 +956,8 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
                     (ub4) OCI_ATTR_SUBSCR_CALLBACK, con->err)
     )
 
+    //printd(5, "OCI_DequeueSubscribe() set internal callback handler res: %d\n", (int)res);
+
     /* set protocol  */
 
     OCI_CALL3
@@ -960,6 +968,8 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
                     (dvoid *) &oci_protocol, (ub4) sizeof(oci_protocol),
                     (ub4) OCI_ATTR_SUBSCR_RECPTPROTO, con->err)
     )
+
+    //printd(0, "OCI_DequeueSubscribe() set protocol res: %d\n", (int)res);
 
     /* set presentation  */
 
@@ -972,6 +982,8 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
                     (ub4) OCI_ATTR_SUBSCR_RECPTPRES, con->err)
     )
 
+    //printd(0, "OCI_DequeueSubscribe() set presentation res: %d\n", (int)res);
+
     /* all attributes set, let's register the subscription ! */
 
     OCI_CALL3
@@ -981,7 +993,9 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
         OCISubscriptionRegister(con->cxt, &dequeue->subhp, (ub2) 1, con->err,(ub4) OCI_DEFAULT)
     )
 
-   /* set callback on success */
+    //printd(0, "OCI_DequeueSubscribe() register subscription res: %d\n", (int)res);
+
+    /* set callback on success */
 
     if (res)
     {
@@ -995,6 +1009,8 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
     }
 
     OCI_RESULT(pOCILib, res);
+
+    //printd(5, "OCI_DequeueSubscribe() res: %d\n", (int)res);
 
     return res;
 }

@@ -16,60 +16,58 @@ class MyAQQueue inherits AQQueue
     nothing onAsyncMessage() {
         on_success commit();
         on_error rollback();
-        *AQMessage m = getMessage();
-        printf("msg fetch: %N\n", m);
-        printf("     hash: %y\n", m.getObject());
+        *AQMessage m1 = getMessage();
+        printf("TID %d: MyAQQueue::onAsyncMessage() msg fetch: %N\n", gettid(), m1);
+        printf("TID %d: MyAQQueue::onAsyncMessage()      hash: %y\n", gettid(), m1.getObject());
     }
 }
 
+main();
 
-#AQQueue q("omquser.testaq", "test_aq_msg_obj", conn);
-#AQQueue q("OMQUSER.TESTAQ", "TEST_AQ_MSG_OBJ", conn);
-MyAQQueue q("testaq", "test_aq_msg_obj", conn);
-on_success q.commit();
-on_error q.rollback();
+sub main() {
+    #AQQueue q("omquser.testaq", "test_aq_msg_obj", conn);
+    #AQQueue q("OMQUSER.TESTAQ", "TEST_AQ_MSG_OBJ", conn);
+    MyAQQueue q1("testaq", "test_aq_msg_obj", conn);
+    on_success q1.commit();
+    on_error q1.rollback();
 
-q.startSubscription();
+    q1.startSubscription();
 
-sleep(2);
+    printf("purging queue...\n");
+    while ((*AQMessage dm = q1.getMessage())) {
+	printf("purging: msg: %y (%N)\n", dm, dm.getObject());
+    }
 
-#printf("QUEUE> %N\n", q);
+    #printf("QUEUE> %N\n", q1);
 
-AQMessage m();
-printf("MSG> %N\n", m);
-hash objin = ( "MESSAGE" : "from qorus" ,  "CODE" : 666);
-m.setObject(bindOracleObject("test_aq_msg_obj", objin));
-q.postMessage(m);
-q.commit();
-++objin.CODE;
-m.setObject(bindOracleObject("test_aq_msg_obj", objin));
-q.postMessage(m);
-q.commit();
-++objin.CODE;
-m.setObject(bindOracleObject("test_aq_msg_obj", objin));
-q.postMessage(m);
-q.commit();
-++objin.CODE;
-m.setObject(bindOracleObject("test_aq_msg_obj", objin));
-q.postMessage(m);
-q.commit();
-
-printf("get msg...\n");
-*AQMessage dm = q.getMessage();
-printf("   msg: %N\n", dm);
-if (exists dm)
-    printf("%N\n", dm.getObject());
-
-++objin.CODE;
-m.setObject(bindOracleObject("test_aq_msg_obj", objin));
-q.postMessage(m);
-q.commit();
-
-++objin.CODE;
-m.setObject(bindOracleObject("test_aq_msg_obj", objin));
-q.postMessage(m);
-q.commit();
-
-sleep(5s);
-
-
+    AQMessage m1();
+    printf("MSG> %N\n", m1);
+    hash objin = ( "MESSAGE" : "from qorus" ,  "CODE" : 666);
+    m1.setObject(bindOracleObject("test_aq_msg_obj", objin));
+    q1.postMessage(m1);
+    q1.commit();
+    ++objin.CODE;
+    m1.setObject(bindOracleObject("test_aq_msg_obj", objin));
+    q1.postMessage(m1);
+    q1.commit();
+    ++objin.CODE;
+    m1.setObject(bindOracleObject("test_aq_msg_obj", objin));
+    q1.postMessage(m1);
+    q1.commit();
+    ++objin.CODE;
+    m1.setObject(bindOracleObject("test_aq_msg_obj", objin));
+    q1.postMessage(m1);
+    q1.commit();
+    
+    ++objin.CODE;
+    m1.setObject(bindOracleObject("test_aq_msg_obj", objin));
+    q1.postMessage(m1);
+    q1.commit();
+    
+    ++objin.CODE;
+    m1.setObject(bindOracleObject("test_aq_msg_obj", objin));
+    q1.postMessage(m1);
+    q1.commit();
+    
+    sleep(5s);
+}

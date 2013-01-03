@@ -236,6 +236,8 @@ ub4 OCI_ProcNotifyMessages
 {
     OCI_Dequeue *dequeue = (OCI_Dequeue *) ctx;
 
+    //printd(5, "OCI_ProcNotifyMessages() dequeue: %p callback: %p\n", dequeue, dequeue->callback);
+
     OCI_NOT_USED(paylen);
     OCI_NOT_USED(payload);
     OCI_NOT_USED(mode);
