@@ -63,11 +63,11 @@ static AQDequeueMap dequeueMap;
 void on_async_message(OCI_Dequeue *deq) {
     QoreForeignThreadHelper qfth;
 
-    printf("DEBUG> message arrived\n");
-    printf("       deq: %p\n", deq);
+    printd(0, "DEBUG> message arrived pthread: %p\n", pthread_self());
+    printd(0, "       deq: %p\n", deq);
     assert(dequeueMap.get(deq));
-    printf("       OCI_Dequeue instance: %p\n", deq);
-    printf("        QoreObject instance: %p\n\n", dequeueMap.get(deq));
+    printd(0, "       OCI_Dequeue instance: %p\n", deq);
+    printd(0, "        QoreObject instance: %p\n\n", dequeueMap.get(deq));
 
     ExceptionSink xsink;
     dequeueMap.get(deq)->evalMethod("onAsyncMessage", 0, &xsink);
