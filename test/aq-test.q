@@ -1,26 +1,16 @@
+#!/usr/bin/env qore
+
 %new-style
 %requires oracle
 
 
-hash conn = (
-#    "type" : "oracle",
-    "user" : "omquser",
-    "pass" : "omquser",
-    "db"   : "stimpy",
-);
-/*
-hash conn = (
-    "user" : "test",
-    "pass" : "test",
-    "db"   : "xe",
-    "host" : "localhost",
-    "port" : 1521,
-);
-*/
+string conn = (gethostname() == "qube") 
+    ? "omquser2/omquser2@qube"
+    : "omquser/omquser@stimpy";
 
 class MyAQQueue inherits AQQueue
 {
-    constructor(string q1, string t1, hash c1) : AQQueue(q1, t1, c1) {
+    constructor(string q1, string t1, string c1) : AQQueue(q1, t1, c1) {
     }
 
     nothing onAsyncMessage() {
@@ -39,6 +29,10 @@ MyAQQueue q("testaq", "test_aq_msg_obj", conn);
 on_success q.commit();
 on_error q.rollback();
 
+q.startSubscription();
+
+sleep(2);
+
 #printf("QUEUE> %N\n", q);
 
 AQMessage m();
@@ -46,7 +40,19 @@ printf("MSG> %N\n", m);
 hash objin = ( "MESSAGE" : "from qorus" ,  "CODE" : 666);
 m.setObject(bindOracleObject("test_aq_msg_obj", objin));
 q.postMessage(m);
-
+q.commit();
+++objin.CODE;
+m.setObject(bindOracleObject("test_aq_msg_obj", objin));
+q.postMessage(m);
+q.commit();
+++objin.CODE;
+m.setObject(bindOracleObject("test_aq_msg_obj", objin));
+q.postMessage(m);
+q.commit();
+++objin.CODE;
+m.setObject(bindOracleObject("test_aq_msg_obj", objin));
+q.postMessage(m);
+q.commit();
 
 printf("get msg...\n");
 *AQMessage dm = q.getMessage();
@@ -54,8 +60,16 @@ printf("   msg: %N\n", dm);
 if (exists dm)
     printf("%N\n", dm.getObject());
 
-q.startSubscription();
+++objin.CODE;
+m.setObject(bindOracleObject("test_aq_msg_obj", objin));
+q.postMessage(m);
+q.commit();
 
-sleep(10s);
+++objin.CODE;
+m.setObject(bindOracleObject("test_aq_msg_obj", objin));
+q.postMessage(m);
+q.commit();
+
+sleep(5s);
 
 
