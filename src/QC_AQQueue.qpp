@@ -194,12 +194,13 @@ bool AQQueuePriv::postMessage(AQMessagePriv *message, ExceptionSink *xsink) {
        }
     }
 
-    if (message->getObject() == 0) {
+    ReferenceHolder<QoreHashNode> obj(message->getObject(), xsink);
+    if (!obj) {
         xsink->raiseException("AQQUEUE-ERROR", "no oracle object (hash) provided in the message");
         return false;
     }
 
-    OCI_Object *o = objBindQore(m_conn, message->getObject(), xsink);
+    OCI_Object *o = objBindQore(m_conn, *obj, xsink);
     if (!o) {
        xsink->raiseException("AQQUEUE-ERROR", "failed to create(bind) object");
        return false;
@@ -231,8 +232,10 @@ bool AQQueuePriv::postMessage(AQMessagePriv *message, ExceptionSink *xsink) {
     	return false;
     }
     
-    if (message->getCorrelation()) {
-        TempEncodingHelper encoded(message->getCorrelation(), m_conn->ds.getQoreEncoding(), xsink);
+    QoreStringNodeHolder correlation(message->getCorrelation());
+    
+    if (*correlation) {
+        TempEncodingHelper encoded(*correlation, m_conn->ds.getQoreEncoding(), xsink);
         if (*xsink)
            return false;
         if (!OCI_MsgSetCorrelation(&m_conn->ocilib, m, encoded->getBuffer())) {

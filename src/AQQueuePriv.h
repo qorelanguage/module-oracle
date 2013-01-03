@@ -35,8 +35,6 @@ DLLLOCAL extern QoreClass* QC_AQQUEUE;
 
 class AQQueuePriv : public AbstractPrivateData {
 protected:
-   // mutex for atomicity
-   QoreThreadLock l;
    DLLLOCAL virtual ~AQQueuePriv();
 
 public:
@@ -65,6 +63,8 @@ public:
    DLLLOCAL int stopSubscription(ExceptionSink *xsink);
 
 private:
+   // mutex for atomicity
+   QoreThreadLock l;
    QoreOracleConnection *m_conn;
    Datasource *m_ds;
 

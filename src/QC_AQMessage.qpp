@@ -5,33 +5,32 @@
 #include "AQMessagePriv.h"
 #include "AQQueuePriv.h"
 
-AQMessagePriv::AQMessagePriv(const QoreHashNode* obj, ExceptionSink *xsink) {
-    m_obj = 0;
-    setObject(obj, xsink);
-    m_attemptCount = 0;
-    m_enqueueDelay = 0;
-    m_expiration = -1;
-    m_state = -1;
-    m_priority = 1;
-    m_correlation = 0;
+AQMessagePriv::AQMessagePriv(const QoreHashNode* obj, ExceptionSink *xsink) :
+   m_obj(obj ? obj->hashRefSelf() : 0),
+   m_attemptCount(0),
+   m_enqueueDelay(0),
+   m_expiration(-1),
+   m_state(-1),
+   m_priority(1),
+   m_correlation(0) {
 }
 
 AQMessagePriv::~AQMessagePriv() {
+   assert(!m_obj);
+   assert(!m_correlation);
 }
 
 QoreHashNode* AQMessagePriv::getObject() {
+   AutoLocker al(l);
    return m_obj ? m_obj->hashRefSelf() : 0;
 }
 
 void AQMessagePriv::setObject(const QoreHashNode* obj, ExceptionSink *xsink) {
-    if (m_obj) {
-        m_obj->deref(xsink);
-    }
+   AutoLocker al(l);
+   if (m_obj)
+      m_obj->deref(xsink);
 
-    if (obj)
-        m_obj = obj->hashRefSelf();
-    else
-        m_obj = 0;
+   m_obj = obj ? obj->hashRefSelf() : 0;
 }
 
 int64 AQMessagePriv::getAttemptCount() {
@@ -71,16 +70,17 @@ void AQMessagePriv::setPriority(int64 prio) {
 //      void getID(void *id, unsigned int *len);
 
 QoreStringNode* AQMessagePriv::getCorrelation() {
+   AutoLocker al(l);
    return m_correlation ? m_correlation->stringRefSelf() : 0;
 }
 
 void AQMessagePriv::setCorrelation(const QoreStringNode* c, ExceptionSink *xsink) {
+   AutoLocker al(l);
     if (m_correlation)
         m_correlation->deref(xsink);
 
     m_correlation = c->stringRefSelf();
 }
-
 
 /** @defgroup aqmessage_status_constants AQ Message Status Constants
     String type constants as returned by type() and typename()
@@ -165,10 +165,10 @@ int AQMessage::getEnqueueDelay() {
  * be immediately available for dequeuing
  */
 nothing AQMessage::setEnqueueDelay(int delay) {
-	if (delay < 0) {
-		xsink->raiseException("AQMESSAGE-ERROR", "Value of the 'delay' argument must be greater than 0");
-		return 0;
-	}
+   if (delay < 0) {
+      xsink->raiseException("AQMESSAGE-ERROR", "Value of the 'delay' argument must be greater than 0");
+      return 0;
+   }
 
     msg->setEnqueueDelay(delay);
 }
@@ -182,7 +182,7 @@ nothing AQMessage::setEnqueueDelay(int delay) {
 /** @param int seconds count
  */
 int AQMessage::getExpiration() {
-    return msg->getExpiration();
+   return msg->getExpiration();
 }
 
 //! Set the duration that the message is available for dequeuing.
@@ -195,11 +195,11 @@ int AQMessage::getExpiration() {
  * If parameter 'value' is set to -1 (default value), the message will not expire
  */
 nothing AQMessage::setExpiration(int exp) {
-	if (exp < -1) {
-		xsink->raiseException("AQMESSAGE-ERROR", "Expiration argument has to be -1 or greater.");
-		return 0;
-	}
-    msg->setExpiration(exp);
+   if (exp < -1) {
+      xsink->raiseException("AQMESSAGE-ERROR", "Expiration argument has to be -1 or greater.");
+      return 0;
+   }
+   msg->setExpiration(exp);
 }
 
 //! Return the state of the message at the time of the dequeue.

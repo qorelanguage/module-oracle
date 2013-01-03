@@ -44,15 +44,25 @@ public:
 
    DLLLOCAL virtual void deref(ExceptionSink* xsink) {
       if (ROdereference()) {
-	 if (m_obj)
+	 if (m_obj) {
 	    m_obj->deref(xsink);
-	 if (m_correlation)
+#ifdef DEBUG
+            m_obj = 0;
+#endif
+         }
+	 if (m_correlation) {
 	    m_correlation->deref();
+#ifdef DEBUG
+            m_correlation = 0;
+#endif
+         }
 	 delete this;
       }
    }
 
 private:
+   // mutex for atomicity
+   QoreThreadLock l;
    QoreHashNode *m_obj;
    int64 m_attemptCount;
    int64 m_enqueueDelay;
@@ -60,6 +70,8 @@ private:
    int64 m_state;
    int64 m_priority;
    QoreStringNode *m_correlation;
+
+   DLLLOCAL void setObjectUnlocked(const QoreHashNode* obj, ExceptionSink *xsink);
 };
 
 #endif
