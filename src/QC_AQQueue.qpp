@@ -53,6 +53,17 @@ public:
 
 static AQDequeueMap dequeueMap;
 
+class QueueThreadHelper {
+protected:
+
+public:
+   DLLLOCAL QueueThreadHelper() {
+   }
+
+   DLLLOCAL ~QueueThreadHelper() {
+   }
+};
+
 void on_async_message(OCI_Dequeue *deq) {
     QoreForeignThreadHelper qfth;
 
@@ -358,7 +369,7 @@ void AQQueuePriv::startSubscription(QoreObject *qo, int64 port, int64 timeout, E
       return;
    }
 
-   printd(0, "AQQueuePriv::startSubscription() this: %p qo: %p port: %zd timeout: %zd\n", this, qo, port, timeout);
+   printd(0, "AQQueuePriv::startSubscription() this: %p dequeue: %p qo: %p port: %zd timeout: %zd\n", this, m_dequeue, qo, port, timeout);
 
     if (!OCI_DequeueSubscribe(&m_conn->ocilib, m_dequeue, port, timeout, on_async_message)) {
         xsink->raiseException("AQQUEUE-ERROR", "cannot start the subscription");
@@ -368,7 +379,7 @@ void AQQueuePriv::startSubscription(QoreObject *qo, int64 port, int64 timeout, E
    dequeueMap.set(m_dequeue, qo);
    m_hasSubscription = true;
    
-   printd(0, "SUBSCR DEQUEUE ptr: %p - %p\n", m_dequeue, qo);
+   printd(0, "AQQueuePriv::startSubscription() this: %p dequeue: %p qo: %p callback: %p\n", this, m_dequeue, qo, m_dequeue->callback);
 }
 
 int AQQueuePriv::stopSubscriptionUnlocked(ExceptionSink *xsink) {
