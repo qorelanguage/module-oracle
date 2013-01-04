@@ -296,7 +296,7 @@ QoreObject* AQQueuePriv::getMessage(QoreObject* self, int timeout, ExceptionSink
    if (!checkDequeueUnlocked(self, xsink))
       return 0;
 
-   printd(0, "AQQueuePriv::getMessage() this: %p dequeue: %p msg: %p msg->typinfo: %p (%s)\n", this, m_dequeue, m_dequeue->msg, m_dequeue->msg->typinf, m_dequeue->msg->typinf->name);
+   //printd(5, "AQQueuePriv::getMessage() this: %p dequeue: %p msg: %p msg->typinfo: %p (%s)\n", this, m_dequeue, m_dequeue->msg, m_dequeue->msg->typinf, m_dequeue->msg->typinf->name);
 
    // set timeout if necessary
    if (!OCI_DequeueSetWaitTime(&m_conn->ocilib, m_dequeue, timeout)) {
@@ -359,7 +359,7 @@ void AQQueuePriv::startSubscription(QoreObject* self, int64 port, int64 timeout,
       return;
    }
 
-   printd(0, "AQQueuePriv::startSubscription() this: %p dequeue: %p self: %p port: %zd timeout: %zd\n", this, m_dequeue, self, port, timeout);
+   //printd(5, "AQQueuePriv::startSubscription() this: %p dequeue: %p self: %p port: %zd timeout: %zd\n", this, m_dequeue, self, port, timeout);
 
    // increment "oracle-thread active" count
    aqThreadManager.inc();
