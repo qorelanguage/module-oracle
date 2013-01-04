@@ -567,7 +567,7 @@ nothing AQQueue::post(hash msg) {
 
     @retval AQMessage or NOTHING if no message was available in the timeout period
  */
-*AQMessage AQQueue::getMessage(int timeout = 0) {
+*AQMessage AQQueue::getMessage(softint timeout = 0) {
    return priv->getMessage(self, timeout, xsink);
 }
 
