@@ -290,13 +290,19 @@ bool AQQueuePriv::rollback(ExceptionSink *xsink) {
    return m_conn->rollback(xsink);
 }
 
-QoreObject* AQQueuePriv::getMessage(QoreObject* self, ExceptionSink *xsink) {
+QoreObject* AQQueuePriv::getMessage(QoreObject* self, int timeout, ExceptionSink *xsink) {
    AutoLocker al(l);
 
    if (!checkDequeueUnlocked(self, xsink))
       return 0;
 
-   //printd(5, "AQQueuePriv::getMessage() this: %p dequeue: %p msg: %p msg->typinfo: %p (%s)\n", this, m_dequeue, m_dequeue->msg, m_dequeue->msg->typinf, m_dequeue->msg->typinf->name);
+   printd(0, "AQQueuePriv::getMessage() this: %p dequeue: %p msg: %p msg->typinfo: %p (%s)\n", this, m_dequeue, m_dequeue->msg, m_dequeue->msg->typinf, m_dequeue->msg->typinf->name);
+
+   // set timeout if necessary
+   if (!OCI_DequeueSetWaitTime(&m_conn->ocilib, m_dequeue, timeout)) {
+      xsink->raiseException("AQQUEUE-ERROR", "failed to set dequeue timeout of %d second%s", timeout, timeout == 1 ? "" : "s");
+      return 0;
+   }
 
    OCI_Msg *msg = OCI_DequeueGet(&m_conn->ocilib, m_dequeue);
 
@@ -337,10 +343,6 @@ bool AQQueuePriv::checkDequeueUnlocked(QoreObject* self, ExceptionSink *xsink) {
       }
       m_dequeue->user_ctx = (void*)self;
       //printd(5, "AQQueuePriv::checkDequeueUnlocked() this: %p DEQUEUE ptr: %p msg: %p m_typeInfo: %p msg->typinfo: %p (%s)\n", this, m_dequeue, m_dequeue->msg, m_typeInfo, m_dequeue->msg->typinf, m_dequeue->msg->typinf->name);
-      if (!OCI_DequeueSetWaitTime(&m_conn->ocilib, m_dequeue, 0)) {
-         xsink->raiseException("AQQUEUE-ERROR", "failed to set dequeue timeout");
-         return false;
-      }
    }
    return true;
    // TODO
@@ -357,7 +359,7 @@ void AQQueuePriv::startSubscription(QoreObject* self, int64 port, int64 timeout,
       return;
    }
 
-   //printd(5, "AQQueuePriv::startSubscription() this: %p dequeue: %p self: %p port: %zd timeout: %zd\n", this, m_dequeue, self, port, timeout);
+   printd(0, "AQQueuePriv::startSubscription() this: %p dequeue: %p self: %p port: %zd timeout: %zd\n", this, m_dequeue, self, port, timeout);
 
    // increment "oracle-thread active" count
    aqThreadManager.inc();
@@ -561,10 +563,12 @@ nothing AQQueue::post(hash msg) {
 }
 
 //! Get message from queue
-/** @retval AQMessage or NOTHING
+/** @param timeout the timeout in seconds; 0 = no timeout
+
+    @retval AQMessage or NOTHING if no message was available in the timeout period
  */
-*AQMessage AQQueue::getMessage() {
-   return priv->getMessage(self, xsink);
+*AQMessage AQQueue::getMessage(int timeout = 0) {
+   return priv->getMessage(self, timeout, xsink);
 }
 
 //! Subscribe for asynchronous messages notifications

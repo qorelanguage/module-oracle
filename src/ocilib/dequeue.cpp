@@ -228,6 +228,8 @@ OCI_Msg * OCI_API OCI_DequeueGet
 
     res = OCI_MsgReset(pOCILib, dequeue->msg);
 
+    //printd(5, "OCI_DequeueGet() OCI_MsgReset res: %d\n", res);
+
     if (res == TRUE)
     {
         ostr  = OCI_GetInputMetaString(pOCILib, dequeue->name, &osize);
@@ -284,6 +286,8 @@ OCI_Msg * OCI_API OCI_DequeueGet
                                                    NULL, -1, TRUE);
 
                 res = dequeue->msg->obj != NULL;
+
+		//printd(5, "OCI_DequeueGet() OCI_ObjectInit res: %d\n", res);
             }
         }
     }
@@ -296,6 +300,8 @@ OCI_Msg * OCI_API OCI_DequeueGet
     }
 
     OCI_RESULT(pOCILib, res);
+
+    //printd(5, "OCI_DequeueGet() returning msg: %p\n", msg);
 
     return msg;
 }

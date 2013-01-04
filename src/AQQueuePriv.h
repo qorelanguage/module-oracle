@@ -55,7 +55,7 @@ public:
    DLLLOCAL bool post(AQMessagePriv *message, ExceptionSink *xsink);
    DLLLOCAL bool post(const QoreHashNode *h, ExceptionSink *xsink);
 
-   DLLLOCAL QoreObject* getMessage(QoreObject* self, ExceptionSink *xsink);
+   DLLLOCAL QoreObject* getMessage(QoreObject* self, int timeout, ExceptionSink *xsink);
 
    DLLLOCAL void startSubscription(QoreObject *qo, int64 port, int64 timeout, ExceptionSink *xsink);
 
