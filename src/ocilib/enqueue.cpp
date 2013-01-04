@@ -63,10 +63,10 @@ OCI_Enqueue * OCI_API OCI_EnqueueCreate
 
     if (enqueue != NULL)
     {
-       printd(0, "OCI_EnqueueCreate() NAME> %s\n", name);
+        //printd(5, "OCI_EnqueueCreate() NAME> %s\n", name);
         enqueue->typinf = typinf;
         enqueue->name   = mtsdup(pOCILib, name);
-        printd(0, "OCI_EnqueueCreate() NAME2> %s; %p\n", enqueue->name,  enqueue->typinf);
+        //printd(5, "OCI_EnqueueCreate() NAME2> %s; %p\n", enqueue->name,  enqueue->typinf);
 
         /* allocate enqueue options descriptor */
 
@@ -74,7 +74,7 @@ OCI_Enqueue * OCI_API OCI_EnqueueCreate
                                                   (dvoid **) &enqueue->opth,
                                                   OCI_DTYPE_AQENQ_OPTIONS,
                                                   (size_t) 0, (dvoid **) NULL));
-        printd(0, "OCI_EnqueueCreate()    RES=%d (%d)\n", res, FALSE);
+        //printd(5, "OCI_EnqueueCreate()    RES=%d (%d)\n", res, FALSE);
     }
     else
     {

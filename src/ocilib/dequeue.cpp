@@ -66,6 +66,9 @@ OCI_Dequeue * OCI_API OCI_DequeueCreate
         dequeue->typinf = typinf;
         dequeue->name   = mtsdup(pOCILib, name);
 
+	/* set user context pointer to NULL */
+	dequeue->user_ctx = NULL;
+
         /* allocate dequeue options descriptor */
 
         res = (OCI_SUCCESS == OCI_DescriptorAlloc2(pOCILib, (dvoid * ) pOCILib->env,

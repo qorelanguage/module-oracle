@@ -814,6 +814,7 @@ struct OCI_Dequeue
     OCI_Agent           *agent;          /* pointer to agent object for listen call */
     POCI_NOTIFY_AQ       callback;       /* user callback */
     OCISubscription     *subhp;          /* AQ subscription for async dequeueing */
+    void                *user_ctx;       /* user context pointer */
 };
 
 

@@ -52,10 +52,10 @@ public:
    DLLLOCAL bool commit(ExceptionSink *xsink);
    DLLLOCAL bool rollback(ExceptionSink *xsink);
 
-   DLLLOCAL bool postMessage(AQMessagePriv *message, ExceptionSink *xsink);
-   DLLLOCAL bool postObject(const QoreHashNode *h, ExceptionSink *xsink);
+   DLLLOCAL bool post(AQMessagePriv *message, ExceptionSink *xsink);
+   DLLLOCAL bool post(const QoreHashNode *h, ExceptionSink *xsink);
 
-   DLLLOCAL QoreObject* getMessage(ExceptionSink *xsink);
+   DLLLOCAL QoreObject* getMessage(QoreObject* self, ExceptionSink *xsink);
 
    DLLLOCAL void startSubscription(QoreObject *qo, int64 port, int64 timeout, ExceptionSink *xsink);
 
@@ -77,7 +77,7 @@ private:
 
    DLLLOCAL int stopSubscriptionUnlocked(ExceptionSink *xsink);
    DLLLOCAL void disconnectUnlocked(ExceptionSink *xsink);
-   DLLLOCAL bool checkDequeueUnlocked(ExceptionSink *xsink);
+   DLLLOCAL bool checkDequeueUnlocked(QoreObject* self, ExceptionSink *xsink);
 };
 
 #endif

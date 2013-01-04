@@ -732,7 +732,7 @@ boolean OCI_StringToStringPtr(OCI_Library *pOCILib, OCIString **str, OCIError *e
 
 boolean OCI_StringGetFromAttrHandle
 (
-	OCI_Library *pOCILib,
+    OCI_Library *pOCILib,
     OCI_Connection *con,
     void           *handle,
     unsigned int    type,
@@ -767,30 +767,30 @@ boolean OCI_StringGetFromAttrHandle
             Some we check if the first character slot has any zero bytes set
             to detect this defect ! */
 
-    #ifdef OCI_METADATA_WIDE
+#ifdef OCI_METADATA_WIDE
 
-            int i;
+        int i;
 
-            for (i = 0; i < sizeof(omtext); i ++)
-            {
-                if (((char*) ostr)[i] == 0)
-                {
-                    break;
-                }
-            }
-
-            if (i  >= sizeof(omtext))
-            {
-                /* ansi buffer returned instead of an UTF15 one ! */
-
-                size_char_in = 1;
-            }
+	for (i = 0; i < sizeof(omtext); i ++)
+	{
+	   if (((char*) ostr)[i] == 0)
+	   {
+	      break;
+	   }
+	}
+	
+	if (i  >= sizeof(omtext))
+	{
+	   /* ansi buffer returned instead of an UTF15 one ! */
+	   
+	   size_char_in = 1;
+	}
 
 
     #endif
-#warning "TODO/FIXME: (char*) user instead of original (void*). Just doublecheck it later."
-        *str = (char *) OCI_MemAlloc2(pOCILib, OCI_IPC_STRING,  sizeof(mtext),
-                                     (size_t) ((osize / size_char_in) + 1), TRUE);
+        /* cast to mtext* for assignment */
+	*str = (mtext*) OCI_MemAlloc2(pOCILib, OCI_IPC_STRING, sizeof(mtext),
+				      (size_t) ((osize / size_char_in) + 1), TRUE);
 
         if (*str != NULL)
         {
