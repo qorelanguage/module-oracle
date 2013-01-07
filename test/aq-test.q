@@ -41,6 +41,7 @@ main();
 sub main() {
     # first purge queue
     MyAQQueue q1 = get_queue();
+sleep(20);return;
     {
 	on_success q1.commit();
 	on_error q1.rollback();

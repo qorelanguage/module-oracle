@@ -109,6 +109,21 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
       return;
    }
 
+   if (OCIHandleAlloc(*env, (dvoid **) &svchp, OCI_HTYPE_SVCCTX, 0, 0) != OCI_SUCCESS) {
+       xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate service handle for connection");
+       return;
+   }
+
+   if (OCIHandleAlloc(*env, (dvoid **) &srvhp, OCI_HTYPE_SERVER, 0, 0) != OCI_SUCCESS) {
+       xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate server handle for connection");
+       return;
+   }
+
+   if (OCIHandleAlloc(*env, (dvoid **) &usrhp, OCI_HTYPE_SESSION, 0, 0) != OCI_SUCCESS) {
+       xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate session handle for connection");
+       return;
+   }
+
    //printd(5, "QoreOracleConnection::QoreOracleConnection() about to call OCILogon()\n");
    if (logon(xsink))
       return;
@@ -132,6 +147,9 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
    ocilib_cn->cxt = svchp;
    ocilib_cn->tinfs = OCI_ListCreate2(&ocilib, OCI_IPC_TYPE_INFO);
 
+   ocilib_cn->svr = srvhp;                        // OCI server handle
+   ocilib_cn->ses = usrhp;                        // OCI session handle
+
    // then reset unused attributes
    ocilib_cn->db = 0;
    ocilib_cn->user = 0;                           // user
@@ -142,9 +160,6 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
    ocilib_cn->trs = 0;                            // pointer to current transaction object
    ocilib_cn->pool = 0;                           // pointer to connection pool parent
    ocilib_cn->svopt = 0;                          // Pointer to server output object
-   ocilib_cn->svr = 0;                            // OCI server handle
-
-   ocilib_cn->ses = 0;                            // OCI session handle
    ocilib_cn->autocom = false;                    // auto commit mode
    ocilib_cn->nb_files = 0;                       // number of OCI_File opened by the connection
    ocilib_cn->mode = 0;                           // session mode
@@ -181,6 +196,13 @@ QoreOracleConnection::~QoreOracleConnection() {
 
    if (errhp)
       OCIHandleFree(errhp, OCI_HTYPE_ERROR);
+
+   if (srvhp)
+       OCIHandleFree(srvhp, (ub4) OCI_HTYPE_SERVER);
+   if (usrhp)
+       OCIHandleFree(usrhp, (ub4) OCI_HTYPE_SESSION);
+   if (svchp)
+       OCIHandleFree(svchp, OCI_HTYPE_SVCCTX);
 }
 
 int QoreOracleConnection::checkerr(sword status, const char *query_name, ExceptionSink *xsink) {
@@ -231,6 +253,40 @@ int QoreOracleConnection::checkerr(sword status, const char *query_name, Excepti
 	 break;
    }
    return -1;
+}
+
+int QoreOracleConnection::logon(ExceptionSink *xsink) {
+   const std::string &user = ds.getUsernameStr();
+   const std::string &pass = ds.getPasswordStr();
+
+   int e;
+
+   // user session login creds.
+   e = checkerr(OCIAttrSet(usrhp, OCI_HTYPE_SESSION, (text *)user.c_str(), user.size(), OCI_ATTR_USERNAME, errhp), "QoreOracleConnection::logon() Set username", xsink);
+   if (e) return -1;
+
+   e = checkerr(OCIAttrSet(usrhp, OCI_HTYPE_SESSION, (text *)pass.c_str(), pass.size(), OCI_ATTR_PASSWORD, errhp), "QoreOracleConnection::logon() Set password", xsink);
+   if (e) return -1;
+
+   /* attach to the server - use default host? */
+   e = checkerr(OCIServerAttach(srvhp, errhp, (text *) NULL, 0, (ub4) OCI_DEFAULT), "QoreOracleConnection::logon() server attach", xsink);
+   if (e) return -1;
+
+   /* set the server attribute in the service context */
+   e = checkerr(OCIAttrSet(svchp, OCI_HTYPE_SVCCTX, srvhp, 0, OCI_ATTR_SERVER, errhp), "QoreOracleConnection::logon() server to service context", xsink);
+   if (e) return -1;
+
+   /* log on */
+   e = checkerr(OCISessionBegin(svchp, errhp, usrhp, OCI_CRED_RDBMS, OCI_DEFAULT), "QoreOracleConnection::logon() session begin", xsink);
+   if (e) return -1;
+
+   /* set the session attribute in the service context */
+   e = checkerr(OCIAttrSet(svchp, OCI_HTYPE_SVCCTX, usrhp, 0, OCI_ATTR_SESSION, errhp), "QoreOracleConnection::logon() set the session attribute in the service context", xsink);
+   if (e) return -1;
+
+//      return checkerr(OCILogon(*env, errhp, &svchp, (text *)user.c_str(), user.size(), (text *)pass.c_str(), pass.size(), (text *)cstr.getBuffer(), cstr.strlen()), "QoreOracleConnection::logon()", xsink);
+
+   return e;
 }
 
 int QoreOracleConnection::descriptorAlloc(void **descpp, unsigned type, const char *who, ExceptionSink *xsink) {

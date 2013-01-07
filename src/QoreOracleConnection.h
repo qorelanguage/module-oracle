@@ -118,8 +118,12 @@ class QoreOracleConnection {
 
 public:
    QoreOracleEnvironment env;
+
    OCIError *errhp;
    OCISvcCtx *svchp;
+   OCIServer *srvhp;
+   OCISession *usrhp;
+
    ub2 charsetid;
    // "fake" connection for OCILIB stuff
    OCI_Connection *ocilib_cn;
@@ -143,12 +147,8 @@ public:
 
    DLLLOCAL int handleAlloc(void **descpp, unsigned type, const char *who, ExceptionSink *xsink);
 
-   DLLLOCAL int logon(ExceptionSink *xsink) {
-      const std::string &user = ds.getUsernameStr();
-      const std::string &pass = ds.getPasswordStr();
-      return checkerr(OCILogon(*env, errhp, &svchp, (text *)user.c_str(), user.size(), (text *)pass.c_str(), pass.size(), (text *)cstr.getBuffer(), cstr.strlen()), "QoreOracleConnection::logon()", xsink);
-   }
-   
+   DLLLOCAL int logon(ExceptionSink *xsink);
+
    DLLLOCAL int checkWarnings(ExceptionSink *xsink) {
       ub4 ix = 1;
       int errcode;
@@ -181,9 +181,11 @@ public:
    // logoff but do not process error return values
    DLLLOCAL int logoff() {
       assert(svchp);
-      int rc = OCILogoff(svchp, errhp);
-      OCIHandleFree(svchp, OCI_HTYPE_SVCCTX);
-      svchp = 0;
+//      int rc = OCILogoff(svchp, errhp);
+//      OCIHandleFree(svchp, OCI_HTYPE_SVCCTX);
+//      svchp = 0;
+      int rc = OCISessionEnd(svchp, errhp, usrhp, 0);
+      OCIServerDetach(srvhp, errhp, OCI_DEFAULT);
       return rc;
    }
 

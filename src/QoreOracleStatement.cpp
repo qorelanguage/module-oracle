@@ -42,13 +42,8 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
       // see if server is connected
       ub4 server_status = 0;
 
-      // get server handle
-      OCIServer *svrh;
-      if (conn->checkerr(OCIAttrGet(conn->svchp, OCI_HTYPE_SVCCTX, &svrh, 0, OCI_ATTR_SERVER, conn->errhp), who, xsink))
-	 return -1;
-
       //printd(0, "QoreOracleStatement::execute() got server handle: %p\n", svrh);
-      if (conn->checkerr(OCIAttrGet(svrh, OCI_HTYPE_SERVER, (dvoid *)&server_status, 0, OCI_ATTR_SERVER_STATUS, conn->errhp), who, xsink))
+      if (conn->checkerr(OCIAttrGet(conn->srvhp, OCI_HTYPE_SERVER, (dvoid *)&server_status, 0, OCI_ATTR_SERVER_STATUS, conn->errhp), who, xsink))
 	 return -1;
 
       //printd(0, "QoreOracleStatement::execute() server_status=%d (OCI_SERVER_NOT_CONNECTED=%d)\n", server_status, OCI_SERVER_NOT_CONNECTED);

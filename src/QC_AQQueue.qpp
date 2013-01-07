@@ -150,6 +150,7 @@ void AQQueuePriv::connect(ExceptionSink *xsink) {
       return;
    }
 
+
    // can only call Datasource::getQoreEncoding() after the call to Datasource::open()
    TempEncodingHelper tn(m_tname, m_conn->ds.getQoreEncoding(), xsink);
    if (*xsink)
@@ -158,6 +159,12 @@ void AQQueuePriv::connect(ExceptionSink *xsink) {
    TempEncodingHelper qn(m_qname, m_conn->ds.getQoreEncoding(), xsink);
    if (*xsink)
       return;
+
+   // use QoreString instead of a fixed-size buffer to deal with arbitrary-length strings
+   QoreStringMaker value("Qore AQ Queue: %s", qn->getBuffer());
+//   if (!OCI_SetTrace(&m_conn->ocilib, m_conn->ocilib_cn, OCI_TRC_MODULE, value.getBuffer()))
+//      printd(0, "TRACE FAILED\n");
+   OCI_SetTrace(&m_conn->ocilib, m_conn->ocilib_cn, OCI_TRC_MODULE, value.getBuffer());
 
    assert(!m_typeInfo);
    m_typeInfo = OCI_TypeInfoGet2(&m_conn->ocilib, m_conn->ocilib_cn, tn->getBuffer(), OCI_TIF_TYPE);
@@ -169,10 +176,6 @@ void AQQueuePriv::connect(ExceptionSink *xsink) {
       return;
    }
 
-   // use QoreString instead of a fixed-size buffer to deal with arbitrary-length strings
-   QoreStringMaker value("Qore AQ Queue: %s", qn->getBuffer());
-   if (!OCI_SetTrace(&m_conn->ocilib, m_conn->ocilib_cn, OCI_TRC_MODULE, value.getBuffer()))
-      printd(5, "TRACE FAILED\n");
 }
 
 bool AQQueuePriv::ping() {
