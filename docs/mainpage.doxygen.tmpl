@@ -371,6 +371,55 @@
     OCI-21500: internal error code, arguments: [kgepop: no error frame to pop to], [], [], [], [], [], [], []
     OCI-21710: argument is expecting a valid memory address of an object
     @endcode
+    
+    @subsection aq_known_issues Advaned Queueing Known Issues
+    
+    - Some versions of 11.2 client software is unable to receive change notifications/OCI Callbacks or
+      AQ notifications against some versions of 11.2 database.
+
+      Typically no errors result, and the observed behavior is that the notification simply does not occur.
+
+      A row will be observed in \c DBA_CHANGE_NOTIFICATION_REGS, but then be removed,
+      without notification occurring at the client.
+
+      Note that the behavior of this problem is consistent, and no notifications
+      at all will be received. This bug does not apply for intermittent behaviors.
+
+      In the case of 11.2.0.1 client pointing to 11.2.0.2 database, the following error may occur:
+      @code
+kpcerecv: incorrect iovec count=6210
+kpcest_err_handler: Max errors exceeded..Closing connection
+      @endcode
+
+      Behavior may be noticed as a result of upgrading either client or database software
+      to the affected versions, or after applying a CPU that contains the fix for unpublished Bug 10065474.
+
+      This behavior is a result of Oracle Bug 10065474, and is specific to 11.2 database.
+
+      The fix is primarily a client side fix, however there are some database side changes
+      that may be required once the client side fix is applied, so the fix for Oracle Bug 10065474
+      can actually CAUSE this behavior, if the change is not applied at both client and server.
+      
+      <b>Solution:</b> Apply patches or upgrade versions as applicable to obtain a working combination.
+       
+      <b>Workaround:</b> A workaround can be used in most cases to bypass the authentication phase, which is where the
+      problem behavior occurs.  To do that, set the following event in the database:
+      @code
+      alter system set events '10867 trace name context forever, level 1';
+      @endcode
+       
+      <b>Compatibility Matrix:</b> 
+
+<table>
+   <tr><td rowspan="2">Server version</td><td colspan="4">Client version</td></tr>
+   <tr>                   <th>11.2.0.1.0</th><th>11.2.0.2.0</th><th>11.2.0.2.0+fix</th><th>11.2.0.3.0</th></tr>
+   <tr><th>11.2.0.1.0</th><td>works</td><td>fails</td><td>works</td><td>fails</td></tr>
+   <tr><th>11.2.0.2.0</th><td>fails</td><td>works</td><td>fails</td><td>fails</td></tr>
+   <tr><th>11.2.0.2.0+fix</th><td>works</td><td>fails</td><td>works</td><td>works</td></tr>
+   <tr><th>11.2.0.3.0</th><td>&nbsp;</td><td>fails</td><td>works</td><td>works</td></tr>
+</table>
+
+    
 
     @section releasenotes Release Notes
 
