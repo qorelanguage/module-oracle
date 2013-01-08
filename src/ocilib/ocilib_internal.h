@@ -213,7 +213,8 @@ OCI_Dequeue * OCI_API OCI_DequeueCreate
 (
     OCI_Library *pOCILib,
     OCI_TypeInfo *typinf,
-    const mtext  *name
+    const mtext  *name,
+    ExceptionSink* xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
@@ -244,7 +245,8 @@ OCI_Agent * OCI_API OCI_DequeueListen
 OCI_Msg * OCI_API OCI_DequeueGet
 (
     OCI_Library *pOCILib,
-    OCI_Dequeue *dequeue
+    OCI_Dequeue *dequeue,
+    ExceptionSink* xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
@@ -349,7 +351,8 @@ boolean OCI_API OCI_DequeueSetWaitTime
 (
     OCI_Library *pOCILib,
     OCI_Dequeue *dequeue,
-    int          timeout
+    int          timeout,
+    ExceptionSink* xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
@@ -935,7 +938,8 @@ sword OCI_OCIObjectFree
 OCI_Msg * OCI_API OCI_MsgCreate
 (
     OCI_Library *pOCILib,
-    OCI_TypeInfo *typinf
+    OCI_TypeInfo *typinf,
+    ExceptionSink* xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
@@ -1259,7 +1263,8 @@ OCI_Object * OCI_ObjectInit
     OCI_TypeInfo *typinf,
     OCI_Object *parent,
     int index,
-    boolean reset
+    boolean reset,
+    ExceptionSink* xsink
 );
 
 void OCI_ObjectReset
@@ -1483,7 +1488,8 @@ OCI_Ref * OCI_RefInit
 boolean OCI_RefPin
 (
     OCI_Library *pOCILib,
-    OCI_Ref *ref
+    OCI_Ref *ref,
+    ExceptionSink* xsink
 );
 
 boolean OCI_RefUnpin

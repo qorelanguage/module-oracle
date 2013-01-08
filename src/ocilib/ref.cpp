@@ -108,7 +108,7 @@ OCI_Ref * OCI_RefInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_TypeInfo *t
  * OCI_RefPin
  * ------------------------------------------------------------------------ */
 
-boolean OCI_RefPin(OCI_Library *pOCILib, OCI_Ref *ref)
+boolean OCI_RefPin(OCI_Library *pOCILib, OCI_Ref *ref, ExceptionSink* xsink)
 {
     boolean res      = TRUE;
     void *obj_handle = NULL;
@@ -117,13 +117,15 @@ boolean OCI_RefPin(OCI_Library *pOCILib, OCI_Ref *ref)
 
     OCI_RefUnpin(pOCILib, ref);
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
         pOCILib, res, ref->con,
 
         OCIObjectPin(pOCILib->env, ref->con->err, ref->handle,
                      (OCIComplexObject *) 0, OCI_PIN_ANY, OCI_DURATION_SESSION,
-                     OCI_LOCK_NONE, &obj_handle)
+                     OCI_LOCK_NONE, &obj_handle),
+
+	xsink
     )
 
     if (res == TRUE)
@@ -133,7 +135,7 @@ boolean OCI_RefPin(OCI_Library *pOCILib, OCI_Ref *ref)
         if (res == TRUE)
         {
             obj =  OCI_ObjectInit(pOCILib, ref->con, (OCI_Object **) &ref->obj,
-                                  obj_handle, ref->typinf, NULL, -1, TRUE);
+                                  obj_handle, ref->typinf, NULL, -1, TRUE, xsink);
         }
 
         if (obj != NULL)
@@ -267,7 +269,7 @@ boolean OCI_API OCI_RefArrayFree(OCI_Ref **refs)
  * OCI_RefGetObject
  * ------------------------------------------------------------------------ */
 
-OCI_Object * OCI_API OCI_RefGetObject(OCI_Library *pOCILib, OCI_Ref *ref)
+OCI_Object * OCI_API OCI_RefGetObject(OCI_Library *pOCILib, OCI_Ref *ref, ExceptionSink* xsink)
 {
     OCI_Object *obj = NULL;
 
@@ -275,7 +277,7 @@ OCI_Object * OCI_API OCI_RefGetObject(OCI_Library *pOCILib, OCI_Ref *ref)
     {
         boolean res = TRUE;
 
-        res = OCI_RefPin(pOCILib, ref);
+        res = OCI_RefPin(pOCILib, ref, xsink);
 
         OCI_RESULT(pOCILib, res);
 

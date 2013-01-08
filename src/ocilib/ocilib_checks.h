@@ -128,6 +128,22 @@
         }                                                                      \
     }
     
+#define OCI_CALL2Q(ocilib, res, con, fct, xsink)				\
+                                                                               \
+    {                                                                          \
+        if ((res) == TRUE)                                                     \
+        {                                                                      \
+            (res) = (boolean) fct;                                             \
+            if (OCI_NO_ERROR((res)) == FALSE)                                  \
+            {                                                                  \
+                (res) = ((res) == OCI_SUCCESS_WITH_INFO);                      \
+                OCI_ExceptionOCI2(ocilib, (con)->err, (con), NULL, res, xsink); \
+            }                                                                  \
+            else                                                               \
+                (res) = TRUE;                                                  \
+        }                                                                      \
+    }
+    
 /**
  * @brief 
  * Conditional OCI call with return value checking

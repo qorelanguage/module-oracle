@@ -44,9 +44,10 @@
 
 OCI_Dequeue * OCI_API OCI_DequeueCreate
 (
-    OCI_Library *pOCILib,
-    OCI_TypeInfo *typinf,
-    const mtext  *name
+    OCI_Library*   pOCILib,
+    OCI_TypeInfo*  typinf,
+    const mtext*   name,
+    ExceptionSink* xsink
 )
 {
     OCI_Dequeue *dequeue = NULL;
@@ -80,7 +81,7 @@ OCI_Dequeue * OCI_API OCI_DequeueCreate
 	
         if (res == TRUE)
         {
-            dequeue->msg = OCI_MsgCreate(pOCILib, dequeue->typinf);
+	   dequeue->msg = OCI_MsgCreate(pOCILib, dequeue->typinf, xsink);
         }
 
         res = (dequeue->msg != NULL);
@@ -212,7 +213,8 @@ OCI_Agent * OCI_API OCI_DequeueListen
 OCI_Msg * OCI_API OCI_DequeueGet
 (
     OCI_Library *pOCILib,
-    OCI_Dequeue *dequeue
+    OCI_Dequeue *dequeue,
+    ExceptionSink* xsink
 )
 {
     boolean   res      = TRUE;
@@ -261,9 +263,9 @@ OCI_Msg * OCI_API OCI_DequeueGet
 
             if (code != OCI_ERR_AQ_DEQUEUE_TIMEOUT)
             {
-                OCI_ExceptionOCI2(pOCILib, pOCILib->err, dequeue->typinf->con, NULL, FALSE);
+	       OCI_ExceptionOCI2(pOCILib, pOCILib->err, dequeue->typinf->con, NULL, FALSE, xsink);
 
-                res = FALSE;
+	       res = FALSE;
             }
         }
     }
@@ -283,7 +285,7 @@ OCI_Msg * OCI_API OCI_DequeueGet
                 dequeue->msg->obj = OCI_ObjectInit(pOCILib, dequeue->typinf->con,
                                                    (OCI_Object **) &dequeue->msg->obj,
                                                    dequeue->msg->payload, dequeue->typinf,
-                                                   NULL, -1, TRUE);
+                                                   NULL, -1, TRUE, xsink);
 
                 res = dequeue->msg->obj != NULL;
 
@@ -740,9 +742,10 @@ int OCI_API OCI_DequeueGetWaitTime
 
 boolean OCI_API OCI_DequeueSetWaitTime
 (
-    OCI_Library *pOCILib,
-    OCI_Dequeue *dequeue,
-    int          timeout
+    OCI_Library*   pOCILib,
+    OCI_Dequeue*   dequeue,
+    int            timeout,
+    ExceptionSink* xsink
 )
 {
     boolean res = TRUE;
@@ -750,7 +753,7 @@ boolean OCI_API OCI_DequeueSetWaitTime
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_DEQUEUE, dequeue, FALSE);
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
     	pOCILib, res, dequeue->typinf->con,
 
@@ -759,7 +762,9 @@ boolean OCI_API OCI_DequeueSetWaitTime
                    (dvoid *) &value,
                    (ub4    ) 0,
                    (ub4    )  OCI_ATTR_WAIT,
-                   pOCILib->err)
+                   pOCILib->err),
+
+	xsink
     )
 
     OCI_RESULT(pOCILib, res);

@@ -181,7 +181,7 @@ boolean OCI_ObjectGetAttrInfo(OCI_TypeInfo *typinf, int index,
 
 OCI_Object * OCI_ObjectInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_Object **pobj,
 			     void *handle, OCI_TypeInfo *typinf,
-			     OCI_Object *parent, int index, boolean reset)
+			    OCI_Object *parent, int index, boolean reset, ExceptionSink* xsink)
 {
     OCI_Object * obj = NULL;
     boolean res      = TRUE;
@@ -224,7 +224,7 @@ OCI_Object * OCI_ObjectInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_Objec
                 obj->hstate = OCI_OBJECT_ALLOCATED;
             }
 
-            OCI_CALL2
+            OCI_CALL2Q
             (
 	       pOCILib, res, obj->con,
 
@@ -233,7 +233,9 @@ OCI_Object * OCI_ObjectInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_Objec
                               (dvoid *) NULL,
                               (OCIDuration) OCI_DURATION_SESSION,
                               (boolean) TRUE,
-                              (dvoid **) &obj->handle)
+                              (dvoid **) &obj->handle),
+
+	       xsink
            )
         }
         else
@@ -268,13 +270,15 @@ OCI_Object * OCI_ObjectInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_Objec
         {
             if (parent == NULL)
             {
-                OCI_CALL2
+                OCI_CALL2Q
                 (
-		   pOCILib, res, obj->con,
+		    pOCILib, res, obj->con,
 
-                    OCIObjectGetInd(pOCILib->env, obj->con->err,
-                                    (dvoid *) obj->handle,
-                                    (dvoid **) &obj->tab_ind)
+		    OCIObjectGetInd(pOCILib->env, obj->con->err,
+				    (dvoid *) obj->handle,
+				    (dvoid **) &obj->tab_ind),
+		    
+		    xsink
                 )
             }
             else
@@ -508,7 +512,7 @@ OCI_Object * OCI_API OCI_ObjectCreate(OCI_Connection *con, OCI_TypeInfo *typinf)
 }
 */
 
-OCI_Object * OCI_API OCI_ObjectCreate2(OCI_Library *pOCILib, OCI_Connection *con, OCI_TypeInfo *typinf)
+OCI_Object * OCI_API OCI_ObjectCreate2(OCI_Library *pOCILib, OCI_Connection *con, OCI_TypeInfo *typinf, ExceptionSink* xsink)
 {
     OCI_Object *obj = NULL;
 
@@ -517,7 +521,7 @@ OCI_Object * OCI_API OCI_ObjectCreate2(OCI_Library *pOCILib, OCI_Connection *con
     OCI_CHECK_PTR(pOCILib, OCI_IPC_CONNECTION, con, NULL);
     OCI_CHECK_PTR(pOCILib, OCI_IPC_TYPE_INFO, typinf, NULL);
 
-    obj = OCI_ObjectInit(pOCILib, con, &obj, NULL, typinf, NULL, -1, TRUE);
+    obj = OCI_ObjectInit(pOCILib, con, &obj, NULL, typinf, NULL, -1, TRUE, xsink);
 
     OCI_RESULT(pOCILib, obj != NULL);
 
@@ -932,7 +936,7 @@ OCI_Object * OCI_API OCI_ObjectGetObject(OCI_Object *obj, const mtext *attr)
    return OCI_ObjectGetObject2(&OCILib, obj, attr);
 }
 */
-OCI_Object * OCI_API OCI_ObjectGetObject2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr)
+OCI_Object * OCI_API OCI_ObjectGetObject2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, ExceptionSink* xsink)
 {
     OCI_Object *obj2 = NULL;
     boolean res      = TRUE;
@@ -949,7 +953,7 @@ OCI_Object * OCI_API OCI_ObjectGetObject2(OCI_Library *pOCILib, OCI_Object *obj,
         {
 	    obj2 = OCI_ObjectInit(pOCILib, obj->con, (OCI_Object **) &obj->objs[index],
                                   value, obj->typinf->cols[index].typinf,
-                                  obj, index, FALSE);
+                                  obj, index, FALSE, xsink);
 
             res = (obj2 != NULL);
        }
@@ -1394,7 +1398,7 @@ boolean OCI_API OCI_ObjectSetObject(OCI_Object *obj, const mtext *attr,
 }
 */
 boolean OCI_API OCI_ObjectSetObject2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr,
-                                    OCI_Object *value)
+				     OCI_Object *value, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
@@ -1411,14 +1415,16 @@ boolean OCI_API OCI_ObjectSetObject2(OCI_Library *pOCILib, OCI_Object *obj, cons
             OCIInd   *ind   = NULL;
             void *data      = OCI_ObjectGetAttr(obj, index, &ind);
 
-            OCI_CALL2
+            OCI_CALL2Q
             (
-	       pOCILib, res, obj->con,
+	        pOCILib, res, obj->con,
 
                 OCIObjectCopy(pOCILib->env, obj->con->err, obj->con->cxt,
                               value->handle, (value->tab_ind + value->idx_ind),
                               data, ind, obj->typinf->cols[index].typinf->tdo,
-                              OCI_DURATION_SESSION, OCI_DEFAULT)
+                              OCI_DURATION_SESSION, OCI_DEFAULT),
+
+		xsink
             )
 
             if (res == TRUE)

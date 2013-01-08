@@ -112,7 +112,7 @@ OCI_Object* objPlaceholderQore(QoreOracleConnection * conn, const char * tname, 
 	  xsink->raiseException("ORACLE-OBJECT-ERROR", "could not get type info for object type '%s'", tname);
        return 0;
     }
-    OCI_Object * obj = OCI_ObjectCreate2(&conn->ocilib, conn->ocilib_cn, info);
+    OCI_Object * obj = OCI_ObjectCreate2(&conn->ocilib, conn->ocilib_cn, info, xsink);
     if (!obj && !*xsink)
        xsink->raiseException("ORACLE-OBJECT-ERROR", "could not create placeholder buffer for object type '%s'", tname);
     return obj;
@@ -137,7 +137,9 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                               "No type '%s' defined in the DB", tname);
         return 0;
     }
-    OCI_Object * obj = OCI_ObjectCreate2(&d->ocilib, d->ocilib_cn, info);
+    OCI_Object * obj = OCI_ObjectCreate2(&d->ocilib, d->ocilib_cn, info, xsink);
+    if (!obj)
+       return 0;
 
     int n = OCI_TypeInfoGetColumnCount2(&d->ocilib, info);
     for (int i = 1; i <= n; ++i) {
@@ -317,13 +319,17 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                 const char * t = ntyHashType(n);
                 if (t && !strcmp(t, ORACLE_OBJECT)) {                    
                     OCI_Object * o = objBindQore(d, n, xsink);
-                    OCI_ObjectSetObject2(&d->ocilib, obj, cname, o);
-                    OCI_ObjectFree2(&d->ocilib, o);
+                    if (o) {
+                       OCI_ObjectSetObject2(&d->ocilib, obj, cname, o, xsink);
+                       OCI_ObjectFree2(&d->ocilib, o);
+                    }
                 }
                 else if (t && !strcmp(t, ORACLE_COLLECTION)) {
                     OCI_Coll * o = collBindQore(d, n, xsink);
-                    OCI_ObjectSetColl2(&d->ocilib, obj, cname, o);
-                    OCI_CollFree2(&d->ocilib, o);
+                    if (o) {
+                       OCI_ObjectSetColl2(&d->ocilib, obj, cname, o);
+                       OCI_CollFree2(&d->ocilib, o);
+                    }
                 }
                 else {
                     xsink->raiseException("BIND-NTY-ERROR", "Unknown NTY-like argument for %s (type: %d)", cname, col->type);
@@ -501,10 +507,16 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Excep
 	 case SQLT_NTY:
 	    if (col->typinf->ccode) {
 	       // collection
-	       rv->setKeyValue(cname, collToQore(conn, OCI_ObjectGetColl2(&conn->ocilib, obj, cname), xsink), xsink);
+               OCI_Coll* c = OCI_ObjectGetColl2(&conn->ocilib, obj, cname);
+               if (!c)
+                  return 0;
+	       rv->setKeyValue(cname, collToQore(conn, c, xsink), xsink);
 	    } else {
 	       // object
-	       rv->setKeyValue(cname, objToQore(conn, OCI_ObjectGetObject2(&conn->ocilib, obj, cname), xsink), xsink);
+               OCI_Object* o = OCI_ObjectGetObject2(&conn->ocilib, obj, cname, xsink);
+               if (!o)
+                  return 0;
+               rv->setKeyValue(cname, objToQore(conn, o, xsink), xsink);
 	    }
 	    break;
 
@@ -710,14 +722,18 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	    const char * t = ntyHashType(n);
 	    if (t && !strcmp(t, ORACLE_OBJECT)) {
 	       OCI_Object * o = objBindQore(d, n, xsink);
-	       OCI_ElemSetObject2(&d->ocilib, e, o);
-	       OCI_ObjectFree2(&d->ocilib, o);
-	    }
+               if (o) {
+                  OCI_ElemSetObject2(&d->ocilib, e, o, xsink);
+                  OCI_ObjectFree2(&d->ocilib, o);
+               }
+            }
 	    else if (t && !strcmp(t, ORACLE_COLLECTION)) {
 	       OCI_Coll * o = collBindQore(d, n, xsink);
-	       OCI_ElemSetColl2(&d->ocilib, e, o);
-	       OCI_CollFree2(&d->ocilib, o);
-	    }
+               if (o) {
+                  OCI_ElemSetColl2(&d->ocilib, e, o);
+                  OCI_CollFree2(&d->ocilib, o);
+               }
+            }
 	    else {
 	       xsink->raiseException("BIND-NTY-ERROR", "Unknown NTY-like argument (type: %d)", col->type);
 	       OCI_CollFree2(&d->ocilib, obj);
@@ -898,7 +914,12 @@ AbstractQoreNode* collToQore(QoreOracleConnection * conn, OCI_Coll * obj, Except
 	       rv->set_entry(rv->size(), collToQore(conn, OCI_ElemGetColl2(&conn->ocilib, e), xsink), xsink);
 	    } else {
 	       // object
-	       rv->set_entry(rv->size(), objToQore(conn, OCI_ElemGetObject2(&conn->ocilib, e), xsink), xsink);
+               OCI_Object* obj = OCI_ElemGetObject2(&conn->ocilib, e, xsink);
+               if (!obj) {
+                  assert(*xsink);
+                  return 0;
+               }
+	       rv->set_entry(rv->size(), objToQore(conn, obj, xsink), xsink);
 	    }
 	    break;
 

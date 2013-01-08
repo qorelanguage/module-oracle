@@ -637,7 +637,7 @@ OCI_Object * OCI_API OCI_ElemGetObject(OCI_Elem *elem)
 }
 */
 
-OCI_Object * OCI_API OCI_ElemGetObject2(OCI_Library * pOCILib, OCI_Elem *elem)
+OCI_Object * OCI_API OCI_ElemGetObject2(OCI_Library * pOCILib, OCI_Elem *elem, ExceptionSink* xsink)
 {
     boolean res = TRUE;
     OCI_Object *obj = NULL;
@@ -652,7 +652,7 @@ OCI_Object * OCI_API OCI_ElemGetObject2(OCI_Library * pOCILib, OCI_Elem *elem)
             obj = OCI_ObjectInit(pOCILib, elem->con, (OCI_Object **) &elem->obj,
                                  elem->handle, 
                                  elem->typinf->cols[0].typinf,
-                                 NULL, -1, TRUE);
+                                 NULL, -1, TRUE, xsink);
 
             elem->init = (obj != NULL);
         }
@@ -1053,7 +1053,7 @@ boolean OCI_API OCI_ElemSetObject(OCI_Elem *elem, OCI_Object *value)
 }
 */
 
-boolean OCI_API OCI_ElemSetObject2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Object *value)
+boolean OCI_API OCI_ElemSetObject2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Object *value, ExceptionSink* xsink)
 {
     boolean res  = TRUE;
 
@@ -1070,7 +1070,7 @@ boolean OCI_API OCI_ElemSetObject2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Obj
         {
             OCI_ObjectInit(pOCILib, elem->con, (OCI_Object **) &elem->obj,
                            elem->handle, elem->typinf->cols[0].typinf, 
-                           NULL, -1, TRUE);
+                           NULL, -1, TRUE, xsink);
         }
 
         if (elem->obj != NULL)

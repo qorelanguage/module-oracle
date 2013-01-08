@@ -12412,7 +12412,8 @@ OCI_EXPORT OCI_TypeInfo * OCI_API OCI_RefGetTypeInfo
 
 OCI_EXPORT OCI_Object * OCI_API OCI_RefGetObject
 (
-    OCI_Ref *ref
+    OCI_Ref*       ref,
+    ExceptionSink* xsink
 );
 
 /**

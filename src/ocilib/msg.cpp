@@ -45,7 +45,8 @@
 OCI_Msg * OCI_API OCI_MsgCreate
 (
     OCI_Library *pOCILib,
-    OCI_TypeInfo *typinf
+    OCI_TypeInfo *typinf,
+    ExceptionSink* xsink
 )
 {
     OCI_Msg *msg = NULL;
@@ -77,7 +78,7 @@ OCI_Msg * OCI_API OCI_MsgCreate
 
             if (msg->typinf->tcode != OCI_UNKNOWN)
             {
-                msg->obj = OCI_ObjectCreate2(pOCILib, typinf->con, typinf);
+ 	        msg->obj = OCI_ObjectCreate2(pOCILib, typinf->con, typinf, xsink);
 
                 res = (msg->obj != NULL);
             }

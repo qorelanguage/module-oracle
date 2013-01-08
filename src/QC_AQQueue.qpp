@@ -208,10 +208,11 @@ bool AQQueuePriv::post(AQMessagePriv *message, ExceptionSink *xsink) {
     }
     ON_BLOCK_EXIT(OCI_ObjectFree2, &m_conn->ocilib, o);
 
-    OCI_Msg *m = OCI_MsgCreate(&m_conn->ocilib, m_typeInfo);
+    OCI_Msg *m = OCI_MsgCreate(&m_conn->ocilib, m_typeInfo, xsink);
     if (!m) {
-    	xsink->raiseException("AQQUEUE-ERROR", "cannot allocate message object");
-    	return false;
+       if (!*xsink)
+          xsink->raiseException("AQQUEUE-ERROR", "cannot allocate message object");
+       return false;
     }
     ON_BLOCK_EXIT(OCI_MsgFree, &m_conn->ocilib, m);
 
@@ -263,9 +264,10 @@ bool AQQueuePriv::post(const QoreHashNode *h, ExceptionSink *xsink) {
    }
    ON_BLOCK_EXIT(OCI_ObjectFree2, &m_conn->ocilib, obj);
    
-   OCI_Msg* msg = OCI_MsgCreate(&m_conn->ocilib, m_typeInfo);
+   OCI_Msg* msg = OCI_MsgCreate(&m_conn->ocilib, m_typeInfo, xsink);
    if (!msg) {
-      xsink->raiseException("AQQUEUE-ERROR", "cannot allocate message");
+      if (!*xsink)
+         xsink->raiseException("AQQUEUE-ERROR", "cannot allocate message");
       return false;
    }
    ON_BLOCK_EXIT(OCI_MsgFree, &m_conn->ocilib, msg);
@@ -302,24 +304,25 @@ QoreObject* AQQueuePriv::getMessage(QoreObject* self, int timeout, ExceptionSink
    //printd(5, "AQQueuePriv::getMessage() this: %p dequeue: %p msg: %p msg->typinfo: %p (%s)\n", this, m_dequeue, m_dequeue->msg, m_dequeue->msg->typinf, m_dequeue->msg->typinf->name);
 
    // set timeout if necessary
-   if (!OCI_DequeueSetWaitTime(&m_conn->ocilib, m_dequeue, timeout)) {
-      xsink->raiseException("AQQUEUE-ERROR", "failed to set dequeue timeout of %d second%s", timeout, timeout == 1 ? "" : "s");
+   if (!OCI_DequeueSetWaitTime(&m_conn->ocilib, m_dequeue, timeout, xsink)) {
+      if (!*xsink)
+         xsink->raiseException("AQQUEUE-ERROR", "failed to set dequeue timeout of %d second%s", timeout, timeout == 1 ? "" : "s");
       return 0;
    }
 
-   OCI_Msg *msg = OCI_DequeueGet(&m_conn->ocilib, m_dequeue);
+   OCI_Msg *msg = OCI_DequeueGet(&m_conn->ocilib, m_dequeue, xsink);
 
    if (msg == NULL) {
       printd(5, "Message is NULL. NOTHING returned.\n");
       return 0;
    }
 
-    OCI_Object *o = OCI_MsgGetObject(&m_conn->ocilib, msg);    
+   OCI_Object *o = OCI_MsgGetObject(&m_conn->ocilib, msg);    
 
-    if (!o) {
-       xsink->raiseException("AQQUEUE-ERROR", "Cannot get object from message");
-       return 0;
-    }
+   if (!o) {
+      printd(5, "AQQueuePriv::getMessage() object in message is NULL\n");
+      return 0;
+   }
 
     ON_BLOCK_EXIT(OCI_ObjectFree2, &m_conn->ocilib, o);
 
@@ -339,9 +342,10 @@ QoreObject* AQQueuePriv::getMessage(QoreObject* self, int timeout, ExceptionSink
 bool AQQueuePriv::checkDequeueUnlocked(QoreObject* self, ExceptionSink *xsink) {
    if (!m_dequeue) {
       //printd(5, "AQQueuePriv::checkDequeueUnlocked() this: %p Opening R queue: %s (%p)\n", this, m_qname->getBuffer(), m_typeInfo);
-      m_dequeue = OCI_DequeueCreate(&m_conn->ocilib, m_typeInfo, m_qname->getBuffer());
+      m_dequeue = OCI_DequeueCreate(&m_conn->ocilib, m_typeInfo, m_qname->getBuffer(), xsink);
       if (!m_dequeue) {
-         xsink->raiseException("AQQUEUE-ERROR", "failed to initialize queue");
+         if (!*xsink)
+            xsink->raiseException("AQQUEUE-ERROR", "failed to initialize queue");
          return false;
       }
       m_dequeue->user_ctx = (void*)self;
