@@ -27,17 +27,20 @@
 #include "oracle.h"
 #include "ocilib_types.h"
 
-void ocilib_err_handler(OCI_Error *err) {
-    // TODO/FIXME: xsink handling here.
-    printf(     "internal OCILIB error:\n"
-                "  code  : ORA-%05i\n"
-                "  msg   : %s\n"
-                "  sql   : %s\n",
-                OCI_ErrorGetOCICode(err), 
-                OCI_ErrorGetString(err),
-                //OCI_GetSql(OCI_ErrorGetStatement(err))
-		"<not available>"
-           );
+void ocilib_err_handler(OCI_Error *err, ExceptionSink* xsink) {
+   if (xsink && !err->warning)
+      xsink->raiseException("ORACLE-OCI-ERROR", "ORA-%05d: %s", OCI_ErrorGetOCICode(err), OCI_ErrorGetString(err));
+   else
+      // TODO/FIXME: xsink handling here.
+      printf("internal OCILIB error:\n"
+             "  code  : ORA-%05i\n"
+             "  msg   : %s\n"
+             "  sql   : %s\n",
+             OCI_ErrorGetOCICode(err), 
+             OCI_ErrorGetString(err),
+             //OCI_GetSql(OCI_ErrorGetStatement(err))
+             "<not available>"
+         );
 };
 
 /* ------------------------------------------------------------------------ *

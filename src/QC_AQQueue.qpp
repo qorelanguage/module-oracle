@@ -367,10 +367,11 @@ void AQQueuePriv::startSubscription(QoreObject* self, int64 port, int64 timeout,
    // increment "oracle-thread active" count
    aqThreadManager.inc();
 
-   if (!OCI_DequeueSubscribe(&m_conn->ocilib, m_dequeue, port, timeout, on_async_message)) {
+   if (!OCI_DequeueSubscribe(&m_conn->ocilib, m_dequeue, port, timeout, on_async_message, xsink)) {
       // decrement "oracle-thread active" count
       aqThreadManager.dec();
-      xsink->raiseException("AQQUEUE-ERROR", "cannot start the subscription");
+      if (!*xsink)
+         xsink->raiseException("AQQUEUE-ERROR", "unknown error starting the subscription");
       return;
    }
 
@@ -383,12 +384,13 @@ int AQQueuePriv::stopSubscriptionUnlocked(ExceptionSink *xsink) {
    assert(m_dequeue);
    assert(m_hasSubscription);
 
-   bool b = OCI_DequeueUnsubscribe(&m_conn->ocilib, m_dequeue);
+   bool b = OCI_DequeueUnsubscribe(&m_conn->ocilib, m_dequeue, xsink);
    aqThreadManager.dec();
    m_hasSubscription = false;
 
    if (!b) {
-      xsink->raiseException("AQQUEUE-ERROR", "error stopping the subscription");
+      if (!*xsink)
+         xsink->raiseException("AQQUEUE-ERROR", "unknown error stopping the subscription");
       return -1;
    }
 

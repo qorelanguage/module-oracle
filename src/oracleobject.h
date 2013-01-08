@@ -11,7 +11,7 @@ class QoreOracleConnection;
 
 /*! A ocilib-like error handler to catch OCILIB raised errors
  */
-void ocilib_err_handler(OCI_Error *err);
+void ocilib_err_handler(OCI_Error* err, ExceptionSink* xsink);
 
 /*! OCI_ObjectGetStruct-like function for collections. It has no reason
     to go to OCILIB. We are using it only for our mixed OCI/OCILIB environment.

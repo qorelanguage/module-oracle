@@ -822,7 +822,8 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
     OCI_Dequeue    *dequeue,
     unsigned int    port,
     unsigned int    timeout,
-    POCI_NOTIFY_AQ  callback
+    POCI_NOTIFY_AQ  callback,
+    ExceptionSink* xsink
 )
 {
     boolean res             = TRUE;
@@ -843,7 +844,7 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
 
     /* clear any previous subscription */
 
-    OCI_DequeueUnsubscribe(pOCILib, dequeue);
+    OCI_DequeueUnsubscribe(pOCILib, dequeue, xsink);
 
     /* allocate subcription handle */
 
@@ -856,13 +857,15 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
 
     if (oci_port > 0)
     {
-        OCI_CALL3
+        OCI_CALL3Q
         (
             pOCILib, res, con->err,
 
             OCIAttrSet((dvoid *) dequeue->subhp, (ub4) OCI_HTYPE_SUBSCRIPTION,
-                        (dvoid *) &oci_port, (ub4) sizeof (oci_port),
-                        (ub4) OCI_ATTR_SUBSCR_PORTNO, con->err)
+		       (dvoid *) &oci_port, (ub4) sizeof (oci_port),
+		       (ub4) OCI_ATTR_SUBSCR_PORTNO, con->err),
+	    
+	    xsink
         )
     }
 
@@ -870,13 +873,15 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
 
     if (oci_timeout > 0)
     {
-        OCI_CALL3
+        OCI_CALL3Q
         (
             pOCILib, res, con->err,
 
             OCIAttrSet((dvoid *) dequeue->subhp, (ub4) OCI_HTYPE_SUBSCRIPTION,
-                        (dvoid *) &oci_timeout, (ub4) sizeof (oci_timeout),
-                        (ub4) OCI_ATTR_SUBSCR_TIMEOUT, con->err)
+		       (dvoid *) &oci_timeout, (ub4) sizeof (oci_timeout),
+		       (ub4) OCI_ATTR_SUBSCR_TIMEOUT, con->err),
+
+	    xsink
         )
     }
 
@@ -914,13 +919,15 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
 
         ostr = OCI_GetInputMetaString(pOCILib, buffer, &osize);
 
-        OCI_CALL3
+        OCI_CALL3Q
         (
             pOCILib, res, con->err,
 
             OCIAttrSet((dvoid *) dequeue->subhp, (ub4) OCI_HTYPE_SUBSCRIPTION,
-                        (dvoid *) ostr, (ub4) osize,
-                        (ub4) OCI_ATTR_SUBSCR_NAME, con->err)
+		       (dvoid *) ostr, (ub4) osize,
+		       (ub4) OCI_ATTR_SUBSCR_NAME, con->err),
+
+	    xsink
         )
 
         OCI_ReleaseMetaString(ostr);
@@ -930,65 +937,75 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
 
     /* set namespace  */
 
-    OCI_CALL3
+    OCI_CALL3Q
     (
         pOCILib, res, con->err,
 
         OCIAttrSet((dvoid *) dequeue->subhp, (ub4) OCI_HTYPE_SUBSCRIPTION,
-                    (dvoid *) &oci_namespace, (ub4) sizeof(oci_namespace),
-                    (ub4) OCI_ATTR_SUBSCR_NAMESPACE, con->err)
+		   (dvoid *) &oci_namespace, (ub4) sizeof(oci_namespace),
+		   (ub4) OCI_ATTR_SUBSCR_NAMESPACE, con->err),
+
+	xsink
     )
 
     //printd(5, "OCI_DequeueSubscribe() set namespace res: %d\n", (int)res);
 
     /* set context pointer to dequeue structure */
 
-    OCI_CALL3
+    OCI_CALL3Q
     (
         pOCILib, res, con->err,
 
         OCIAttrSet((dvoid *) dequeue->subhp, (ub4) OCI_HTYPE_SUBSCRIPTION,
-                    (dvoid *) dequeue, (ub4) 0,
-                    (ub4) OCI_ATTR_SUBSCR_CTX, con->err)
+		   (dvoid *) dequeue, (ub4) 0,
+		   (ub4) OCI_ATTR_SUBSCR_CTX, con->err),
+
+	xsink
     )
 
     //printd(5, "OCI_DequeueSubscribe() set context to dequeue res: %d\n", (int)res);
 
     /* internal callback handler */
 
-    OCI_CALL3
+    OCI_CALL3Q
     (
         pOCILib, res, con->err,
 
         OCIAttrSet((dvoid *) dequeue->subhp, (ub4) OCI_HTYPE_SUBSCRIPTION,
-                    (dvoid *) OCI_ProcNotifyMessages, (ub4) 0,
-                    (ub4) OCI_ATTR_SUBSCR_CALLBACK, con->err)
+		   (dvoid *) OCI_ProcNotifyMessages, (ub4) 0,
+		   (ub4) OCI_ATTR_SUBSCR_CALLBACK, con->err),
+
+	xsink
     )
 
     //printd(5, "OCI_DequeueSubscribe() set internal callback handler res: %d\n", (int)res);
 
     /* set protocol  */
 
-    OCI_CALL3
+    OCI_CALL3Q
     (
         pOCILib, res, con->err,
 
         OCIAttrSet((dvoid *) dequeue->subhp, (ub4) OCI_HTYPE_SUBSCRIPTION,
-                    (dvoid *) &oci_protocol, (ub4) sizeof(oci_protocol),
-                    (ub4) OCI_ATTR_SUBSCR_RECPTPROTO, con->err)
+		   (dvoid *) &oci_protocol, (ub4) sizeof(oci_protocol),
+		   (ub4) OCI_ATTR_SUBSCR_RECPTPROTO, con->err),
+
+	xsink
     )
 
     //printd(5, "OCI_DequeueSubscribe() set protocol res: %d\n", (int)res);
 
     /* set presentation  */
 
-    OCI_CALL3
+    OCI_CALL3Q
     (
-        pOCILib, res, con->err,
+       pOCILib, res, con->err,
 
-        OCIAttrSet((dvoid *) dequeue->subhp, (ub4) OCI_HTYPE_SUBSCRIPTION,
-                    (dvoid *) &oci_msgpres, (ub4) sizeof(oci_msgpres),
-                    (ub4) OCI_ATTR_SUBSCR_RECPTPRES, con->err)
+       OCIAttrSet((dvoid *) dequeue->subhp, (ub4) OCI_HTYPE_SUBSCRIPTION,
+		  (dvoid *) &oci_msgpres, (ub4) sizeof(oci_msgpres),
+		  (ub4) OCI_ATTR_SUBSCR_RECPTPRES, con->err),
+
+       xsink
     )
 
     //printd(5, "OCI_DequeueSubscribe() set presentation res: %d\n", (int)res);
@@ -998,11 +1015,13 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
     /* set callback in anticipation of success */
     dequeue->callback = callback;
 
-    OCI_CALL3
+    OCI_CALL3Q
     (
         pOCILib, res, con->err,
 
-        OCISubscriptionRegister(con->cxt, &dequeue->subhp, (ub2) 1, con->err,(ub4) OCI_DEFAULT)
+        OCISubscriptionRegister(con->cxt, &dequeue->subhp, (ub2) 1, con->err,(ub4) OCI_DEFAULT),
+
+	xsink
     )
 
     //printd(5, "OCI_DequeueSubscribe() register subscription res: %d\n", (int)res);
@@ -1017,7 +1036,7 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
 
         /* clear subscription on failure */
 
-        OCI_DequeueUnsubscribe(pOCILib, dequeue);
+        OCI_DequeueUnsubscribe(pOCILib, dequeue, xsink);
     }
 
     OCI_RESULT(pOCILib, res);
@@ -1034,7 +1053,8 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
 OCI_EXPORT boolean OCI_API OCI_DequeueUnsubscribe
 (
     OCI_Library *pOCILib,
-    OCI_Dequeue *dequeue
+    OCI_Dequeue *dequeue,
+    ExceptionSink* xsink
 )
 {
     boolean res = TRUE;
@@ -1049,12 +1069,14 @@ OCI_EXPORT boolean OCI_API OCI_DequeueUnsubscribe
     {
         /* unregister the subscription */
 
-        OCI_CALL3
+        OCI_CALL3Q
         (
             pOCILib, res, dequeue->typinf->con->err,
 
             OCISubscriptionUnRegister(dequeue->typinf->con->cxt, dequeue->subhp,
-                                      pOCILib->err,(ub4) OCI_DEFAULT)
+                                      pOCILib->err,(ub4) OCI_DEFAULT),
+
+	    xsink
         )
 
         /* free OCI handle */

@@ -1116,7 +1116,7 @@ typedef struct OCI_Enqueue OCI_Enqueue;
  *
  */
 
-typedef void (*POCI_ERROR) (OCI_Error *err);
+typedef void (*POCI_ERROR) (OCI_Error *err, ExceptionSink* xsink);
 
 /**
  * @typedef POCI_THREAD

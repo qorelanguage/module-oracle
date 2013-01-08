@@ -374,7 +374,8 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
     OCI_Dequeue    *dequeue,
     unsigned int    port,
     unsigned int    timeout,
-    POCI_NOTIFY_AQ  callback
+    POCI_NOTIFY_AQ  callback,
+    ExceptionSink* xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
@@ -384,7 +385,8 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
 OCI_EXPORT boolean OCI_API OCI_DequeueUnsubscribe
 (
     OCI_Library *pOCILib,
-    OCI_Dequeue *dequeue
+    OCI_Dequeue *dequeue,
+    ExceptionSink* xsink
 );
 
 

@@ -157,6 +157,22 @@
         }                                                                      \
     }
     
+#define OCI_CALL3Q(ocilib, res, err, fct, xsink)				\
+                                                                               \
+    {                                                                          \
+        if ((res) == TRUE)                                                     \
+        {                                                                      \
+            (res) = (boolean) fct;                                             \
+            if (OCI_NO_ERROR((res)) == FALSE)                                  \
+            {                                                                  \
+                (res) = ((res) == OCI_SUCCESS_WITH_INFO);                      \
+		OCI_ExceptionOCI2(ocilib, (err), NULL, NULL, res, xsink);	\
+            }                                                                  \
+            else                                                               \
+                (res) = TRUE;                                                  \
+        }                                                                      \
+    }
+    
 /**
  * @brief 
  * Conditional OCI call with return value checking

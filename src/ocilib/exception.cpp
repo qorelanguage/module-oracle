@@ -229,12 +229,12 @@ void OCI_ExceptionRaise(OCI_Error *err)
 }
 */
 
-void OCI_ExceptionRaise2(OCI_Library *pOCILib, OCI_Error *err)
+void OCI_ExceptionRaise2(OCI_Library *pOCILib, OCI_Error *err, ExceptionSink* xsink)
 {
     if (err != NULL)
     {
         if (pOCILib->error_handler != NULL)
-            pOCILib->error_handler(err);
+	   pOCILib->error_handler(err, xsink);
 
         err->active = FALSE;
     }
@@ -252,7 +252,7 @@ void OCI_ExceptionOCI(OCIError *p_err, OCI_Connection *con,
 */
 
 void OCI_ExceptionOCI2(OCI_Library *pOCILib, OCIError *p_err, OCI_Connection *con, 
-                      OCI_Statement *stmt, boolean warning)
+		       OCI_Statement *stmt, boolean warning, ExceptionSink* xsink)
 {
     OCI_Error *err = OCI_ExceptionGetError(pOCILib, warning);
 
@@ -278,7 +278,7 @@ void OCI_ExceptionOCI2(OCI_Library *pOCILib, OCIError *p_err, OCI_Connection *co
         OCI_ReleaseMetaString(ostr);
     }
 
-    OCI_ExceptionRaise2(pOCILib, err);
+    OCI_ExceptionRaise2(pOCILib, err, xsink);
 }
 
 /* ------------------------------------------------------------------------ *

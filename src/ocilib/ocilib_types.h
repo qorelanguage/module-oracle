@@ -949,8 +949,8 @@ OCI_EXPORT boolean OCI_API OCI_LobIsTemporary2(OCI_Library *pOCILib, OCI_Lob *lo
 OCI_EXPORT boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connection *con, OCI_Statement *stmt, void *handle, int index, int ptype);
 OCI_EXPORT boolean OCI_ColumnMap2(OCI_Library *pOCILib, OCI_Column *col, OCI_Statement *stmt);
 OCI_EXPORT boolean OCI_KeyMapFree2(OCI_Library *pOCILib);
-OCI_EXPORT void OCI_ExceptionRaise2(OCI_Library *pOCILib, OCI_Error *err);
-OCI_EXPORT void OCI_ExceptionOCI2(OCI_Library *pOCILib, OCIError *p_err, OCI_Connection *con, OCI_Statement *stmt, boolean warning);
+OCI_EXPORT void OCI_ExceptionRaise2(OCI_Library *pOCILib, OCI_Error *err, ExceptionSink* xsink = 0);
+OCI_EXPORT void OCI_ExceptionOCI2(OCI_Library *pOCILib, OCIError *p_err, OCI_Connection *con, OCI_Statement *stmt, boolean warning, ExceptionSink* xsink = 0);
 OCI_EXPORT void OCI_ExceptionNotInitialized2(OCI_Library *pOCILib);
 OCI_EXPORT void OCI_ExceptionLoadingSharedLib2(OCI_Library *pOCILib);
 OCI_EXPORT void OCI_ExceptionLoadingSymbols2(OCI_Library *pOCILib);
