@@ -383,15 +383,15 @@ int AQQueuePriv::stopSubscriptionUnlocked(ExceptionSink *xsink) {
    assert(m_dequeue);
    assert(m_hasSubscription);
 
-   if (!OCI_DequeueUnsubscribe(&m_conn->ocilib, m_dequeue)) {
-      xsink->raiseException("AQQUEUE-ERROR", "cannot stop the subscription");
+   bool b = OCI_DequeueUnsubscribe(&m_conn->ocilib, m_dequeue);
+   aqThreadManager.dec();
+   m_hasSubscription = false;
+
+   if (!b) {
+      xsink->raiseException("AQQUEUE-ERROR", "error stopping the subscription");
       return -1;
    }
 
-   // decrement "oracle-thread active" count
-   aqThreadManager.dec();
-   
-   m_hasSubscription = false;
    return 0;
 }
 
