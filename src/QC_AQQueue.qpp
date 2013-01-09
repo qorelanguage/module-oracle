@@ -257,13 +257,22 @@ bool AQQueuePriv::post(AQMessagePriv *message, ExceptionSink *xsink) {
 bool AQQueuePriv::post(const QoreHashNode *h, ExceptionSink *xsink) {
    AutoLocker al(l);
 
+   if (!m_enqueue) {
+      //printd(5, "Opening W queue: %s (%p)\n", m_qname->getBuffer(), m_typeInfo);
+      m_enqueue = OCI_EnqueueCreate(&m_conn->ocilib, m_typeInfo, m_qname->getBuffer());
+      if (!m_enqueue) {
+         xsink->raiseException("AQQUEUE-ERROR", "failed to initialize queue");
+         return false;
+      }
+   }
+
    OCI_Object* obj = objBindQore(m_conn, h, xsink);
    if (!obj) {
       xsink->raiseException("AQQUEUE-ERROR", "failed to create(bind) object");
       return false;
    }
    ON_BLOCK_EXIT(OCI_ObjectFree2, &m_conn->ocilib, obj);
-   
+
    OCI_Msg* msg = OCI_MsgCreate(&m_conn->ocilib, m_typeInfo, xsink);
    if (!msg) {
       if (!*xsink)
@@ -276,7 +285,7 @@ bool AQQueuePriv::post(const QoreHashNode *h, ExceptionSink *xsink) {
       xsink->raiseException("AQQUEUE-ERROR", "cannot set message object");
       return false;
    }
-   
+
    if (!OCI_EnqueuePut(&m_conn->ocilib, m_enqueue, msg)) {
       xsink->raiseException("AQQUEUE-ERROR", "failed to enqueue object");
       return false;
