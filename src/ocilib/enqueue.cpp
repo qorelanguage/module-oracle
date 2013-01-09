@@ -122,7 +122,8 @@ boolean OCI_API OCI_EnqueuePut
 (
     OCI_Library *pOCILib,
     OCI_Enqueue *enqueue,
-    OCI_Msg     *msg
+    OCI_Msg     *msg,
+    ExceptionSink *xsink
 )
 {
     boolean res     = TRUE;
@@ -157,13 +158,15 @@ boolean OCI_API OCI_EnqueuePut
 
     /* enqueue message */
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
         pOCILib, res, enqueue->typinf->con,
 
         OCIAQEnq(enqueue->typinf->con->cxt, pOCILib->err,
                  (OraText*)ostr, enqueue->opth, msg->proph, enqueue->typinf->tdo,
-                 &payload, &ind, NULL, OCI_DEFAULT);
+                 &payload, &ind, NULL, OCI_DEFAULT),
+
+        xsink
     )
 
     OCI_ReleaseMetaString(ostr);

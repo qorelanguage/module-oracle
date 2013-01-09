@@ -141,7 +141,11 @@ void AQQueuePriv::disconnectUnlocked(ExceptionSink* xsink) {
 }
 
 void AQQueuePriv::connect(ExceptionSink *xsink) {
-   AutoLocker al(l);
+    AutoLocker al(l);
+    connectUnlocked(xsink);
+}
+
+void AQQueuePriv::connectUnlocked(ExceptionSink *xsink) {
    disconnectUnlocked(xsink);
 
    assert(m_conn);
@@ -246,9 +250,9 @@ bool AQQueuePriv::post(AQMessagePriv *message, ExceptionSink *xsink) {
         }
     }
 
-    if (!OCI_EnqueuePut(&m_conn->ocilib, m_enqueue, m)) {
-        xsink->raiseException("AQQUEUE-ERROR", "failed to enqueue object");
-        return false;
+    if (!OCI_EnqueuePut(&m_conn->ocilib, m_enqueue, m, xsink)) {
+        if (*xsink)
+            return false;
     }
 
     return true;
@@ -286,13 +290,37 @@ bool AQQueuePriv::post(const QoreHashNode *h, ExceptionSink *xsink) {
       return false;
    }
 
-   if (!OCI_EnqueuePut(&m_conn->ocilib, m_enqueue, msg)) {
-      xsink->raiseException("AQQUEUE-ERROR", "failed to enqueue object");
-      return false;
+   if (!OCI_EnqueuePut(&m_conn->ocilib, m_enqueue, msg, xsink)) {
+       if (*xsink)
+           return false;
    }
    
    return true;
 }
+
+//bool AQQueuePriv::checkReconnectUnlocked(int status, ExceptionSink *xsink)
+//{
+//    if (status == OCI_ERROR) {
+//
+//        // see if server is connected
+//        ub4 server_status = 0;
+//
+//        if (m_conn->checkerr(OCIAttrGet(m_conn->srvhp, OCI_HTYPE_SERVER,
+//                                       (dvoid *)&server_status, 0,
+//                                       OCI_ATTR_SERVER_STATUS, m_conn->errhp),
+//                            "AQQueuePriv::checkReconnectUnlocked", xsink))
+//        {
+//            return false;
+//        }
+//
+//        if (server_status == OCI_SERVER_NOT_CONNECTED) {
+//            connectUnlocked(xsink);
+//            return *xsink;
+//        }
+//    }
+//
+//    return false;
+//}
 
 bool AQQueuePriv::commit(ExceptionSink *xsink) {
    AutoLocker al(l);

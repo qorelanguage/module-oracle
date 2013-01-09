@@ -76,8 +76,10 @@ private:
    bool m_hasSubscription;
 
    DLLLOCAL int stopSubscriptionUnlocked(ExceptionSink *xsink);
+   DLLLOCAL void connectUnlocked(ExceptionSink *xsink);
    DLLLOCAL void disconnectUnlocked(ExceptionSink *xsink);
    DLLLOCAL bool checkDequeueUnlocked(QoreObject* self, ExceptionSink *xsink);
+//   DLLLOCAL bool checkReconnectUnlocked(int status, ExceptionSink *xsink);
 };
 
 #endif

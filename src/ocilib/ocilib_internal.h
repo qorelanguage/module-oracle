@@ -458,7 +458,8 @@ boolean OCI_API OCI_EnqueuePut
 (
     OCI_Library *pOCILib,
     OCI_Enqueue *enqueue,
-    OCI_Msg     *msg
+    OCI_Msg     *msg,
+    ExceptionSink *xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
