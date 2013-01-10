@@ -11,7 +11,9 @@
 
 #include <memory>
 
-class AQThreadManager {
+
+// handle external (oracle) threads for qore/aq
+class AQCallbackThreadManager {
 protected:
    pthread_t ora_thread;
    QoreThreadLock l;
@@ -19,10 +21,10 @@ protected:
    int tid;
 
 public:
-   DLLLOCAL AQThreadManager() : count(0), tid(0) {
+   DLLLOCAL AQCallbackThreadManager() : count(0), tid(0) {
    }
 
-   DLLLOCAL ~AQThreadManager() {
+   DLLLOCAL ~AQCallbackThreadManager() {
       assert(!tid);
       assert(!count);
    }
@@ -55,10 +57,66 @@ public:
    }
 };
 
-AQThreadManager aqThreadManager;
+AQCallbackThreadManager aqCallbackThreadManager;
+
+// periodically ping registered subscriptions and reconnect on demand
+class AQSubscriptionCheck {
+protected:
+    typedef std::list<AQQueuePriv*> t_list;
+
+   pthread_t checkThread;
+   QoreThreadLock l;
+   t_list objects;
+
+public:
+   DLLLOCAL AQSubscriptionCheck() {
+       pthread_create(&checkThread, NULL, &AQSubscriptionCheck::thread_helper, this);
+   }
+
+   DLLLOCAL ~AQSubscriptionCheck() {
+//       printd(0, "~AQSubscriptionCheck size: %d\n", objects.size());
+       assert(!objects.size());
+       pthread_cancel(checkThread);
+   }
+
+   DLLLOCAL void add(AQQueuePriv* o) {
+      AutoLocker al(l);
+      objects.push_back(o);
+   }
+
+   DLLLOCAL void remove(AQQueuePriv* o) {
+      AutoLocker al(l);
+      objects.remove(o);
+   }
+
+   DLLLOCAL void ping() {
+      AutoLocker al(l);
+      t_list::iterator it;
+      for (it = objects.begin(); it != objects.end(); ++it) {
+          printd(0, "PING> %p = %d\n", (*it), (*it)->ping());
+      }
+   }
+
+   DLLLOCAL void run() {
+       QoreForeignThreadHelper qfth(pthread_self());
+       printd(0, "RUN\n");
+       while (true) {
+           ping();
+           sleep(1);
+       }
+
+   }
+
+   DLLLOCAL static void* thread_helper(void* context) {
+       ((AQSubscriptionCheck*)context)->run();
+   }
+
+};
+
+AQSubscriptionCheck aqSubscriptionCheck;
 
 void on_async_message(OCI_Dequeue* deq) {
-   QoreForeignThreadHelper qfth(aqThreadManager.getTid());;
+   QoreForeignThreadHelper qfth(aqCallbackThreadManager.getTid());
 
    //printd(5, "DEBUG> message arrived pthread: %p, deq: %p obj: %p\n", pthread_self(), deq, deq->user_ctx);
 
@@ -123,7 +181,7 @@ void AQQueuePriv::disconnect(ExceptionSink* xsink) {
 }
 
 void AQQueuePriv::disconnectUnlocked(ExceptionSink* xsink) {
-   //printd(5, "AQQueuePriv::~disconnectUnlocked() this: %p m_dequeue: %p\n", this, m_dequeue);
+//   printd(0, "AQQueuePriv::~disconnectUnlocked() this: %p m_dequeue: %p\n", this, m_dequeue);
    if (m_enqueue) {
       OCI_EnqueueFree(&m_conn->ocilib, m_enqueue);
       m_enqueue = 0;
@@ -406,16 +464,17 @@ void AQQueuePriv::startSubscription(QoreObject* self, int64 port, int64 timeout,
    //printd(5, "AQQueuePriv::startSubscription() this: %p dequeue: %p self: %p port: %zd timeout: %zd\n", this, m_dequeue, self, port, timeout);
 
    // increment "oracle-thread active" count
-   aqThreadManager.inc();
+   aqCallbackThreadManager.inc();
 
    if (!OCI_DequeueSubscribe(&m_conn->ocilib, m_dequeue, port, timeout, on_async_message, xsink)) {
       // decrement "oracle-thread active" count
-      aqThreadManager.dec();
+      aqCallbackThreadManager.dec();
       if (!*xsink)
          xsink->raiseException("AQQUEUE-ERROR", "unknown error starting the subscription");
       return;
    }
 
+   aqSubscriptionCheck.add(this);
    m_hasSubscription = true;
    
    //printd(5, "AQQueuePriv::startSubscription() this: %p dequeue: %p self: %p callback: %p\n", this, m_dequeue, self, m_dequeue->callback);
@@ -426,7 +485,8 @@ int AQQueuePriv::stopSubscriptionUnlocked(ExceptionSink *xsink) {
    assert(m_hasSubscription);
 
    bool b = OCI_DequeueUnsubscribe(&m_conn->ocilib, m_dequeue, xsink);
-   aqThreadManager.dec();
+   aqCallbackThreadManager.dec();
+   aqSubscriptionCheck.remove(this);
    m_hasSubscription = false;
 
    if (!b) {
