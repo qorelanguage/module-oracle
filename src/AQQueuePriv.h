@@ -62,6 +62,8 @@ public:
    // returns -1 if an exception was raised, 0 if not: note: no error is raised if there is no active subscription
    DLLLOCAL int stopSubscription(ExceptionSink *xsink);
 
+   DLLLOCAL QoreObject* qoreObject() { return m_self; }
+
 private:
    // mutex for atomicity
    QoreThreadLock l;
@@ -75,11 +77,13 @@ private:
    OCI_Dequeue *m_dequeue;
    bool m_hasSubscription;
 
+   QoreObject *m_self;
+
    DLLLOCAL int stopSubscriptionUnlocked(ExceptionSink *xsink);
    DLLLOCAL void connectUnlocked(ExceptionSink *xsink);
    DLLLOCAL void disconnectUnlocked(ExceptionSink *xsink);
    DLLLOCAL bool checkDequeueUnlocked(QoreObject* self, ExceptionSink *xsink);
-//   DLLLOCAL bool checkReconnectUnlocked(int status, ExceptionSink *xsink);
+
 };
 
 #endif

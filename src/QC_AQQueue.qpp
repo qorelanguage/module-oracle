@@ -65,17 +65,22 @@ protected:
     typedef std::list<AQQueuePriv*> t_list;
 
    pthread_t checkThread;
+   int tid;
    QoreThreadLock l;
    t_list objects;
 
 public:
-   DLLLOCAL AQSubscriptionCheck() {
+   DLLLOCAL AQSubscriptionCheck()
+       : tid(0)
+   {
        pthread_create(&checkThread, NULL, &AQSubscriptionCheck::thread_helper, this);
    }
 
    DLLLOCAL ~AQSubscriptionCheck() {
-//       printd(0, "~AQSubscriptionCheck size: %d\n", objects.size());
-       assert(!objects.size());
+//       printd(0, "~AQSubscriptionCheck size: %d; tid: %d\n", objects.size(), tid);
+//       assert(!objects.size());
+       objects.clear();
+       q_release_reserved_foreign_thread_id(tid);
        pthread_cancel(checkThread);
    }
 
@@ -91,15 +96,30 @@ public:
 
    DLLLOCAL void ping() {
       AutoLocker al(l);
-      t_list::iterator it;
-      for (it = objects.begin(); it != objects.end(); ++it) {
-          printd(0, "PING> %p = %d\n", (*it), (*it)->ping());
+
+      t_list::iterator it = objects.begin();
+      while (it != objects.end()) {
+//          printd(0, "connection check: %p\n", (*it));
+          if ((*it)->ping()) {
+              ++it;
+              continue;
+          }
+
+          printd(0, "connection lost, restoring subscription: %p\n", (*it));
+
+          AQQueuePriv *o = (*it);
+          objects.erase(it++);
+
+          ExceptionSink xsink;
+          o->connect(&xsink);
+          o->qoreObject()->evalMethod("onSubscriptionLost", 0, &xsink);
       }
    }
 
    DLLLOCAL void run() {
-       QoreForeignThreadHelper qfth(pthread_self());
-       printd(0, "RUN\n");
+       tid = q_reserve_foreign_thread_id();
+       QoreForeignThreadHelper qfth(tid);
+
        while (true) {
            ping();
            sleep(1);
@@ -147,7 +167,6 @@ AQQueuePriv::AQQueuePriv(Datasource *ds, const QoreStringNode *tname, const Qore
       m_hasSubscription(false)
 {
     connect(xsink);
-    //printd(5, "PING> %d\n", ping());
 }
 
 AQQueuePriv::~AQQueuePriv() {
@@ -196,6 +215,8 @@ void AQQueuePriv::disconnectUnlocked(ExceptionSink* xsink) {
       OCI_TypeInfoFree2(&m_conn->ocilib, m_typeInfo);
       m_typeInfo = 0;
    }
+
+   m_conn->logoff();
 }
 
 void AQQueuePriv::connect(ExceptionSink *xsink) {
@@ -205,13 +226,14 @@ void AQQueuePriv::connect(ExceptionSink *xsink) {
 
 void AQQueuePriv::connectUnlocked(ExceptionSink *xsink) {
    disconnectUnlocked(xsink);
-
    assert(m_conn);
-   m_conn->ds.open(xsink);
-   if (*xsink) {
-      return;
-   }
 
+   // TODO/FIXME: what should be used here? logon or ds.open()?
+   m_conn->logon(xsink);
+//   m_conn->ds.open(xsink);
+//   if (*xsink) {
+//      return;
+//   }
 
    // can only call Datasource::getQoreEncoding() after the call to Datasource::open()
    TempEncodingHelper tn(m_tname, m_conn->ds.getQoreEncoding(), xsink);
@@ -224,14 +246,10 @@ void AQQueuePriv::connectUnlocked(ExceptionSink *xsink) {
 
    // use QoreString instead of a fixed-size buffer to deal with arbitrary-length strings
    QoreStringMaker value("Qore AQ Queue: %s", qn->getBuffer());
-//   if (!OCI_SetTrace(&m_conn->ocilib, m_conn->ocilib_cn, OCI_TRC_MODULE, value.getBuffer()))
-//      printd(0, "TRACE FAILED\n");
    OCI_SetTrace(&m_conn->ocilib, m_conn->ocilib_cn, OCI_TRC_MODULE, value.getBuffer());
 
    assert(!m_typeInfo);
    m_typeInfo = OCI_TypeInfoGet2(&m_conn->ocilib, m_conn->ocilib_cn, tn->getBuffer(), OCI_TIF_TYPE);
-
-   //printd(5, "AQQueuePriv CONNECTION> m_conn(%p)\n", m_conn);
 
    if (!m_typeInfo) {
       xsink->raiseException("AQ-MESSAGE-ERROR", "Cannot get type info for '%s'", m_tname->getBuffer());
@@ -356,30 +374,6 @@ bool AQQueuePriv::post(const QoreHashNode *h, ExceptionSink *xsink) {
    return true;
 }
 
-//bool AQQueuePriv::checkReconnectUnlocked(int status, ExceptionSink *xsink)
-//{
-//    if (status == OCI_ERROR) {
-//
-//        // see if server is connected
-//        ub4 server_status = 0;
-//
-//        if (m_conn->checkerr(OCIAttrGet(m_conn->srvhp, OCI_HTYPE_SERVER,
-//                                       (dvoid *)&server_status, 0,
-//                                       OCI_ATTR_SERVER_STATUS, m_conn->errhp),
-//                            "AQQueuePriv::checkReconnectUnlocked", xsink))
-//        {
-//            return false;
-//        }
-//
-//        if (server_status == OCI_SERVER_NOT_CONNECTED) {
-//            connectUnlocked(xsink);
-//            return *xsink;
-//        }
-//    }
-//
-//    return false;
-//}
-
 bool AQQueuePriv::commit(ExceptionSink *xsink) {
    AutoLocker al(l);
    return m_conn->commit(xsink);
@@ -453,6 +447,9 @@ bool AQQueuePriv::checkDequeueUnlocked(QoreObject* self, ExceptionSink *xsink) {
 
 void AQQueuePriv::startSubscription(QoreObject* self, int64 port, int64 timeout, ExceptionSink *xsink) {
    AutoLocker al(l);
+
+   m_self = self;
+
    if (!checkDequeueUnlocked(self, xsink))
       return;
 
@@ -486,7 +483,6 @@ int AQQueuePriv::stopSubscriptionUnlocked(ExceptionSink *xsink) {
 
    bool b = OCI_DequeueUnsubscribe(&m_conn->ocilib, m_dequeue, xsink);
    aqCallbackThreadManager.dec();
-   aqSubscriptionCheck.remove(this);
    m_hasSubscription = false;
 
    if (!b) {
@@ -500,12 +496,14 @@ int AQQueuePriv::stopSubscriptionUnlocked(ExceptionSink *xsink) {
 
 int AQQueuePriv::stopSubscription(ExceptionSink *xsink) {
    AutoLocker al(l);
-   //printd(5, "AQQueuePriv::stopSubscription() this: %p m_dequeue: %p m_hasSubscription: %d\n", this, m_dequeue, (int)m_hasSubscription);
+   printd(0, "AQQueuePriv::stopSubscription() this: %p m_dequeue: %p m_hasSubscription: %d\n", this, m_dequeue, (int)m_hasSubscription);
 
    if (!m_hasSubscription)
       return 0;
 
+   aqSubscriptionCheck.remove(this);
    stopSubscriptionUnlocked(xsink);
+
    return 0;
 }
 
@@ -730,4 +728,16 @@ bool AQQueue::rollback() {
  */
 nothing AQQueue::onAsyncMessage() {
    xsink->raiseException("AQQUEUE-ONASYNCMESSAGE-ERROR", "abstract implementation of AQQueue::onAsyncMessage called");
+}
+
+//! Automatically called when there is a connection externally disconnected
+/** A method which is called when there is a subscription but the periodical check for live connection fails.
+
+    The default implementation throws an exception; this method must be overridden in subclasses to receive messages;
+    use the @ref AQQueue::startSubscription() method to restore the subscription for example
+
+    @throw AQQUEUE-ONSUBSCRIPTIONLOST-ERROR abstract implementation of AQQueue::onSubscriptionLost called
+ */
+nothing AQQueue::onSubscriptionLost() {
+   xsink->raiseException("AQQUEUE-ONSUBSCRIPTIONLOST-ERROR", "abstract implementation of AQQueue::onAsyncMessage called");
 }
