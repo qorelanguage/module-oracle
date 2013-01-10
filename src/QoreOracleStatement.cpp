@@ -40,14 +40,10 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
    //printd(0, "QoreOracleStatement::execute() stmthp=%p status=%d (OCI_ERROR=%d)\n", stmthp, status, OCI_ERROR);
    if (status == OCI_ERROR) {
       // see if server is connected
-      ub4 server_status = 0;
+      int ping = OCI_Ping(&conn->ocilib, conn->ocilib_cn);
 
-      //printd(0, "QoreOracleStatement::execute() got server handle: %p\n", svrh);
-      if (conn->checkerr(OCIAttrGet(conn->srvhp, OCI_HTYPE_SERVER, (dvoid *)&server_status, 0, OCI_ATTR_SERVER_STATUS, conn->errhp), who, xsink))
-	 return -1;
+      if (!ping) {
 
-      //printd(0, "QoreOracleStatement::execute() server_status=%d (OCI_SERVER_NOT_CONNECTED=%d)\n", server_status, OCI_SERVER_NOT_CONNECTED);
-      if (server_status == OCI_SERVER_NOT_CONNECTED) {
 	 // check if a transaction was in progress
          if (wasInTransaction(ds))
 	    xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server lost while in a transaction; transaction has been lost");
