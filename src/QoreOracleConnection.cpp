@@ -261,7 +261,7 @@ int QoreOracleConnection::logon(ExceptionSink *xsink) {
    
    // format potential db link string: host[:port]/SID or SID only
    QoreString dblink;
-   if (strlen(ds.getHostName())) {
+   if (ds.getHostName() && strlen(ds.getHostName())) {
        dblink.concat(ds.getHostName());
        if (ds.getPort()) {
            dblink.concat(":");
