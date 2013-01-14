@@ -258,6 +258,18 @@ int QoreOracleConnection::checkerr(sword status, const char *query_name, Excepti
 int QoreOracleConnection::logon(ExceptionSink *xsink) {
    const std::string &user = ds.getUsernameStr();
    const std::string &pass = ds.getPasswordStr();
+   
+   // format potential db link string: host[:port]/SID or SID only
+   QoreString dblink;
+   if (strlen(ds.getHostName())) {
+       dblink.concat(ds.getHostName());
+       if (ds.getPort()) {
+           dblink.concat(":");
+           dblink.sprintf("%d", ds.getPort());
+       }
+       dblink.concat("/");
+   }
+   dblink.concat(ds.getDBName());
 
    int e;
 
@@ -269,7 +281,7 @@ int QoreOracleConnection::logon(ExceptionSink *xsink) {
    if (e) return -1;
 
    /* attach to the server - use default host? */
-   e = checkerr(OCIServerAttach(srvhp, errhp, (text *) NULL, 0, (ub4) OCI_DEFAULT), "QoreOracleConnection::logon() server attach", xsink);
+   e = checkerr(OCIServerAttach(srvhp, errhp, (text *)dblink.getBuffer(), dblink.size(), (ub4) OCI_DEFAULT), "QoreOracleConnection::logon() server attach", xsink);
    if (e) return -1;
 
    /* set the server attribute in the service context */
