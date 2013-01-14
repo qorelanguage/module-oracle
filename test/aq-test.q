@@ -6,9 +6,14 @@
 const MSG_COUNT = 5;
 const THREAD_COUNT = 5;
 
-our string conn = (gethostname() == "qube") 
-    ? "omquser2/omquser2@qube"
-    : "omquser/omquser@stimpy";
+const CONNS = (
+    "qube" : "omquser2/omquser2@qube",
+    "stimpy" : "omquser/omquser@stimpy",
+    "rimmer.local" : "omquser/omquser@xe%oraclexe11:1521",
+    "vladkyne-karen" : "test/test@orcl%192.168.2.107:1521"
+);
+our string conn = CONNS{gethostname()};
+printf("Hostname: %s; Connection: %s\n", gethostname(), conn);
 
 our hash h;
 
