@@ -62,7 +62,7 @@ AQCallbackThreadManager aqCallbackThreadManager;
 // periodically ping registered subscriptions and reconnect on demand
 class AQSubscriptionCheck {
 protected:
-    typedef std::list<AQQueuePriv*> t_list;
+    typedef std::set<AQQueuePriv*> t_list;
 
    pthread_t checkThread;
    int tid;
@@ -86,12 +86,16 @@ public:
 
    DLLLOCAL void add(AQQueuePriv* o) {
       AutoLocker al(l);
-      objects.push_back(o);
+      objects.insert(o);
    }
 
    DLLLOCAL void remove(AQQueuePriv* o) {
       AutoLocker al(l);
-      objects.remove(o);
+      removeUnlocked(o);
+   }
+
+   DLLLOCAL void removeUnlocked(AQQueuePriv* o) {
+      objects.erase(o);
    }
 
    DLLLOCAL void ping() {
@@ -108,7 +112,7 @@ public:
           printd(0, "connection lost, restoring subscription: %p\n", (*it));
 
           AQQueuePriv *o = (*it);
-          objects.erase(it++);
+          removeUnlocked(o);
 
           ExceptionSink xsink;
           o->connect(&xsink);
