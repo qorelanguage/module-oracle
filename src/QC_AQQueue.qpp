@@ -305,6 +305,9 @@ int AQQueuePriv::checkValidUnlocked(const char* m, ExceptionSink* xsink) {
 }
 
 bool AQQueuePriv::post(AQMessagePriv *message, ExceptionSink *xsink) {
+   // we have to dereference the message object when we return
+   ReferenceHolder<AQMessagePriv> mholder(message, xsink);
+
    AutoLocker al(l);
    if (checkValidUnlocked("post", xsink))
       return false;
@@ -468,14 +471,14 @@ QoreObject* AQQueuePriv::getMessage(QoreObject* self, int timeout, ExceptionSink
 
     ON_BLOCK_EXIT(OCI_ObjectFree2, &m_conn->ocilib, o);
 
-    AbstractQoreNode * obj = objToQore(m_conn, o, xsink);
+    ReferenceHolder<> obj(objToQore(m_conn, o, xsink), xsink);
     if (!obj) {
        xsink->raiseException("AQQUEUE-ERROR", "Cannot get qore hash from OCI object");
        return 0;
     }
     assert(obj->getType() == NT_HASH);
 
-    AQMessagePriv *qop = new AQMessagePriv(reinterpret_cast<QoreHashNode*>(obj), xsink);
+    AQMessagePriv *qop = new AQMessagePriv(reinterpret_cast<QoreHashNode*>(*obj), xsink);
     QoreObject *qo = new QoreObject(QC_AQMESSAGE, getProgram(), qop);
     printd(5, "AQQueuePriv::getMessage() this: %p returning obj: %p\n", this, qo);
     return qo;

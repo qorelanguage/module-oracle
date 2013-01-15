@@ -188,6 +188,9 @@ QoreOracleConnection::~QoreOracleConnection() {
 
       OCI_FREE(ocilib_cn->fmt_num);
 
+      if (ocilib_cn->trace)
+         OCI_MemFree(ocilib_cn->trace);
+
       delete ocilib_cn;
    }
 
