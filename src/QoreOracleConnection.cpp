@@ -26,7 +26,7 @@
 #include "ocilib_internal.h"
 
 QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsink) 
-  : errhp(0), svchp(0), ocilib_cn(0), ds(n_ds), ocilib_init(false), 
+  : errhp(0), svchp(0), srvhp(0), usrhp(0), ocilib_cn(0), ds(n_ds), ocilib_init(false), 
 #ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
     server_tz(currentTZ()),
 #endif
