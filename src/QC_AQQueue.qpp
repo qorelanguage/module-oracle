@@ -11,7 +11,6 @@
 
 #include <memory>
 
-
 // handle external (oracle) threads for qore/aq
 class AQCallbackThreadManager {
 protected:
@@ -60,33 +59,44 @@ public:
 AQCallbackThreadManager aqCallbackThreadManager;
 
 // periodically ping registered subscriptions and reconnect on demand
-class AQSubscriptionCheck {
+class AQSubscriptionManager {
 protected:
-    typedef std::set<AQQueuePriv*> t_list;
+   typedef std::set<AQQueuePriv*> t_list;
 
    pthread_t checkThread;
-   int tid;
    QoreThreadLock l;
+   QoreCondition c;
    t_list objects;
+   bool quit;
 
 public:
-   DLLLOCAL AQSubscriptionCheck()
-       : tid(0)
-   {
-       pthread_create(&checkThread, NULL, &AQSubscriptionCheck::thread_helper, this);
+   DLLLOCAL AQSubscriptionManager() : quit(false) {
    }
-
-   DLLLOCAL ~AQSubscriptionCheck() {
-//       printd(0, "~AQSubscriptionCheck size: %d; tid: %d\n", objects.size(), tid);
-//       assert(!objects.size());
-       objects.clear();
-       q_release_reserved_foreign_thread_id(tid);
-       pthread_cancel(checkThread);
+   
+   DLLLOCAL ~AQSubscriptionManager() {
+      //printd(0, "~AQSubscriptionManager size: %d; tid: %d\n", objects.size(), tid);
+      // std::set::size() is O(n) whereas set::empty() is O(1)
+      assert(objects.empty());
    }
-
-   DLLLOCAL void add(AQQueuePriv* o) {
-      AutoLocker al(l);
-      objects.insert(o);
+   
+   DLLLOCAL int add(AQQueuePriv* o, ExceptionSink* xsink) {
+      bool start = false;
+      {
+         AutoLocker al(l);
+         if (objects.empty())
+            start = true;
+         objects.insert(o);
+      }
+      if (start) {
+         int rc;
+         if (((rc = pthread_create(&checkThread, NULL, &AQSubscriptionManager::thread_helper, this)))) {
+            xsink->raiseErrnoException("THREAD-CREATION-FAILURE", rc, "could not create global subscription watchdog thread");
+            AutoLocker al(l);
+            objects.erase(o);
+            return -1;
+         }
+      }
+      return 0;
    }
 
    DLLLOCAL void remove(AQQueuePriv* o) {
@@ -95,49 +105,60 @@ public:
    }
 
    DLLLOCAL void removeUnlocked(AQQueuePriv* o) {
-      objects.erase(o);
+      assert(!quit);
+      t_list::iterator i = objects.find(o);
+      assert(i != objects.end());
+      objects.erase(i);
+
+      //printd(5, "AQSubscriptionManager::removeUnlocked(): removed %p size: %d\n", o, (int)objects.size());
+
+      // stop polling thread if empty
+      if (objects.empty()) {
+         //printd(5, "AQSubscriptionManager::removeUnlocked(): stopping last thread\n");
+         quit = true;
+         c.signal();
+      }
    }
 
    DLLLOCAL void ping() {
-      AutoLocker al(l);
-
       t_list::iterator it = objects.begin();
       while (it != objects.end()) {
-//          printd(0, "connection check: %p\n", (*it));
-          if ((*it)->ping()) {
-              ++it;
-              continue;
-          }
+         // printd(0, "connection check: %p\n", (*it));
+         if (!(*it)->ping()) {
+            printd(0, "connection lost, restoring subscription: %p\n", (*it));
 
-          printd(0, "connection lost, restoring subscription: %p\n", (*it));
+            AQQueuePriv *o = (*it);
+            // use the iterator here and the remove operation is O(1), use the ptr and it's O(ln(n))
+            // however, why remove it?
+            //objects.erase(it);
 
-          AQQueuePriv *o = (*it);
-          removeUnlocked(o);
+            ExceptionSink xsink;
+            o->connect(&xsink);
+            o->qoreObject()->evalMethod("onSubscriptionLost", 0, &xsink);
+         }
 
-          ExceptionSink xsink;
-          o->connect(&xsink);
-          o->qoreObject()->evalMethod("onSubscriptionLost", 0, &xsink);
+         ++it;
       }
    }
 
    DLLLOCAL void run() {
-       tid = q_reserve_foreign_thread_id();
-       QoreForeignThreadHelper qfth(tid);
+      QoreForeignThreadHelper qfth;
+      //printd(0, "AQSubscriptionManager::run(): starting connection watchdog thread\n");
 
-       while (true) {
-           ping();
-           sleep(1);
-       }
-
+      AutoLocker al(l);
+      while (!quit) {
+         ping();
+         c.wait(l, 1000);
+      }
    }
 
    DLLLOCAL static void* thread_helper(void* context) {
-       ((AQSubscriptionCheck*)context)->run();
+       ((AQSubscriptionManager*)context)->run();
+       return 0;
    }
-
 };
 
-AQSubscriptionCheck aqSubscriptionCheck;
+AQSubscriptionManager aqSubscriptionManager;
 
 void on_async_message(OCI_Dequeue* deq) {
    QoreForeignThreadHelper qfth(aqCallbackThreadManager.getTid());
@@ -168,12 +189,14 @@ AQQueuePriv::AQQueuePriv(Datasource *ds, const QoreStringNode *tname, const Qore
       m_typeInfo(0),
       m_enqueue(0),
       m_dequeue(0),
-      m_hasSubscription(false)
-{
-    connect(xsink);
+      m_hasSubscription(false),
+      valid(true) {
+   //printd(5, "AQQueuePriv::AQQueuePriv() this: %p\n", this);
+   connect(xsink);
 }
 
 AQQueuePriv::~AQQueuePriv() {
+   //printd(5, "AQQueuePriv::~AQQueuePriv() this: %p\n", this);
    assert(!m_enqueue);
    assert(!m_dequeue);
    assert(!m_typeInfo);
@@ -182,20 +205,23 @@ AQQueuePriv::~AQQueuePriv() {
    assert(!m_ds);
 }
 
-void AQQueuePriv::deref(ExceptionSink* xsink) {
-   if (ROdereference()) {
-      disconnectUnlocked(xsink);
-      m_tname->deref();
-      m_qname->deref();
-      m_ds->close();
-      delete m_ds;
+void AQQueuePriv::destructor(ExceptionSink* xsink) {
+   //printd(5, "AQQueuePriv::destructor() this: %p\n", this);
+   AutoLocker al(l);
+   assert(valid);
+
+   disconnectUnlocked(xsink);
+   m_tname->deref();
+   m_qname->deref();
+   m_ds->close();
+   delete m_ds;
 #ifdef DEBUG
-      m_tname = 0;
-      m_qname = 0;
-      m_ds = 0;
+   m_tname = 0;
+   m_qname = 0;
+   m_ds = 0;
 #endif
-      delete this;
-   }
+
+   valid = false;
 }
 
 void AQQueuePriv::disconnect(ExceptionSink* xsink) {
@@ -204,14 +230,16 @@ void AQQueuePriv::disconnect(ExceptionSink* xsink) {
 }
 
 void AQQueuePriv::disconnectUnlocked(ExceptionSink* xsink) {
-//   printd(0, "AQQueuePriv::~disconnectUnlocked() this: %p m_dequeue: %p\n", this, m_dequeue);
+   //printd(0, "AQQueuePriv::~disconnectUnlocked() this: %p m_dequeue: %p\n", this, m_dequeue);
    if (m_enqueue) {
       OCI_EnqueueFree(&m_conn->ocilib, m_enqueue);
       m_enqueue = 0;
    }
    if (m_dequeue) {
-      if (m_hasSubscription)
+      if (m_hasSubscription) {
+         aqSubscriptionManager.remove(this);
          stopSubscriptionUnlocked(xsink);
+      }
       OCI_DequeueFree(&m_conn->ocilib, m_dequeue);
       m_dequeue = 0;
    }
@@ -239,6 +267,8 @@ void AQQueuePriv::connectUnlocked(ExceptionSink *xsink) {
 //      return;
 //   }
 
+   //printd(0, "AQQueuePriv::connectUnlocked() this: %p qe: %p (%s)\n", this, m_conn->ds.getQoreEncoding(), m_conn->ds.getQoreEncoding()->getCode());
+
    // can only call Datasource::getQoreEncoding() after the call to Datasource::open()
    TempEncodingHelper tn(m_tname, m_conn->ds.getQoreEncoding(), xsink);
    if (*xsink)
@@ -259,7 +289,6 @@ void AQQueuePriv::connectUnlocked(ExceptionSink *xsink) {
       xsink->raiseException("AQ-MESSAGE-ERROR", "Cannot get type info for '%s'", m_tname->getBuffer());
       return;
    }
-
 }
 
 bool AQQueuePriv::ping() {
@@ -267,8 +296,18 @@ bool AQQueuePriv::ping() {
    return OCI_Ping(&m_conn->ocilib, m_conn->ocilib_cn);
 }
 
+int AQQueuePriv::checkValidUnlocked(const char* m, ExceptionSink* xsink) {
+   if (!valid) {
+       xsink->raiseException("AQQUEUE-ERROR", "the AQQueue::%s() method cannot be executed because the AQQueue object has already been deleted in another thread", m);
+      return -1;
+   }
+   return 0;
+}
+
 bool AQQueuePriv::post(AQMessagePriv *message, ExceptionSink *xsink) {
    AutoLocker al(l);
+   if (checkValidUnlocked("post", xsink))
+      return false;
    
     if (!m_enqueue) {
        //printd(5, "Opening W queue: %s (%p)\n", m_qname->getBuffer(), m_typeInfo);
@@ -340,6 +379,8 @@ bool AQQueuePriv::post(AQMessagePriv *message, ExceptionSink *xsink) {
 
 bool AQQueuePriv::post(const QoreHashNode *h, ExceptionSink *xsink) {
    AutoLocker al(l);
+   if (checkValidUnlocked("post", xsink))
+      return false;
 
    if (!m_enqueue) {
       //printd(5, "Opening W queue: %s (%p)\n", m_qname->getBuffer(), m_typeInfo);
@@ -380,16 +421,24 @@ bool AQQueuePriv::post(const QoreHashNode *h, ExceptionSink *xsink) {
 
 bool AQQueuePriv::commit(ExceptionSink *xsink) {
    AutoLocker al(l);
+   if (checkValidUnlocked("commit", xsink))
+      return false;
+
    return m_conn->commit(xsink);
 }
 
 bool AQQueuePriv::rollback(ExceptionSink *xsink) {
    AutoLocker al(l);
+   if (checkValidUnlocked("rollback", xsink))
+      return false;
+
    return m_conn->rollback(xsink);
 }
 
 QoreObject* AQQueuePriv::getMessage(QoreObject* self, int timeout, ExceptionSink *xsink) {
    AutoLocker al(l);
+   if (checkValidUnlocked("getMessage", xsink))
+      return 0;
 
    if (!checkDequeueUnlocked(self, xsink))
       return 0;
@@ -451,6 +500,8 @@ bool AQQueuePriv::checkDequeueUnlocked(QoreObject* self, ExceptionSink *xsink) {
 
 void AQQueuePriv::startSubscription(QoreObject* self, int64 port, int64 timeout, ExceptionSink *xsink) {
    AutoLocker al(l);
+   if (checkValidUnlocked("startSubscription", xsink))
+      return;
 
    m_self = self;
 
@@ -475,9 +526,13 @@ void AQQueuePriv::startSubscription(QoreObject* self, int64 port, int64 timeout,
       return;
    }
 
-   aqSubscriptionCheck.add(this);
    m_hasSubscription = true;
    
+   if (aqSubscriptionManager.add(this, xsink)) {
+      stopSubscriptionUnlocked(xsink);
+      return;
+   }
+
    //printd(5, "AQQueuePriv::startSubscription() this: %p dequeue: %p self: %p callback: %p\n", this, m_dequeue, self, m_dequeue->callback);
 }
 
@@ -500,12 +555,15 @@ int AQQueuePriv::stopSubscriptionUnlocked(ExceptionSink *xsink) {
 
 int AQQueuePriv::stopSubscription(ExceptionSink *xsink) {
    AutoLocker al(l);
+   if (checkValidUnlocked("stopSubscription", xsink))
+      return false;
+
    printd(0, "AQQueuePriv::stopSubscription() this: %p m_dequeue: %p m_hasSubscription: %d\n", this, m_dequeue, (int)m_hasSubscription);
 
    if (!m_hasSubscription)
       return 0;
 
-   aqSubscriptionCheck.remove(this);
+   aqSubscriptionManager.remove(this);
    stopSubscriptionUnlocked(xsink);
 
    return 0;
@@ -642,7 +700,8 @@ AQQueue::constructor(string queueName, string typeName, hash opts) {
 /**
  */
 AQQueue::destructor() {
-   priv->disconnect(xsink);
+   priv->destructor(xsink);
+   priv->deref();
 }
 
 //! Copying objects of this class is not supported, an exception will be thrown
@@ -734,8 +793,8 @@ nothing AQQueue::onAsyncMessage() {
    xsink->raiseException("AQQUEUE-ONASYNCMESSAGE-ERROR", "abstract implementation of AQQueue::onAsyncMessage called");
 }
 
-//! Automatically called when there is a connection externally disconnected
-/** A method which is called when there is a subscription but the periodical check for live connection fails.
+//! Automatically called when the connection is externally disconnected
+/** A method which is called when there is a subscription but the periodical check for a live connection fails.
 
     The default implementation throws an exception; this method must be overridden in subclasses to receive messages;
     use the @ref AQQueue::startSubscription() method to restore the subscription for example

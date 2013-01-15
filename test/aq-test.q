@@ -16,6 +16,7 @@ our string conn = CONNS{gethostname()};
 printf("Hostname: %s; Connection: %s\n", gethostname(), conn);
 
 our hash h;
+our Counter c();
 
 class MyAQQueue inherits AQQueue {
     constructor(string q1, string t1, string c1) : AQQueue(q1, t1, c1) {
@@ -31,6 +32,7 @@ class MyAQQueue inherits AQQueue {
         *AQMessage m1 = getMessage(1);
         log("%y", m1 ? m1.getObject() : NOTHING);
 	if (m1) {
+	    c.dec();
 	    hash msg = m1.getObject();
 	    delete h.(msg.CODE);
 	}
@@ -58,14 +60,22 @@ sub main() {
 
     q1.startSubscription();
 
-    for (int i = 0; i < THREAD_COUNT; ++i)
-	background test(i);
+    Counter sc();
+    for (int i = 0; i < THREAD_COUNT; ++i) {
+	sc.inc();
+	background test(i, sc);
+    }
+    # wait until all msgs have been posted to start waiting until the queue is empty
+    sc.waitForZero();
 
-    sleep(2);
+    # wait until the queue is empty
+    c.waitForZero(10s);
     printf("not received: %y\n", h.keys());
 }
 
-sub test(int i) {
+sub test(int i, Counter sc) {
+    on_exit sc.dec();
+
     #AQQueue q("omquser.testaq", "test_aq_msg_obj", conn);
     #AQQueue q("OMQUSER.TESTAQ", "TEST_AQ_MSG_OBJ", conn);
     MyAQQueue q1 = get_queue();
@@ -78,6 +88,7 @@ sub test(int i) {
     for (int i = 0; i < MSG_COUNT; ++i) {
 	h.(objin.CODE) = True;
 	m1.setObject(bindOracleObject("test_aq_msg_obj", objin));
+	c.inc();
 	q1.post(m1);
 	q1.commit();
 	++objin.CODE;

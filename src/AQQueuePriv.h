@@ -39,7 +39,7 @@ protected:
 
 public:
    DLLLOCAL AQQueuePriv(Datasource *ds, const QoreStringNode* tname, const QoreStringNode* qname, ExceptionSink *xsink);
-   DLLLOCAL virtual void deref(ExceptionSink* xsink);
+   DLLLOCAL void destructor(ExceptionSink* xsink);
 
    DLLLOCAL void connect(ExceptionSink *xsink);
    DLLLOCAL void disconnect(ExceptionSink *xsink);
@@ -75,10 +75,11 @@ private:
    OCI_TypeInfo *m_typeInfo;
    OCI_Enqueue *m_enqueue;
    OCI_Dequeue *m_dequeue;
-   bool m_hasSubscription;
+   bool m_hasSubscription, valid;
 
    QoreObject *m_self;
 
+   DLLLOCAL int checkValidUnlocked(const char* m, ExceptionSink* xsink);
    DLLLOCAL int stopSubscriptionUnlocked(ExceptionSink *xsink);
    DLLLOCAL void connectUnlocked(ExceptionSink *xsink);
    DLLLOCAL void disconnectUnlocked(ExceptionSink *xsink);

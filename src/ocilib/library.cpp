@@ -438,12 +438,15 @@ boolean OCI_KeyMapFree2(OCI_Library *pOCILib)
 
 void OCI_SetStatus(OCI_Library *pOCILib, boolean res)
 {
+   // without storing the OCI_Error created in thread-local storage, this is just a memory leak
+   /*
    OCI_Error *err = OCI_ErrorGet2(pOCILib, FALSE, FALSE);
 
     if (err != NULL)
     {
         err->raise = (res == FALSE);
     }
+   */
 }
 
 /* ************************************************************************ *
