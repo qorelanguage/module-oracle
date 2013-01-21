@@ -208,6 +208,10 @@ AQQueuePriv::~AQQueuePriv() {
 void AQQueuePriv::destructor(ExceptionSink* xsink) {
    //printd(5, "AQQueuePriv::destructor() this: %p\n", this);
    AutoLocker al(l);
+   destructorUnlocked(xsink);
+}
+
+void AQQueuePriv::destructorUnlocked(ExceptionSink *xsink) {
    assert(valid);
 
    disconnectUnlocked(xsink);
@@ -287,6 +291,7 @@ void AQQueuePriv::connectUnlocked(ExceptionSink *xsink) {
 
    if (!m_typeInfo) {
       xsink->raiseException("AQ-MESSAGE-ERROR", "Cannot get type info for '%s'", m_tname->getBuffer());
+      destructorUnlocked(xsink);
       return;
    }
 }

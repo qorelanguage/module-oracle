@@ -79,6 +79,7 @@ private:
 
    QoreObject *m_self;
 
+   DLLLOCAL void destructorUnlocked(ExceptionSink *xsink);
    DLLLOCAL int checkValidUnlocked(const char* m, ExceptionSink* xsink);
    DLLLOCAL int stopSubscriptionUnlocked(ExceptionSink *xsink);
    DLLLOCAL void connectUnlocked(ExceptionSink *xsink);
