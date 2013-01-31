@@ -308,37 +308,6 @@
     in the Qore driver right now. These are bugs in the underlying Oracle C Interface
     (OCI) library mostly.
 
-    - Bind by placeholder using PL/SQL's \c type alias to \c CHAR does not use original dimension.
-    @code
-    CREATE TABLE t1 ( c CHAR(1) );
-    INSERT INTO t1 VALUES ('C');
-    COMMIT;
-
-    create or replace procedure foo(tmp out t1.c%type)
-    is
-    begin
-        select c into tmp from t1 where rownum < 2;
-    end;
-    /
-    @endcode
-    @code
-    my Datasource $d("oracle", "test", "test", "test");
-    on_exit $d.rollback();
-    my any $r = $d.exec("begin foo(:outchar); end;", Type::String);
-    printf("%N\n", $r);
-
-    Result:
-    hash: (1 member)
-    outchar: "C                                                                
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                                                               
-                                              "
-    @endcode
-    while <tt>outchar : "C"</tt> is expected
-
     @subsection named_types_known_issues Named Types Known Issues
     
     - Returning a collection of objects and Oracle client 10.x does not work correctly sometimes.
