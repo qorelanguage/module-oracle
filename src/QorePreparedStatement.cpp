@@ -279,11 +279,20 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
    //printd(5, "OraBindNode::bindPlaceholder(ds=%p, pos=%d) type=%s, size=%d)\n", ds, pos, data.ph.type, data.ph.maxsize);
 
    if (!strcmp(data.ph.type, "string")) {
-      if (data.ph.maxsize < 0)
+      if (data.ph.maxsize < 0) {
 	 data.ph.maxsize = DBI_DEFAULT_STR_LEN;
-
-      // simply malloc some space for sending to the new node
-      dtype = SQLT_STR;
+         // HACK: trim shorter values, but just trim the values
+         //       with a fixed 512 byte size because the size was unknown
+         //       at bind time - if it's returned with the maximum size.
+         //       By nature of pl/sql we can never return the right values
+         //       for CHAR values anyway. Because we don't know the original
+         //       size and currently have no way of finding it out.
+         dtype = SQLT_AVC; // fake the "varchar2"
+      }
+      else {
+         // simply malloc some space for sending to the new node
+         dtype = SQLT_STR;
+      }
       buf.ptr = malloc(sizeof(char) * (data.ph.maxsize + 1));
 
       if (value) {
@@ -502,6 +511,7 @@ AbstractQoreNode *OraBindNode::getValue(bool horizontal, ExceptionSink *xsink) {
     //printd(0, "AbstractQoreNode *OraBindNode::getValue %d\n", indicator);
     if (indicator != 0)
         return null();
+
    return OraColumnValue::getValue(xsink, horizontal, true);
 }
 
