@@ -149,6 +149,17 @@ public:
 
    DLLLOCAL int logon(ExceptionSink *xsink);
 
+   DLLLOCAL void clearWarnings() {
+      ub4 ix = 1;
+      int errcode;
+      text errbuf[512];
+
+      while (OCIErrorGet(errhp, ix, (text *) NULL, &errcode, errbuf, (ub4)sizeof(errbuf), OCI_HTYPE_ERROR) != OCI_NO_DATA) {
+         printd(0, "Oracle OCI Warning: %.*s\n", 512, errbuf);
+         ++ix;
+      }
+   }
+
    DLLLOCAL int checkWarnings(ExceptionSink *xsink) {
       ub4 ix = 1;
       int errcode;

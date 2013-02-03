@@ -44,7 +44,7 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
    else
       cstr.concat(ds.getDBName());
 
-   //printd(5, "QoreOracleConnection::QoreOracleConnection(): user=%s pass=%s db=%s (oracle encoding=%s)\n", ds.getUsername(), ds.getPassword(), db.getBuffer(), ds.getDBEncoding() ? ds.getDBEncoding() : "(none)");
+   //printd(5, "QoreOracleConnection::QoreOracleConnection(): user: %s pass: %s db: %s (oracle encoding: %s) xsink: %d\n", ds.getUsername(), ds.getPassword(), cstr.getBuffer(), ds.getDBEncoding() ? ds.getDBEncoding() : "(none)", (bool)*xsink);
 
    bool set_charset = false;
 
@@ -87,13 +87,13 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
       return;
    }
 
-   //printd(0, "QoreOracleConnection::QoreOracleConnection() ds=%p allocated envhp=%p\n", ds, *env);
+   //printd(5, "QoreOracleConnection::QoreOracleConnection() ds=%p allocated envhp=%p\n", ds, *env);
 
    // map the Oracle character set to a qore character set
    if (set_charset) {
       // map Oracle character encoding name to QORE/OS character encoding name
       if (!env.nlsNameMapToQore(ds.getDBEncoding(), encoding)) {
-         //printd(0, "QoreOracleConnection::QoreOracleConnection() Oracle character encoding '%s' mapped to '%s' character encoding\n", ds.getDBEncoding(), encoding.getBuffer());
+         //printd(5, "QoreOracleConnection::QoreOracleConnection() Oracle character encoding '%s' mapped to '%s' character encoding\n", ds.getDBEncoding(), encoding.getBuffer());
          assert(encoding.strlen());
 	 ds.setQoreEncoding(encoding.getBuffer());
       }
@@ -124,13 +124,15 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
        return;
    }
 
+   // first clear warnings before logging in again
+   clearWarnings();
    //printd(5, "QoreOracleConnection::QoreOracleConnection() about to call OCILogon()\n");
    if (logon(xsink))
       return;
    if (checkWarnings(xsink))
       return;
 
-   //printd(5, "QoreOracleConnection::QoreOracleConnection() datasource %p for DB=%s open (envhp=%p)\n", ds, cstr.getBuffer(), *env);
+   //printd(5, "QoreOracleConnection::QoreOracleConnection() datasource %p for DB=%s open (envhp=%p)\n", &ds, cstr.getBuffer(), *env);
    
    if (!OCI_Initialize2(&ocilib, *env, errhp, ocilib_err_handler, 0, QORE_OCI_FLAGS)) {
       xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate OCILIB support handlers");
@@ -172,13 +174,13 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
    ocilib_cn->ver_num = ocilib.version_runtime;   // numeric server version
    ocilib_cn->trace = 0;                          // trace information   
 
-   //printd(0, "QoreOracleConnection::QoreOracleConnection() this=%p ds=%p envhp=%p svchp=%p errhp=%p\n", this, &ds, *env, svchp, errhp);
+   //printd(5, "QoreOracleConnection::QoreOracleConnection() this: %p ds: %p envhp: %p svchp: %p errhp: %p xsink: %d\n", this, &ds, *env, svchp, errhp, (bool)*xsink);
 }
 
 QoreOracleConnection::~QoreOracleConnection() {
-   //printd(0, "QoreOracleConnection::~QoreOracleConnection() this=%p ds=%p envhp=%p svchp=%p ocilib envhp=%p\n", this, &ds, *env, svchp, ocilib.env);
-   //printd(0, "QoreOracleConnection::~QoreOracleConnection(): connection to %s closed.\n", ds.getDBName());
-   //printd(0, "QoreOracleConnection::~QoreOracleConnection(): svchp, errhp: %p, %p\n", svchp, errhp);
+   //printd(5, "QoreOracleConnection::~QoreOracleConnection() this=%p ds=%p envhp=%p svchp=%p ocilib envhp=%p\n", this, &ds, *env, svchp, ocilib.env);
+   //printd(5, "QoreOracleConnection::~QoreOracleConnection(): connection to %s closed.\n", ds.getDBName());
+   //printd(5, "QoreOracleConnection::~QoreOracleConnection(): svchp, errhp: %p, %p\n", svchp, errhp);
    if (svchp)
       logoff();
 
@@ -219,7 +221,7 @@ int QoreOracleConnection::checkerr(sword status, const char *query_name, Excepti
 	 text errbuf[512];
 
 	 OCIErrorGet((dvoid *)errhp, (ub4) 1, (text *) NULL, &errcode, errbuf, (ub4) sizeof(errbuf), OCI_HTYPE_ERROR);
-         //printd(0, "WARNING: %s returned OCI_SUCCESS_WITH_INFO: %s\n", query_name ? query_name : "<unknown>", remove_trailing_newlines((char *)errbuf));
+         //printd(5, "WARNING: %s returned OCI_SUCCESS_WITH_INFO: %s\n", query_name ? query_name : "<unknown>", remove_trailing_newlines((char *)errbuf));
 	 // ignore SUCCESS_WITH_INFO codes
 	 return 0;
       }
@@ -301,7 +303,8 @@ int QoreOracleConnection::logon(ExceptionSink *xsink) {
 
 //      return checkerr(OCILogon(*env, errhp, &svchp, (text *)user.c_str(), user.size(), (text *)pass.c_str(), pass.size(), (text *)cstr.getBuffer(), cstr.strlen()), "QoreOracleConnection::logon()", xsink);
 
-   return e;
+   //printd(5, "QoreOracleConnection::logon() %s/%s@%s succeeded\n", user.c_str(), pass.c_str(), dblink.getBuffer());
+   return 0;
 }
 
 int QoreOracleConnection::descriptorAlloc(void **descpp, unsigned type, const char *who, ExceptionSink *xsink) {

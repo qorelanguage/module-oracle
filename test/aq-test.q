@@ -27,14 +27,27 @@ class MyAQQueue inherits AQQueue {
     }
 
     nothing onAsyncMessage() {
-        on_success commit();
-        on_error rollback();
-        *AQMessage m1 = getMessage(1);
-        log("%y", m1 ? m1.getObject() : NOTHING);
-	if (m1) {
-	    c.dec();
-	    hash msg = m1.getObject();
-	    delete h.(msg.CODE);
+	*AQMessage m1;
+	{
+	    on_success commit();
+	    on_error rollback();
+	    m1 = getMessage(1);
+	    log("%y", m1 ? m1.getObject() : NOTHING);
+	    if (m1) {
+		hash msg = m1.getObject();
+		delete h.(msg.CODE);
+		c.dec();
+	    }
+	}
+
+	# do reconnect
+	if (m1 && m1.getObject().CODE == 3003) {
+	    TerminalInputHelper tih();
+	    stdout.printf("push any key to continue the listening thread: ");
+	    stdout.sync();
+	    tih.getChar();
+	    stdout.printf("\n");
+	    stdout.sync();
 	}
     }
 }
@@ -69,7 +82,7 @@ sub main() {
     sc.waitForZero();
 
     # wait until the queue is empty
-    c.waitForZero(10s);
+    c.waitForZero(60s);
     printf("not received: %y\n", h.keys());
 }
 
@@ -92,5 +105,81 @@ sub test(int i, Counter sc) {
 	q1.post(m1);
 	q1.commit();
 	++objin.CODE;
+    }
+}
+
+class TerminalInputHelper {
+    private {
+        # saved original terminal attributes
+        TermIOS orig = stdin.getTerminalAttributes();
+
+        # input terminal attributes
+        TermIOS input;
+
+        # restore flag
+        bool rest = False;
+    }
+    
+    public {}
+
+    constructor() {
+        input = orig.copy();
+
+        # get local flags
+        int lflag = input.getLFlag();
+
+        # turn on "raw" mode: disable canonical input mode
+        lflag &= ~ICANON;
+
+        # turn off echo mode
+        lflag &= ~ECHO;
+
+        # set the new local flags
+        input.setLFlag(lflag);
+
+        # turn off input buffering: set minimum characters to return on a read
+        input.setCC(VMIN, 1);
+
+        # disable input timer: set character input timer to 0.1 second increments
+        input.setCC(VTIME, 0);
+    }
+
+    destructor() {
+        if (rest)
+            restore();
+    }
+
+    *string getLine() {
+        # set input attributes
+        stdin.setTerminalAttributes(TCSADRAIN, input);
+        rest = True;
+
+        # restore attributes on exit
+        on_exit {
+            stdin.setTerminalAttributes(TCSADRAIN, orig);
+            rest = False;
+            stdout.print("\n");
+        }
+
+        return stdin.readLine(False);
+    }
+
+    *string getChar() {
+        # set input attributes
+        stdin.setTerminalAttributes(TCSADRAIN, input);
+        rest = True;
+
+        # restore attributes on exit
+        on_exit {
+            stdin.setTerminalAttributes(TCSADRAIN, orig);
+            rest = False;
+        }
+
+        return stdin.read(1);
+    }
+
+    restore() {
+        # restore terminal attributes
+        stdin.setTerminalAttributes(TCSADRAIN, orig);
     }
 }

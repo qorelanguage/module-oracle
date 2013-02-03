@@ -43,6 +43,7 @@ public:
 
    DLLLOCAL void connect(ExceptionSink *xsink);
    DLLLOCAL void disconnect(ExceptionSink *xsink);
+   DLLLOCAL int reconnectSubscription(ExceptionSink* xsink);
    DLLLOCAL bool ping();
 
    DLLLOCAL OCI_TypeInfo* typeInfo() { return m_typeInfo; }
@@ -57,7 +58,7 @@ public:
 
    DLLLOCAL QoreObject* getMessage(QoreObject* self, int timeout, ExceptionSink *xsink);
 
-   DLLLOCAL void startSubscription(QoreObject *qo, int64 port, int64 timeout, ExceptionSink *xsink);
+   DLLLOCAL void startSubscription(QoreObject *qo, unsigned port, int64 timeout, ExceptionSink *xsink);
 
    // returns -1 if an exception was raised, 0 if not: note: no error is raised if there is no active subscription
    DLLLOCAL int stopSubscription(ExceptionSink *xsink);
@@ -75,17 +76,25 @@ private:
    OCI_TypeInfo *m_typeInfo;
    OCI_Enqueue *m_enqueue;
    OCI_Dequeue *m_dequeue;
+
+   // port for automatically reconnecting subscriptions
+   int m_port;
+   // timeout for automatically reconnecting subscriptions
+   int64 m_timeout;
+
    bool m_hasSubscription, valid;
 
    QoreObject *m_self;
 
+   DLLLOCAL bool pingUnlocked();
    DLLLOCAL void destructorUnlocked(ExceptionSink *xsink);
    DLLLOCAL int checkValidUnlocked(const char* m, ExceptionSink* xsink);
+   DLLLOCAL int reconnectUnlocked(ExceptionSink* xsink);
+   DLLLOCAL int reconnectSubscriptionUnlocked(ExceptionSink* xsink);
    DLLLOCAL int stopSubscriptionUnlocked(ExceptionSink *xsink);
-   DLLLOCAL void connectUnlocked(ExceptionSink *xsink);
+   DLLLOCAL int connectUnlocked(ExceptionSink *xsink);
    DLLLOCAL void disconnectUnlocked(ExceptionSink *xsink);
    DLLLOCAL bool checkDequeueUnlocked(QoreObject* self, ExceptionSink *xsink);
-
 };
 
 #endif
