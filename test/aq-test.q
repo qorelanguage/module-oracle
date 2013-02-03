@@ -31,13 +31,17 @@ class MyAQQueue inherits AQQueue {
 	{
 	    on_success commit();
 	    on_error rollback();
-	    m1 = getMessage(1);
-	    log("%y", m1 ? m1.getObject() : NOTHING);
-	    if (m1) {
-		hash msg = m1.getObject();
-		delete h.(msg.CODE);
-		c.dec();
-	    }
+	    do {
+		m1 = getMessage(1);
+		log("%y", m1 ? m1.getObject() : NOTHING);
+		if (m1) {
+		    hash msg = m1.getObject();
+		    delete h.(msg.CODE);
+		    c.dec();
+		    if (msg.CODE == 3003)
+			break;
+		}
+	    } while (m1);
 	}
 
 	# do reconnect

@@ -125,7 +125,7 @@ public:
       while (it != objects.end()) {
          // printd(5, "connection check: %p\n", (*it));
          if (!(*it)->ping()) {
-            printd(0, "connection lost, restoring subscription: %p\n", (*it));
+            printd(5, "connection lost, restoring subscription: %p\n", (*it));
 
             AQQueuePriv *o = (*it);
 
@@ -169,8 +169,7 @@ AQSubscriptionManager aqSubscriptionManager;
 void on_async_message(OCI_Dequeue* deq) {
    QoreForeignThreadHelper qfth(aqCallbackThreadManager.getTid());
 
-   printd(5, "DEBUG> message arrived deq: %p obj: %p\n", deq, deq->user_ctx);
-
+   //printd(5, "on_async_message() DEBUG> message arrived deq: %p obj: %p\n", deq, deq->user_ctx);
    ExceptionSink xsink;
    reinterpret_cast<QoreObject*>(deq->user_ctx)->evalMethod("onAsyncMessage", 0, &xsink);
 }
@@ -523,13 +522,15 @@ QoreObject* AQQueuePriv::getMessage(QoreObject* self, int timeout, ExceptionSink
    OCI_Msg *msg;
 
    while (true) {
+      //printd(5, "AQQueuePriv::getMessage() this: %p calling OCI_DequeueGet()\n");
       msg = OCI_DequeueGet(&m_conn->ocilib, m_dequeue, xsink);
+      //printd(5, "AQQueuePriv::getMessage() this: %p msg: %p xsink: %d\n", this, msg, (bool)*xsink);
 
       if (msg == NULL) {
          if (*xsink) {
             // try to reconnect if connection was lost
             if (!pingUnlocked()) {
-               printd(0, "AQQueuePriv::getMessage(): connection lost, reconnecting...\n");
+               printd(5, "AQQueuePriv::getMessage(): this: %p connection lost, reconnecting...\n", this);
                // use a temporary empty ExceptionSink object for the reconnect
                ExceptionSink tmp;
                // try to reconnect if possible
@@ -546,7 +547,7 @@ QoreObject* AQQueuePriv::getMessage(QoreObject* self, int timeout, ExceptionSink
             }
          }
 
-         printd(5, "Message is NULL. NOTHING returned.\n");
+         //printd(5, "AQQueuePriv::getMessage() this: %p Message is NULL. NOTHING returned.\n", this);
          return 0;
       }
       break;
