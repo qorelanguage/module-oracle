@@ -253,7 +253,7 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
    }
 
    // default: treat as string
-   printd(0, "OraColumnValue::getValue() type=%d\n", dtype);
+   //printd(5, "OraColumnValue::getValue() type=%d\n", dtype);
    // must be string data
    // SQLT_AFC = ANSI fixed char - we should not trim it to get eg:
    //   "foo       " for CHAR(10)
