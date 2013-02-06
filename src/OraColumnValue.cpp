@@ -253,9 +253,14 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
    }
 
    // default: treat as string
-   //printd(5, "OraColumnValue::getValue() type=%d\n", dtype);
+   printd(0, "OraColumnValue::getValue() type=%d\n", dtype);
    // must be string data
-   if (dtype == SQLT_AFC || dtype == SQLT_AVC)
+   // SQLT_AFC = ANSI fixed char - we should not trim it to get eg:
+   //   "foo       " for CHAR(10)
+   // which is correct value. SQLT_AVC is for varchar and it's provided for
+   // CHAR in PL/SQL too - it should be trimmed. See docs:
+   //   subsection string_sizes CHAR and VARCHAR2 to Qore String
+   if (/*dtype == SQLT_AFC ||*/ dtype == SQLT_AVC)
       remove_trailing_blanks((char *)buf.ptr);
    return doReturnString(destructive);   
 }

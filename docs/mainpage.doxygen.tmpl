@@ -171,7 +171,7 @@
     |\c Type::Binary|\c SQLT_BIN|For retrieving \c RAW data up to 65531 bytes in size.|
     |\c SQL::BLOB|\c SQLT_BLOB|For retrieving \c BLOB data. The \c LOB handle is used to read the entire \c BLOB content into a binary object.|
     |\c SQL::CLOB|\c SQLT_CLOB|For retrieving \c CLOB data. The \c LOB handle is used to read the entire \c CLOB content into a Qore string.|
-    |\c SQL::VARCHAR|\c SQLT_STR|For retrieving character data (\c VARCHAR, etc). To specify a buffer size larger than 512 bytes, simply use the size in bytes as the argument.|
+    |\c SQL::VARCHAR|\c SQLT_STR|For retrieving character data (\c VARCHAR2, etc). To specify a buffer size larger than 512 bytes, simply use the size in bytes as the argument. See @ref string_sizes|
     |\c Type::Int|\c SQLT_INT|For retrieving integer numeric data up to 32 bits (for larger numbers or for non-integer numbers use \c SQL::VARCHAR or \c Type::Float.|
     |\c Type::Float|\c SQLT_BDOUBLE|For retrieving data in 64-bit floating point format.|
     |\c Type::Date|\c SQLT_TIMESTAMP|For retrieving dates and times.|
@@ -195,6 +195,71 @@
     |\c RAW, \c LONG RAW|\c Type::Binary|direct conversion|
     |\c BLOB|\c Type::Binary|the LOB handle is used to read the entire BLOB content into a binary object|
     |\c CURSOR (result set)|\c Type::Hash|the result set is returned as a hash of lists|
+
+    @subsection string_sizes CHAR and VARCHAR2 to Qore String
+
+    @subsubsection string_sizes_tabs Direct Access to Tables/Views
+    Data returned from \c DatasourcePool::select() (and similar methods) use real string sizes:
+        - full string for CHAR(n) including trailing spaces
+        - full string for VARCHAR2(n). See example below for trailing spaces handling vs. column size.
+
+    Let's assume follwing data:
+
+    @code
+    create table str_test (
+        str_char char(10),
+        str_var  varchar2(10),
+        str_vars varchar2(10)
+    );
+    -- the spaces around string in the 3rd value are important!
+    insert into str_test values ('foo', 'foo', ' foo ');
+    commit;
+    @endcode
+
+    @code
+    printf("%N\n", $d.select("select * from str_test"));
+
+    hash: (3 members)
+      str_char : list: (1 element)
+        [0]="foo       "
+      str_var : list: (1 element)
+        [0]="foo"
+      str_vars : list: (1 element)
+        [0]=" foo "
+    @endcode
+
+    @subsubsection string_sizes_plsql PL/SQL Wrappers
+    
+    Data returned from PL/SQL code use different approach.
+    Strings returned from this call are right-trimmed because OCI does not
+    provide exact value size in this case by PL/SQL nature. The trimming is
+    mandatory to avoid values with full allocated buffer (like strings with
+    512 spaces at the end).
+
+    @code
+    -- sample PL/SQL procedure
+    create or replace procedure p_str_test(
+        o_str_char out str_test.str_char%type,
+        o_str_var  out str_test.str_var%type,
+        o_str_vars out str_test.str_vars%type
+    )
+    is
+    begin
+        select   str_char,   str_var,   str_vars
+            into o_str_char, o_str_var, o_str_vars
+            from str_test where rownum < 2;
+    end;
+    /
+    @endcode
+
+    @code
+    printf("%N\n", $d.exec("begin p_str_test(:str_char, :str_var, :str_vars); end;"));
+
+    hash: (3 members)
+      str_char : "foo"
+      str_var : "foo"
+      str_vars : " foo"
+    @endcode
 
     
     @section named_types Named Types (Objects)
