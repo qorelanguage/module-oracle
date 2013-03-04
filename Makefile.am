@@ -24,28 +24,44 @@ noinst_HEADERS = src/oracle-config.h \
 	src/ocilib/ocilib.h \
 	src/ocilib/oci_loader.h
 
+USER_MODULES = qlib/OracleExtensions.qm
+
 EXTRA_DIST = COPYING ChangeLog AUTHORS README \
 	RELEASE-NOTES \
 	src/ql_oracle.qpp \
 	test/db-test.q \
 	test/sql-stmt.q \
+	$(USER_MODULES) \
 	qore-oracle-module.spec
 
 ACLOCAL_AMFLAGS=-I m4
 
-if COND_DOXYGEN
-DOX = oracle
-DOXYGEN_OUTPUT = docs/oracle/html
+dist_modver_DATA = $(USER_MODULES)
 
+if COND_DOXYGEN
+DOX = oracle OracleExtensions
+DOXYGEN_OUTPUT = docs/oracle/html docs/OracleExtensions/html
 DOXYFILES = docs/doxyfile docs/mainpage.doxygen
-DOXYFILES_SRC = docs/doxyfile.tmpl docs/footer_template.html
+DOXYFILES_SRC = docs/doxyfile.tmpl docs/footer_template.html docs/qlib/Doxyfile.tmpl
+QLIB_TMP_DOXYFILES = docs/qlib/OracleExtensions.qm.dox.h docs/qlib/Doxyfile.OracleExtensions
 QDX = qdx
-DX_CLEANFILES = ${DOXYFILES}
+DX_CLEANFILES = ${DOXYFILES} $(QLIB_TMP_DOXYFILES)
+
+docs/qlib/Doxyfile.OracleExtensions: docs/qlib/Doxyfile.tmpl
+	$(QDX) -M=qlib/OracleExtensions.qm:docs/qlib/OracleExtensions.qm.dox.h $< $@
+
+docs/qlib/OracleExtensions.qm.dox.h: qlib/OracleExtensions.qm
+	$(QDX) $< $@
+
+docs/OracleExtensions/html: docs/qlib/OracleExtensions.qm.dox.h docs/qlib/Doxyfile.OracleExtensions
+	$(DOXYGEN_CMD) docs/qlib/Doxyfile.OracleExtensions
+	$(QDX) --post docs/OracleExtensions/html/*html
+	$(QDX) --post docs/OracleExtensions/html/search/*html
 
 docs/oracle/html: $(DOXYFILES)
 	cd docs; $(DOXYGEN_CMD) doxyfile;
-	$(QDX) --post $(DOXYGEN_OUTPUT)/*html
-	$(QDX) --post $(DOXYGEN_OUTPUT)/search/*html
+	$(QDX) --post docs/oracle/html/*html
+	$(QDX) --post docs/oracle/html/search/*html
 
 docs/mainpage.doxygen: docs/mainpage.doxygen.tmpl
 	$(QDX) -d $< $@
