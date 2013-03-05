@@ -636,11 +636,7 @@ public class OracleDatasourcePool inherits DatasourcePool, OracleExtensionsPriv:
         @param userAutoInfo see @ref instrumentation_info_auto
      */
     constructor(DatasourcePool ds, *code userAutoInfo)
-        # TODO/FIXME: !!! implemet hash returning method from DatasourcePool...
-        : DatasourcePool("oracle", ds.getUserName(), ds.getPassword(),
-                         ds.getDBName(), ds.getDBCharset(), ds.getHostName(),
-                         ds.getMinimum(), ds.getMaximum(), ds.getPort()
-                        ),
+        : DatasourcePool(ds.getConfigHash()),
           OracleExtensionsPriv::OracleDatasourceBase(userAutoInfo)
     {
     }
@@ -1114,7 +1110,7 @@ public class OracleDatasource inherits Datasource, OracleExtensionsPriv::OracleD
     /**
         @param userAutoInfo see @ref instrumentation_info_auto
      */
-    constructor (string desc, *code userAutoInfo)
+    constructor(string desc, *code userAutoInfo)
         : Datasource(desc),
           OracleExtensionsPriv::OracleDatasourceBase(userAutoInfo)
     {
@@ -1123,7 +1119,7 @@ public class OracleDatasource inherits Datasource, OracleExtensionsPriv::OracleD
     /**
         @param userAutoInfo see @ref instrumentation_info_auto
      */
-    constructor (hash opts, *code userAutoInfo)
+    constructor(hash opts, *code userAutoInfo)
         : Datasource(opts),
           OracleExtensionsPriv::OracleDatasourceBase(userAutoInfo)
     {
@@ -1134,11 +1130,7 @@ public class OracleDatasource inherits Datasource, OracleExtensionsPriv::OracleD
         @param userAutoInfo see @ref instrumentation_info_auto
      */
     constructor(Datasource ds, *code userAutoInfo)
-        # TODO/FIXME: !!! implemet hash returning method from DatasourcePool...
-        : Datasource("oracle", ds.getUserName(), ds.getPassword(),
-                     ds.getDBName(), ds.getDBCharset(), ds.getHostName(),
-                     ds.getPort()
-                    ),
+        : Datasource(ds.getConfigHash()),
           OracleExtensionsPriv::OracleDatasourceBase(userAutoInfo)
     {
     }
