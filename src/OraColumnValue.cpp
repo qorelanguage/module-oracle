@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2012 David Nichols
+  Copyright (C) 2003 - 2013 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -99,7 +99,12 @@ void OraColumnValue::del(ExceptionSink *xsink) {
          conn->rawFree((OCIRaw**)&buf.ptr, xsink);
          break;
       }
-	    
+
+      case SQLT_LNG:
+         if (buf.lng.str)
+            buf.lng.str->deref();
+         break;
+
       case SQLT_NTY:
          freeObject();
          break;
@@ -169,6 +174,9 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
 
       case SQLT_BLOB:
          return stmt.getData()->readBlob((OCILobLocator*)buf.ptr, xsink);
+
+      case SQLT_LNG:
+         return buf.takeLongString();
 
       case SQLT_RSET: {
          QoreOracleStatement tstmt(stmt.getDatasource(), (OCIStmt*)buf.takePtr());

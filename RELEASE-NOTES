@@ -1,7 +1,9 @@
 ***********
-version 2.3
+version 3.0
 ***********
 
+* supports selecting data from LONG columns
+* driver supports Oracle Advanced Queueing
 * driver now claims the DBI_CAP_AUTORECONNECT capability if Qore support the
  option (with Qore 0.8.7+ - functionality was already in place)
 

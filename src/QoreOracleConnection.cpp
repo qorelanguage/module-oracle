@@ -383,7 +383,7 @@ BinaryNode *QoreOracleConnection::readBlob(OCILobLocator *lobp, ExceptionSink *x
 
    SimpleRefHolder<BinaryNode> b(new BinaryNode);
    // read LOB data in streaming callback mode
-   if (checkerr(OCILobRead(svchp, errhp, lobp, &amt, 1, dbuf, LOB_BLOCK_SIZE, *b, readBlobCallback, 0, 0), "QoreOracleConnection::readClob()", xsink))
+   if (checkerr(OCILobRead(svchp, errhp, lobp, &amt, 1, dbuf, LOB_BLOCK_SIZE, *b, readBlobCallback, 0, 0), "QoreOracleConnection::readBlob()", xsink))
       return 0;
    return b.release();
 }
@@ -395,7 +395,7 @@ QoreStringNode *QoreOracleConnection::readClob(OCILobLocator *lobp, const QoreEn
 
    QoreStringNodeHolder str(new QoreStringNode(enc));
    // read LOB data in streaming callback mode
-   if (checkerr(OCILobRead(svchp, errhp, lobp, &amt, 1, dbuf, LOB_BLOCK_SIZE, *str, readClobCallback, (ub2)charsetid, 0), "QoreOracleConnection::readBlob()", xsink))
+   if (checkerr(OCILobRead(svchp, errhp, lobp, &amt, 1, dbuf, LOB_BLOCK_SIZE, *str, readClobCallback, (ub2)charsetid, 0), "QoreOracleConnection::readClob()", xsink))
       return 0;
    return str.release();
 }

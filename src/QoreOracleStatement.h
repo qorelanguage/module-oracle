@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2010 David Nichols
+  Copyright (C) 2003 - 2013 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -129,10 +129,17 @@ public:
       return 0;
    }
 
-   DLLLOCAL int defineByPos(OCIDefine *&defp, unsigned pos, void *valuep, int value_sz, unsigned short dty, void *indp, ExceptionSink *xsink) {
+   DLLLOCAL int defineDynamic(OCIDefine *defp, void *ctx, OCICallbackDefine cb, ExceptionSink *xsink) {
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
-      return conn.checkerr(OCIDefineByPos(stmthp, &defp, conn.errhp, pos, valuep, value_sz, dty, indp, 0, 0, OCI_DEFAULT), 
+      return conn.checkerr(OCIDefineDynamic(defp, conn.errhp, ctx, cb),
+                           "QoreOracleStatement::defineDynamic()", xsink);
+   }
+
+   DLLLOCAL int defineByPos(OCIDefine *&defp, unsigned pos, void *valuep, int value_sz, unsigned short dty, void *indp, ExceptionSink *xsink, ub4 mode = OCI_DEFAULT) {
+      QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+
+      return conn.checkerr(OCIDefineByPos(stmthp, &defp, conn.errhp, pos, valuep, value_sz, dty, indp, 0, 0, mode),
 			     "QoreOracleStatement::defineByPos()", xsink);
    }
 

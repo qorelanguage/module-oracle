@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2012 David Nichols
+  Copyright (C) 2003 - 2013 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -31,6 +31,33 @@ static int get_char_width(const QoreEncoding *enc, int num) {
    // for all character encodings except UTF8
    return num * (enc == QCS_UTF8 ? 4 : 1);
 #endif
+}
+
+#define Q_LONG_BLOCK_SIZE LOB_BLOCK_SIZE
+static sb4 q_long_callback(q_lng* lng, OCIDefine *defnp, ub4 iter, void **bufpp, ub4 **alenpp, ub1 *piecep, void **indpp, ub2 **rcodep) {
+   //printd(5, "q_long_callback() piece: %d alenp: %p (%d) indp: %p\n", *piecep, *alenpp, *alenpp ? **alenpp : 0, *indpp);
+
+   switch (*piecep) {
+      case OCI_FIRST_PIECE:
+         assert(!*alenpp);
+         assert(!*bufpp);
+         lng->str->reserve(Q_LONG_BLOCK_SIZE);
+         lng->size = Q_LONG_BLOCK_SIZE;
+         *alenpp = &lng->size;
+         *bufpp = (void*)lng->str->getBuffer();
+         break;
+
+      case OCI_NEXT_PIECE:
+      case OCI_LAST_PIECE:
+         assert(*alenpp);
+         lng->str->terminate(lng->str->size() + lng->size);
+         //printd(5, "q_long_callback() str: %p size: %d capacity: %d '%s'\n", lng->str, lng->str->size(), lng->str->capacity(), lng->str->getBuffer());
+         lng->str->reserve(lng->str->size() + Q_LONG_BLOCK_SIZE);
+         *bufpp = (void*)(lng->str->getBuffer() + lng->str->size());
+         break;
+   }
+
+   return OCI_CONTINUE;
 }
 
 OraResultSet::OraResultSet(QoreOracleStatement &n_stmt, const char *str, ExceptionSink *xsink) : stmt(n_stmt), defined(false) {
@@ -197,6 +224,14 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
 	    //printd(5, "OraResultSet::define() got LOB locator handle %p\n", w->buf.ptr);
 	    stmt.defineByPos(w->defp, i + 1, &w->buf.ptr, 0, w->dtype, &w->ind, xsink);
 	    break;
+
+         case SQLT_LNG:
+	    w->buf.lng.str = new QoreStringNode(stmt.getEncoding());
+            if (stmt.defineByPos(w->defp, i + 1, 0, LOB_BLOCK_SIZE, SQLT_CHR, &w->ind, xsink, OCI_DYNAMIC_FETCH))
+               return -1;
+
+            stmt.defineDynamic(w->defp, &w->buf.lng, (OCICallbackDefine)q_long_callback, xsink);
+            break;
 
 	 case SQLT_RSET:
 	    w->buf.ptr = 0;

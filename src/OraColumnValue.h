@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2010 David Nichols
+  Copyright (C) 2003 - 2013 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,16 @@
 
 #define _ORACOLUMNVALUE_H
 
+struct q_lng {
+   ub4 size;
+   QoreStringNode* str;
+};
+
+struct q_lngraw {
+   ub4 size;
+   BinaryNode* b;
+};
+
 // FIXME: do not hardcode byte widths - could be incorrect on some platforms
 union ora_value {
    void *ptr;
@@ -38,10 +48,20 @@ union ora_value {
    OCI_Object *oraObj;
    //! named type: collection
    OCI_Coll *oraColl;
+   q_lng lng;
+   q_lngraw lngraw;
 
-   DLLLOCAL void *takePtr() {
-      void *rv = ptr;
+   DLLLOCAL void* takePtr() {
+      void* rv = ptr;
       ptr = 0;
+      return rv;
+   }
+
+   DLLLOCAL QoreStringNode* takeLongString() {
+      assert(lng.str);
+      QoreStringNode* rv = lng.str;
+      lng.str = 0;
+      rv->terminate(rv->size() + lng.size);
       return rv;
    }
 };
