@@ -26,14 +26,49 @@
 #define _ORACOLUMNVALUE_H
 
 struct q_lng {
+   const QoreEncoding* enc;
+   sb2 ind;
    ub4 size;
    QoreStringNode* str;
+
+   DLLLOCAL q_lng(const QoreEncoding* e) : enc(e), ind(0), size(0), str(0) {
+   }
+
+   DLLLOCAL ~q_lng() {
+      if (str)
+         str->deref();
+   }
+
+   DLLLOCAL AbstractQoreNode* takeValue() {
+      AbstractQoreNode* rv;
+      if (ind)
+         rv = null();
+      else {
+         assert(str);
+
+         QoreStringNode* rvstr = str;
+         str = 0;
+         rvstr->terminate(rvstr->size() + size);
+         rv = rvstr;
+         //printd(5, "ora_value::takeLongString() returning str: %p\n", rvstr);
+      }
+
+      ind = 0;
+      size = 0;
+
+      //printd(5, "q_lng::takeValue() returning %p %s\n", rv, get_type_name(rv));
+      return rv;
+   }
 };
 
+/*
 struct q_lngraw {
+   ub2 rc;
+   sb2 ind;
    ub4 size;
    BinaryNode* b;
 };
+*/
 
 // FIXME: do not hardcode byte widths - could be incorrect on some platforms
 union ora_value {
@@ -48,20 +83,11 @@ union ora_value {
    OCI_Object *oraObj;
    //! named type: collection
    OCI_Coll *oraColl;
-   q_lng lng;
-   q_lngraw lngraw;
+   q_lng* lng;
 
    DLLLOCAL void* takePtr() {
       void* rv = ptr;
       ptr = 0;
-      return rv;
-   }
-
-   DLLLOCAL QoreStringNode* takeLongString() {
-      assert(lng.str);
-      QoreStringNode* rv = lng.str;
-      lng.str = 0;
-      rv->terminate(rv->size() + lng.size);
       return rv;
    }
 };

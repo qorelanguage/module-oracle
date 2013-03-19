@@ -101,8 +101,8 @@ void OraColumnValue::del(ExceptionSink *xsink) {
       }
 
       case SQLT_LNG:
-         if (buf.lng.str)
-            buf.lng.str->deref();
+         if (buf.lng)
+            delete buf.lng;
          break;
 
       case SQLT_NTY:
@@ -176,7 +176,7 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
          return stmt.getData()->readBlob((OCILobLocator*)buf.ptr, xsink);
 
       case SQLT_LNG:
-         return buf.takeLongString();
+         return buf.lng->takeValue();
 
       case SQLT_RSET: {
          QoreOracleStatement tstmt(stmt.getDatasource(), (OCIStmt*)buf.takePtr());

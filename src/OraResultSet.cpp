@@ -35,14 +35,23 @@ static int get_char_width(const QoreEncoding *enc, int num) {
 
 #define Q_LONG_BLOCK_SIZE LOB_BLOCK_SIZE
 static sb4 q_long_callback(q_lng* lng, OCIDefine *defnp, ub4 iter, void **bufpp, ub4 **alenpp, ub1 *piecep, void **indpp, ub2 **rcodep) {
-   //printd(5, "q_long_callback() piece: %d alenp: %p (%d) indp: %p\n", *piecep, *alenpp, *alenpp ? **alenpp : 0, *indpp);
+   //printd(5, "q_long_callback() lng: %p piece: %d alenp: %p (%d) indp: %p ind: %d size: %d str: %p\n", lng, *piecep, *alenpp, *alenpp ? **alenpp : 0, *indpp, (int)lng->ind, (int)lng->size, lng->str);
+
+   assert(!*indpp);
+   *indpp = (void*)&lng->ind;
+   //lng->rc = 0;
+   //*indpp = 0;
 
    switch (*piecep) {
       case OCI_FIRST_PIECE:
-         assert(!*alenpp);
-         assert(!*bufpp);
-         lng->str->reserve(Q_LONG_BLOCK_SIZE);
+         if (!lng->str) {
+            lng->str = new QoreStringNode(lng->enc);
+            lng->str->reserve(Q_LONG_BLOCK_SIZE);
+         }
          lng->size = Q_LONG_BLOCK_SIZE;
+         assert(lng->str->capacity());
+         assert(lng->str->empty());
+
          *alenpp = &lng->size;
          *bufpp = (void*)lng->str->getBuffer();
          break;
@@ -56,6 +65,8 @@ static sb4 q_long_callback(q_lng* lng, OCIDefine *defnp, ub4 iter, void **bufpp,
          *bufpp = (void*)(lng->str->getBuffer() + lng->str->size());
          break;
    }
+
+   //printd(5, "q_long_callback() EXIT lng: %p piece: %d alenp: %p (%d) indp: %p ind: %d size: %d str: %p\n", lng, *piecep, *alenpp, *alenpp ? **alenpp : 0, *indpp, (int)lng->ind, (int)lng->size, lng->str);
 
    return OCI_CONTINUE;
 }
@@ -226,11 +237,11 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
 	    break;
 
          case SQLT_LNG:
-	    w->buf.lng.str = new QoreStringNode(stmt.getEncoding());
+	    w->buf.lng = new q_lng(stmt.getEncoding());
             if (stmt.defineByPos(w->defp, i + 1, 0, LOB_BLOCK_SIZE, SQLT_CHR, &w->ind, xsink, OCI_DYNAMIC_FETCH))
                return -1;
 
-            stmt.defineDynamic(w->defp, &w->buf.lng, (OCICallbackDefine)q_long_callback, xsink);
+            stmt.defineDynamic(w->defp, w->buf.lng, (OCICallbackDefine)q_long_callback, xsink);
             break;
 
 	 case SQLT_RSET:
