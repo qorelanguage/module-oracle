@@ -313,14 +313,16 @@ OracleDatasourceBase::setAppInfo(object ds, *string client, *string module, *str
 }
 
 OracleDatasourceBase::setAppInfo(object ds, *OracleExtensions::OracleApplicationInfo audit, bool fromSystem=True) {
-   
     if (exists userInfo && (!exists audit || audit.isEmpty())) {
         userInfo = NOTHING;
     }
     else if (!fromSystem) {
         userInfo = audit;
     }
-    else if (exists userInfo && fromSystem) {
+    else if (exists userInfo &&  exists audit 
+             && userInfo.client == audit.client
+             && userInfo.module == audit.module
+             && userInfo.action == audit.action) {
         return;
     }
 
@@ -642,7 +644,7 @@ public class OracleDatasourcePool inherits DatasourcePool, OracleExtensionsPriv:
     }
     
     # used to access original "::exec" from OracleDatasourceBase
-    any exec_priv(string sql) {
+    private any exec_priv(string sql) {
         return DatasourcePool::vexec(sql, argv);
     }
 
@@ -1136,7 +1138,7 @@ public class OracleDatasource inherits Datasource, OracleExtensionsPriv::OracleD
     }
 
     # used to access original "::exec" from OracleDatasourceBase
-    any exec_priv(string sql) {
+    private any exec_priv(string sql) {
         return Datasource::vexec(sql, argv);
     }
 
@@ -1588,17 +1590,32 @@ public class OracleDatasource inherits Datasource, OracleExtensionsPriv::OracleD
 } # namespace OracleExtensions
 
 
+
+
 %ifdef OracleExtensionsTest
-/*
-create table oraext_test
-(
-id number,
-val varchar2(30)
-);
-*/
+
+our string connstr = "oracle:omq/omq@xe";
+
 
 sub test(object o, string m) {
-    printf("%s::%s - %N\n", o.className(), m, callObjectMethodArgs(o, m, argv));
+    printf("%s::%s(%n) - %N\n", o.className(), m, argv, callObjectMethodArgs(o, m, argv));
+}
+
+
+
+our bool backRun = True;
+sub backRunLogger() {
+    # session status for terminal
+    OracleExtensions::OracleDatasource d(connstr);
+    on_exit {
+        d.rollback();
+    }
+    d.setAppInfo("OracleExtension module", "background thread", "tty logging");
+    string sql = "select sid, status, client_info, module, action from v$session where username = %v and module != 'TOra'";
+    while (backRun) {
+        #printf("%N\n\n", d.selectRows(sql, d.getUserName().upr()));
+        sleep(1s);
+    }
 }
 
 sub testLongOps(object o) {
@@ -1616,14 +1633,14 @@ sub testLongOps(object o) {
         sleep(1);
     }
     if (lo.inProgress())
-        printf("DEBUG> lo in progress. And it's wrong\n");
+        throw "DEBUG-ERROR", "lo in progress. And it's wrong";
 
     a.action = "another action";
     o.setAppInfo(a);
-    sleep(5);
+    sleep(2);
 }
 
-sub testDBMS(object o)
+sub testDBMSOut(object o)
 {
     printf("testDBMS\n");
 
@@ -1634,35 +1651,83 @@ sub testDBMS(object o)
     o.exec("begin dbms_output.put_line(%v); end;", "hey, it's server here");
 
     my *string res = o.outputGet();
-    printf("   RESULT: %N\n", res);
+    printf("DBMS_OUTPUT RESULT:\n%N\n", res);
     o.outputDisable();
 }
 
 *OracleExtensions::OracleApplicationInfo sub getAutoInfo()
 {
-    printf("getAutoInfo: called\n");
+#    printf("getAutoInfo: called\n");
     return new OracleExtensions::OracleApplicationInfo("user module", "auto info", "auto info");
 }
 
+sub baseTest(object dd) {
+    printf("\nBase Test for: %n\n\n", dd);
+    on_exit dd.rollback();
+    
+    testDBMSOut(dd);
+    testLongOps(dd);
+
+    test(dd, "beginTransaction", "client test 1", "module 1", "action 1");
+    test(dd, "select", "begin dbms_lock.sleep(%v); end;", 5);
+    test(dd, "commit");
+
+    test(dd, "beginTransaction", "client test 2", "module 2", "action 2");
+    test(dd, "select", "begin dbms_lock.sleep(%v); end;", 5);
+    test(dd, "rollback");
+
+    test(dd, "beginTransaction");
+    test(dd, "exec", "begin dbms_lock.sleep(%v); end;", 1);
+    test(dd, "execRaw", "begin dbms_lock.sleep(1); end;");
+    test(dd, "select", "begin dbms_lock.sleep(%v); end;", 1);
+    test(dd, "selectRow", "select 1 from dual", 1);
+    test(dd, "selectRows", "begin dbms_lock.sleep(%v); end;", 1);
+    test(dd, "vexec", "begin dbms_lock.sleep(%v); end;", 1);
+    test(dd, "vselect", "begin dbms_lock.sleep(%v); end;", 1);
+    test(dd, "vselectRow", "select 1 from dual", 1);
+    test(dd, "vselectRows", "begin dbms_lock.sleep(%v); end;", 1);
+    test(dd, "rollback");
+
+
+    test(dd, "beginTransaction", "client test3", "module 3", "action 3");
+
+    OracleExtensions::OracleApplicationInfo info("OracleAppInfo test", "manual set", "none");
+
+    info.action = "exec";
+    test(dd, "exec", info, "begin dbms_lock.sleep(%v); end;", 1);
+    info.action = "execRaw";
+    test(dd, "execRaw", info, "begin dbms_lock.sleep(1); end;");
+    info.action = "select";
+    test(dd, "select", info, "begin dbms_lock.sleep(%v); end;", 1);
+    info.action = "selectRow";
+    test(dd, "selectRow", info, "select 1 from dual", 1);
+    info.action = "selectRows";
+    test(dd, "selectRows", info, "begin dbms_lock.sleep(%v); end;", 1);
+    info.action = "vexec";
+    test(dd, "vexec", info, "begin dbms_lock.sleep(%v); end;", 1);
+    info.action = "vselect";
+    test(dd, "vselect", info, "begin dbms_lock.sleep(%v); end;", 1);
+    info.action = "vselectRow";
+    test(dd, "vselectRow", info, "select 1 from dual", 1);
+    info.action = "vselectRows";
+    test(dd, "vselectRows", info, "begin dbms_lock.sleep(%v); end;", 1);
+
+    sleep(2s);
+}
+
 {
-    OracleExtensions::OracleDatasource dd("oracle", "omquser", "omquser", "stimpy");
+    background backRunLogger();
+    on_exit backRun = False;
+
+
+    OracleExtensions::OracleDatasource dd(connstr, \getAutoInfo());
     dd.setAutoCommit(False);
-    # MANDATORY: clean the test table
-    test(dd, "select", "truncate table oraext_test");
-
-    # simulate non-transactional insert. Select's insert will be rollback'ed.
-    test(dd, "select", "insert into oraext_test values (%v, %v)", 1, 'select: cannot be there');
-
-    DatasourcePool parentds("oracle", "omquser", "omquser", "stimpy");
-    OracleExtensions::OracleDatasourcePool dp(parentds, \getAutoInfo());
-
-    OracleExtensions::OracleApplicationInfo info("background process", "huge select", "fullscan");
-    background test(dp, "select", info, "begin dbms_lock.sleep(%v); end;", 10);
-
-    {
-    on_exit dp.commit();
-    test(dp, "exec", "insert into oraext_test values (%v, %v)", 2, 'exec: OK');
-    }
+    
+    baseTest(dd);
+    
+    OracleExtensions::OracleDatasourcePool dp(connstr, \getAutoInfo());
+   
+    baseTest(dp);
 
 }
 
