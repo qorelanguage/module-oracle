@@ -168,7 +168,7 @@ public:
       bool hasError = false;
 #endif
       while (OCIErrorGet(errhp, ix, (text *) NULL, &errcode, errbuf, (ub4)sizeof(errbuf), OCI_HTYPE_ERROR) != OCI_NO_DATA) {
-         fprintf(stderr, "Oracle OCI Warning - %.*s\n", 512, errbuf);
+         fprintf(stderr, "Oracle OCI Warning: %.*s\n", 512, errbuf);
 #ifdef DARWIN
          hasError = true;
 #endif
@@ -181,7 +181,7 @@ public:
       // issue or client issue (all linux versions are running on 11 here)
       if (hasError) {
          char output[512];
-         sprintf(output, "Oracle OCI Warning - %.*s", 512, errbuf);
+         sprintf(output, "Oracle OCI Warning: %.*s", 512, errbuf);
          xsink->raiseException("OCI-WARNING-ERROR", output);
          return -1;
       }

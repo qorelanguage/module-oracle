@@ -54,7 +54,7 @@ boolean OCI_API OCI_SetTrace
     const mtext    *value
 );
 
-boolean OCI_API OCI_Ping(OCI_Library *pOCILib, OCI_Connection *con);
+boolean OCI_API OCI_Ping(OCI_Library *pOCILib, OCI_Connection *con, ExceptionSink* xsink);
 
 
 /* --------------------------------------------------------------------------------------------- *

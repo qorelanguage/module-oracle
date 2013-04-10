@@ -30,7 +30,7 @@
 void ocilib_err_handler(OCI_Error *err, ExceptionSink* xsink) {
    if (xsink && !err->warning)
       xsink->raiseException("ORACLE-OCI-ERROR", "ORA-%05d: %s", OCI_ErrorGetOCICode(err), OCI_ErrorGetString(err));
-   else
+   else {
       // TODO/FIXME: xsink handling here.
       printf("internal OCILIB error:\n"
              "  code  : ORA-%05i\n"
@@ -41,6 +41,8 @@ void ocilib_err_handler(OCI_Error *err, ExceptionSink* xsink) {
              //OCI_GetSql(OCI_ErrorGetStatement(err))
              "<not available>"
          );
+      assert(false);
+   }
 };
 
 /* ------------------------------------------------------------------------ *

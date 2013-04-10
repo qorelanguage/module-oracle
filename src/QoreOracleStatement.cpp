@@ -40,7 +40,16 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
    //printd(0, "QoreOracleStatement::execute() stmthp=%p status=%d (OCI_ERROR=%d)\n", stmthp, status, OCI_ERROR);
    if (status == OCI_ERROR) {
       // see if server is connected
-      int ping = OCI_Ping(&conn->ocilib, conn->ocilib_cn);
+      int ping = OCI_Ping(&conn->ocilib, conn->ocilib_cn, xsink);
+
+      if (*xsink) {
+         if (ping)
+            ping = 0;
+#ifdef DEBUG
+         xsink->handleExceptions();
+#endif
+         xsink->clear();
+      }
 
       if (!ping) {
 

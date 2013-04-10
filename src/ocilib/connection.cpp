@@ -1744,7 +1744,7 @@ const mtext * OCI_API OCI_GetTrace
 /* ------------------------------------------------------------------------ *
  * OCI_Ping
  * ------------------------------------------------------------------------ */
-boolean OCI_API OCI_Ping(OCI_Library *pOCILib, OCI_Connection *con)
+boolean OCI_API OCI_Ping(OCI_Library *pOCILib, OCI_Connection *con, ExceptionSink* xsink)
 {
     boolean res = TRUE;
     boolean ret = FALSE;
@@ -1755,11 +1755,13 @@ boolean OCI_API OCI_Ping(OCI_Library *pOCILib, OCI_Connection *con)
 
     if (pOCILib->version_runtime >= OCI_10_2)
     {
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, con,
 
-            OCIPing(con->cxt, con->err, (ub4) OCI_DEFAULT)
+            OCIPing(con->cxt, con->err, (ub4) OCI_DEFAULT),
+
+	    xsink
 
         )
 
