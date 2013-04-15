@@ -349,7 +349,7 @@ int AQQueuePriv::connectUnlocked(ExceptionSink *xsink) {
 }
 
 bool AQQueuePriv::pingUnlocked() {
-   return OCI_Ping(&m_conn->ocilib, m_conn->ocilib_cn);
+   return OCI_Ping(&m_conn->ocilib, m_conn->ocilib_cn, 0);
 }
 
 bool AQQueuePriv::ping() {
