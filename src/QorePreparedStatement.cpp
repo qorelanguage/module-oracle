@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2006 - 2012 Qore Technologies, sro
+  Copyright (C) 2006 - 2013 Qore Technologies, sro
   
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -483,8 +483,10 @@ void OraBindNode::resetValue(ExceptionSink *xsink) {
       return;
    }
 
-   if (data.v.tstr)
+   if (data.v.tstr) {
       delete data.v.tstr;
+      data.v.tstr = 0;
+   }
 
    if (strlob) {
       if (clob_allocated) {
