@@ -28,8 +28,11 @@
 #include "ocilib_types.h"
 
 void ocilib_err_handler(OCI_Error *err, ExceptionSink* xsink) {
-   if (xsink && !err->warning)
-      xsink->raiseException("ORACLE-OCI-ERROR", "ORA-%05d: %s", OCI_ErrorGetOCICode(err), OCI_ErrorGetString(err));
+   if (xsink && !err->warning) {
+      QoreStringNode* desc = new QoreStringNodeMaker("ORA-%05d: %s", OCI_ErrorGetOCICode(err), OCI_ErrorGetString(err));
+      desc->trim_trailing();
+      xsink->raiseException("ORACLE-OCI-ERROR", desc);
+   }
    else {
       // TODO/FIXME: xsink handling here.
       printf("internal OCILIB error:\n"
