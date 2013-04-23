@@ -42,15 +42,6 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
       // see if server is connected
       int ping = OCI_Ping(&conn->ocilib, conn->ocilib_cn, xsink);
 
-      if (*xsink) {
-         if (ping)
-            ping = 0;
-#ifdef DEBUG
-         xsink->handleExceptions();
-#endif
-         xsink->clear();
-      }
-
       if (!ping) {
 	 // check if a transaction was in progress
          if (wasInTransaction(ds))
@@ -76,6 +67,13 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
          // don't execute again if the connection was aborted while in a transaction
          if (wasInTransaction(ds))
 	    return -1;
+
+#ifdef DEBUG
+         // otherwise show the exception on stdout in debug mode
+         xsink->handleExceptions();
+#endif
+         // clear any exceptions that have been ignored
+         xsink->clear();
 
 	 //printd(0, "QoreOracleStatement::execute() returned from OCILogon() status=%d\n", status);
 	 status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, is_select ? 0 : 1, 0, 0, 0, OCI_DEFAULT);
