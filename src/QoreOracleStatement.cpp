@@ -54,7 +54,7 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
       if (!ping) {
 	 // check if a transaction was in progress
          if (wasInTransaction(ds))
-	    xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost while in a transaction; transaction has been lost", ds.getUsername(), ds.getDBName());
+	    xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost while in a transaction; transaction has been lost", ds->getUsername(), ds->getDBName());
 
 	 // try to reconnect
 	 conn->logoff();
