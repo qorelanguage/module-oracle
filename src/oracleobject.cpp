@@ -332,7 +332,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                 else if (t && !strcmp(t, ORACLE_COLLECTION)) {
                     OCI_Coll * o = collBindQore(d, n, xsink);
                     if (o) {
-                       OCI_ObjectSetColl2(&d->ocilib, obj, cname, o);
+                       OCI_ObjectSetColl2(&d->ocilib, obj, cname, o, xsink);
                        OCI_CollFree2(&d->ocilib, o);
                     }
                 }
@@ -512,7 +512,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Excep
 	 case SQLT_NTY:
 	    if (col->typinf->ccode) {
 	       // collection
-               OCI_Coll* c = OCI_ObjectGetColl2(&conn->ocilib, obj, cname);
+               OCI_Coll* c = OCI_ObjectGetColl2(&conn->ocilib, obj, cname, xsink);
                if (!c)
                   return 0;
 	       rv->setKeyValue(cname, collToQore(conn, c, xsink), xsink);
@@ -556,7 +556,9 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
    }
 
 //     printf("onfo: %d\n", info->nb_cols);
-   OCI_Coll * obj = OCI_CollCreate2(&d->ocilib, info);
+   OCI_Coll * obj = OCI_CollCreate2(&d->ocilib, info, xsink);
+   if (*xsink)
+      return 0;
    OCI_Column *col = OCI_TypeInfoGetColumn2(&d->ocilib, info, 1);
         
 //     const char * cname = OCI_GetColumnName(col);
@@ -916,7 +918,9 @@ AbstractQoreNode* collToQore(QoreOracleConnection * conn, OCI_Coll * obj, Except
 	 case SQLT_NTY:
 	    if (col->typinf->ccode) {
 	       // collection
-	       rv->set_entry(rv->size(), collToQore(conn, OCI_ElemGetColl2(&conn->ocilib, e), xsink), xsink);
+               OCI_Coll* coll = OCI_ElemGetColl2(&conn->ocilib, e, xsink);
+               if (coll)
+                  rv->set_entry(rv->size(), collToQore(conn, coll, xsink), xsink);
 	    } else {
 	       // object
                OCI_Object* obj = OCI_ElemGetObject2(&conn->ocilib, e, xsink);
@@ -945,7 +949,7 @@ OCI_Coll* collPlaceholderQore(QoreOracleConnection *conn, const char * tname, Ex
 			    "No type '%s' defined in the DB", tname);
       return 0;
    }
-   OCI_Coll * obj = OCI_CollCreate2(&conn->ocilib, info);
+   OCI_Coll * obj = OCI_CollCreate2(&conn->ocilib, info, xsink);
    if (!obj && !*xsink)
       xsink->raiseException("ORACLE-COLLECTION-ERROR", "could not create placeholder buffer for object type '%s'", tname);
    return obj;

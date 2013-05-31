@@ -898,7 +898,7 @@ OCI_Coll * OCI_API OCI_ObjectGetColl(OCI_Object *obj, const mtext *attr)
     return OCI_ObjectGetColl2(&OCILib, obj, attr);
 }
 */
-OCI_Coll * OCI_API OCI_ObjectGetColl2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr)
+OCI_Coll * OCI_API OCI_ObjectGetColl2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, ExceptionSink* xsink)
 {
     OCI_Coll *coll = NULL;
     boolean res    = TRUE;
@@ -916,7 +916,7 @@ OCI_Coll * OCI_API OCI_ObjectGetColl2(OCI_Library *pOCILib, OCI_Object *obj, con
             coll = OCI_CollInit(pOCILib, obj->con,
                                 (OCI_Coll **) &obj->objs[index],
                                 (OCIColl *) *value,
-                                obj->typinf->cols[index].typinf);
+                                obj->typinf->cols[index].typinf, xsink);
 
             res = (coll != NULL);
         }

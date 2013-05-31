@@ -164,7 +164,8 @@ OCI_Coll * OCI_CollInit
     OCI_Connection *con,
     OCI_Coll **pcoll,
     void *handle,
-    OCI_TypeInfo *typeinf
+    OCI_TypeInfo *typeinf,
+    ExceptionSink* xsink
 );
 
 boolean OCI_CollAssign(OCI_Library *pOCILib, OCI_Coll *coll, OCI_Coll *coll_src);

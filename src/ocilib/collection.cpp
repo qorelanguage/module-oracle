@@ -43,7 +43,7 @@
  * ------------------------------------------------------------------------ */
 
 OCI_Coll * OCI_CollInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_Coll **pcoll, void *handle,
-                        OCI_TypeInfo *typinf)
+                        OCI_TypeInfo *typinf, ExceptionSink* xsink)
 {
     OCI_Coll *coll = NULL;
     boolean res    = TRUE;
@@ -71,22 +71,26 @@ OCI_Coll * OCI_CollInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_Coll **pc
                 coll->hstate = OCI_OBJECT_ALLOCATED;
             }
 
-            OCI_CALL2
+            OCI_CALL2Q
             (
                 pOCILib, res, con,
 
                 OCI_ObjectNew2(pOCILib, pOCILib->env, con->err, con->cxt, typinf->ccode,
                               typinf->tdo, (void *) NULL, OCI_DURATION_SESSION,
-                              TRUE, (dvoid **) &coll->handle)
+			       TRUE, (dvoid **) &coll->handle),
+
+		xsink
             )
             
-            OCI_CALL2
+            OCI_CALL2Q
             (
                 pOCILib, res, con,
 
                 OCIObjectGetInd(pOCILib->env, con->err,
                                 (dvoid *) coll->handle,
-                                (dvoid **) &coll->tab_ind)
+                                (dvoid **) &coll->tab_ind),
+
+		xsink
             )
 
         }
@@ -121,7 +125,7 @@ OCI_Coll * OCI_API OCI_CollCreate(OCI_TypeInfo *typinf)
 }
 */
 
-OCI_Coll * OCI_API OCI_CollCreate2(OCI_Library *pOCILib, OCI_TypeInfo *typinf)
+OCI_Coll * OCI_API OCI_CollCreate2(OCI_Library *pOCILib, OCI_TypeInfo *typinf, ExceptionSink* xsink)
 {
     OCI_Coll *coll = NULL;
 
@@ -130,7 +134,7 @@ OCI_Coll * OCI_API OCI_CollCreate2(OCI_Library *pOCILib, OCI_TypeInfo *typinf)
     OCI_CHECK_PTR(pOCILib, OCI_IPC_TYPE_INFO, typinf, NULL);
     OCI_CHECK(typinf->ccode == OCI_UNKNOWN, NULL)
 
-    coll = OCI_CollInit(pOCILib, typinf->con, &coll, (OCIColl *) NULL, typinf);
+    coll = OCI_CollInit(pOCILib, typinf->con, &coll, (OCIColl *) NULL, typinf, xsink);
 
     OCI_RESULT(pOCILib, coll != NULL);
 

@@ -901,7 +901,7 @@ OCI_EXPORT OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Con
 OCI_EXPORT boolean OCI_API OCI_ObjectSetRef2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, OCI_Ref *value);
 OCI_EXPORT boolean OCI_API OCI_ObjectGetSelfRef2(OCI_Library *pOCILib, OCI_Object *obj, OCI_Ref *ref);
 OCI_EXPORT boolean OCI_API OCI_ObjectSetObject2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, OCI_Object *value, ExceptionSink* xsink);
-OCI_EXPORT boolean OCI_API OCI_ObjectSetColl2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, OCI_Coll *value);
+OCI_EXPORT boolean OCI_API OCI_ObjectSetColl2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, OCI_Coll *value, ExceptionSink* xsink);
 OCI_EXPORT boolean OCI_API OCI_ObjectSetInterval2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, OCI_Interval *value);
 OCI_EXPORT OCI_Object * OCI_API OCI_ObjectCreate2(OCI_Library *pOCILib, OCI_Connection *con, OCI_TypeInfo *typinf, ExceptionSink* xsink);
 OCI_EXPORT OCI_Object * OCI_API OCI_ObjectGetObject2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, ExceptionSink* xsink);
@@ -922,9 +922,9 @@ OCI_EXPORT OCI_Lob * OCI_API OCI_ObjectGetLob2(OCI_Library * pOCILib, OCI_Object
 OCI_EXPORT OCI_Lob * OCI_API OCI_LobCreate2(OCI_Library *pOCILib, OCI_Connection *con, unsigned int type);
 OCI_EXPORT OCI_Lob * OCI_API OCI_ElemGetLob2(OCI_Library *pOCILib, OCI_Elem *elem);
 OCI_EXPORT boolean OCI_API OCI_ElemSetLob2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Lob *value);
-OCI_EXPORT OCI_Coll * OCI_API OCI_CollCreate2(OCI_Library *pOCILib, OCI_TypeInfo *typinf);
-OCI_EXPORT OCI_Coll * OCI_API OCI_ObjectGetColl2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr);
-OCI_EXPORT OCI_Coll * OCI_API OCI_ElemGetColl2(OCI_Library *pOCILib, OCI_Elem *elem);
+OCI_EXPORT OCI_Coll * OCI_API OCI_CollCreate2(OCI_Library *pOCILib, OCI_TypeInfo *typinf, ExceptionSink* xsink);
+OCI_EXPORT OCI_Coll * OCI_API OCI_ObjectGetColl2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, ExceptionSink* xsink);
+OCI_EXPORT OCI_Coll * OCI_API OCI_ElemGetColl2(OCI_Library *pOCILib, OCI_Elem *elem, ExceptionSink* xsink);
 OCI_EXPORT boolean OCI_API OCI_ElemSetColl2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Coll *value);
 OCI_EXPORT boolean OCI_API OCI_CollFree2(OCI_Library *pOCILib, OCI_Coll *coll);
 OCI_EXPORT OCI_Elem * OCI_API OCI_CollGetAt2(OCI_Library *pOCILib, OCI_Coll *coll, unsigned int index);
