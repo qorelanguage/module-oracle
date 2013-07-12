@@ -280,7 +280,7 @@ public:
 
       return checkerr(OCIDateTimeFromText(*env, errhp, (OraText *)dstr.getBuffer(),
                                           dstr.strlen(), (OraText *)ORA_BACKUP_DATE_FMT,
-                                          sizeof(ORA_BACKUP_DATE_FMT), 0, 0, odt), "QoreORacleConnection::dateTimeConstruct() fromText", xsink);
+                                          sizeof(ORA_BACKUP_DATE_FMT), 0, 0, odt), "QoreOracleConnection::dateTimeConstruct() fromText", xsink);
 #else
       return checkerr(OCIDateTimeConstruct(*env, errhp, odt, d.getYear(), d.getMonth(), d.getDay(), d.getHour(), d.getMinute(), d.getSecond(),
                                            (d.getMillisecond() * 1000000), 0, 0), "QoreOracleConnection::dateTimeConstruct()", xsink))
