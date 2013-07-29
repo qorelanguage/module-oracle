@@ -24,12 +24,21 @@
     and is tagged as such in the module's header (meaning it can be loaded
     unconditionally regardless of how the Qore library was initialized).
 
+    Also included with the binary oracle module:
+    - <a href="../../OracleExtensions/html/index.html">OracleExtensions</a> user module providng transparent SQL tracing support using Oracle's \c DBMS_APPLICATION_INFO package.</a>
+
     Example of creating an Oracle Datasource (note that \a db_encoding, \a host,
     and \a port are optional - using the hostname and port allows connections
     to be established without TNS, without these parameters TNS is used):
 
     @code
     $db = new Datasource(SQL::DSOracle, $user, $pass, $db, $db_encoding, $host, $port);
+    @endcode
+
+    or
+
+    @code
+    $db = new Datasource("oracle:user/password@db%host:1522");
     @endcode
 
     This driver supports the following DBI capabilities:
