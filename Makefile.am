@@ -13,6 +13,8 @@ noinst_HEADERS = src/oracle-config.h \
 	src/QoreOracleConnection.h \
 	src/OraColumnValue.h \
 	src/OraResultSet.h \
+	src/AQMessagePriv.h \
+	src/AQQueuePriv.h \
 	src/ocilib/oci_api.h \
 	src/ocilib/ocilib_checks.h \
 	src/ocilib/ocilib_internal.h \
@@ -29,6 +31,8 @@ USER_MODULES = qlib/OracleExtensions.qm
 EXTRA_DIST = COPYING ChangeLog AUTHORS README \
 	RELEASE-NOTES \
 	src/ql_oracle.qpp \
+	src/QC_AQMessage.qpp \
+	src/QC_AQQueue.qpp \
 	test/db-test.q \
 	test/sql-stmt.q \
 	$(USER_MODULES) \
