@@ -406,42 +406,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Excep
             buf[bs] = 0;
             rv->setKeyValue(cname, new QoreNumberNode(buf), xsink);
             break;
-            /*
-                        const OraText        *fmt, 
-                        ub4                  fmt_length,
-                        const OraText        *nls_params, 
-                        ub4                  nls_p_length,
-                        ub4                  *buf_size, 
-                        OraText              *buf );
-            */
-
-            /*
-            const char* str = OCI_ObjectGetString2(&conn->ocilib, obj, cname, xsink);
-            if (*xsink)
-               return 0;
-            rv->setKeyValue(cname, new QoreNumberNode(str), xsink);
-            break;
-            */
          }
-            /*
-	    if (col->scale == -127 && col->prec > 0) {
-	       // float
-	       rv->setKeyValue(cname, new QoreFloatNode(OCI_ObjectGetDouble2(&conn->ocilib, obj, cname)), xsink);
-	       break;
-	    }
-            else {
-               // sometimes (when is an attribute defined as NUMBER)
-               // the column can hold float value but the col->prec is still 0...
-               int64 i = OCI_ObjectGetBigInt2(&conn->ocilib, obj, cname);
-               double f = OCI_ObjectGetDouble2(&conn->ocilib, obj, cname);
-               if (i == f)
-                   rv->setKeyValue(cname, new QoreBigIntNode(i), xsink);
-               else
-                   rv->setKeyValue(cname, new QoreFloatNode(f), xsink);
-               break;
-            }
-            */
-	    // else fall through to SQLT_INT
 
 	 case SQLT_INT: {
 	    int64 i = OCI_ObjectGetBigInt2(&conn->ocilib, obj, cname);
