@@ -386,6 +386,17 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Excep
 	       rv->setKeyValue(cname, new QoreFloatNode(OCI_ObjectGetDouble2(&conn->ocilib, obj, cname)), xsink);
 	       break;
 	    }
+            else {
+               // sometimes (when is an attribute defined as NUMBER)
+               // the column can hold float value but the col->prec is still 0...
+               int64 i = OCI_ObjectGetBigInt2(&conn->ocilib, obj, cname);
+               double f = OCI_ObjectGetDouble2(&conn->ocilib, obj, cname);
+               if (i == f)
+                   rv->setKeyValue(cname, new QoreBigIntNode(i), xsink);
+               else
+                   rv->setKeyValue(cname, new QoreFloatNode(f), xsink);
+               break;
+            }
 	    // else fall through to SQLT_INT
 
 	 case SQLT_INT: {
