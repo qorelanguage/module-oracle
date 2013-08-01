@@ -370,7 +370,7 @@ void OCI_ObjectReset(OCI_Library *pOCILib, OCI_Object *obj)
  * OCI_ObjectGetAttrIndex
  * ------------------------------------------------------------------------ */
 
-int OCI_ObjectGetAttrIndex2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, int type)
+int OCI_ObjectGetAttrIndex2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, int type, ExceptionSink* xsink)
 {
     int res = -1;
     ub2 i;
@@ -391,7 +391,7 @@ int OCI_ObjectGetAttrIndex2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *
     }
 
     if (res == -1)
-       OCI_ExceptionAttributeNotFound2(pOCILib, obj->con, attr);
+       OCI_ExceptionAttributeNotFound2(pOCILib, obj->con, attr, xsink);
 
     return res;
 }
@@ -454,16 +454,16 @@ boolean OCI_ObjectSetNumber2(OCI_Library *pOCILib, OCI_Object *obj, const mtext 
  * ------------------------------------------------------------------------ */
 
 boolean OCI_ObjectGetNumber2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, void *value,
-                            uword size, uword flag)
+			     uword size, uword flag, ExceptionSink* xsink)
 {
     boolean res = FALSE;
     int index   = 0;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_OBJECT, obj, FALSE);
 
-    index = OCI_ObjectGetAttrIndex2(pOCILib, obj, attr, OCI_CDT_NUMERIC);
+    index = OCI_ObjectGetAttrIndex2(pOCILib, obj, attr, OCI_CDT_NUMERIC, xsink);
 
-    //printd(0, "OCI_ObjectGetNumber2() index: %d\n", index);
+    //printd(5, "OCI_ObjectGetNumber2() index: %d\n", index);
 
     if (index >= 0)
     {
@@ -479,13 +479,13 @@ boolean OCI_ObjectGetNumber2(OCI_Library *pOCILib, OCI_Object *obj, const mtext 
     }
     else
     {
-        index = OCI_ObjectGetAttrIndex2(pOCILib, obj, attr, OCI_CDT_TEXT);
+        index = OCI_ObjectGetAttrIndex2(pOCILib, obj, attr, OCI_CDT_TEXT, xsink);
 
         if (index >= 0)
         {
 	   const mtext *fmt = OCI_GetDefaultFormatNumeric(pOCILib, obj->con);
             ub4 fmt_size     = (ub4) mtslen(fmt);
-            dtext *data      = (dtext *) OCI_ObjectGetString2(pOCILib, obj, attr);
+            dtext *data      = (dtext *) OCI_ObjectGetString2(pOCILib, obj, attr, xsink);
 
             res = OCI_NumberGetFromStr2(pOCILib, obj->con, value, size, flag, data,
                                        (int) dtslen(data),  fmt, fmt_size);
@@ -715,11 +715,11 @@ const dtext * OCI_API OCI_ObjectGetString(OCI_Object *obj, const mtext *attr)
     return OCI_ObjectGetString2(&OCILib, obj, attr);
 }
 */
-const dtext * OCI_API OCI_ObjectGetString2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr)
+const dtext * OCI_API OCI_ObjectGetString2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, ExceptionSink* xsink)
 {
     const dtext *str  = NULL;
     boolean res       = TRUE;
-    int index         = OCI_ObjectGetAttrIndex2(pOCILib, obj, attr, OCI_CDT_TEXT);
+    int index         = OCI_ObjectGetAttrIndex2(pOCILib, obj, attr, OCI_CDT_TEXT, xsink);
 
     if (index >= 0)
     {

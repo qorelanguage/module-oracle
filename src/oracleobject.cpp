@@ -354,6 +354,11 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
     return obj;
 }
 
+#define ORA_NUM_BUFSIZE 100
+// here we use the special "text minimum" format
+#define ORA_NUM_FORMAT "TM"
+#define ORA_NUM_FORMAT_SIZE (sizeof(ORA_NUM_FORMAT)-1)
+
 AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, ExceptionSink *xsink) {
    ReferenceHolder<QoreHashNode> rv(new QoreHashNode, xsink);
 
@@ -376,11 +381,49 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Excep
 	 case SQLT_STR:
 	 case SQLT_CHR: {
 	    // strings
-	    rv->setKeyValue(cname, new QoreStringNode(OCI_ObjectGetString2(&conn->ocilib, obj, cname)), xsink);
+            const char* str = OCI_ObjectGetString2(&conn->ocilib, obj, cname, xsink);
+            if (*xsink)
+               return 0;
+	    rv->setKeyValue(cname, new QoreStringNode(str), xsink);
 	    break;
 	 }
 
-	 case SQLT_NUM:
+	 case SQLT_NUM: {
+            int index = OCI_ObjectGetAttrIndex2(&conn->ocilib, obj, cname, OCI_CDT_NUMERIC, xsink);
+            assert(index >= 0);
+            OCIInd* ind = 0;
+            OCINumber* num = (OCINumber*)OCI_ObjectGetAttr(obj, index, &ind);
+            if (!num || *ind == OCI_IND_NULL) {
+               rv->setKeyValue(cname, &Null, xsink);
+               break;
+            }
+
+            char buf[ORA_NUM_BUFSIZE];
+            ub4 bs = ORA_NUM_BUFSIZE;
+            if (conn->checkerr(OCINumberToText(conn->errhp, num, (const OraText*)ORA_NUM_FORMAT, ORA_NUM_FORMAT_SIZE, 0, 0, &bs, (OraText*)buf), 
+                               "obj2Qore() converting NUMERIC value to text", xsink))
+               return 0;
+            buf[bs] = 0;
+            rv->setKeyValue(cname, new QoreNumberNode(buf), xsink);
+            break;
+            /*
+                        const OraText        *fmt, 
+                        ub4                  fmt_length,
+                        const OraText        *nls_params, 
+                        ub4                  nls_p_length,
+                        ub4                  *buf_size, 
+                        OraText              *buf );
+            */
+
+            /*
+            const char* str = OCI_ObjectGetString2(&conn->ocilib, obj, cname, xsink);
+            if (*xsink)
+               return 0;
+            rv->setKeyValue(cname, new QoreNumberNode(str), xsink);
+            break;
+            */
+         }
+            /*
 	    if (col->scale == -127 && col->prec > 0) {
 	       // float
 	       rv->setKeyValue(cname, new QoreFloatNode(OCI_ObjectGetDouble2(&conn->ocilib, obj, cname)), xsink);
@@ -397,6 +440,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Excep
                    rv->setKeyValue(cname, new QoreFloatNode(f), xsink);
                break;
             }
+            */
 	    // else fall through to SQLT_INT
 
 	 case SQLT_INT: {

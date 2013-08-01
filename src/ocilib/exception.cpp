@@ -609,7 +609,7 @@ void OCI_ExceptionMaxBind2(OCI_Library *pOCILib, OCI_Statement *stmt)
  * OCI_ExceptionAttributeNotFound
  * ------------------------------------------------------------------------ */
 
-void OCI_ExceptionAttributeNotFound2(OCI_Library *pOCILib, OCI_Connection *con, const mtext *attr)
+void OCI_ExceptionAttributeNotFound2(OCI_Library *pOCILib, OCI_Connection *con, const mtext *attr, ExceptionSink* xsink)
 {
     OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
@@ -625,7 +625,7 @@ void OCI_ExceptionAttributeNotFound2(OCI_Library *pOCILib, OCI_Connection *con, 
                   attr);
     }
 
-    OCI_ExceptionRaise2(pOCILib, err);
+    OCI_ExceptionRaise2(pOCILib, err, xsink);
 }
 
 /* ------------------------------------------------------------------------ *
