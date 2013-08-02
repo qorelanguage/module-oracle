@@ -451,22 +451,24 @@ kpcest_err_handler: Max errors exceeded..Closing connection
       alter system set events '10867 trace name context forever, level 1';
       @endcode
        
-      <b>Compatibility Matrix:</b> 
-
 <table>
    <tr><td rowspan="2">Server version</td><td colspan="4">Client version</td></tr>
-   <tr>                   <th>11.2.0.1.0</th><th>11.2.0.2.0</th><th>11.2.0.2.0+fix</th><th>11.2.0.3.0</th></tr>
+   <tr><th>11.2.0.1.0</th><th>11.2.0.2.0</th><th>11.2.0.2.0+fix</th><th>11.2.0.3.0</th></tr>
    <tr><th>11.2.0.1.0</th><td>works</td><td>fails</td><td>works</td><td>fails</td></tr>
    <tr><th>11.2.0.2.0</th><td>fails</td><td>works</td><td>fails</td><td>fails</td></tr>
    <tr><th>11.2.0.2.0+fix</th><td>works</td><td>fails</td><td>works</td><td>works</td></tr>
    <tr><th>11.2.0.3.0</th><td>&nbsp;</td><td>fails</td><td>works</td><td>works</td></tr>
 </table>
 
-    
-
     @section releasenotes Release Notes
 
-    @subsection oracle23 oracle Driver Version 3.0
+    @subsection oracle31 oracle Driver Version 3.1
+    
+    <b>New Features and Bug Fixes</b>
+    - fixed retrieving NUMBER types from objects/NTYs
+    - added more Qore exception handling in ocilib object/NTY APIs
+
+    @subsection oracle30 oracle Driver Version 3.0
 
     <b>New Features and Bug Fixes</b>
     - driver supports Oracle Advanced Queuing

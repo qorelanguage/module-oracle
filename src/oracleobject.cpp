@@ -390,6 +390,8 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Excep
 
 	 case SQLT_NUM: {
             int index = OCI_ObjectGetAttrIndex2(&conn->ocilib, obj, cname, OCI_CDT_NUMERIC, xsink);
+            if (*xsink)
+               return 0;
             assert(index >= 0);
             OCIInd* ind = 0;
             OCINumber* num = (OCINumber*)OCI_ObjectGetAttr(obj, index, &ind);
@@ -401,7 +403,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Excep
             char buf[ORA_NUM_BUFSIZE];
             ub4 bs = ORA_NUM_BUFSIZE;
             if (conn->checkerr(OCINumberToText(conn->errhp, num, (const OraText*)ORA_NUM_FORMAT, ORA_NUM_FORMAT_SIZE, 0, 0, &bs, (OraText*)buf), 
-                               "obj2Qore() converting NUMERIC value to text", xsink))
+                               "objToQore() converting NUMERIC value to text", xsink))
                return 0;
             buf[bs] = 0;
             rv->setKeyValue(cname, new QoreNumberNode(buf), xsink);
