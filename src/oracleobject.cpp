@@ -759,7 +759,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	    else if (t && !strcmp(t, ORACLE_COLLECTION)) {
 	       OCI_Coll * o = collBindQore(d, n, xsink);
                if (o) {
-                  OCI_ElemSetColl2(&d->ocilib, e, o);
+                  OCI_ElemSetColl2(&d->ocilib, e, o, xsink);
                   OCI_CollFree2(&d->ocilib, o);
                }
             }

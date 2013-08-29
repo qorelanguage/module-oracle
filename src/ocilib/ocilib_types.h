@@ -925,7 +925,7 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetLob2(OCI_Library *pOCILib, OCI_Elem *elem,
 OCI_EXPORT OCI_Coll * OCI_API OCI_CollCreate2(OCI_Library *pOCILib, OCI_TypeInfo *typinf, ExceptionSink* xsink);
 OCI_EXPORT OCI_Coll * OCI_API OCI_ObjectGetColl2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, ExceptionSink* xsink);
 OCI_EXPORT OCI_Coll * OCI_API OCI_ElemGetColl2(OCI_Library *pOCILib, OCI_Elem *elem, ExceptionSink* xsink);
-OCI_EXPORT boolean OCI_API OCI_ElemSetColl2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Coll *value);
+OCI_EXPORT boolean OCI_API OCI_ElemSetColl2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Coll *value, ExceptionSink* xsink);
 OCI_EXPORT boolean OCI_API OCI_CollFree2(OCI_Library *pOCILib, OCI_Coll *coll);
 OCI_EXPORT OCI_Elem * OCI_API OCI_CollGetAt2(OCI_Library *pOCILib, OCI_Coll *coll, unsigned int index);
 OCI_EXPORT boolean OCI_API OCI_CollAppend2(OCI_Library *pOCILib, OCI_Coll *coll, OCI_Elem *elem);

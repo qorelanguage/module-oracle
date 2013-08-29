@@ -3,7 +3,13 @@
 %requires oracle
 printf("\nQore named types test - collections\n\n");
 
-my $db = new Datasource("oracle", "omqtest", "omqtest", "stimpy");
+my string $connstr;
+switch (gethostname()) {
+    case "qube": $connstr = "oracle:omquser2/omquser2@qube"; break;
+    default: $connstr = "oracle:omqtest/omqtest@stimpy"; break;
+}
+
+my Datasource $db($connstr);
 $db.open();
 
 

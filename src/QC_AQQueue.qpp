@@ -105,7 +105,6 @@ public:
    }
 
    DLLLOCAL void removeUnlocked(AQQueuePriv* o) {
-      assert(!quit);
       t_list::iterator i = objects.find(o);
       assert(i != objects.end());
       objects.erase(i);
