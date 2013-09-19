@@ -88,8 +88,8 @@ logical depencency:
 - @ref OracleExtensions::OracleDatasource
 - @ref OracleExtensions::OracleDatasourcePool
 
-OracleDatasource and OracleDatasourcePool are directly inherited from
-Qore::Datasource and Qore::DatasourcePool and all overriden methods keep
+OracleDatasource and OracleDatasourcePool includes 
+Qore::Datasource and Qore::DatasourcePool inside and all overriden methods keep
 their original properties: transaction handling, return data, optional arguments...
 
 @subsubsection instrumentation_info_scope Application Info Scope
@@ -229,17 +229,437 @@ hey, it's server here
 */
 
 
-namespace OracleExtensionsPriv {
+#! public OracleExtensions namespace defines stuff for use
+public namespace OracleExtensions {
 
-class OracleDatasourceBase
+#! A base class for OracleDatasource and OracleDatasourcePool. Not intended to be used directly.
+public class OracleDatasourceBase inherits AbstractDatasource
 {
     private {
         #! potential user Application Info set by beginTransaction or explicit call of setAppInfo
         *OracleExtensions::OracleApplicationInfo userInfo;
         #! user code used in setAutomaticDBInfo when there is no OracleApplicationInfo value provided
         *code autoCode;
+        
+        object m_ds;
     }
     
+    #! AbstractDatasource implementation for Datasource and datasourcePool
+    *string getDBName() { return m_ds.getDBName(); }
+    #! AbstractDatasource implementation for Datasource and datasourcePool
+    *string getUserName() { return m_ds.getUserName(); }
+    #! AbstractDatasource implementation for Datasource and datasourcePool
+    any getServerVersion() { return m_ds.getServerVersion(); }
+    #! AbstractDatasource implementation for Datasource and datasourcePool
+    *string getPassword() { return m_ds.getPassword(); }
+    #! AbstractDatasource implementation for Datasource and datasourcePool
+    hash getConfigHash() { return m_ds.getConfigHash(); }
+    #! AbstractDatasource implementation for Datasource and datasourcePool
+    *int getPort() { return m_ds.getPort(); }
+    #! AbstractDatasource implementation for Datasource and datasourcePool
+    string getConfigString() { return m_ds.getConfigString(); }
+    #! AbstractDatasource implementation for Datasource and datasourcePool
+    any getClientVersion() { return m_ds.getClientVersion(); }
+    #! AbstractDatasource implementation for Datasource and datasourcePool
+    *string getOSEncoding() { return m_ds.getOSEncoding(); }
+    #! AbstractDatasource implementation for Datasource and datasourcePool
+    string getDriverName() { return m_ds.getDriverName(); }
+    #! AbstractDatasource implementation for Datasource and datasourcePool
+    string getDBEncoding() { return m_ds.getDBEncoding(); }
+    #! AbstractDatasource implementation for Datasource and datasourcePool
+    *string getHostName() { return m_ds.getHostName(); }
+    #! AbstractDatasource implementation for Datasource and datasourcePool
+    bool inTransaction() { return m_ds.inTransaction(); }
+
+    #! Start new transaction with Aplication info set as strings
+    /**
+    @param client optional string, application info \c Client
+    @param module optional string, application info \c Module
+    @param action optional string, application info \c Action
+
+    Currently used application info will be used in any following
+    method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
+    */
+    nothing beginTransaction(*string client, *string module, *string action) {
+        m_ds.beginTransaction();
+        setAppInfo(client, module, action, False);
+    }
+    #! Start new transaction with Aplication info set as object
+    /**
+    @param info mandatory. Application info object instance
+
+    Currently used application info will be used in any following
+    method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
+    */
+    nothing beginTransaction(OracleExtensions::OracleApplicationInfo info) {
+        m_ds.beginTransaction();
+        setAppInfo(info, False);
+    }
+    #! Start new transaction with potential automatic Aplication info set
+    /**
+        There is no user info provided. OracleDatasource tries to find
+        the appropriate Application info automatically if possible.
+     */
+    nothing beginTransaction() {
+        m_ds.beginTransaction();
+        setAutomaticDBInfo(NOTHING, False);
+    }
+
+    #! exec with automatic approach of getting application info
+    /**
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method tries to find application info automatically. The previously set
+    info (beginTransaction, setAppInfo) is used or a context related info
+    is used in Qorus Integration Engine.
+     */
+    any exec(string sql) {
+        bool doRollback = setAutomaticDBInfo(); 
+        on_error {
+            if (doRollback)
+                rollback();
+        }
+        #setAutomaticDBInfo(NOTHING, False); 
+        return m_ds.vexec(sql, argv);
+    }
+
+    #! execRaw with automatic approach of getting application info
+    /**
+        @param sql a SQL statement 
+        @retval any a result as in parent class method
+
+    This method tries to find application info automatically. The previously set
+    info (beginTransaction, setAppInfo) is used or a context related info
+    is used in Qorus Integration Engine.
+     */
+    any execRaw(string sql) {
+        bool doRollback = setAutomaticDBInfo(); 
+        on_error {
+            if (doRollback)
+                rollback();
+        }
+        #setAutomaticDBInfo(NOTHING, False); 
+        return m_ds.execRaw(sql);
+    }
+
+    #! select with automatic approach of getting application info
+    /**
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method tries to find application info automatically. The previously set
+    info (beginTransaction, setAppInfo) is used or a context related info
+    is used in Qorus Integration Engine.
+     */
+    any select(string sql) {
+        bool doRollback = setAutomaticDBInfo(); 
+        on_exit {
+            if (doRollback)
+                rollback();
+        }
+        return m_ds.vselect(sql, argv);
+    }
+
+    #! selectRow with automatic approach of getting application info
+    /**
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method tries to find application info automatically. The previously set
+    info (beginTransaction, setAppInfo) is used or a context related info
+    is used in Qorus Integration Engine.
+     */
+    any selectRow(string sql) {
+        bool doRollback = setAutomaticDBInfo(); 
+        on_exit {
+            if (doRollback)
+                rollback();
+        }
+        return m_ds.vselectRow(sql, argv);
+    }
+
+    #! selectRows with automatic approach of getting application info
+    /**
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method tries to find application info automatically. The previously set
+    info (beginTransaction, setAppInfo) is used or a context related info
+    is used in Qorus Integration Engine.
+     */
+    any selectRows(string sql) {
+        bool doRollback = setAutomaticDBInfo(); 
+        on_exit {
+            if (doRollback)
+                rollback();
+        }
+        return m_ds.vselectRows(sql, argv);
+    }
+
+    #! vexec with automatic approach of getting application info
+    /**
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method tries to find application info automatically. The previously set
+    info (beginTransaction, setAppInfo) is used or a context related info
+    is used in Qorus Integration Engine.
+     */
+    any vexec(string sql, softlist vargs) {
+        bool doRollback = setAutomaticDBInfo(); 
+        on_error {
+            if (doRollback)
+                rollback();
+        }
+        #setAutomaticDBInfo(NOTHING, False); 
+        return m_ds.vexec(sql, vargs);
+    }
+
+    #! vselect with automatic approach of getting application info
+    /**
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method tries to find application info automatically. The previously set
+    info (beginTransaction, setAppInfo) is used or a context related info
+    is used in Qorus Integration Engine.
+     */
+    any vselect(string sql, softlist vargs) {
+        bool doRollback = setAutomaticDBInfo(); 
+        on_exit {
+            if (doRollback)
+                rollback();
+        }
+        return m_ds.vselect(sql, vargs);
+    }
+
+    #! vselectRow with automatic approach of getting application info
+    /**
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method tries to find application info automatically. The previously set
+    info (beginTransaction, setAppInfo) is used or a context related info
+    is used in Qorus Integration Engine.
+     */
+    any vselectRow(string sql, softlist vargs) {
+        bool doRollback = setAutomaticDBInfo(); 
+        on_exit {
+            if (doRollback)
+                rollback();
+        }
+        return m_ds.vselectRow(sql, vargs);
+    }
+
+    #! vselectRows with automatic approach of getting application info
+    /**
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method tries to find application info automatically. The previously set
+    info (beginTransaction, setAppInfo) is used or a context related info
+    is used in Qorus Integration Engine.
+     */
+    any vselectRows(string sql, softlist vargs) {
+        bool doRollback = setAutomaticDBInfo(); 
+        on_exit {
+            if (doRollback)
+                rollback();
+        }
+        return m_ds.vselectRows(sql, vargs);
+    }
+
+    #! exec with user defined application info
+    /**
+        @param info a OracleExtensions::OracleApplicationInfo instance
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method sets given application info. The previously set
+    info (beginTransaction, setAppInfo) is overriden and the context related info
+    is skipped.
+     */
+    any exec(OracleExtensions::OracleApplicationInfo info, string sql) {
+        bool doRollback = setAutomaticDBInfo(info); 
+        on_error {
+            if (doRollback)
+                rollback();
+        }
+        #setAutomaticDBInfo(info, False); 
+        return m_ds.vexec(sql, argv);
+    }
+
+    #! execRaw with user defined application info
+    /**
+        @param info a OracleExtensions::OracleApplicationInfo instance
+        @param sql a SQL statement 
+        @retval any a result as in parent class method
+
+    This method sets given application info. The previously set
+    info (beginTransaction, setAppInfo) is overriden and the context related info
+    is skipped.
+     */
+    any execRaw(OracleExtensions::OracleApplicationInfo info, string sql) {
+        bool doRollback = setAutomaticDBInfo(info); 
+        on_error {
+            if (doRollback)
+                rollback();
+        }
+        #setAutomaticDBInfo(info, False); 
+        return m_ds.execRaw(sql);
+    }
+
+    #! select with user defined application info
+    /**
+        @param info a OracleExtensions::OracleApplicationInfo instance
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method sets given application info. The previously set
+    info (beginTransaction, setAppInfo) is overriden and the context related info
+    is skipped.
+     */
+    any select(OracleExtensions::OracleApplicationInfo info, string sql) {
+        bool doRollback = setAutomaticDBInfo(info); 
+        on_exit {
+            if (doRollback)
+                rollback();
+        }
+        return m_ds.vselect(sql, argv);
+    }
+
+    #! selectRow with user defined application info
+    /**
+        @param info a OracleExtensions::OracleApplicationInfo instance
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method sets given application info. The previously set
+    info (beginTransaction, setAppInfo) is overriden and the context related info
+    is skipped.
+     */
+    any selectRow(OracleExtensions::OracleApplicationInfo info, string sql) {
+        bool doRollback = setAutomaticDBInfo(info); 
+        on_exit {
+            if (doRollback)
+                rollback();
+        }
+        return m_ds.vselectRow(sql, argv);
+    }
+
+    #! selectRows with user defined application info
+    /**
+        @param info a OracleExtensions::OracleApplicationInfo instance
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method sets given application info. The previously set
+    info (beginTransaction, setAppInfo) is overriden and the context related info
+    is skipped.
+     */
+    any selectRows(OracleExtensions::OracleApplicationInfo info, string sql) {
+        bool doRollback = setAutomaticDBInfo(info); 
+        on_exit {
+            if (doRollback)
+                rollback();
+        }
+        return m_ds.vselectRows(sql, argv);
+    }
+
+    #! vexec with user defined application info
+    /**
+        @param info a OracleExtensions::OracleApplicationInfo instance
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method sets given application info. The previously set
+    info (beginTransaction, setAppInfo) is overriden and the context related info
+    is skipped.
+     */
+    any vexec(OracleExtensions::OracleApplicationInfo info, string sql) {
+        bool doRollback = setAutomaticDBInfo(info); 
+        on_error {
+            if (doRollback)
+                rollback();
+        }
+        #setAutomaticDBInfo(info, False); 
+        return m_ds.vexec(sql, elements argv ? argv[0] : NOTHING);
+    }
+
+    #! vselect with user defined application info
+    /**
+        @param info a OracleExtensions::OracleApplicationInfo instance
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method sets given application info. The previously set
+    info (beginTransaction, setAppInfo) is overriden and the context related info
+    is skipped.
+     */
+    any vselect(OracleExtensions::OracleApplicationInfo info, string sql) {
+        bool doRollback = setAutomaticDBInfo(info); 
+        on_exit {
+            if (doRollback)
+                rollback();
+        }
+        return m_ds.vselect(sql, elements argv ? argv[0] : NOTHING);
+    }
+
+    #! vselectRow with user defined application info
+    /**
+        @param info a OracleExtensions::OracleApplicationInfo instance
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method sets given application info. The previously set
+    info (beginTransaction, setAppInfo) is overriden and the context related info
+    is skipped.
+     */
+    any vselectRow(OracleExtensions::OracleApplicationInfo info, string sql) {
+        bool doRollback = setAutomaticDBInfo(info); 
+        on_exit {
+            if (doRollback)
+                rollback();
+        }
+        return m_ds.vselectRow(sql, elements argv ? argv[0] : NOTHING);
+    }
+
+    #! vselectRows with user defined application info
+    /**
+        @param info a OracleExtensions::OracleApplicationInfo instance
+        @param sql a SQL statement 
+        @param ... binding arguments as in parent class method
+        @retval any a result as in parent class method
+
+    This method sets given application info. The previously set
+    info (beginTransaction, setAppInfo) is overriden and the context related info
+    is skipped.
+     */
+    any vselectRows(OracleExtensions::OracleApplicationInfo info, string sql) {
+        bool doRollback = setAutomaticDBInfo(info); 
+        on_exit {
+            if (doRollback)
+                rollback();
+        }
+        return m_ds.vselectRows(sql, elements argv ? argv[0] : NOTHING);
+    }
+
 }
 
 #! Fill the attributes. @param userAutoInfo see @ref instrumentation_info_auto
@@ -248,18 +668,20 @@ OracleDatasourceBase::constructor(*code userAutoInfo) {
     autoCode = userAutoInfo;
 }
 
-#! Pre-Commit wrapper. Clear App Info or DBMS_OUTPUT if required
-OracleDatasourceBase::commit(object ds) {
+#! Commit the transaction. Application info is cleared. DBMS_OUTPUT disabled.
+nothing OracleDatasourceBase::commit() {
     # required to clear info
-    setAppInfo(ds, NOTHING, False);
-    outputDisable(ds);
+    setAppInfo(NOTHING, False);
+    outputDisable();
+    m_ds.commit();
 }
 
-#! Pre-Rollback wrapper. Clear App Info or DBMS_OUTPUT if required
-OracleDatasourceBase::rollback(object ds) {
+#! Rollback the transaction. Application info is cleared. DBMS_OUTPUT disabled.
+nothing OracleDatasourceBase::rollback() {
     # required to clear info
-    setAppInfo(ds, NOTHING, False);
-    outputDisable(ds);
+    setAppInfo(NOTHING, False);
+    outputDisable();
+    m_ds.rollback();
 }
 
 #! Obtain info about transaction capturing and try to get available Application Info
@@ -275,7 +697,7 @@ OracleDatasourceBase::rollback(object ds) {
         - exec: yes! do not rollback - the transaction will be handled upsetream in user code
 
  */
-bool OracleDatasourceBase::setAutomaticDBInfo(object ds, *OracleExtensions::OracleApplicationInfo item, bool checkTransaction=True) {
+bool OracleDatasourceBase::setAutomaticDBInfo(*OracleExtensions::OracleApplicationInfo item, bool checkTransaction=True) {
 
     # do not set auto info when there is already user defined one
     if (!exists item && exists userInfo) {
@@ -285,7 +707,7 @@ bool OracleDatasourceBase::setAutomaticDBInfo(object ds, *OracleExtensions::Orac
     # ensure there is no transaction at the beginning to be safe
     # to ROLLBACK auditing changes
     bool doRollback = False;
-    if (checkTransaction && !ds.currentThreadInTransaction()) {
+    if (checkTransaction && !m_ds.currentThreadInTransaction()) {
         doRollback = True;
     }
 
@@ -299,20 +721,20 @@ bool OracleDatasourceBase::setAutomaticDBInfo(object ds, *OracleExtensions::Orac
     }
 
     if (audit) {
-        setAppInfo(ds, audit);
+        setAppInfo(audit);
     }
 
     return doRollback;
 }
 
 #! An overloaded method with the same functionality as the 
-OracleDatasourceBase::setAppInfo(object ds, *string client, *string module, *string action, bool fromSystem=True) {
+OracleDatasourceBase::setAppInfo(*string client, *string module, *string action, bool fromSystem=True) {
     OracleExtensions::OracleApplicationInfo item(client, module, action);
     if (!item.isEmpty())
-        setAppInfo(ds, item, fromSystem);
+        setAppInfo(item, fromSystem);
 }
 
-OracleDatasourceBase::setAppInfo(object ds, *OracleExtensions::OracleApplicationInfo audit, bool fromSystem=True) {
+OracleDatasourceBase::setAppInfo(*OracleExtensions::OracleApplicationInfo audit, bool fromSystem=True) {
     if (exists userInfo && (!exists audit || audit.isEmpty())) {
         userInfo = NOTHING;
     }
@@ -327,7 +749,7 @@ OracleDatasourceBase::setAppInfo(object ds, *OracleExtensions::OracleApplication
     }
 
     try {
-        ds.exec_priv("begin
+        m_ds.exec("begin
                 dbms_application_info.set_client_info(%v);
                 dbms_application_info.set_module(%v, %v);
             end;", audit.client, audit.module, audit.action);
@@ -340,8 +762,8 @@ OracleDatasourceBase::setAppInfo(object ds, *OracleExtensions::OracleApplication
     }
 }
 
-OracleDatasourceBase::setLongOpsProgress(object ds, OracleLongOps lo) {
-    hash res = ds.exec_priv("declare
+OracleDatasourceBase::setLongOpsProgress(OracleLongOps lo) {
+    hash res = m_ds.exec("declare
         v_rindex     PLS_INTEGER := %v;
         v_slno       PLS_INTEGER := %v;
         v_obj        PLS_INTEGER;
@@ -375,35 +797,35 @@ OracleDatasourceBase::setLongOpsProgress(object ds, OracleLongOps lo) {
         lo.setSlno(res.out_slno);
 }
 
-OracleDatasourceBase::outputEnable(object ds, *int bufferSize) {
+OracleDatasourceBase::outputEnable(*int bufferSize) {
     if (exists bufferSize && (bufferSize < 2000 || bufferSize > 1000000)) {
         throw "ORACLE-SERVEROUTPUT-ERROR", sprintf("Buffer size has to be between 2000 and 1000000. Got: %d", bufferSize);
     }
-    ds.exec_priv("begin dbms_output.enable(%v); end;", bufferSize);
+    m_ds.exec("begin dbms_output.enable(%v); end;", bufferSize);
 }
 
-OracleDatasourceBase::outputDisable(object ds) {
-    if (ds.currentThreadInTransaction()) {
-        ds.exec_priv("begin dbms_output.disable(); end;");
+OracleDatasourceBase::outputDisable() {
+    if (m_ds.currentThreadInTransaction()) {
+        m_ds.exec("begin dbms_output.disable(); end;");
     }
 }
 
-OracleDatasourceBase::outputPut(object ds, softstring text) {
-    outputEnable(ds);
-    ds.exec_priv("begin dbms_output.put(%v); end;", text);
+OracleDatasourceBase::outputPut(softstring text) {
+    outputEnable();
+    m_ds.exec("begin dbms_output.put(%v); end;", text);
 }
 
-OracleDatasourceBase::outputPutLine(object ds, softstring text) {
-    outputEnable(ds);
-    ds.exec_priv("begin dbms_output.put_line(%v); end;", text);
+OracleDatasourceBase::outputPutLine(softstring text) {
+    outputEnable();
+    m_ds.exec("begin dbms_output.put_line(%v); end;", text);
 }
 
-*string OracleDatasourceBase::outputGet(object ds) {
+*string OracleDatasourceBase::outputGet() {
     int valid = 0;
     string result;
     
     while (valid == 0) {
-        hash res = ds.exec_priv("begin dbms_output.get_line(:line, :valid); end;", Type::String, Type::Int);
+        hash res = m_ds.exec("begin dbms_output.get_line(:line, :valid); end;", Type::String, Type::Int);
         valid = res.valid;
         if (valid == 0)
             result += res.line + "\n";
@@ -411,12 +833,6 @@ OracleDatasourceBase::outputPutLine(object ds, softstring text) {
     
     return result;
 }
-
-} # namespace OracleExtensionsPriv
-
-
-#! public OracleExtensions namespace defines stuff for use
-public namespace OracleExtensions {
 
 #! OracleExtensions::OracleApplicationInfo holds user info for @ref instrumentation_info
 /** Objects of this class do not execute any functionality.
@@ -601,1047 +1017,97 @@ OracleLongOps::setSlno(int i) {
 
 #! OracleDatasourcePool class implementation
 /**
-Directly inherited from Qore::DatasourcePool.
+It wraps Qore::DatasourcePool.
  */
-public class OracleDatasourcePool inherits DatasourcePool, OracleExtensionsPriv::OracleDatasourceBase {
+public class OracleDatasourcePool inherits OracleExtensions::OracleDatasourceBase {
 
     #! Standard Qore::DatasourcePool constructor
     /**
         @param userAutoInfo see @ref instrumentation_info_auto
      */
     constructor(string driver, *string user, *string pass, *string db, *string encoding, *string host, softint min=3, softint max=10, softint port=0, *code userAutoInfo)
-        : DatasourcePool(driver, user, pass, db, encoding, host, min, max),
-          OracleExtensionsPriv::OracleDatasourceBase(userAutoInfo)
+        : OracleExtensions::OracleDatasourceBase(userAutoInfo)
     {
+        m_ds = new DatasourcePool(driver, user, pass, db, encoding, host, min, max);
     }
     #! Standard Qore::DatasourcePool constructor
     /**
         @param userAutoInfo see @ref instrumentation_info_auto
      */
     constructor(string desc, *code userAutoInfo)
-        : DatasourcePool(desc),
-          OracleExtensionsPriv::OracleDatasourceBase(userAutoInfo)
+        : OracleExtensions::OracleDatasourceBase(userAutoInfo)
     {
+        m_ds = new DatasourcePool(desc);
     }
     #! Standard Qore::DatasourcePool constructor
     /**
         @param userAutoInfo see @ref instrumentation_info_auto
      */
     constructor(hash opts, *code userAutoInfo)
-        : DatasourcePool(opts),
-          OracleExtensionsPriv::OracleDatasourceBase(userAutoInfo)
+        : OracleExtensions::OracleDatasourceBase(userAutoInfo)
     {
+        m_ds = new DatasourcePool(opts);
     }
-    #! New constructor: use login attributes from already existing DatasourcePool.
-    /** The original DatasourcePool staus unaffected as in DatasourcePool::copy() method.
+    #! New constructor: use already existing DatasourcePool.
+    /** The original DatasourcePool is embedded into this object.
 
         @param userAutoInfo see @ref instrumentation_info_auto
      */
     constructor(DatasourcePool ds, *code userAutoInfo)
-        : DatasourcePool(ds.getConfigHash()),
-          OracleExtensionsPriv::OracleDatasourceBase(userAutoInfo)
+        : OracleExtensions::OracleDatasourceBase(userAutoInfo)
     {
+        m_ds = ds;
     }
-    
-    # used to access original "::exec" from OracleDatasourceBase
-    private any exec_priv(string sql) {
-        return DatasourcePool::vexec(sql, argv);
-    }
-
-    #! Commit the transaction. Application info is cleared. DBMS_OUTPUT disabled.
-    commit() {
-        OracleExtensionsPriv::OracleDatasourceBase::commit(self);
-        DatasourcePool::commit();
-    }
-
-    #! Rollback the transaction. Application info is cleared. DBMS_OUTPUT disabled.
-    rollback() {
-        OracleExtensionsPriv::OracleDatasourceBase::rollback(self);
-        DatasourcePool::rollback();
-    }
-
-    #! Start new transaction with Aplication info set as strings
-    /**
-        @param client optional string, application info \c Client
-        @param module optional string, application info \c Module
-        @param action optional string, application info \c Action
-
-        Currently used application info will be used in any following
-        method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
-     */
-    beginTransaction(*string client, *string module, *string action) {
-        DatasourcePool::beginTransaction();
-        setAppInfo(self, client, module, action, False);
-    }
-    #! Start new transaction with Aplication info set as object
-    /**
-        @param info mandatory. Application info object instance
-
-        Currently used application info will be used in any following
-        method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
-     */
-    beginTransaction(OracleExtensions::OracleApplicationInfo info) {
-        DatasourcePool::beginTransaction();
-        setAppInfo(self, info, False);
-    }
-    #! Start new transaction with potential automatic Aplication info set
-    /**
-        There is no user info provided. OracleDatasourcePool tries to find
-        the appropriate Application info automatically if possible.
-     */
-    beginTransaction() {
-        DatasourcePool::beginTransaction();
-        setAutomaticDBInfo(self, NOTHING, False);
-    }
-
-    #! exec with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any exec(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_error {
-            if (doRollback)
-                rollback();
-        }
-        #setAutomaticDBInfo(self, NOTHING, False); 
-        return DatasourcePool::vexec(sql, argv);
-    }
-
-    #! execRaw with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any execRaw(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_error {
-            if (doRollback)
-                rollback();
-        }
-        #setAutomaticDBInfo(self, NOTHING, False); 
-        return DatasourcePool::execRaw(sql);
-    }
-
-    #! select with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any select(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return DatasourcePool::vselect(sql, argv);
-    }
-
-    #! selectRow with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any selectRow(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return DatasourcePool::vselectRow(sql, argv);
-    }
-
-    #! selectRows with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any selectRows(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return DatasourcePool::vselectRows(sql, argv);
-    }
-
-    #! vexec with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any vexec(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_error {
-            if (doRollback)
-                rollback();
-        }
-        #setAutomaticDBInfo(self, NOTHING, False); 
-        return DatasourcePool::vexec(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! vselect with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any vselect(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return DatasourcePool::vselect(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! vselectRow with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any vselectRow(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return DatasourcePool::vselectRow(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! vselectRows with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any vselectRows(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return DatasourcePool::vselectRows(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! exec with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any exec(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_error {
-            if (doRollback)
-                rollback();
-        }
-        #setAutomaticDBInfo(self, info, False); 
-        return DatasourcePool::vexec(sql, argv);
-    }
-
-    #! execRaw with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any execRaw(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_error {
-            if (doRollback)
-                rollback();
-        }
-        #setAutomaticDBInfo(self, info, False); 
-        return DatasourcePool::execRaw(sql);
-    }
-
-    #! select with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any select(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return DatasourcePool::vselect(sql, argv);
-    }
-
-    #! selectRow with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any selectRow(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return DatasourcePool::vselectRow(sql, argv);
-    }
-
-    #! selectRows with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any selectRows(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return DatasourcePool::vselectRows(sql, argv);
-    }
-
-    #! vexec with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any vexec(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_error {
-            if (doRollback)
-                rollback();
-        }
-        #setAutomaticDBInfo(self, info, False); 
-        return DatasourcePool::vexec(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! vselect with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any vselect(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return DatasourcePool::vselect(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! vselectRow with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any vselectRow(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return DatasourcePool::vselectRow(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! vselectRows with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any vselectRows(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return DatasourcePool::vselectRows(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! Set user application info and assign the transaction lock
-    /*
-        @param client optional string, application info \c Client
-        @param module optional string, application info \c Module
-        @param action optional string, application info \c Action
-
-        Currently used application info will be used in any following
-        method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
-     */
-    setAppInfo(*string client, *string module, *string action) {
-        OracleDatasourceBase::setAppInfo(self, client, module, action, False);
-    }
-    #! Set user application info and assign the transaction lock
-    /**
-        @param info mandatory. Application info object instance
-
-        Currently used application info will be used in any following
-        method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
-     */
-    setAppInfo(OracleExtensions::OracleApplicationInfo info) {
-        OracleDatasourceBase::setAppInfo(self, info, False);
-    }
-
-    #! set @ref instrumentation_longops progress
-    /**
-        @param lo an OracleExtensions::OracleLongOps instance
-     */
-    setLongOpsProgress(OracleExtensions::OracleLongOps lo) {
-        OracleDatasourceBase::setLongOpsProgress(self, lo);
-    }
-
-    /** @brief Enable output buffering.
-
-    @param bufferSize a size of buffer in 2000-1000000 interval or NOTHING
-
-    If there are multiple calls to ENABLE, then buffer_size is the last
-    of the values specified. The maximum size is 1,000,000, and
-    the minimum is 2,000 when the user specifies bufferSize.
-
-    NOTHING is expected to be the usual choice. The default is 20,000
-    for backwards compatibility with earlier database versions that did
-    not support unlimited buffering.
-    */
-    outputEnable(*int bufferSize) {
-        OracleDatasourceBase::outputEnable(self, bufferSize);
-    }
-
-    #! Disable the output buffering
-    outputDisable() {
-        OracleDatasourceBase::outputDisable(self);
-    }
-
-    #! Put string into the buffer without new line at the end
-    outputPut(softstring text) {
-        OracleDatasourceBase::outputPut(self, text);
-    }
-
-    #! Put string into the buffer with new line at the end
-    outputPutLine(softstring text) {
-        OracleDatasourceBase::outputPutLine(self, text);
-    }
-
-    #! Get the DBMS server outout buffer content.
-    /**
-        @retval *string a buffer content or NOTHING if there is no server outout enabled
-     */
-    *string outputGet() {
-        return OracleDatasourceBase::outputGet(self);
-    }
-
 
 } # class OracleDatasourcePool
 
 
 #! OracleDatasource class implementation
 /**
-Directly inherited from Qore::Datasource.
+It wraps from Qore::Datasource.
  */
-public class OracleDatasource inherits Datasource, OracleExtensionsPriv::OracleDatasourceBase {
+public class OracleDatasource inherits OracleExtensions::OracleDatasourceBase {
 
     #! Standard Qore::DatasourcePool constructor
     /**
         @param userAutoInfo see @ref instrumentation_info_auto
      */
     constructor(string driver, *string user, *string pass, *string db, *string encoding, *string host, softint port=0, *code userAutoInfo)
-        : Datasource(driver, user, pass, db, encoding, host, port),
-          OracleExtensionsPriv::OracleDatasourceBase(userAutoInfo)
+        : OracleExtensions::OracleDatasourceBase(userAutoInfo)
     {
+        m_ds = new Datasource(driver, user, pass, db, encoding, host, port);
     }
     #! Standard Qore::DatasourcePool constructor
     /**
         @param userAutoInfo see @ref instrumentation_info_auto
      */
     constructor(string desc, *code userAutoInfo)
-        : Datasource(desc),
-          OracleExtensionsPriv::OracleDatasourceBase(userAutoInfo)
+        : OracleExtensions::OracleDatasourceBase(userAutoInfo)
     {
+        m_ds = new Datasource(desc);
     }
     #! Standard Qore::DatasourcePool constructor
     /**
         @param userAutoInfo see @ref instrumentation_info_auto
      */
     constructor(hash opts, *code userAutoInfo)
-        : Datasource(opts),
-          OracleExtensionsPriv::OracleDatasourceBase(userAutoInfo)
+        : OracleExtensions::OracleDatasourceBase(userAutoInfo)
     {
+        m_ds = new Datasource(opts);
     }
-    #! New constructor: use login attributes from already existing DatasourcePool.
-    /** The original Datasource staus unaffected as in Datasource::copy() method.
+    #! New constructor: use  already existing Datasource
+    /** The original Datasource is embedded into this instance.
     
         @param userAutoInfo see @ref instrumentation_info_auto
      */
     constructor(Datasource ds, *code userAutoInfo)
-        : Datasource(ds.getConfigHash()),
-          OracleExtensionsPriv::OracleDatasourceBase(userAutoInfo)
+        : OracleExtensions::OracleDatasourceBase(userAutoInfo)
     {
+        m_ds = ds;
     }
-
-    # used to access original "::exec" from OracleDatasourceBase
-    private any exec_priv(string sql) {
-        return Datasource::vexec(sql, argv);
-    }
-
-    #! Commit the transaction. Application info is cleared. DBMS_OUTPUT disabled.
-    commit() {
-        OracleExtensionsPriv::OracleDatasourceBase::commit(self);
-        Datasource::commit();
-    }
-
-    #! Rollback the transaction. Application info is cleared. DBMS_OUTPUT disabled.
-    rollback() {
-        OracleExtensionsPriv::OracleDatasourceBase::rollback(self);
-        Datasource::rollback();
-    }
-
-    #! Start new transaction with Aplication info set as strings
-    /**
-    @param client optional string, application info \c Client
-    @param module optional string, application info \c Module
-    @param action optional string, application info \c Action
-
-    Currently used application info will be used in any following
-    method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
-    */
-    beginTransaction(*string client, *string module, *string action) {
-        Datasource::beginTransaction();
-        setAppInfo(self, client, module, action, False);
-    }
-    #! Start new transaction with Aplication info set as object
-    /**
-    @param info mandatory. Application info object instance
-
-    Currently used application info will be used in any following
-    method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
-    */
-    beginTransaction(OracleExtensions::OracleApplicationInfo info) {
-        Datasource::beginTransaction();
-        setAppInfo(self, info, False);
-    }
-    #! Start new transaction with potential automatic Aplication info set
-    /**
-        There is no user info provided. OracleDatasource tries to find
-        the appropriate Application info automatically if possible.
-     */
-    beginTransaction() {
-        Datasource::beginTransaction();
-        setAutomaticDBInfo(self, NOTHING, False);
-    }
-
-    #! exec with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any exec(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_error {
-            if (doRollback)
-                rollback();
-        }
-        #setAutomaticDBInfo(self, NOTHING, False); 
-        return Datasource::vexec(sql, argv);
-    }
-
-    #! execRaw with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any execRaw(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_error {
-            if (doRollback)
-                rollback();
-        }
-        #setAutomaticDBInfo(self, NOTHING, False); 
-        return Datasource::execRaw(sql);
-    }
-
-    #! select with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any select(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return Datasource::vselect(sql, argv);
-    }
-
-    #! selectRow with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any selectRow(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return Datasource::vselectRow(sql, argv);
-    }
-
-    #! selectRows with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any selectRows(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return Datasource::vselectRows(sql, argv);
-    }
-
-    #! vexec with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any vexec(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_error {
-            if (doRollback)
-                rollback();
-        }
-        #setAutomaticDBInfo(self, NOTHING, False); 
-        return Datasource::vexec(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! vselect with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any vselect(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return Datasource::vselect(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! vselectRow with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any vselectRow(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return Datasource::vselectRow(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! vselectRows with automatic approach of getting application info
-    /**
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method tries to find application info automatically. The previously set
-    info (beginTransaction, setAppInfo) is used or a context related info
-    is used in Qorus Integration Engine.
-     */
-    any vselectRows(string sql) {
-        bool doRollback = setAutomaticDBInfo(self); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return Datasource::vselectRows(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! exec with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any exec(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_error {
-            if (doRollback)
-                rollback();
-        }
-        #setAutomaticDBInfo(self, info, False); 
-        return Datasource::vexec(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! execRaw with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any execRaw(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_error {
-            if (doRollback)
-                rollback();
-        }
-        #setAutomaticDBInfo(self, info, False); 
-        return Datasource::execRaw(sql);
-    }
-
-    #! select with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any select(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return Datasource::vselect(sql, argv);
-    }
-
-    #! selectRow with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any selectRow(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return Datasource::vselectRow(sql, argv);
-    }
-
-    #! selectRows with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any selectRows(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return Datasource::vselectRows(sql, argv);
-    }
-
-    #! vexec with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any vexec(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_error {
-            if (doRollback)
-                rollback();
-        }
-        #setAutomaticDBInfo(self, info, False); 
-        return Datasource::vexec(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! vselect with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any vselect(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return Datasource::vselect(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! vselectRow with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any vselectRow(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return Datasource::vselectRow(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! vselectRows with user defined application info
-    /**
-        @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
-        @param ... binding arguments as in parent class method
-        @retval any a result as in parent class method
-
-    This method sets given application info. The previously set
-    info (beginTransaction, setAppInfo) is overriden and the context related info
-    is skipped.
-     */
-    any vselectRows(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(self, info); 
-        on_exit {
-            if (doRollback)
-                rollback();
-        }
-        return Datasource::vselectRows(sql, elements argv ? argv[0] : NOTHING);
-    }
-
-    #! Set user application info and assign the transaction lock
-    /*
-        @param client optional string, application info \c Client
-        @param module optional string, application info \c Module
-        @param action optional string, application info \c Action
-
-        Currently used application info will be used in any following
-        method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
-     */
-    setAppInfo(*string client, *string module, *string action) {
-        OracleExtensionsPriv::OracleDatasourceBase::setAppInfo(self, client, module, action, False);
-    }
-    #! Set user application info and assign the transaction lock
-    /**
-        @param info mandatory. Application info object instance
-
-        Currently used application info will be used in any following
-        method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
-     */
-    setAppInfo(OracleExtensions::OracleApplicationInfo info) {
-        OracleDatasourceBase::setAppInfo(self, info, False);
-    }
-
-    #! set @ref instrumentation_longops progress
-    /**
-        @param lo an OracleExtensions::OracleLongOps instance
-     */
-    setLongOpsProgress(OracleExtensions::OracleLongOps lo) {
-        OracleDatasourceBase::setLongOpsProgress(self, lo);
-    }
-
-    /** @brief Enable output buffering.
-
-    @param bufferSize a size of buffer in 2000-1000000 interval or NOTHING
-
-    If there are multiple calls to ENABLE, then buffer_size is the last
-    of the values specified. The maximum size is 1,000,000, and
-    the minimum is 2,000 when the user specifies bufferSize.
-
-    NOTHING is expected to be the usual choice. The default is 20,000
-    for backwards compatibility with earlier database versions that did
-    not support unlimited buffering.
-    */
-    outputEnable(*int bufferSize) {
-        OracleDatasourceBase::outputEnable(self, bufferSize);
-    }
-
-    /** @brief Disable the output buffering
-    */
-    outputDisable() {
-        OracleDatasourceBase::outputDisable(self);
-    }
-
-    #! Put string into the buffer without new line at the end
-    outputPut(softstring text) {
-        OracleDatasourceBase::outputPut(self, text);
-    }
-
-    #! Put string into the buffer with new line at the end
-    outputPutLine(softstring text) {
-        OracleDatasourceBase::outputPutLine(self, text);
-    }
-
-    #! Get the DBMS server outout buffer content.
-    /**
-        @retval *string a buffer content or NOTHING if there is no server outout enabled
-     */
-    *string outputGet() {
-        return OracleDatasourceBase::outputGet(self);
+    
+    nothing setAutoCommit(bool auto) {
+        m_ds.setAutoCommit(auto);
     }
 
 } # class OracleDatasource
@@ -1664,6 +1130,7 @@ any sub test(object o, string m) {
 }
 
 sub testData(object o1, object o2, string m) {
+    #printf("test: %s\n", m);
     any d1 = callObjectMethodArgs(o1, m, argv);
     any d2 = callObjectMethodArgs(o2, m, argv);
     
@@ -1682,7 +1149,7 @@ sub backRunLogger() {
     d.setAppInfo("OracleExtension module", "background thread", "tty logging");
     string sql = "select sid, status, client_info, module, action from v$session where username = %v and module != 'TOra'";
     while (backRun) {
-        printf("%N\n\n", d.selectRows(sql, d.getUserName().upr()));
+        #printf("%N\n\n", d.selectRows(sql, d.getUserName().upr()));
         sleep(1s);
     }
 }
@@ -1806,21 +1273,30 @@ sub testDataDiffs() {
     sleep(1s);
 }
 
+sub testPoolConnectionCount() {
+    DatasourcePool ds(connstr);
+    OracleDatasourcePool ds1(ds);
+    OracleDatasourcePool ds2(ds);
+    OracleDatasourcePool ds3(ds);
+    background baseTest(ds1);
+    background baseTest(ds2);
+    background baseTest(ds3);
+}
+
 {
     background backRunLogger();
     on_exit backRun = False;
 
     OracleExtensions::OracleDatasource dd(connstr, \getAutoInfo());
     dd.setAutoCommit(False);
-    
     baseTest(dd);
     
     OracleExtensions::OracleDatasourcePool dp(connstr, \getAutoInfo());
-   
     baseTest(dp);
     
     testDataDiffs();
 
+    testPoolConnectionCount();
 }
 
 %endif
