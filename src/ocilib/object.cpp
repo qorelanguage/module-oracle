@@ -967,12 +967,6 @@ OCI_Object * OCI_API OCI_ObjectGetObject2(OCI_Library *pOCILib, OCI_Object *obj,
 /* ------------------------------------------------------------------------ *
  * OCI_ObjectGetLob
  * ------------------------------------------------------------------------ */
-/*
-OCI_Lob * OCI_API OCI_ObjectGetLob(OCI_Object *obj, const mtext *attr)
-{
-    return OCI_ObjectGetLob2(&OCILib, obj, attr);
-}
-*/
 OCI_Lob * OCI_API OCI_ObjectGetLob2(OCI_Library * pOCILib, OCI_Object *obj, const mtext *attr)
 {
     OCI_Lob *lob = NULL;
@@ -1345,15 +1339,7 @@ boolean OCI_API OCI_ObjectSetInterval2(OCI_Library *pOCILib, OCI_Object *obj, co
 /* ------------------------------------------------------------------------ *
  * OCI_ObjectSetColl
  * ------------------------------------------------------------------------ */
-/*
-boolean OCI_API OCI_ObjectSetColl(OCI_Object *obj, const mtext *attr,
-                                  OCI_Coll *value)
-{
-   return OCI_ObjectSetColl2(&OCILib, obj, attr, value);
-}
-*/
-boolean OCI_API OCI_ObjectSetColl2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr,
-                                  OCI_Coll *value)
+boolean OCI_API OCI_ObjectSetColl2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, OCI_Coll *value, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
@@ -1370,11 +1356,11 @@ boolean OCI_API OCI_ObjectSetColl2(OCI_Library *pOCILib, OCI_Object *obj, const 
             OCIInd   *ind  = NULL;
             OCIColl **data = (OCIColl**)OCI_ObjectGetAttr(obj, index, &ind);
 
-            OCI_CALL2
+            OCI_CALL2Q
             (
                 pOCILib, res, obj->con,
 
-                OCICollAssign(pOCILib->env, obj->con->err, value->handle, *data)
+                OCICollAssign(pOCILib->env, obj->con->err, value->handle, *data), xsink
             )
 
             if (res == TRUE)
@@ -1390,13 +1376,6 @@ boolean OCI_API OCI_ObjectSetColl2(OCI_Library *pOCILib, OCI_Object *obj, const 
 /* ------------------------------------------------------------------------ *
  * OCI_ObjectSetObject
  * ------------------------------------------------------------------------ */
-/*
-boolean OCI_API OCI_ObjectSetObject(OCI_Object *obj, const mtext *attr,
-                                    OCI_Object *value)
-{
-   return OCI_ObjectSetObject2(&OCILib, obj, attr, value);
-}
-*/
 boolean OCI_API OCI_ObjectSetObject2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr,
 				     OCI_Object *value, ExceptionSink* xsink)
 {
@@ -1442,7 +1421,7 @@ boolean OCI_API OCI_ObjectSetObject2(OCI_Library *pOCILib, OCI_Object *obj, cons
  * ------------------------------------------------------------------------ */
 
 boolean OCI_API OCI_ObjectSetLob2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr,
-                                  OCI_Lob *value)
+                                  OCI_Lob *value, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
@@ -1459,14 +1438,16 @@ boolean OCI_API OCI_ObjectSetLob2(OCI_Library *pOCILib, OCI_Object *obj, const m
             OCIInd * ind  = NULL;
             void   **data = (void**)OCI_ObjectGetAttr(obj, index, &ind);
 
-            OCI_CALL2
+            OCI_CALL2Q
             (
                 pOCILib, res, obj->con,
 
                 OCILobLocatorAssign(obj->con->cxt, obj->con->err,
-                                    value->handle, (OCILobLocator **) data)
-                                    )
+                                    value->handle, (OCILobLocator **) data),
 
+		xsink
+	       )
+	       
             if (res == TRUE)
                 *ind = OCI_IND_NOTNULL;
         }

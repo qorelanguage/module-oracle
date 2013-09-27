@@ -292,7 +292,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                     l = OCI_LobCreate2(&d->ocilib, d->ocilib_cn, OCI_BLOB);
                     const BinaryNode * bn = reinterpret_cast<const BinaryNode*>(val);
                     unsigned int size = bn->size();
-                    OCI_LobWrite2(&d->ocilib, l, (void*)bn->getPtr(), &size, &size);
+                    OCI_LobWrite2(&d->ocilib, l, (void*)bn->getPtr(), &size, &size, xsink);
                 }
                 else {
                     // clobs
@@ -300,9 +300,10 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                     QoreStringNodeValueHelper str(val);
                     unsigned int size = str->length();
                     unsigned int sizelen = str->strlen();
-                    OCI_LobWrite2(&d->ocilib, l, (void*)str->getBuffer(), &size, &sizelen);
+                    OCI_LobWrite2(&d->ocilib, l, (void*)str->getBuffer(), &size, &sizelen, xsink);
                 }
-                OCI_ObjectSetLob2(&d->ocilib, obj, cname, l);
+                if (!*xsink)
+                   OCI_ObjectSetLob2(&d->ocilib, obj, cname, l, xsink);
                 OCI_LobFree(&d->ocilib, l);
                 break;
             }
@@ -443,34 +444,45 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Excep
 	    // timestamps-like dates
 	    if (col->type == OCI_CDT_TIMESTAMP) {
 	       OCI_Timestamp *dt = OCI_ObjectGetTimestamp2(&conn->ocilib, obj, cname);
-	       // only SQLT_TIMESTAMP gets the default TZ
-//                     assert(0);
-	       rv->setKeyValue(cname, conn->getTimestamp(col->ocode != SQLT_TIMESTAMP, dt->handle, xsink), xsink);
+               if (!dt)
+                  xsink->raiseException("FETCH-NTY-ERROR", "failed to retrieve timestamp attribute '%s'", cname);
+               else {
+                  // only SQLT_TIMESTAMP gets the default TZ
+                  rv->setKeyValue(cname, conn->getTimestamp(col->ocode != SQLT_TIMESTAMP, dt->handle, xsink), xsink);
+               }
 	    }
 	    // pure DATE like
 	    else if (col->type == OCI_CDT_DATETIME) {
 	       OCI_Date* dt = OCI_ObjectGetDate2(&conn->ocilib, obj, cname);
-	       DateTimeNode* dn = conn->getDate(dt->handle);
-	       rv->setKeyValue(cname, dn, xsink);
+               if (!dt)
+                  xsink->raiseException("FETCH-NTY-ERROR", "failed to retrieve date attribute '%s'", cname);
+               else {
+                  DateTimeNode* dn = conn->getDate(dt->handle);
+                  rv->setKeyValue(cname, dn, xsink);
+               }
 	    }
 	    // intervals
 	    else if (col->type == OCI_CDT_INTERVAL) {
 	       OCI_Interval * dt = OCI_ObjectGetInterval2(&conn->ocilib, obj, cname);
-	       if (col->ocode == SQLT_INTERVAL_YM) {
-		  int y, m;
-		  OCI_IntervalGetYearMonth2(&conn->ocilib, dt, &y, &m);
-		  rv->setKeyValue(cname, new DateTimeNode(y, m, 0, 0, 0, 0, 0, true), xsink);
-	       }
-	       else  {
-		  // SQLT_INTERVAL_DS
-		  int d, h, mi, s, fs;
-		  OCI_IntervalGetDaySecond2(&conn->ocilib, dt, &d, &h, &mi, &s, &fs);
+               if (!dt)
+                  xsink->raiseException("FETCH-NTY-ERROR", "failed to retrieve date attribute '%s'", cname);
+               else {
+                  if (col->ocode == SQLT_INTERVAL_YM) {
+                     int y, m;
+                     OCI_IntervalGetYearMonth2(&conn->ocilib, dt, &y, &m);
+                     rv->setKeyValue(cname, new DateTimeNode(y, m, 0, 0, 0, 0, 0, true), xsink);
+                  }
+                  else  {
+                     // SQLT_INTERVAL_DS
+                     int d, h, mi, s, fs;
+                     OCI_IntervalGetDaySecond2(&conn->ocilib, dt, &d, &h, &mi, &s, &fs);
 #ifdef _QORE_HAS_TIME_ZONES
-		  rv->setKeyValue(cname, DateTimeNode::makeRelative(0, 0, d, h, mi, s, fs / 1000), xsink);
+                     rv->setKeyValue(cname, DateTimeNode::makeRelative(0, 0, d, h, mi, s, fs / 1000), xsink);
 #else
-		  rv->setKeyValue(cname, new DateTimeNode(0, 0,  d, h, mi, s, fs / 1000000, true), xsink);
+                     rv->setKeyValue(cname, new DateTimeNode(0, 0,  d, h, mi, s, fs / 1000000, true), xsink);
 #endif
-	       }
+                  }
+               }
 	    }
 	    else {
 	       xsink->raiseException("FETCH-NTY-ERROR", "Unknown DATE-like argument for %s (type: %d)", cname, col->type);
@@ -497,23 +509,29 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Excep
 	 case SQLT_CLOB:
 	 case SQLT_BLOB: {
 	    OCI_Lob * l = OCI_ObjectGetLob2(&conn->ocilib, obj, cname);
+            if (!l) {
+               xsink->raiseException("FETCH-NTY-ERROR", "failed to retrieve LOB attribute '%s'", cname);
+               break;
+            }
+
 	    // The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
 	    unsigned int len = OCI_LobGetLength(&conn->ocilib, l);
 	    void *buf = malloc(len);
-	    OCI_LobRead2(&conn->ocilib, l, buf, &len, &len);
-
-	    if (OCI_LobGetType(&conn->ocilib, l) == OCI_BLOB) {
-	       SimpleRefHolder<BinaryNode> b(new BinaryNode());
-	       b->append(buf, len);
-	       rv->setKeyValue(cname, b.release(), xsink);
-	    }
-	    else {
-	       // clobs
-	       QoreStringNodeHolder str(new QoreStringNode(conn->ds.getQoreEncoding()));
-	       str->concat((const char*)buf, len);
-	       rv->setKeyValue(cname, str.release(), xsink);
-
-	    }
+	    OCI_LobRead2(&conn->ocilib, l, buf, &len, &len, xsink);
+            
+            if (!*xsink) {
+               if (OCI_LobGetType(&conn->ocilib, l) == OCI_BLOB) {
+                  SimpleRefHolder<BinaryNode> b(new BinaryNode());
+                  b->append(buf, len);
+                  rv->setKeyValue(cname, b.release(), xsink);
+               }
+               else {
+                  // clobs
+                  QoreStringNodeHolder str(new QoreStringNode(conn->ds.getQoreEncoding()));
+                  str->concat((const char*)buf, len);
+                  rv->setKeyValue(cname, str.release(), xsink);                  
+               }
+            }
 	    free(buf);
 	    OCI_LobFree(&conn->ocilib, l);
 	    break;
@@ -719,7 +737,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	       l = OCI_LobCreate2(&d->ocilib, d->ocilib_cn, OCI_BLOB);
 	       const BinaryNode * bn = reinterpret_cast<const BinaryNode*>(val);
 	       unsigned int size = bn->size();
-	       OCI_LobWrite2(&d->ocilib, l, (void*)bn->getPtr(), &size, &size);
+	       OCI_LobWrite2(&d->ocilib, l, (void*)bn->getPtr(), &size, &size, xsink);
 	    }
 	    else {
 	       // clobs
@@ -727,9 +745,10 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	       QoreStringNodeValueHelper str(val);
 	       unsigned int size = str->length();
 	       unsigned int sizelen = str->strlen();
-	       OCI_LobWrite2(&d->ocilib, l, (void*)str->getBuffer(), &size, &sizelen);
+	       OCI_LobWrite2(&d->ocilib, l, (void*)str->getBuffer(), &size, &sizelen, xsink);
 	    }
-	    OCI_ElemSetLob2(&d->ocilib, e, l);
+            if (!*xsink)
+               OCI_ElemSetLob2(&d->ocilib, e, l);
 	    OCI_LobFree(&d->ocilib, l);
 	    break;
 	 }
@@ -907,19 +926,21 @@ AbstractQoreNode* collToQore(QoreOracleConnection * conn, OCI_Coll * obj, Except
 	    // The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
 	    unsigned int len = OCI_LobGetLength(&conn->ocilib, l);
 	    void *buf = malloc(len);
-	    OCI_LobRead2(&conn->ocilib, l, buf, &len, &len);
+	    OCI_LobRead2(&conn->ocilib, l, buf, &len, &len, xsink);
 
-	    if (OCI_LobGetType(&conn->ocilib, l) == OCI_BLOB) {
-	       SimpleRefHolder<BinaryNode> b(new BinaryNode());
-	       b->append(buf, len);
-	       rv->set_entry(rv->size(), b.release(), xsink);
-	    }
-	    else {
-	       // clobs
-	       QoreStringNodeHolder str(new QoreStringNode(conn->ds.getQoreEncoding()));
-	       str->concat((const char*)buf, len);
-	       rv->set_entry(rv->size(), str.release(), xsink);
-	    }
+            if (!*xsink) {
+               if (OCI_LobGetType(&conn->ocilib, l) == OCI_BLOB) {
+                  SimpleRefHolder<BinaryNode> b(new BinaryNode());
+                  b->append(buf, len);
+                  rv->set_entry(rv->size(), b.release(), xsink);
+               }
+               else {
+                  // clobs
+                  QoreStringNodeHolder str(new QoreStringNode(conn->ds.getQoreEncoding()));
+                  str->concat((const char*)buf, len);
+                  rv->set_entry(rv->size(), str.release(), xsink);
+               }
+            }
 	    free(buf);
 	    OCI_LobFree(&conn->ocilib, l);
 	    break;

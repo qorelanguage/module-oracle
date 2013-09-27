@@ -256,7 +256,7 @@ big_uint OCI_API OCI_LobGetOffset(OCI_Library *pOCILib, OCI_Lob *lob)
 
 boolean OCI_API OCI_LobRead2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
                              unsigned int *char_count,
-                             unsigned int *byte_count)
+                             unsigned int *byte_count, ExceptionSink* xsink)
 {
     boolean res = TRUE;
     ub2 csid    = 0;
@@ -302,7 +302,7 @@ boolean OCI_API OCI_LobRead2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
         ub8 size_in_out_char = (ub8) (*char_count);
         ub8 size_in_out_byte = (ub8) (*byte_count);
 
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, lob->con,
 
@@ -310,7 +310,9 @@ boolean OCI_API OCI_LobRead2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
                         &size_in_out_byte, &size_in_out_char,
                         (ub8) lob->offset, buffer,(ub8) (*byte_count),
                         (ub1) OCI_ONE_PIECE, (void *) NULL,
-                        NULL, csid, csfrm)
+                        NULL, csid, csfrm),
+
+	    xsink
         )
 
         (*char_count) = (ub4) size_in_out_char;
@@ -329,14 +331,16 @@ boolean OCI_API OCI_LobRead2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
         else
             size_in_out_char_byte = (*char_count);
 
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, lob->con,
 
             OCILobRead(lob->con->cxt, lob->con->err, lob->handle,
                        &size_in_out_char_byte, (ub4) lob->offset,
                        buffer, (ub4) (*byte_count), (void *) NULL,
-                       NULL, csid, csfrm)
+                       NULL, csid, csfrm),
+
+	    xsink
         )
 
         (*char_count) = (ub4) size_in_out_char_byte;
@@ -387,7 +391,7 @@ boolean OCI_API OCI_LobRead2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
  * OCI_LobRead
  * ------------------------------------------------------------------------ */
 
-unsigned int OCI_API OCI_LobRead(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer, unsigned int len)
+unsigned int OCI_API OCI_LobRead(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer, unsigned int len, ExceptionSink* xsink)
 {
     unsigned int  char_count = 0;
     unsigned int  byte_count = 0;
@@ -407,7 +411,7 @@ unsigned int OCI_API OCI_LobRead(OCI_Library *pOCILib, OCI_Lob *lob, void *buffe
         }
     }
 
-    OCI_LobRead2(pOCILib, lob, buffer, &char_count, &byte_count);
+    OCI_LobRead2(pOCILib, lob, buffer, &char_count, &byte_count, xsink);
 
     return (ptr_count ? *ptr_count : 0);
 }
@@ -418,7 +422,7 @@ unsigned int OCI_API OCI_LobRead(OCI_Library *pOCILib, OCI_Lob *lob, void *buffe
 
 boolean OCI_API OCI_LobWrite2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
                               unsigned int *char_count,
-                              unsigned int *byte_count)
+                              unsigned int *byte_count, ExceptionSink* xsink)
 {
     boolean res = TRUE;
     ub2 csid    = 0;
@@ -491,7 +495,7 @@ boolean OCI_API OCI_LobWrite2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
         ub8 size_in_out_char = (ub8) (*char_count);
         ub8 size_in_out_byte = (ub8) (*byte_count);
 
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, lob->con,
 
@@ -499,7 +503,9 @@ boolean OCI_API OCI_LobWrite2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
                          &size_in_out_byte, &size_in_out_char,
                          (ub8) lob->offset, obuf, (ub8) (*byte_count),
                          (ub1) OCI_ONE_PIECE, (void *) NULL,
-                         NULL , csid, csfrm)
+                         NULL , csid, csfrm),
+
+	    xsink
         )
 
         (*char_count) = (ub4) size_in_out_char;
@@ -518,14 +524,16 @@ boolean OCI_API OCI_LobWrite2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
         else
             size_in_out_char_byte = (*char_count);
         
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, lob->con,
 
             OCILobWrite(lob->con->cxt, lob->con->err, lob->handle,
                         &size_in_out_char_byte, (ub4) lob->offset,
                         obuf, (ub4) (*byte_count), (ub1) OCI_ONE_PIECE,
-                        (void *) NULL, NULL, csid, csfrm)
+                        (void *) NULL, NULL, csid, csfrm),
+
+	    xsink
         )
 
         if (lob->type == OCI_BLOB)
@@ -560,7 +568,7 @@ boolean OCI_API OCI_LobWrite2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
  * OCI_LobWrite
  * ------------------------------------------------------------------------ */
 
-unsigned int OCI_API OCI_LobWrite(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer, unsigned int len)
+unsigned int OCI_API OCI_LobWrite(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer, unsigned int len, ExceptionSink* xsink)
 {
     unsigned int  char_count = 0;
     unsigned int  byte_count = 0;
@@ -580,7 +588,7 @@ unsigned int OCI_API OCI_LobWrite(OCI_Library *pOCILib, OCI_Lob *lob, void *buff
         }
     }
 
-    OCI_LobWrite2(pOCILib, lob, buffer, &char_count, &byte_count);
+    OCI_LobWrite2(pOCILib, lob, buffer, &char_count, &byte_count, xsink);
 
     return (ptr_count ? *ptr_count : 0);
 }
@@ -851,7 +859,7 @@ boolean OCI_API OCI_LobCopyFromFile(OCI_Library *pOCILib, OCI_Lob *lob, OCI_File
 
 boolean OCI_API OCI_LobAppend2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
                                unsigned int *char_count,
-                               unsigned int *byte_count)
+                               unsigned int *byte_count, ExceptionSink* xsink)
 {
     boolean res = TRUE;
     ub2 csid    = 0;
@@ -868,7 +876,7 @@ boolean OCI_API OCI_LobAppend2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
     if (pOCILib->version_runtime < OCI_10_1)
     {
        return OCI_LobSeek(pOCILib, lob, OCI_LobGetLength(pOCILib, lob), OCI_SEEK_SET) &&
-              OCI_LobWrite2(pOCILib, lob, buffer, char_count, byte_count);
+	  OCI_LobWrite2(pOCILib, lob, buffer, char_count, byte_count, xsink);
     }
 
     if (lob->type != OCI_BLOB)
@@ -1002,7 +1010,7 @@ boolean OCI_API OCI_LobAppend2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
  * OCI_LobAppend
  * ------------------------------------------------------------------------ */
 
-unsigned int OCI_API OCI_LobAppend(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer, unsigned int len)
+unsigned int OCI_API OCI_LobAppend(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer, unsigned int len, ExceptionSink* xsink)
 {
     unsigned int  char_count = 0;
     unsigned int  byte_count = 0;
@@ -1022,7 +1030,7 @@ unsigned int OCI_API OCI_LobAppend(OCI_Library *pOCILib, OCI_Lob *lob, void *buf
         }
     }
 
-    OCI_LobAppend2(pOCILib, lob, buffer, &char_count, &byte_count);
+    OCI_LobAppend2(pOCILib, lob, buffer, &char_count, &byte_count, xsink);
 
     return (ptr_count ? *ptr_count : 0);
 }

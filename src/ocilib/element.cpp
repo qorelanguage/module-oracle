@@ -1094,13 +1094,6 @@ boolean OCI_API OCI_ElemSetObject2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Obj
 /* ------------------------------------------------------------------------ *
  * OCI_ElemSetLob
  * ------------------------------------------------------------------------ */
-/*
-boolean OCI_API OCI_ElemSetLob(OCI_Elem *elem, OCI_Lob *value)
-{
-    return OCI_ElemSetLob2(&OCILib, elem, value);
-}
-*/
-
 boolean OCI_API OCI_ElemSetLob2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Lob *value)
 {
     boolean res  = TRUE;
