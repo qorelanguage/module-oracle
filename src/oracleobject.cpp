@@ -407,7 +407,24 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Excep
                                "objToQore() converting NUMERIC value to text", xsink))
                return 0;
             buf[bs] = 0;
-            rv->setKeyValue(cname, new QoreNumberNode(buf), xsink);
+
+            // convert oracle numeric value to Qore value according to connection options
+            AbstractQoreNode* nv = 0;
+            int nopt = conn->getNumberOption();
+            switch (nopt) {
+               case OPT_NUM_OPTIMAL:
+                  nv = conn->getNumberOptimal(buf);
+                  break;
+               case OPT_NUM_STRING:
+                  nv = new QoreStringNode(buf, conn->ds.getQoreEncoding());
+                  break;
+               case OPT_NUM_NUMERIC:
+                  nv = new QoreNumberNode(buf);
+                  break;
+               default:
+                  assert(false);
+            }
+            rv->setKeyValue(cname, nv, xsink);
             break;
          }
 
@@ -569,7 +586,6 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Excep
 	    xsink->raiseException("BIND-OBJECT-ERROR", "unknown datatype to fetch as an attribute (unsupported): %s", col->typinf->name);
 	    return 0;
       } // switch
-
    }
     
    return rv.release();

@@ -235,22 +235,8 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
       case SQLT_NUM: {
          int nopt = stmt.getData()->getNumberOption();
          switch (nopt) {
-            case OPT_NUM_OPTIMAL: {
-               const char* p = (const char*)buf.ptr;
-               // see if the value can fit in an int
-               size_t len = strlen(p);
-               bool sign = p[0] == '-';
-               if (sign)
-                  --len;
-               if (!strchr(p, '.') 
-                   && (len < 19
-                       || (len == 19 && 
-                           ((!sign && strcmp(p, "9223372036854775807") <= 0)
-                            ||(sign && strcmp(p, "-9223372036854775808") <= 0)))))
-                  return new QoreBigIntNode(strtoll(p, 0, 10));
-
-               return new QoreNumberNode(p);
-            }
+            case OPT_NUM_OPTIMAL:
+               return stmt.getData()->getNumberOptimal((const char*)buf.ptr);
             case OPT_NUM_STRING:
                return doReturnString(destructive);
          }

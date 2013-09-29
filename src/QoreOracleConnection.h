@@ -364,6 +364,22 @@ public:
       return number_support;
    }
 
+   DLLLOCAL AbstractQoreNode* getNumberOptimal(const char* str) const {
+      // see if the value can fit in an int
+      size_t len = strlen(str);
+      bool sign = str[0] == '-';
+      if (sign)
+         --len;
+      if (!strchr(str, '.') 
+          && (len < 19
+              || (len == 19 && 
+                  ((!sign && strcmp(str, "9223372036854775807") <= 0)
+                   ||(sign && strcmp(str, "-9223372036854775808") <= 0)))))
+         return new QoreBigIntNode(strtoll(str, 0, 10));
+
+      return new QoreNumberNode(str);
+   }
+
    DLLLOCAL static void descriptorFree(void *descp, unsigned type) {
       OCIDescriptorFree(descp, type);
    }
