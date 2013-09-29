@@ -401,7 +401,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection * conn, OCI_Object * obj, Excep
                break;
             }
 
-            char buf[ORA_NUM_BUFSIZE];
+            char buf[ORA_NUM_BUFSIZE + 1];
             ub4 bs = ORA_NUM_BUFSIZE;
             if (conn->checkerr(OCINumberToText(conn->errhp, num, (const OraText*)ORA_NUM_FORMAT, ORA_NUM_FORMAT_SIZE, 0, 0, &bs, (OraText*)buf), 
                                "objToQore() converting NUMERIC value to text", xsink))
