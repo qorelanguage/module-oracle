@@ -4,6 +4,7 @@ version 3.1
 
 * fixed retrieving NUMBER types from objects/NTYs
 * added more Qore exception handling in ocilib object/NTY APIs
+* enforce DBI options on NTY retrieval with numeric values
 
 
 ***********
