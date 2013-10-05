@@ -5,13 +5,14 @@ printf("\nQore named types test - collections\n\n");
 
 my string $connstr;
 switch (gethostname()) {
-    case "qube": $connstr = "oracle:omquser2/omquser2@qube"; break;
+    case /^qube/: $connstr = "oracle:omquser2/omquser2@qube"; break;
+    case /^el6/:
+    case /^quark/: $connstr = "oracle:omquser/omquser@el6"; break;
     default: $connstr = "oracle:omqtest/omqtest@stimpy"; break;
 }
 
 my Datasource $db($connstr);
 $db.open();
-
 
 printf("\nCOLLECTION IN varchar2\n");
 my list $col = 'foo', 'bar',NULL, NOTHING, "the end";
