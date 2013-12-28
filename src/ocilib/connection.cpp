@@ -1767,6 +1767,8 @@ boolean OCI_API OCI_Ping(OCI_Library *pOCILib, OCI_Connection *con, ExceptionSin
 
         ret = res;
     }
+#else
+#error
 
 #endif
 
