@@ -233,7 +233,7 @@ hey, it's server here
 public namespace OracleExtensions {
 
 #! A base class for OracleDatasource and OracleDatasourcePool. Not intended to be used directly.
-public class OracleDatasourceBase inherits AbstractDatasource
+public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource
 {
     private {
         #! potential user Application Info set by beginTransaction or explicit call of setAppInfo
@@ -244,31 +244,31 @@ public class OracleDatasourceBase inherits AbstractDatasource
         object m_ds;
     }
     
-    #! AbstractDatasource implementation for Datasource and datasourcePool
+    #! AbstractDatasource implementation for Datasource and DatasourcePool
     *string getDBName() { return m_ds.getDBName(); }
-    #! AbstractDatasource implementation for Datasource and datasourcePool
+    #! AbstractDatasource implementation for Datasource and DatasourcePool
     *string getUserName() { return m_ds.getUserName(); }
-    #! AbstractDatasource implementation for Datasource and datasourcePool
+    #! AbstractDatasource implementation for Datasource and DatasourcePool
     any getServerVersion() { return m_ds.getServerVersion(); }
-    #! AbstractDatasource implementation for Datasource and datasourcePool
+    #! AbstractDatasource implementation for Datasource and DatasourcePool
     *string getPassword() { return m_ds.getPassword(); }
-    #! AbstractDatasource implementation for Datasource and datasourcePool
+    #! AbstractDatasource implementation for Datasource and DatasourcePool
     hash getConfigHash() { return m_ds.getConfigHash(); }
-    #! AbstractDatasource implementation for Datasource and datasourcePool
+    #! AbstractDatasource implementation for Datasource and DatasourcePool
     *int getPort() { return m_ds.getPort(); }
-    #! AbstractDatasource implementation for Datasource and datasourcePool
+    #! AbstractDatasource implementation for Datasource and DatasourcePool
     string getConfigString() { return m_ds.getConfigString(); }
-    #! AbstractDatasource implementation for Datasource and datasourcePool
+    #! AbstractDatasource implementation for Datasource and DatasourcePool
     any getClientVersion() { return m_ds.getClientVersion(); }
-    #! AbstractDatasource implementation for Datasource and datasourcePool
+    #! AbstractDatasource implementation for Datasource and DatasourcePool
     *string getOSEncoding() { return m_ds.getOSEncoding(); }
-    #! AbstractDatasource implementation for Datasource and datasourcePool
+    #! AbstractDatasource implementation for Datasource and DatasourcePool
     string getDriverName() { return m_ds.getDriverName(); }
-    #! AbstractDatasource implementation for Datasource and datasourcePool
+    #! AbstractDatasource implementation for Datasource and DatasourcePool
     string getDBEncoding() { return m_ds.getDBEncoding(); }
-    #! AbstractDatasource implementation for Datasource and datasourcePool
+    #! AbstractDatasource implementation for Datasource and DatasourcePool
     *string getHostName() { return m_ds.getHostName(); }
-    #! AbstractDatasource implementation for Datasource and datasourcePool
+    #! AbstractDatasource implementation for Datasource and DatasourcePool
     bool inTransaction() { return m_ds.inTransaction(); }
 
     #! Start new transaction with Aplication info set as strings
