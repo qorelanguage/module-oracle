@@ -27,13 +27,16 @@ DEALINGS IN THE SOFTWARE.
 %requires oracle
 
 module OracleExtensions {
-    version = "1.0";
+    version = "1.1";
     desc = "Extended functionality for Oracle Db driver";
     author = "Petr Vanek";
     url = "http://qore.org";
 }
 
 /*  Version History
+    * 2014-01-24 v1.1: Petr Vanek <petr.vanek@qoretechnologies.com>
+      + OracleSQLstatement implemented
+      + documentation fixes
     * 2012-02-05 v1.0: Petr Vanek <petr.vanek@qoretechnologies.com>
       + initial implementation
 */
@@ -69,7 +72,7 @@ Trace and the SQL trace facility to record names of executing modules or
 transactions in the database for later use when tracking the performance
 of various modules and debugging.
 
-Values provided to @ref OracleApplicationInfo are used in \c V$SESSION or \c V$SQLAREA views
+Values provided to OracleExtensions::OracleApplicationInfo are used in \c V$SESSION or \c V$SQLAREA views
 for DBA tasks.
 
 Application info is composed of three components in following hierarchy of
@@ -87,6 +90,7 @@ logical depencency:
 - @ref OracleExtensions::OracleApplicationInfo
 - @ref OracleExtensions::OracleDatasource
 - @ref OracleExtensions::OracleDatasourcePool
+- @ref OracleExtensions::OracleSQLStatement
 
 OracleDatasource and OracleDatasourcePool includes 
 Qore::Datasource and Qore::DatasourcePool inside and all overriden methods keep
@@ -208,7 +212,7 @@ ds.outputEnable();
 ds.outputPutLine('foo');
 ds.outputPutLine(111);
 ds.outputPutLine(now());
-# call any PL/SQL unit on server with DBMS_OUTOUT.PUT... inits body
+# call any PL/SQL unit on server with DBMS_OUTPUT.PUT... inits body
 ds.exec("begin dbms_output.put_line(%v); end;", "hey, it's server here");
 
 my *string res = o.outputGet();
@@ -232,18 +236,114 @@ hey, it's server here
 #! public OracleExtensions namespace defines stuff for use
 public namespace OracleExtensions {
 
-#! A base class for OracleDatasource and OracleDatasourcePool. Not intended to be used directly.
-public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource
+#! A base class for @ref instrumentation_info_auto related classes. Not intended to be used directly.
+public class OracleInstrumentationBase
 {
     private {
         #! potential user Application Info set by beginTransaction or explicit call of setAppInfo
         *OracleExtensions::OracleApplicationInfo userInfo;
         #! user code used in setAutomaticDBInfo when there is no OracleApplicationInfo value provided
         *code autoCode;
-        
+        #! Internally used datasource/pool
         object m_ds;
     }
     
+    constructor(*code userAutoInfo) {
+        autoCode = userAutoInfo;
+        userInfo = NOTHING;
+    }
+    
+    object privateDS() { return m_ds; }
+    *code autoCode() { return autoCode; }
+    
+    #! Obtain info about transaction capturing and try to get available Application Info
+    /** 
+        @param item optional OracleApplicationInfo with value or NOTHING
+        @param checkTransaction default=True. True = check if there is a transaction. False = do not check.
+        @retval bool True if the \c ds will be rollbacked explicitly
+
+        The transaction handling is for example:
+
+            - select: check if there is a transaction: no? rollback after run.
+            - exec: yes! do not rollback - the transaction will be handled upsetream in user code
+
+     */
+    bool setAutomaticDBInfo(*OracleExtensions::OracleApplicationInfo item, bool checkTransaction=True) {
+
+        # do not set auto info when there is already user defined one
+        if (!exists item && exists userInfo) {
+            return False;
+        }
+
+        # ensure there is no transaction at the beginning to be safe
+        # to ROLLBACK auditing changes
+        bool doRollback = False;
+        if (checkTransaction && !m_ds.currentThreadInTransaction()) {
+            doRollback = True;
+        }
+
+        *OracleExtensions::OracleApplicationInfo audit;
+
+        if (exists item) {
+            audit = item;
+        }
+        else if (exists autoCode) {
+            audit = autoCode();
+        }
+
+        if (audit) {
+            setAppInfo(audit);
+        }
+
+        return doRollback;
+    }
+
+    #! Set the explicit @ref instrumentation_info. The transaction lock is taken.
+    /**
+    @param audit a OracleExtensions::OracleApplicationInfo instance with info
+    @param fromSystem a flag if it goes from "system call". End user code usually does not need to use it.
+    */
+    setAppInfo(*OracleExtensions::OracleApplicationInfo audit, bool fromSystem=True) {
+        if (exists userInfo && (!exists audit || audit.isEmpty())) {
+            userInfo = NOTHING;
+        }
+        else if (!fromSystem) {
+            userInfo = audit;
+        }
+        else if (exists userInfo &&  exists audit 
+                 && userInfo.client == audit.client
+                 && userInfo.module == audit.module
+                 && userInfo.action == audit.action) {
+            return;
+        }
+
+        try {
+            m_ds.exec("begin
+                    dbms_application_info.set_client_info(%v);
+                    dbms_application_info.set_module(%v, %v);
+                end;", audit.client, audit.module, audit.action);
+        }
+        catch (ex) {
+            # We don't want to throw a real error here because it's just a helper
+            # functionality - business logic should continue when there is no DBMS_APPLICATION_INFO
+            # available...
+            stderr.printf("OracleExtensions WARNING: setAppInfo: %s - %s\n", ex.err, ex.desc);
+        }
+    }
+    
+    #! An overloaded method with the same functionality as the OracleExtensions::OracleApplicationInfo variant
+    setAppInfo(*string client, *string module, *string action, bool fromSystem=True) {
+        OracleExtensions::OracleApplicationInfo item(client, module, action);
+        if (!item.isEmpty())
+            setAppInfo(item, fromSystem);
+    }
+
+
+} # class OracleInstrumentationBase
+
+#! A base class for OracleDatasource and OracleDatasourcePool. Not intended to be used directly.
+public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, OracleInstrumentationBase
+{    
     #! AbstractDatasource implementation for Datasource and DatasourcePool
     *string getDBName() { return m_ds.getDBName(); }
     #! AbstractDatasource implementation for Datasource and DatasourcePool
@@ -330,7 +430,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource
         @param sql a SQL statement 
         @retval any a result as in parent class method
 
-    This method tries to find application info automatically. The previously set
+    This method tries to find application infautomatically. The previously set
     info (beginTransaction, setAppInfo) is used or a context related info
     is used in Qorus Integration Engine.
      */
@@ -663,9 +763,10 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource
 }
 
 #! Fill the attributes. @param userAutoInfo see @ref instrumentation_info_auto
-OracleDatasourceBase::constructor(*code userAutoInfo) {
+OracleDatasourceBase::constructor(*code userAutoInfo)
+    : OracleInstrumentationBase(userAutoInfo)
+{
     userInfo = NOTHING;
-    autoCode = userAutoInfo;
 }
 
 #! Commit the transaction. Application info is cleared. DBMS_OUTPUT disabled.
@@ -684,84 +785,7 @@ nothing OracleDatasourceBase::rollback() {
     m_ds.rollback();
 }
 
-#! Obtain info about transaction capturing and try to get available Application Info
-/** 
-    @param ds a OracleDatasource or OracleDatasourcePool instance
-    @param item optional OracleApplicationInfo with value or NOTHING
-    @param checkTransaction default=True. True = check if there is a transaction. False = do not check.
-    @retval bool True if the \c ds will be rollbacked explicitly
-
-    The transaction handling is for example:
-
-        - select: check if there is a transaction: no? rollback after run.
-        - exec: yes! do not rollback - the transaction will be handled upsetream in user code
-
- */
-bool OracleDatasourceBase::setAutomaticDBInfo(*OracleExtensions::OracleApplicationInfo item, bool checkTransaction=True) {
-
-    # do not set auto info when there is already user defined one
-    if (!exists item && exists userInfo) {
-        return False;
-    }
-
-    # ensure there is no transaction at the beginning to be safe
-    # to ROLLBACK auditing changes
-    bool doRollback = False;
-    if (checkTransaction && !m_ds.currentThreadInTransaction()) {
-        doRollback = True;
-    }
-
-    *OracleExtensions::OracleApplicationInfo audit;
-
-    if (exists item) {
-        audit = item;
-    }
-    else if (exists autoCode) {
-        audit = autoCode();
-    }
-
-    if (audit) {
-        setAppInfo(audit);
-    }
-
-    return doRollback;
-}
-
-#! An overloaded method with the same functionality as the 
-OracleDatasourceBase::setAppInfo(*string client, *string module, *string action, bool fromSystem=True) {
-    OracleExtensions::OracleApplicationInfo item(client, module, action);
-    if (!item.isEmpty())
-        setAppInfo(item, fromSystem);
-}
-
-OracleDatasourceBase::setAppInfo(*OracleExtensions::OracleApplicationInfo audit, bool fromSystem=True) {
-    if (exists userInfo && (!exists audit || audit.isEmpty())) {
-        userInfo = NOTHING;
-    }
-    else if (!fromSystem) {
-        userInfo = audit;
-    }
-    else if (exists userInfo &&  exists audit 
-             && userInfo.client == audit.client
-             && userInfo.module == audit.module
-             && userInfo.action == audit.action) {
-        return;
-    }
-
-    try {
-        m_ds.exec("begin
-                dbms_application_info.set_client_info(%v);
-                dbms_application_info.set_module(%v, %v);
-            end;", audit.client, audit.module, audit.action);
-    }
-    catch (ex) {
-        # We don't want to throw a real error here because it's just a helper
-        # functionality - business logic should continue when there is no DBMS_APPLICATION_INFO
-        # available...
-        stderr.printf("OracleExtensions WARNING: setAppInfo: %s - %s\n", ex.err, ex.desc);
-    }
-}
-
+#! Set current OracleLongOps
 OracleDatasourceBase::setLongOpsProgress(OracleLongOps lo) {
     hash res = m_ds.exec("declare
         v_rindex     PLS_INTEGER := %v;
@@ -797,6 +821,7 @@ OracleDatasourceBase::setLongOpsProgress(OracleLongOps lo) {
         lo.setSlno(res.out_slno);
 }
 
+#! Explicitly enable DBMS_OUTPUT buffer
 OracleDatasourceBase::outputEnable(*int bufferSize) {
     if (exists bufferSize && (bufferSize < 2000 || bufferSize > 1000000)) {
         throw "ORACLE-SERVEROUTPUT-ERROR", sprintf("Buffer size has to be between 2000 and 1000000. Got: %d", bufferSize);
@@ -804,22 +829,26 @@ OracleDatasourceBase::outputEnable(*int bufferSize) {
     m_ds.exec("begin dbms_output.enable(%v); end;", bufferSize);
 }
 
+#! Explicitly close DBMS_OUTPUT buffer
 OracleDatasourceBase::outputDisable() {
     if (m_ds.currentThreadInTransaction()) {
         m_ds.exec("begin dbms_output.disable(); end;");
     }
 }
 
+#! Append string to DBMS_OUTPUT buffer without end of line
 OracleDatasourceBase::outputPut(softstring text) {
     outputEnable();
     m_ds.exec("begin dbms_output.put(%v); end;", text);
 }
 
+#! Append string to DBMS_OUTPUT buffer with end of line
 OracleDatasourceBase::outputPutLine(softstring text) {
     outputEnable();
     m_ds.exec("begin dbms_output.put_line(%v); end;", text);
 }
 
+#! Get the DBMS_OUTPUT buffer
 *string OracleDatasourceBase::outputGet() {
     int valid = 0;
     string result;
@@ -1113,6 +1142,135 @@ public class OracleDatasource inherits OracleExtensions::OracleDatasourceBase {
 } # class OracleDatasource
 
 
+#! Oracle specific SQLStatement variant with @ref instrumentation_info capabilities
+/**
+    @note Consult Qore::SQL::SQLStatement for its special transaction handling
+
+    OracleSQLStatement can take standard Qore Datasource/Pool or OracleDatasource/Pool
+    on input. The @ref instrumentation_info_auto handling is processed as follow:
+
+    - Qore::SQL::Datasource or Qore::SQL::DatasourcePool
+        - auto info code should be provided to OracleSQLStatement in its constructor
+    - OracleDatasource of OracleDatasourcePool
+        - the datasource-level auto info code is used
+
+    <b>Example where the Auto Info goes from Oracle specialized datasource</b>
+
+    \c getAutoInfo() is shared in all examples in the OracleExtension documentation.
+    All constructor standard arguments are ellipsed with "..." in these examples.
+
+    Both examples below result in the same behavior in the Oracle server.
+
+    @code
+OracleExtensions::OracleDatasource dd(..., \getAutoInfo());
+
+OracleSQLStatement stmt(dd);
+stmt.prepare("select * from foo");
+while (stmt.next())
+    process_row(stmt.fetchRow());
+
+# remember the SQLStatement transaction handling
+stmt.commit();
+    @endcode
+    
+    <b>Example where the Auto Info goes from user code</b>
+    @code
+Datasource dd(...);
+
+OracleSQLStatement stmt(dd, \getAutoInfo());
+stmt.prepare("select * from foo");
+while (stmt.next())
+    process_row(stmt.fetchRow());
+
+# remember the SQLStatement transaction handling
+stmt.commit();
+    @endcode
+ */
+public class OracleSQLStatement inherits Qore::SQL::SQLStatement, OracleExtensions::OracleInstrumentationBase {
+    
+    #! Constructor taking standard Datasource
+    /**
+    @param ds the Qore::SQL::Datasource instance
+    @param userAutoInfo an optional code used for @ref instrumentation_info_auto
+    */
+    constructor(Qore::SQL::Datasource ds, *code userAutoInfo)
+        : Qore::SQL::SQLStatement(ds),
+          OracleExtensions::OracleInstrumentationBase(userAutoInfo)
+    {
+        m_ds = ds;
+    }
+
+    #! Constructor taking standard DatasourcePool
+    /**
+    @param ds the Qore::SQL::DatasourcePool instance
+    @param userAutoInfo an optional code used for @ref instrumentation_info_auto
+    */
+    constructor(Qore::SQL::DatasourcePool ds, *code userAutoInfo)
+        : Qore::SQL::SQLStatement(ds),
+          OracleExtensions::OracleInstrumentationBase(userAutoInfo)
+    {
+        m_ds = ds;
+    }
+
+    #! Constructor taking OracleDatasource
+    /**
+    @param ds the OracleExtensions::Datasource instance
+
+    This constructor variant uses \c ds settings for @ref instrumentation_info_auto
+    */
+    constructor(OracleExtensions::OracleDatasource ds)
+        : Qore::SQL::SQLStatement(ds.privateDS()),
+          OracleExtensions::OracleInstrumentationBase(ds.autoCode())
+    {
+        m_ds = ds.privateDS();
+    }
+
+    #! Constructor taking OracleDatasourcePool
+    /**
+    @param ds the OracleExtensions::DatasourcePool instance
+
+    This constructor variant uses \c ds settings for @ref instrumentation_info_auto
+    */
+    constructor(OracleExtensions::OracleDatasourcePool ds)
+        : Qore::SQL::SQLStatement(ds.privateDS()),
+          OracleExtensions::OracleInstrumentationBase(ds.autoCode())
+    {
+        m_ds = ds.privateDS();
+    }
+    
+    #! SQLStatement::exec with @ref instrumentation_info_auto
+    nothing exec() {
+        setAutomaticDBInfo();
+        SQLStatement::execArgs(argv);
+    }
+    
+    #! SQLStatement::execArgs with @ref instrumentation_info_auto
+    nothing execArgs(softlist vargs) {
+        setAutomaticDBInfo();
+        SQLStatement::execArgs(vargs);
+    }
+    
+    #! SQLStatement::next with @ref instrumentation_info_auto
+    bool next() {
+        setAutomaticDBInfo();
+        return SQLStatement::next();
+    }
+
+    #! SQLStatement::commit with clearing of @ref instrumentation_info_auto if required
+    nothing commit() {
+        setAppInfo(NOTHING, False);
+        m_ds.commit();
+    }
+    
+    #! SQLStatement::rollback with clearing of @ref instrumentation_info_auto if required
+    nothing rollback() {
+        setAppInfo(NOTHING, False);
+        m_ds.rollback();
+    }
+    
+} # class OracleSQLStatement
+
+
 } # namespace OracleExtensions
 
 
@@ -1122,6 +1280,23 @@ public class OracleDatasource inherits OracleExtensions::OracleDatasourceBase {
 # qore -DOracleExtensionsTest=1 OracleExtensions.qm 
 our string connstr = "oracle:pvanek_omq/omq@xbox";
 
+
+any sub stmtTest(object o) {
+    OracleExtensions::OracleSQLStatement stmt(o);
+    
+    stmt.prepare("select workflow_instanceid from workflow_instance where workflowid = %v and rownum < 4");
+    stmt.bind(201);
+
+    while (stmt.next()) {
+        hash r = stmt.fetchRow();
+        printf("row: %n\n", r);
+        sleep(1);
+    }
+    
+    stmt.commit();
+    printf("connection free'd\n");
+    sleep(5);
+}
 
 any sub test(object o, string m) {
     any ret = callObjectMethodArgs(o, m, argv);
@@ -1135,7 +1310,7 @@ sub testData(object o1, object o2, string m) {
     any d2 = callObjectMethodArgs(o2, m, argv);
     
     if (d1 != d2)
-        throw "TEST-DATA-ERROR", sprintf("call: %s; data mismatch: %y --- %y", m, d1, d2);
+        throw "TEST-DATA-ERROR", sprintf("call: %s; data mismatch: %n \n\n%n", m, d1, d2);
 }
 
 
@@ -1191,10 +1366,15 @@ sub testDBMSOut(object o)
     o.outputDisable();
 }
 
+our Counter autoCnt();
 *OracleExtensions::OracleApplicationInfo sub getAutoInfo()
 {
 #    printf("getAutoInfo: called\n");
-    return new OracleExtensions::OracleApplicationInfo("user module", "auto info", sprintf("auto info: %n", now()));
+    autoCnt.inc();
+    return new OracleExtensions::OracleApplicationInfo("user module",
+                                                       sprintf("auto info: %d", autoCnt.getCount()),
+                                                       sprintf("auto info: %n", now())
+                                                    );
 }
 
 sub baseTest(object dd) {
@@ -1259,7 +1439,7 @@ sub testDataDiffs() {
         d2.rollback();
     }
     
-    string sql = "select * from all_tables where owner = %v and table_name = %v";
+    string sql = "select * from all_tables where owner = %v and table_name = %v order by table_name";
 
     testData(d1, d2, "exec", sql, d1.getUserName().upr(), "WORKFLOWS");
     testData(d1, d2, "execRaw", "select * from user_tables", d1.getUserName().upr(), "WORKFLOWS");
@@ -1297,6 +1477,9 @@ sub testPoolConnectionCount() {
     testDataDiffs();
 
     testPoolConnectionCount();
+
+    stmtTest(dd);
+    stmtTest(dp);
 }
 
 %endif
