@@ -205,7 +205,9 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
          }
          else {
             assert(subdtype == SQLT_NTY_COLLECTION);
-            OCI_CollGetStruct(&conn->ocilib, buf.oraColl, (void**)&pp_struct, (void**)&pp_ind);
+            OCI_CollGetStruct(&conn->ocilib, buf.oraColl, (void**)&pp_struct, (void**)&pp_ind, xsink);
+            if (*xsink)
+               return 0;
             //printd(5, "OraColumnValue::getValue() allocated COLLECTION: %p\n", buf.oraColl);
             if (*pp_ind == OCI_IND_NULL || *pp_ind == OCI_IND_BADNULL)
                return null();

@@ -26,7 +26,8 @@ boolean OCI_CollGetStruct
    OCI_Library *pOCILib, 
    OCI_Coll *obj,
    void **pp_struct,
-   void** pp_ind
+   void** pp_ind,
+   ExceptionSink* xsink
 );
 
 // return NTY object type - ORACLE_COLLECTION or ORACLE_OBJECT

@@ -927,7 +927,7 @@ OCI_EXPORT OCI_Coll * OCI_API OCI_ObjectGetColl2(OCI_Library *pOCILib, OCI_Objec
 OCI_EXPORT OCI_Coll * OCI_API OCI_ElemGetColl2(OCI_Library *pOCILib, OCI_Elem *elem, ExceptionSink* xsink);
 OCI_EXPORT boolean OCI_API OCI_ElemSetColl2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Coll *value, ExceptionSink* xsink);
 OCI_EXPORT boolean OCI_API OCI_CollFree2(OCI_Library *pOCILib, OCI_Coll *coll);
-OCI_EXPORT OCI_Elem * OCI_API OCI_CollGetAt2(OCI_Library *pOCILib, OCI_Coll *coll, unsigned int index);
+OCI_EXPORT OCI_Elem * OCI_API OCI_CollGetAt2(OCI_Library *pOCILib, OCI_Coll *coll, unsigned int index, ExceptionSink* xsink);
 OCI_EXPORT boolean OCI_API OCI_CollAppend2(OCI_Library *pOCILib, OCI_Coll *coll, OCI_Elem *elem);
 OCI_EXPORT OCI_Timestamp * OCI_API OCI_TimestampCreate2(OCI_Library *pOCILib, OCI_Connection *con, unsigned int type);
 OCI_EXPORT boolean OCI_API OCI_ElemSetTimestamp2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Timestamp *value);
@@ -961,7 +961,7 @@ OCI_EXPORT void OCI_ExceptionNotAvailable2(OCI_Library *pOCILib, OCI_Connection 
 OCI_EXPORT void OCI_ExceptionDatatypeNotSupported2(OCI_Library *pOCILib, OCI_Connection *con, OCI_Statement *stmt, int code);
 OCI_EXPORT void OCI_ExceptionParsingToken2(OCI_Library *pOCILib, OCI_Connection *con, OCI_Statement *stmt, mtext token);
 OCI_EXPORT void OCI_ExceptionMappingArgument2(OCI_Library *pOCILib, OCI_Connection *con, OCI_Statement *stmt, int arg);
-OCI_EXPORT void OCI_ExceptionOutOfBounds2(OCI_Library *pOCILib, OCI_Connection *con, int value);
+OCI_EXPORT void OCI_ExceptionOutOfBounds2(OCI_Library *pOCILib, OCI_Connection *con, int value, ExceptionSink* xsink);
 OCI_EXPORT void OCI_ExceptionUnfreedData2(OCI_Library *pOCILib, int type_elem, int nb_elem);
 OCI_EXPORT void OCI_ExceptionMaxBind2(OCI_Library *pOCILib, OCI_Statement *stmt);
 OCI_EXPORT void OCI_ExceptionAttributeNotFound2(OCI_Library *pOCILib, OCI_Connection *con, const mtext *attr, ExceptionSink* xsink);
@@ -999,9 +999,9 @@ OCI_EXPORT boolean OCI_NumberGetFromStr2(OCI_Library *pOCILib, OCI_Connection *c
 OCI_EXPORT boolean OCI_API OCI_TypeInfoFree2(OCI_Library *pOCILib, OCI_TypeInfo *typinf);
 OCI_EXPORT unsigned int OCI_API OCI_TypeInfoGetType2(OCI_Library *pOCILib, OCI_TypeInfo *typinf);
 OCI_EXPORT unsigned int OCI_API OCI_TypeInfoGetColumnCount2(OCI_Library *pOCILib, OCI_TypeInfo *typinf);
-OCI_EXPORT OCI_Column * OCI_API OCI_TypeInfoGetColumn2(OCI_Library *pOCILib, OCI_TypeInfo *typinf, unsigned int index);
+OCI_EXPORT OCI_Column * OCI_API OCI_TypeInfoGetColumn2(OCI_Library *pOCILib, OCI_TypeInfo *typinf, unsigned int index, ExceptionSink* xsink);
 OCI_EXPORT const mtext * OCI_API OCI_TypeInfoGetName2(OCI_Library *pOCILib, OCI_TypeInfo *typinf);
-OCI_EXPORT const mtext * OCI_API OCI_ColumnGetName2(OCI_Library *pOCILib, OCI_Column *col);
+OCI_EXPORT const mtext * OCI_API OCI_ColumnGetName2(OCI_Library *pOCILib, OCI_Column *col, ExceptionSink* xsink);
 OCI_EXPORT unsigned int OCI_API OCI_ColumnGetType2(OCI_Library *pOCILib, OCI_Column *col);
 OCI_EXPORT unsigned int OCI_API OCI_ColumnGetCharsetForm2(OCI_Library *pOCILib, OCI_Column *col);
 OCI_EXPORT unsigned int OCI_API OCI_ColumnGetSize2(OCI_Library *pOCILib, OCI_Column *col);

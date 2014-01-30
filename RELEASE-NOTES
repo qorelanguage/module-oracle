@@ -3,6 +3,8 @@ version 3.2
 ***********
 
 * added more Qore exception handling in ocilib object/NTY APIs
+* ensure all strings written to the DB are converted to the target character
+  encoding before writing
 
 
 ***********

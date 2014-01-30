@@ -674,11 +674,11 @@ boolean OCI_ColumnMap2(OCI_Library *pOCILib, OCI_Column *col, OCI_Statement *stm
  * OCI_ColumnGetName
  * ------------------------------------------------------------------------ */
 
-const mtext * OCI_API OCI_ColumnGetName2(OCI_Library *pOCILib, OCI_Column *col)
+const mtext * OCI_API OCI_ColumnGetName2(OCI_Library *pOCILib, OCI_Column *col, ExceptionSink* xsink)
 {
-    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLUMN, col, NULL);
+   OCI_CHECK_PTRQ(pOCILib, OCI_IPC_COLUMN, col, NULL, xsink);
 
-    return col->name;
+   return col->name;
 }
 
 /* ------------------------------------------------------------------------ *

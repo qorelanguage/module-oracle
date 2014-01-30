@@ -471,14 +471,14 @@ unsigned int OCI_API OCI_TypeInfoGetColumnCount2(OCI_Library *pOCILib, OCI_TypeI
  * OCI_TypeInfoGetColumn
  * ------------------------------------------------------------------------ */
 
-OCI_Column * OCI_API OCI_TypeInfoGetColumn2(OCI_Library *pOCILib, OCI_TypeInfo *typinf, unsigned int index)
+OCI_Column * OCI_API OCI_TypeInfoGetColumn2(OCI_Library *pOCILib, OCI_TypeInfo *typinf, unsigned int index, ExceptionSink* xsink)
 {
-    OCI_CHECK_PTR(pOCILib, OCI_IPC_TYPE_INFO, typinf, NULL);
-    OCI_CHECK_BOUND(pOCILib, typinf->con, index, 1,  typinf->nb_cols, NULL);
+   OCI_CHECK_PTRQ(pOCILib, OCI_IPC_TYPE_INFO, typinf, NULL, xsink);
+   OCI_CHECK_BOUNDQ(pOCILib, typinf->con, index, 1,  typinf->nb_cols, NULL, xsink);
 
-    OCI_RESULT(pOCILib, TRUE);
+   OCI_RESULT(pOCILib, TRUE);
 
-    return &(typinf->cols[index-1]);
+   return &(typinf->cols[index-1]);
 }
 
 /* ------------------------------------------------------------------------ *

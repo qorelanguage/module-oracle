@@ -537,7 +537,7 @@ void OCI_ExceptionMappingArgument2(OCI_Library *pOCILib, OCI_Connection *con, OC
  * OCI_ExceptionOutOfBounds
  * ------------------------------------------------------------------------ */
 
-void OCI_ExceptionOutOfBounds2(OCI_Library *pOCILib, OCI_Connection *con, int value)
+void OCI_ExceptionOutOfBounds2(OCI_Library *pOCILib, OCI_Connection *con, int value, ExceptionSink* xsink)
 {
     OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
@@ -553,7 +553,7 @@ void OCI_ExceptionOutOfBounds2(OCI_Library *pOCILib, OCI_Connection *con, int va
                   value);
     }
 
-    OCI_ExceptionRaise2(pOCILib, err);
+    OCI_ExceptionRaise2(pOCILib, err, xsink);
 }
 
  /* ------------------------------------------------------------------------ *

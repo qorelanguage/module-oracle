@@ -250,7 +250,7 @@ OCI_Elem * OCI_API OCI_CollGetAt(OCI_Coll *coll, unsigned int index)
 }
 */
 
-OCI_Elem * OCI_API OCI_CollGetAt2(OCI_Library *pOCILib, OCI_Coll *coll, unsigned int index)
+OCI_Elem * OCI_API OCI_CollGetAt2(OCI_Library *pOCILib, OCI_Coll *coll, unsigned int index, ExceptionSink* xsink)
 {
     boolean res    = TRUE;
     boolean exists = FALSE;
@@ -258,15 +258,16 @@ OCI_Elem * OCI_API OCI_CollGetAt2(OCI_Library *pOCILib, OCI_Coll *coll, unsigned
     OCIInd *p_ind  = NULL;
     OCI_Elem *elem = NULL;
 
-    OCI_CHECK_PTR(pOCILib, OCI_IPC_COLLECTION, coll, NULL);
+    OCI_CHECK_PTRQ(pOCILib, OCI_IPC_COLLECTION, coll, NULL, xsink);
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
         pOCILib, res, coll->con,
 
         OCICollGetElem(pOCILib->env, coll->con->err, coll->handle, (sb4) index-1,
-                       &exists, &data, (dvoid **) (dvoid *) &p_ind)
+                       &exists, &data, (dvoid **) (dvoid *) &p_ind),
 
+	xsink
     )
 
     //printf("OCICollGetElem() index: %d handle: %p exists: %d data: %p p_ind: %p coll->elem: %p\n", index, coll->handle, exists, data, p_ind, coll->elem);

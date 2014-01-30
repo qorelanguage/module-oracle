@@ -4,15 +4,15 @@
 
     Contents of this documentation:
     - @ref oracleintro
-    - @ref options
+    - @ref ora_options
     - @ref bindings_and_types
     - @ref binding_by_value
     - @ref binding_by_placeholder
     - @ref default_oracle_to_qore_mapping
     - @ref named_types
     - @ref aq
-    - @ref known_issues
-    - @ref releasenotes
+    - @ref ora_known_issues
+    - @ref ora_releasenotes
 
     @section oracleintro Introduction to the oracle Module
 
@@ -84,7 +84,7 @@
     be wrapped in a mutex by oracle (with \c OCI_THREADED and
     without \c OCI_NO_MUTEX).
 
-    @section options Driver Options
+    @section ora_options Driver Options
 
     When compiled again Qore 0.8.6+ the oracle driver support the following DBI options on each connection:
     - \c "optimal-numbers": return <tt>NUMBER</tt> types as an integer if possible, if not as an arbitrary-precision number
@@ -155,7 +155,7 @@
 
     @subsection timezone Time Zone Support
 
-    The driver now sets the server's time zone rules when the connection is established; this is taken from the current time zone settings of the calling Program object and can also be overridden/changed by setting the \c "timezone" driver option (see @ref options).
+    The driver now sets the server's time zone rules when the connection is established; this is taken from the current time zone settings of the calling Program object and can also be overridden/changed by setting the \c "timezone" driver option (see @ref ora_options).
 
     All date/time values bound by value are converted to the server's time zone before binding to ensure that date/time values are stored correctly in the server.
 
@@ -376,7 +376,7 @@
     |Qore::Oracle::AQQueue|Main queue handler
     |Qore::Oracle::AQMessage|Enhanced features for message
 
-    @section known_issues Known Issues
+    @section ora_known_issues Known Issues
 
     Unfortunately there are some known bugs in the Oracle Module which cannot be fixed
     in the Qore driver right now. These are bugs in the underlying Oracle C Interface
@@ -460,10 +460,11 @@ kpcest_err_handler: Max errors exceeded..Closing connection
    <tr><th>11.2.0.3.0</th><td>&nbsp;</td><td>fails</td><td>works</td><td>works</td></tr>
 </table>
 
-    @section releasenotes Release Notes
+    @section ora_releasenotes Release Notes
 
     @subsection oracle32 oracle Driver Version 3.2
     - added more Qore exception handling in ocilib object/NTY APIs
+    - ensure all strings written to the DB are converted to the target character encoding before writing
 
     @subsection oracle31 oracle Driver Version 3.1
     

@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2006 - 2013 Qore Technologies, sro
+  Copyright (C) 2006 - 2014 Qore Technologies, sro
   
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -273,7 +273,7 @@ void OraBindNode::bindValue(int pos, ExceptionSink *xsink) {
    xsink->raiseException("ORACLE-BIND-VALUE-ERROR", "type '%s' is not supported for SQL binding", value->getTypeName());
 }
 
-void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
+void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
    QoreOracleConnection *conn = (QoreOracleConnection *)stmt.getData();
 
    //printd(5, "OraBindNode::bindPlaceholder(ds=%p, pos=%d) type=%s, size=%d)\n", ds, pos, data.ph.type, data.ph.maxsize);
@@ -296,8 +296,10 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
       buf.ptr = malloc(sizeof(char) * (data.ph.maxsize + 1));
 
       if (value) {
-	 QoreStringValueHelper str(value);
-	 
+	 QoreStringValueHelper str(value, stmt.getEncoding(), xsink);
+         if (*xsink)
+            return;
+         
 	 strncpy((char *)buf.ptr, str->getBuffer(), data.ph.maxsize);
 	 ((char *)buf.ptr)[data.ph.maxsize] = '\0';	 
       }
@@ -345,7 +347,9 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink *xsink) {
 	    }
 	 }
 	 else {
-	    QoreStringValueHelper str(value);
+	    QoreStringValueHelper str(value, stmt.getEncoding(), xsink);
+            if (*xsink)
+               return;
 	    // if too big, raise an exception (not likely to happen)
 	    if (str->strlen() > 0x7fffffff) {
 	       xsink->raiseException("BIND-ERROR", "value passed for binding is %lld bytes long, which is too big to bind as a long binary value, maximum size is %d bytes", str->strlen(), 0x7fffffff);

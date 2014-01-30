@@ -382,6 +382,15 @@
         return (ret);                                                          \
     } 
 
+#define OCI_CHECK_BOUNDQ(ocilib, con, v, b1, b2, ret, xsink)			\
+                                                                               \
+    if ((v < (b1)) || (v > (b2)))                                              \
+    {                                                                          \
+       OCI_ExceptionOutOfBounds2(ocilib, (con), (v), xsink);			\
+                                                                               \
+        return (ret);                                                          \
+    } 
+
 /**
  * @brief 
  * Checks if an integer parameter value is >= minimum provided value
