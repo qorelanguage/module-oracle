@@ -1,4 +1,4 @@
-%define mod_ver 3.1
+%define mod_ver 3.2
 %define module_api %(qore --latest-module-api 2>/dev/null)
 %define module_dir %{_libdir}/qore-modules
 
@@ -99,6 +99,9 @@ This RPM provides API documentation, test and example programs
 %doc docs/oracle/html test/db-test.q test/sql-stmt.q
 
 %changelog
+* Thu Jan 30 2013 David Nichols <david@qore.org> - 3.2
+- updated to version 3.2
+
 * Fri Aug 2 2013 David Nichols <david@qore.org> - 3.1
 - updated to version 3.1
 

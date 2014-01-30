@@ -119,7 +119,11 @@ OraResultSet::OraResultSet(QoreOracleStatement &n_stmt, const char *str, Excepti
           s.concat(".");
           s.concat(tname);
 
-          OCI_TypeInfo * info = OCI_TypeInfoGet2(&conn->ocilib, conn->ocilib_cn, s.getBuffer(), OCI_TIF_TYPE);
+          OCI_TypeInfo * info = OCI_TypeInfoGet2(&conn->ocilib, conn->ocilib_cn, s.getBuffer(), OCI_TIF_TYPE, xsink);
+          if (*xsink) {
+             assert(!info);
+             return;
+          }
 
           //printd(0, "OraResultSet::OraResultSet() ccode %d\n", info->ccode);
           // This is some kind of black magic - I'm not sure if it's sufficient

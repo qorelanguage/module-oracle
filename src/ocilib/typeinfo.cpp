@@ -77,7 +77,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet(OCI_Connection *con, const mtext *name,
 */
 
 OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *con, const mtext *name, 
-					unsigned int type)
+					unsigned int type, ExceptionSink* xsink)
 {
     OCI_TypeInfo *typinf = NULL;
     OCI_Item     *item   = NULL;
@@ -97,10 +97,10 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
     mtext obj_schema[OCI_SIZE_OBJ_NAME+1];
     mtext obj_name[OCI_SIZE_OBJ_NAME+1];
 
-    OCI_CHECK_INITIALIZED2(pOCILib, NULL);
+    OCI_CHECK_INITIALIZED2Q(pOCILib, NULL, xsink);
 
-    OCI_CHECK_PTR(pOCILib, OCI_IPC_CONNECTION, con, NULL);
-    OCI_CHECK_PTR(pOCILib, OCI_IPC_STRING, name, NULL);
+    OCI_CHECK_PTRQ(pOCILib, OCI_IPC_CONNECTION, con, NULL, xsink);
+    OCI_CHECK_PTRQ(pOCILib, OCI_IPC_STRING, name, NULL, xsink);
 
     if (type == OCI_TIF_TABLE)
         item_type = OCI_PTYPE_TABLE;
@@ -206,25 +206,29 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
                 ostr1 = OCI_GetInputMetaString(pOCILib, typinf->schema, &osize1);
                 ostr2 = OCI_GetInputMetaString(pOCILib, typinf->name,   &osize2);
 
-                OCI_CALL2
+                OCI_CALL2Q
                 (
 		   pOCILib, res, con, 
-                    
-                    OCITypeByName(pOCILib->env, con->err, con->cxt,
+                   
+		   OCITypeByName(pOCILib->env, con->err, con->cxt,
                                  (text *) ostr1, (ub4) osize1, 
                                  (text *) ostr2, (ub4) osize2, 
                                  (text *) NULL, (ub4) 0, 
                                  OCI_DURATION_SESSION, OCI_TYPEGET_ALL,
-                                 &typinf->tdo)
+                                 &typinf->tdo),
+
+		   xsink
                 )
 
-                OCI_CALL2
+                OCI_CALL2Q
                 (
                     pOCILib, res, con, 
                     
                     OCIDescribeAny(con->cxt, con->err, (void *) typinf->tdo,
                                    0, OCI_OTYPE_PTR, OCI_DEFAULT, 
-                                   OCI_PTYPE_TYPE, dschp)
+                                   OCI_PTYPE_TYPE, dschp),
+
+		    xsink
                 )
                 
                 OCI_ReleaseMetaString(ostr1);
@@ -257,36 +261,42 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
                 ostr1 = OCI_GetInputMetaString(pOCILib, str, &osize1);
 
-                OCI_CALL2
+                OCI_CALL2Q
                 (
                     pOCILib, res, con, 
                     
                     OCIDescribeAny(con->cxt, con->err, (dvoid *) ostr1, 
                                    (ub4) osize1, OCI_OTYPE_NAME, 
-                                   OCI_DEFAULT, item_type, dschp)
+                                   OCI_DEFAULT, item_type, dschp),
+
+		    xsink
                 )
 
                 OCI_ReleaseMetaString(ostr1);
             }
                   
-            OCI_CALL2
+            OCI_CALL2Q
             (
                 pOCILib, res, con, 
                 
                 OCIAttrGet(dschp, OCI_HTYPE_DESCRIBE, &parmh1, 
-                           NULL, OCI_ATTR_PARAM, con->err)
+                           NULL, OCI_ATTR_PARAM, con->err),
+
+		xsink
             )
 
             /* do we need get more attributes for collections ? */
 
             if (type == OCI_TIF_TYPE)
             {
-                OCI_CALL2
+                OCI_CALL2Q
                 (
                     pOCILib, res, con, 
                     
                     OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &typinf->tcode, 
-                               NULL, OCI_ATTR_TYPECODE, con->err)
+                               NULL, OCI_ATTR_TYPECODE, con->err),
+
+		    xsink
                 )
 
             }
@@ -299,30 +309,36 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
                 etype  = OCI_DESC_TYPE;
                 parmh2 = parmh1;
 
-                OCI_CALL2
+                OCI_CALL2Q
                 (
                     pOCILib, res, con, 
                     
                     OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &typinf->ccode, 
-                               NULL, OCI_ATTR_COLLECTION_TYPECODE, con->err)
+                               NULL, OCI_ATTR_COLLECTION_TYPECODE, con->err),
+
+		    xsink
                 )
             }
             else
             {
-                OCI_CALL2
+                OCI_CALL2Q
                 (
                     pOCILib, res, con, 
                     
                     OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &parmh2, 
-                               NULL, attr_type, con->err)
+                               NULL, attr_type, con->err),
+
+		    xsink
                 )
 
-                OCI_CALL2
+                OCI_CALL2Q
                 (
                     pOCILib, res, con, 
                     
                     OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &typinf->nb_cols,
-                               NULL, num_type, con->err)
+                               NULL, num_type, con->err),
+
+		    xsink
                 )
             }
          
@@ -359,7 +375,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
                     for (i = 0; i < typinf->nb_cols; i++)
                     {
 		        res = res && OCI_ColumnDescribe2(pOCILib, &typinf->cols[i], con, 
-							 NULL, parmh2, i + 1, ptype);
+							 NULL, parmh2, i + 1, ptype, xsink);
                         
 		        res = res && OCI_ColumnMap2(pOCILib, &typinf->cols[i], NULL);
 

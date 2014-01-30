@@ -336,10 +336,11 @@ int AQQueuePriv::connectUnlocked(ExceptionSink *xsink) {
    OCI_SetTrace(&m_conn->ocilib, m_conn->ocilib_cn, OCI_TRC_MODULE, value.getBuffer());
 
    assert(!m_typeInfo);
-   m_typeInfo = OCI_TypeInfoGet2(&m_conn->ocilib, m_conn->ocilib_cn, tn->getBuffer(), OCI_TIF_TYPE);
+   m_typeInfo = OCI_TypeInfoGet2(&m_conn->ocilib, m_conn->ocilib_cn, tn->getBuffer(), OCI_TIF_TYPE, xsink);
 
    if (!m_typeInfo) {
-      xsink->raiseException("AQ-MESSAGE-ERROR", "Cannot get type info for '%s'", m_tname->getBuffer());
+      if (!*xsink)
+         xsink->raiseException("AQ-MESSAGE-ERROR", "Cannot get type info for '%s'", m_tname->getBuffer());
       destructorUnlocked(xsink);
       return -1;
    }

@@ -50,8 +50,8 @@ boolean OCI_ColumnDescribe(OCI_Column *col, OCI_Connection *con,
 */
 
 boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connection *con, 
-                           OCI_Statement *stmt, void *handle, int index,
-                           int ptype)
+			    OCI_Statement *stmt, void *handle, int index,
+			    int ptype, ExceptionSink* xsink)
 {
     void       *ostr     = NULL;
     void       *param    = NULL;
@@ -64,12 +64,14 @@ boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connectio
 
     if (ptype == OCI_DESC_COLLECTION)
     {
-        OCI_CALL1
+        OCI_CALL1Q
         (
             pOCILib, res, con, stmt,
             
             OCIAttrGet((dvoid *) handle, (ub4) OCI_DTYPE_PARAM, (dvoid *) &param, 
-                       (ub4 *) NULL, (ub4) OCI_ATTR_COLLECTION_ELEMENT, con->err)
+                       (ub4 *) NULL, (ub4) OCI_ATTR_COLLECTION_ELEMENT, con->err),
+
+	    xsink
         )
 
         attrname = OCI_ATTR_TYPE_NAME;
@@ -81,43 +83,51 @@ boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connectio
         else
             htype = OCI_DTYPE_PARAM;
 
-        OCI_CALL1
+        OCI_CALL1Q
         (
             pOCILib, res, con, stmt,
             
             OCIParamGet((dvoid *) handle, htype,  con->err, (void**) &param, 
-                        (ub4) index)
+                        (ub4) index),
+
+	    xsink
         )
     }
 
-   /* sql code */
+    /* sql code */
 
-    OCI_CALL1
+    OCI_CALL1Q
     (
         pOCILib, res, con, stmt,
         
         OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, (dvoid *) &col->ocode,
-                   (ub4 *) NULL, (ub4) OCI_ATTR_DATA_TYPE, con->err)
+                   (ub4 *) NULL, (ub4) OCI_ATTR_DATA_TYPE, con->err),
+
+	xsink
     )
  
    /* size */
 
-    OCI_CALL1
+    OCI_CALL1Q
     (
         pOCILib, res, con, stmt,
         
         OCIAttrGet((dvoid *) param, (ub4)  OCI_DTYPE_PARAM, (dvoid *) &col->size,
-                   (ub4 *) NULL, (ub4) OCI_ATTR_DATA_SIZE, con->err)
+                   (ub4 *) NULL, (ub4) OCI_ATTR_DATA_SIZE, con->err),
+
+	xsink
     )
 
     /* scale */
 
-    OCI_CALL1
+    OCI_CALL1Q
     (
         pOCILib, res, con, stmt,
         
         OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, (dvoid *) &col->scale,
-                   (ub4 *) NULL, (ub4) OCI_ATTR_SCALE, con->err)
+                   (ub4 *) NULL, (ub4) OCI_ATTR_SCALE, con->err),
+
+	xsink
     )
 
     /* precision */
@@ -126,12 +136,14 @@ boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connectio
     {
         sb2 prec = 0;
 
-        OCI_CALL1
+        OCI_CALL1Q
         (
             pOCILib, res, con, stmt,
             
             OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, (dvoid *) &prec,
-                       (ub4 *) NULL, (ub4) OCI_ATTR_PRECISION, con->err)
+                       (ub4 *) NULL, (ub4) OCI_ATTR_PRECISION, con->err),
+
+	    xsink
         )
 
         col->prec = (sb2) prec;
@@ -140,12 +152,14 @@ boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connectio
     {
         ub1 prec = 0;
 
-        OCI_CALL1
+        OCI_CALL1Q
         (
             pOCILib, res, con, stmt,
             
             OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, (dvoid *) &prec,
-                       (ub4 *) NULL, (ub4) OCI_ATTR_PRECISION, con->err)
+                       (ub4 *) NULL, (ub4) OCI_ATTR_PRECISION, con->err),
+
+	    xsink
         )
 
         col->prec = (sb2) prec;
@@ -153,12 +167,14 @@ boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connectio
 
     /* charset form */
 
-    OCI_CALL1
+    OCI_CALL1Q
     (
         pOCILib, res, con, stmt,
         
         OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, (dvoid *) &col->csfrm, 
-                   (ub4 *) NULL, (ub4) OCI_ATTR_CHARSET_FORM, con->err)
+                   (ub4 *) NULL, (ub4) OCI_ATTR_CHARSET_FORM, con->err),
+
+	xsink
     )
 
     /* type of column length for string based column */
@@ -171,13 +187,15 @@ boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connectio
                        this param that is not char/varchar based will cause an 
                        error */
 
-        OCI_CALL1
+        OCI_CALL1Q
         (
             pOCILib, res, con, stmt,
             
             OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, 
                        (dvoid *) &col->charused, (ub4 *) NULL, 
-                       (ub4) OCI_ATTR_CHAR_USED, con->err)
+                       (ub4) OCI_ATTR_CHAR_USED, con->err),
+	    
+	    xsink
         )
     }
 
@@ -185,13 +203,15 @@ boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connectio
     
     if (col->charused == TRUE)
     {
-        OCI_CALL1
+        OCI_CALL1Q
         (
             pOCILib, res, con, stmt,
         
             OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, 
                        (dvoid *) &col->charsize, (ub4 *) NULL, 
-                       (ub4) OCI_ATTR_CHAR_SIZE, con->err)
+                       (ub4) OCI_ATTR_CHAR_SIZE, con->err),
+
+	    xsink
         )
     }
 
@@ -203,13 +223,15 @@ boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connectio
              col->ocode == SQLT_TIMESTAMP_TZ ||
              col->ocode == SQLT_TIMESTAMP_LTZ)
         {
-            OCI_CALL1
+            OCI_CALL1Q
             (
                 pOCILib, res, con, stmt,
         
                 OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM,
                            (dvoid *) &col->prec, (ub4 *) NULL, 
-                           (ub4) OCI_ATTR_FSPRECISION, con->err)
+                           (ub4) OCI_ATTR_FSPRECISION, con->err),
+
+		xsink
             )
         }
 
@@ -218,22 +240,26 @@ boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connectio
         if (col->ocode == SQLT_INTERVAL_DS ||
             col->ocode == SQLT_INTERVAL_YM)
         {
-            OCI_CALL1
+            OCI_CALL1Q
             (
                 pOCILib, res, con, stmt,
         
                 OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, 
                            (dvoid *) &col->prec, (ub4 *) NULL, 
-                           (ub4) OCI_ATTR_LFPRECISION, con->err)
+                           (ub4) OCI_ATTR_LFPRECISION, con->err),
+
+		xsink
             )
 
-            OCI_CALL1
+            OCI_CALL1Q
             (
                 pOCILib, res, con, stmt,
         
                 OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, 
                            (dvoid *) &col->prec2, (ub4 *) NULL, 
-                           (ub4) OCI_ATTR_FSPRECISION, con->err)
+                           (ub4) OCI_ATTR_FSPRECISION, con->err),
+
+		xsink
             )
         }
     }
@@ -244,13 +270,15 @@ boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connectio
 
     if (ptype == OCI_DESC_TABLE)
     {
-        OCI_CALL1
+        OCI_CALL1Q
         (
             pOCILib, res, con, stmt,
         
             OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, 
                        (dvoid *) &col->null, (ub4 *) NULL, 
-                       (ub4) OCI_ATTR_IS_NULL, con->err)
+                       (ub4) OCI_ATTR_IS_NULL, con->err),
+
+	    xsink
         )
     }
     else
@@ -271,12 +299,14 @@ boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connectio
     else
         attrname = OCI_ATTR_NAME;
 
-    OCI_CALL1
+    OCI_CALL1Q
     (
         pOCILib, res, con, stmt,
         
         OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, (dvoid *) &ostr,
-                   (ub4 *) &osize, (ub4) attrname, con->err)
+                   (ub4 *) &osize, (ub4) attrname, con->err),
+
+	xsink
     )
 
     if ((res == TRUE) && (ostr != NULL))
@@ -298,13 +328,15 @@ boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connectio
 
     if (col->ocode == SQLT_NTY || col->ocode == SQLT_REF)
     {
-        OCI_CALL1
+        OCI_CALL1Q
         (
             pOCILib, res, con, stmt,
         
             OCIAttrGet((dvoid *) param, (ub4) OCI_DTYPE_PARAM, 
                        (dvoid *) &ostr, (ub4 *) &osize, 
-                       (ub4) OCI_ATTR_TYPE_NAME, con->err)
+                       (ub4) OCI_ATTR_TYPE_NAME, con->err),
+
+	    xsink
         )
       
         if ((res == TRUE) && (ostr != NULL))
@@ -316,7 +348,7 @@ boolean OCI_ColumnDescribe2(OCI_Library *pOCILib, OCI_Column *col, OCI_Connectio
             if (tmp != NULL)
             {
                OCI_CopyString(ostr, tmp, &osize, sizeof(omtext), sizeof(mtext));
-               col->typinf = OCI_TypeInfoGet2(pOCILib, con, tmp, OCI_SCHEMA_TYPE);
+               col->typinf = OCI_TypeInfoGet2(pOCILib, con, tmp, OCI_SCHEMA_TYPE, xsink);
             }
 
             res = (col->typinf != NULL);

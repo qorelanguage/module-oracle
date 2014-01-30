@@ -6,7 +6,7 @@
 
   Qore Programming Language
 
-  Copyright 2003 - 2012 Qore Technologies, sro
+  Copyright 2003 - 2014 Qore Technologies, sro
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -111,16 +111,16 @@ bool ntyCheckType(const char * tname, const QoreHashNode * n, qore_type_t t) {
 }
 
 OCI_Object* objPlaceholderQore(QoreOracleConnection * conn, const char * tname, ExceptionSink *xsink) {
-    OCI_TypeInfo * info = OCI_TypeInfoGet2(&conn->ocilib, conn->ocilib_cn, tname, OCI_TIF_TYPE);
-    if (!info) {
-       if (!*xsink)
-	  xsink->raiseException("ORACLE-OBJECT-ERROR", "could not get type info for object type '%s'", tname);
-       return 0;
-    }
-    OCI_Object * obj = OCI_ObjectCreate2(&conn->ocilib, conn->ocilib_cn, info, xsink);
-    if (!obj && !*xsink)
-       xsink->raiseException("ORACLE-OBJECT-ERROR", "could not create placeholder buffer for object type '%s'", tname);
-    return obj;
+   OCI_TypeInfo * info = OCI_TypeInfoGet2(&conn->ocilib, conn->ocilib_cn, tname, OCI_TIF_TYPE, xsink);
+   if (!info) {
+      if (!*xsink)
+         xsink->raiseException("ORACLE-OBJECT-ERROR", "could not get type info for object type '%s'", tname);
+      return 0;
+   }
+   OCI_Object * obj = OCI_ObjectCreate2(&conn->ocilib, conn->ocilib_cn, info, xsink);
+   if (!obj && !*xsink)
+      xsink->raiseException("ORACLE-OBJECT-ERROR", "could not create placeholder buffer for object type '%s'", tname);
+   return obj;
 }
 
 OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, ExceptionSink * xsink) {
@@ -136,10 +136,10 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
     const QoreHashNode * th = reinterpret_cast<const QoreHashNode*>(h->getKeyValue("^values^"));
     const char * tname = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("^oratype^"))->getBuffer();
     
-    OCI_TypeInfo * info = OCI_TypeInfoGet2(&d->ocilib, d->ocilib_cn, tname, OCI_TIF_TYPE);
+    OCI_TypeInfo * info = OCI_TypeInfoGet2(&d->ocilib, d->ocilib_cn, tname, OCI_TIF_TYPE, xsink);
     if (!info) {
-        xsink->raiseException("BIND-ORACLE-OBJECT-ERROR",
-                              "No type '%s' defined in the DB", tname);
+       if (!*xsink)
+          xsink->raiseException("BIND-ORACLE-OBJECT-ERROR", "No type '%s' defined in the DB", tname);
         return 0;
     }
     OCI_Object * obj = OCI_ObjectCreate2(&d->ocilib, d->ocilib_cn, info, xsink);
@@ -604,10 +604,11 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
    const QoreListNode * th = reinterpret_cast<const QoreListNode*>(h->getKeyValue("^values^"));
    const char * tname = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("^oratype^"))->getBuffer();
     
-   OCI_TypeInfo * info = OCI_TypeInfoGet2(&d->ocilib, d->ocilib_cn, tname, OCI_TIF_TYPE);
+   OCI_TypeInfo * info = OCI_TypeInfoGet2(&d->ocilib, d->ocilib_cn, tname, OCI_TIF_TYPE, xsink);
    if (!info) {
-      xsink->raiseException("BIND-ORACLE-COLLECTION-ERROR",
-			    "No type '%s' defined in the DB", tname);
+      if (!*xsink)
+         xsink->raiseException("BIND-ORACLE-COLLECTION-ERROR",
+                               "No type '%s' defined in the DB", tname);
       return 0;
    }
 
@@ -1002,10 +1003,11 @@ AbstractQoreNode* collToQore(QoreOracleConnection * conn, OCI_Coll * obj, Except
 }
 
 OCI_Coll* collPlaceholderQore(QoreOracleConnection *conn, const char * tname, ExceptionSink *xsink) {
-   OCI_TypeInfo * info = OCI_TypeInfoGet2(&conn->ocilib, conn->ocilib_cn, tname, OCI_TIF_TYPE);
+   OCI_TypeInfo * info = OCI_TypeInfoGet2(&conn->ocilib, conn->ocilib_cn, tname, OCI_TIF_TYPE, xsink);
    if (!info) {
-      xsink->raiseException("PLACEHOLDER-ORACLE-COLLECTION-ERROR",
-			    "No type '%s' defined in the DB", tname);
+      if (!*xsink)
+         xsink->raiseException("PLACEHOLDER-ORACLE-COLLECTION-ERROR",
+                               "No type '%s' defined in the DB", tname);
       return 0;
    }
    OCI_Coll * obj = OCI_CollCreate2(&conn->ocilib, info, xsink);

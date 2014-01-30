@@ -291,7 +291,7 @@ void OCI_ExceptionNotInitialized(void)
 }
 */
 
-void OCI_ExceptionNotInitialized2(OCI_Library *pOCILib)
+void OCI_ExceptionNotInitialized2(OCI_Library *pOCILib, ExceptionSink* xsink)
 {
     OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
@@ -304,7 +304,7 @@ void OCI_ExceptionNotInitialized2(OCI_Library *pOCILib)
                 msizeof(err->str) - (size_t) 1);
     }
 
-    OCI_ExceptionRaise2(pOCILib, err);
+    OCI_ExceptionRaise2(pOCILib, err, xsink);
 }
 
 /* ------------------------------------------------------------------------ *
@@ -393,7 +393,7 @@ void OCI_ExceptionNotMultithreaded2(OCI_Library *pOCILib)
  * OCI_ExceptionNullPointer
  * ------------------------------------------------------------------------ */
 
-void OCI_ExceptionNullPointer2(OCI_Library *pOCILib, int type)
+void OCI_ExceptionNullPointer2(OCI_Library *pOCILib, int type, ExceptionSink* xsink)
 {
     OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
@@ -407,7 +407,7 @@ void OCI_ExceptionNullPointer2(OCI_Library *pOCILib, int type)
                   OCILib_TypeNames[type-1]);
     }
 
-    OCI_ExceptionRaise2(pOCILib, err);
+    OCI_ExceptionRaise2(pOCILib, err, xsink);
 }
 
 /* ------------------------------------------------------------------------ *

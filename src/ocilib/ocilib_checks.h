@@ -97,6 +97,22 @@
         }                                                                      \
     }
 
+#define OCI_CALL1Q(ocilib, res, con, stmt, fct, xsink)			\
+                                                                               \
+    {                                                                          \
+        if ((res) == TRUE)                                                     \
+        {                                                                      \
+            (res) = (boolean) fct;                                             \
+            if (OCI_NO_ERROR((res)) == FALSE)                                  \
+            {                                                                  \
+                (res) = ((res) == OCI_SUCCESS_WITH_INFO);                      \
+		OCI_ExceptionOCI2(ocilib, (con)->err, (con), (stmt), res, xsink); \
+            }                                                                  \
+            else                                                               \
+                (res) = TRUE;                                                  \
+        }                                                                      \
+    }
+
 /**
  * @brief 
  * Conditional OCI call with return value checking
@@ -285,6 +301,15 @@
     if ((ptr) == NULL)                                                         \
     {                                                                          \
        OCI_ExceptionNullPointer2(ocilib, type);				\
+                                                                               \
+        return (ret);                                                          \
+    }           
+
+#define OCI_CHECK_PTRQ(ocilib, type, ptr, ret, xsink)				\
+                                                                               \
+    if ((ptr) == NULL)                                                         \
+    {                                                                          \
+       OCI_ExceptionNullPointer2(ocilib, type, xsink);			\
                                                                                \
         return (ret);                                                          \
     }           
@@ -510,6 +535,14 @@
         if (ocilib->loaded == FALSE)                                            \
         {                                                                      \
             OCI_ExceptionNotInitialized2(ocilib);                                     \
+            return ret;                                                        \
+        }
+
+#define OCI_CHECK_INITIALIZED2Q(ocilib, ret, xsink)				\
+                                                                               \
+        if (ocilib->loaded == FALSE)                                            \
+        {                                                                      \
+	   OCI_ExceptionNotInitialized2(ocilib, xsink);			\
             return ret;                                                        \
         }
 

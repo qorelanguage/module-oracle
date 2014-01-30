@@ -1,4 +1,11 @@
 ***********
+version 3.2
+***********
+
+* added more Qore exception handling in ocilib object/NTY APIs
+
+
+***********
 version 3.1
 ***********
 
