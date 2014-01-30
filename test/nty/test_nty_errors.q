@@ -3,9 +3,19 @@
 %requires oracle
 printf("\nQore named types test - various errors checking\n\n");
 
-my $db = new Datasource("oracle", "omq", "omq", "oraclexe11");
-$db.open();
+my string $connstr;
+switch (gethostname()) {
+    case /^qube/: $connstr = "oracle:omquser2/omquser2@qube"; break;
+    case /^el6/:
+	case /^quark/: $connstr = "oracle:omquser/omquser@el6"; break;
+    case /^el5/:
+    case /^xbox/:
+    case /^ren/: $connstr = "oracle:omquser/omquser@xbox"; break;
+  default: $connstr = "oracle:omqtest/omqtest@stimpy"; break;
+}
 
+my Datasource $db($connstr);
+$db.open();
 
 try {
     printf("\nObject is not bound correctly\n");
