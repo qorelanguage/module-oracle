@@ -242,6 +242,8 @@ public:
    DLLLOCAL QoreListNode *fetchRows(int rows, ExceptionSink *xsink);
    DLLLOCAL QoreHashNode *fetchColumns(int rows, ExceptionSink *xsink);
 
+   DLLLOCAL QoreHashNode *describe(ExceptionSink *xsink);
+
    DLLLOCAL AbstractQoreNode *execWithPrologue(bool rows, ExceptionSink *xsink);
 
 #ifdef _QORE_HAS_DBI_SELECT_ROW

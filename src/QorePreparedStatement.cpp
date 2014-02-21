@@ -826,3 +826,8 @@ QoreHashNode *QorePreparedStatement::fetchColumns(int rows, ExceptionSink *xsink
    return QoreOracleStatement::fetchColumns(*columns, rows, xsink);
 }
 
+QoreHashNode *QorePreparedStatement::describe(ExceptionSink *xsink) {
+   assert(columns);
+   return QoreOracleStatement::describe(*columns, xsink);
+}
+
