@@ -35,6 +35,7 @@ static DateTimeNode *convert_date_time(unsigned char *str) {
 }
 
 void OraColumnValue::del(ExceptionSink *xsink) {
+   //printd(5, "OraColumnValue::del() this: %p dtype: %d buf.ptr: %p\n", this, dtype, buf.ptr);
    switch (dtype) {
       case 0:
       case SQLT_INT:
@@ -263,9 +264,10 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
 
 QoreStringNode* OraColumnValue::doReturnString(bool destructive) {
    if (!destructive)
-      return new QoreStringNode((const char *)buf.ptr, stmt.getEncoding());
-   int len = strlen((char *)buf.ptr);
-   QoreStringNode *str = new QoreStringNode((char *)buf.ptr, len, len + 1, stmt.getEncoding());
+      return new QoreStringNode((const char*)buf.ptr, stmt.getEncoding());
+   int len = strlen((char*)buf.ptr);
+   QoreStringNode *str = new QoreStringNode((char*)buf.ptr, len, len + 1, stmt.getEncoding());
+   //printd(5, "OraColumnValue::doReturnString() this: %p buf.ptr: %p\n", this, buf.ptr);
    buf.ptr = 0;
    return str;
 }
@@ -276,7 +278,7 @@ void OraColumnValue::freeObject() {
 
    QoreOracleConnection *conn = stmt.getData();
 
-   // printd(0, "deleting object (OraColumn) buf.oraObj: %p, buf.oraColl: %p\n", buf.oraObj, buf.oraColl);
+   // printd(5, "deleting object (OraColumn) buf.oraObj: %p, buf.oraColl: %p\n", buf.oraObj, buf.oraColl);
    // objects are allocated in bind-methods and it has to be freed in any case
    if (subdtype == SQLT_NTY_OBJECT) {
       //printd(5, "OraColumnValue::getValue() freed OBJECT: %p\n", buf.oraObj);

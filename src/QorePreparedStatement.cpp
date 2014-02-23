@@ -71,7 +71,7 @@ int OraBindNode::bindDate(int pos, ExceptionSink* xsink) {
 
 void OraBindNode::bind(int pos, ExceptionSink* xsink) {
    if (isValue()) {
-      bindValue(pos, value, xsink);
+      bindValue(xsink, pos, value);
       return;
    }
 
@@ -79,20 +79,21 @@ void OraBindNode::bind(int pos, ExceptionSink* xsink) {
       // convert value to declared buffer type and then do bind with value
       if (data.isType("string") || data.isType("clob")) {
          QoreStringNodeValueHelper tmp(value);
-         bindValue(pos, *tmp, xsink);
+         bindValue(xsink, pos, *tmp, false);
+         //printd(5, "OraBindNode::bind(%d, str='%s' '%s')\n", pos, tmp->getBuffer(), value->getType() == NT_STRING ? reinterpret_cast<const QoreStringNode*>(value)->getBuffer() : value->getTypeName());
       }
       else if (data.isType("date")) {
          DateTimeNodeValueHelper tmp(value);
-         bindValue(pos, *tmp, xsink);
+         bindValue(xsink, pos, *tmp, false);
       }
       else if (data.isType("binary") || data.isType("blob")) {
          if (value->getType() == NT_BINARY)
-            bindValue(pos, value, xsink);
+            bindValue(xsink, pos, value, false);
          else {
             QoreStringNodeValueHelper tmp(value);
             if (!tmp->empty()) {
                SimpleRefHolder<BinaryNode> bt(new BinaryNode((void*)tmp->getBuffer(), tmp->size()));
-               bindValue(pos, *bt, xsink);
+               bindValue(xsink, pos, *bt, false);
             }
             else {
                bindPlaceholder(pos, xsink);
@@ -101,18 +102,18 @@ void OraBindNode::bind(int pos, ExceptionSink* xsink) {
       }
       else if (data.isType("integer")) {
          if (value->getType() == NT_INT)
-            bindValue(pos, value, xsink);
+            bindValue(xsink, pos, value, false);
          else {
             SimpleRefHolder<QoreBigIntNode> it(new QoreBigIntNode(value->getAsBigInt()));
-            bindValue(pos, *it, xsink);
+            bindValue(xsink, pos, *it, false);
          }
       }
       else if (data.isType("float")) {
          if (value->getType() == NT_FLOAT)
-            bindValue(pos, value, xsink);
+            bindValue(xsink, pos, value, false);
          else {
             SimpleRefHolder<QoreFloatNode> ft(new QoreFloatNode(value->getAsFloat()));
-            bindValue(pos, *ft, xsink);
+            bindValue(xsink, pos, *ft, false);
          }
       }
       else {
@@ -124,7 +125,7 @@ void OraBindNode::bind(int pos, ExceptionSink* xsink) {
    bindPlaceholder(pos, xsink);
 }
 
-void OraBindNode::bindValue(int pos, const AbstractQoreNode* v, ExceptionSink* xsink) {
+void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool in_only) {
    QoreOracleConnection *conn = (QoreOracleConnection *)stmt.getData();
 
    ind = 0;
@@ -147,20 +148,43 @@ void OraBindNode::bindValue(int pos, const AbstractQoreNode* v, ExceptionSink* x
 
       // convert to the db charset if necessary
       if (bstr->getEncoding() != stmt.getEncoding()) {
-	 QoreString* nstr = bstr->QoreString::convertEncoding(stmt.getEncoding(), xsink);
+	 TempString nstr(bstr->QoreString::convertEncoding(stmt.getEncoding(), xsink));
 	 if (*xsink)
 	    return;
-	 // save temporary string for later deleting
-         data.save(nstr);
-	 buf.ptr = (char *)nstr->getBuffer();
-	 len = nstr->strlen();
+         if (in_only) {
+            len = nstr->size();
+            buf.ptr = (void*)nstr->getBuffer();
+            data.save(nstr.release());
+         }
+         else {
+            qore_size_t mx = data.ph_maxsize > 0 ? data.ph_maxsize : 0;
+            if (mx <= 0)
+               mx = DBI_DEFAULT_STR_LEN;
+            if (mx > nstr->capacity())
+               nstr->allocate(mx);
+
+            len = nstr->capacity() - 1;
+            buf.ptr = (void*)nstr->giveBuffer();
+         }
       }
-      else { // bind a copy of the value to buffer
-         QoreString* nstr = new QoreString(*bstr);
-	 // save temporary string for later deleting
-         data.save(nstr);         
-	 buf.ptr = (char*)nstr->getBuffer();
-	 len = nstr->strlen();
+      else {
+         // bind a copy of the value to buffer
+         TempString nstr(new QoreString(*bstr));
+         if (in_only) {
+            len = nstr->size();
+            buf.ptr = (void*)nstr->getBuffer();
+            data.save(nstr.release());
+         }
+         else {
+            qore_size_t mx = data.ph_maxsize > 0 ? data.ph_maxsize : 0;
+            if (mx <= 0)
+               mx = DBI_DEFAULT_STR_LEN;
+            if (mx > nstr->capacity())
+               nstr->allocate(mx);
+
+            len = nstr->capacity() - 1;
+            buf.ptr = (void*)nstr->giveBuffer();
+         }
       }
 
       // bind it
@@ -188,8 +212,10 @@ void OraBindNode::bindValue(int pos, const AbstractQoreNode* v, ExceptionSink* x
       else {	 
 	 // bind as a string
          stmt.bindByPos(bndp, pos, buf.ptr, len + 1, SQLT_STR, xsink, pIndicator);
+         //printd(5, "OraBindNode::bindValue() this: %p size: %d '%s'\n", this, len + 1, buf.ptr);
       }
 
+      //printd(5, "OraBindNode::bindValue() this: %p, buf.ptr: %p\n", this, buf.ptr);
       return;
    }
 
@@ -209,12 +235,15 @@ void OraBindNode::bindValue(int pos, const AbstractQoreNode* v, ExceptionSink* x
    if (ntype == NT_BINARY) {
       const BinaryNode *b = reinterpret_cast<const BinaryNode*>(v);
       // bind a copy of the value in case of in/out variables
-      BinaryNode* tb = b->copy();
-      data.save(tb);
+      SimpleRefHolder<BinaryNode> tb(b->copy());
+      qore_size_t len = tb->size();
+      buf.ptr = (void*)(in_only ? tb->getPtr() : tb->giveBuffer());
+      if (in_only)
+         data.save(tb.release());
 
       printd(5, "OraBindNode::bindValue() BLOB ptr: %p size: %d\n", tb->getPtr(), tb->size());
 
-      stmt.bindByPos(bndp, pos, (void*)tb->getPtr(), tb->size(), SQLT_BIN, xsink, pIndicator);
+      stmt.bindByPos(bndp, pos, buf.ptr, len, SQLT_BIN, xsink, pIndicator);
       return;
    }
 
@@ -271,7 +300,7 @@ void OraBindNode::bindValue(int pos, const AbstractQoreNode* v, ExceptionSink* x
    }
 
    if (ntype == NT_HASH) {
-      //printd(0, "hash structure in the Oracle IN attribute\n");
+      //printd(5, "hash structure in the Oracle IN attribute\n");
       const QoreHashNode * h = reinterpret_cast<const QoreHashNode*>(v);
       if (!h->existsKey("type") || !h->existsKey("^oratype^") || !h->existsKey("^values^")) {
          xsink->raiseException("ORACLE-BIND-VALUE-ERROR",
@@ -281,7 +310,7 @@ void OraBindNode::bindValue(int pos, const AbstractQoreNode* v, ExceptionSink* x
       
       const QoreStringNode * t = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("type"));
       if (t->compare(ORACLE_OBJECT) == 0) {
-         //printd(0, "binding hash as an oracle object\n");
+         //printd(5, "binding hash as an oracle object\n");
          subdtype = SQLT_NTY_OBJECT;
          dtype = SQLT_NTY;
          buf.oraObj = objBindQore(conn, h, xsink);
@@ -299,7 +328,7 @@ void OraBindNode::bindValue(int pos, const AbstractQoreNode* v, ExceptionSink* x
          return;
       }
       else if (t->compare(ORACLE_COLLECTION) == 0) {
-         //printd(0, "binding list as an oracle collection\n");
+         //printd(5, "binding list as an oracle collection\n");
          subdtype = SQLT_NTY_COLLECTION;
          dtype = SQLT_NTY;
          buf.oraColl = collBindQore(conn, h, xsink);
@@ -329,7 +358,7 @@ void OraBindNode::bindValue(int pos, const AbstractQoreNode* v, ExceptionSink* x
 void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
    QoreOracleConnection *conn = (QoreOracleConnection *)stmt.getData();
 
-   //printd(5, "OraBindNode::bindPlaceholder(ds=%p, pos=%d) type=%s, size=%d)\n", ds, pos, data.ph.type, data.ph.maxsize);
+   //printd(5, "OraBindNode::bindPlaceholder() this: %p, conn: %p, pos: %d type: %s, size: %d buf.ptr: %p\n", this, conn, pos, data.ph_type, data.ph_maxsize, buf.ptr);
 
    if (data.isType("string")) {
       if (data.ph_maxsize < 0) {
@@ -500,7 +529,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
                           ),
                        "OraBindNode::bindPlaceholder() OCIBindObject", xsink);
 
-       //printd(0, "OraBindNode::bindValue() object '%s' tdo=0x%x handle=0x%x\n", h->getBuffer(), buf.oraObj->typinf->tdo, buf.oraObj->handle);
+       //printd(5, "OraBindNode::bindValue() object '%s' tdo=0x%x handle=0x%x\n", h->getBuffer(), buf.oraObj->typinf->tdo, buf.oraObj->handle);
    }
    else if (data.isType(ORACLE_COLLECTION)) {
        subdtype = SQLT_NTY_COLLECTION;
@@ -529,7 +558,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
 //         assert(0);
    }
    else {
-      //printd(0, "OraBindNode::bindPlaceholder(ds=%p, pos=%d) type=%s, size=%d)\n", ds, pos, data.ph.type, data.ph.maxsize);
+      //printd(5, "OraBindNode::bindPlaceholder(ds=%p, pos=%d) type=%s, size=%d)\n", ds, pos, data.ph.type, data.ph.maxsize);
       xsink->raiseException("BIND-EXCEPTION", "type '%s' is not supported for SQL binding", data.ph_type);
    }
 }
@@ -564,7 +593,7 @@ void OraBindNode::resetValue(ExceptionSink* xsink) {
 }
 
 AbstractQoreNode *OraBindNode::getValue(bool horizontal, ExceptionSink* xsink) {
-    //printd(0, "AbstractQoreNode *OraBindNode::getValue %d\n", indicator);
+    //printd(5, "AbstractQoreNode *OraBindNode::getValue %d\n", indicator);
     if (indicator != 0)
         return null();
 
@@ -650,7 +679,7 @@ int QorePreparedStatement::bindOracle(ExceptionSink* xsink) {
 
       ++pos;
    }   
-   //printd(0, "QorePreparedStatement::bindOracle() bound %d position(s), statement handle: %p\n", pos - 1, stmthp);
+   //printd(5, "QorePreparedStatement::bindOracle() bound %d position(s), statement handle: %p\n", pos - 1, stmthp);
 
    return 0;
 }

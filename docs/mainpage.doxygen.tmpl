@@ -466,6 +466,7 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - added more Qore exception handling in ocilib object/NTY APIs
     - ensure all strings written to the DB are converted to the target character encoding before writing
     - copy all values when binding by value in case they are bound to an IN OUT variable, in which case memory corruption would occur previously
+    - support for IN OUT variables by giving a hash argument with the "value" key as the input value for the output variable
 
     @subsection oracle31 oracle Driver Version 3.1
     

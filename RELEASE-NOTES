@@ -8,6 +8,8 @@ version 3.2
 * copy all values when binding by value in case they are bound to an IN OUT
   variable, in which case memory corruption would occur previous to this
   change
+* support for IN OUT variables by giving a hash argument with the "value" key
+  as the input value for the output variable
 
 
 ***********
