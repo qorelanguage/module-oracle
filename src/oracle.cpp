@@ -309,12 +309,14 @@ static QoreHashNode *oracle_stmt_fetch_columns(SQLStatement *stmt, int rows, Exc
    return bg->fetchColumns(rows, xsink);
 }
 
+#ifdef _QORE_HAS_DBI_DESCRIBE
 static QoreHashNode *oracle_stmt_describe(SQLStatement *stmt, ExceptionSink *xsink) {
    QorePreparedStatement *bg = (QorePreparedStatement *)stmt->getPrivateData();
    assert(bg);      
                     
    return bg->describe(xsink);
 }
+#endif
 
 static bool oracle_stmt_next(SQLStatement *stmt, ExceptionSink *xsink) {
    QorePreparedStatement *bg = (QorePreparedStatement *)stmt->getPrivateData();
@@ -391,7 +393,9 @@ QoreStringNode *oracle_module_init() {
    methods.add(QDBI_METHOD_STMT_FETCH_ROW, oracle_stmt_fetch_row);
    methods.add(QDBI_METHOD_STMT_FETCH_ROWS, oracle_stmt_fetch_rows);
    methods.add(QDBI_METHOD_STMT_FETCH_COLUMNS, oracle_stmt_fetch_columns);
+#ifdef _QORE_HAS_DBI_DESCRIBE
    methods.add(QDBI_METHOD_STMT_DESCRIBE, oracle_stmt_describe);
+#endif
    methods.add(QDBI_METHOD_STMT_NEXT, oracle_stmt_next);
    methods.add(QDBI_METHOD_STMT_CLOSE, oracle_stmt_close);
    methods.add(QDBI_METHOD_STMT_AFFECTED_ROWS, oracle_stmt_affected_rows);

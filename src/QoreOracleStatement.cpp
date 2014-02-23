@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2012 David Nichols
+  Copyright (C) 2003 - 2014 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -250,8 +250,8 @@ QoreHashNode *QoreOracleStatement::fetchColumns(OraResultSet &resultset, int row
    return 0;
 }
 
-QoreHashNode *QoreOracleStatement::describe(OraResultSet &resultset, ExceptionSink *xsink)
-{
+#ifdef _QORE_HAS_DBI_DESCRIBE
+QoreHashNode *QoreOracleStatement::describe(OraResultSet &resultset, ExceptionSink *xsink) {
    if (!fetch_done) {
       xsink->raiseException("ORACLE-DESCRIBE-ERROR", "call SQLStatement::next() before calling SQLStatement::describe()");
       return 0;
@@ -271,8 +271,7 @@ QoreHashNode *QoreOracleStatement::describe(OraResultSet &resultset, ExceptionSi
       ReferenceHolder<QoreHashNode> col(new QoreHashNode, xsink);
       col->setKeyValue(namestr, new QoreStringNode(w->name), xsink);
       col->setKeyValue(internalstr, new QoreBigIntNode(w->dtype), xsink);
-      switch (w->dtype)
-      {
+      switch (w->dtype) {
       case SQLT_CHR:
          col->setKeyValue(typestr, new QoreBigIntNode(NT_STRING), xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("VARCHAR2"), xsink);
@@ -363,6 +362,5 @@ QoreHashNode *QoreOracleStatement::describe(OraResultSet &resultset, ExceptionSi
    }
 
    return h.release();
-
 }
-
+#endif

@@ -280,12 +280,14 @@ void OraColumnValue::freeObject() {
    // objects are allocated in bind-methods and it has to be freed in any case
    if (subdtype == SQLT_NTY_OBJECT) {
       //printd(5, "OraColumnValue::getValue() freed OBJECT: %p\n", buf.oraObj);
-      if (buf.oraObj)
+      if (buf.oraObj) {
          OCI_ObjectFree2(&conn->ocilib, buf.oraObj);
+      }
    }
    else {
       //printd(5, "OraColumnValue::freeObject() freed COLLECTION: %p\n", buf.oraColl);
-      if (buf.oraColl)
+      if (buf.oraColl) {
          OCI_CollFree2(&conn->ocilib, buf.oraColl);
+      }
    }
 }

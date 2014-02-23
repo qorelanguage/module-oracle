@@ -24,114 +24,127 @@
 #ifndef _QOREPREPAREDSTATEMENT_H
 #define _QOREPREPAREDSTATEMENT_H
 
-union ora_bind_u {
-   struct {
-      char* name;          // name for output hash
-      int maxsize;         // maximum size, -1 = default for type
-      char* type;          // qore datatype for column
-   } ph;
+union ora_tmp_u {
    QoreString* tstr;    // temporary string to be deleted
    BinaryNode* bin;
 };
 
-#define OBT_PH    0
-#define OBT_BIND  1
-#define OBT_STR   2
-#define OBT_BIN   3
+#define OB_PH     0
+#define OB_BIND   1
+
+#define OBT_NONE  0
+#define OBT_STR   1
+#define OBT_BIN   2
 
 struct ora_bind {
-   unsigned char type;
-   ora_bind_u v;
+protected:
+   DLLLOCAL void resetTmp() {
+      if (tmp_type == OBT_NONE)
+         return;
 
-   DLLLOCAL ora_bind() : type(OBT_BIND) {
+      switch (tmp_type) {
+         case OBT_STR:
+            assert(tmp.tstr);
+            delete tmp.tstr;
+            break;
+
+         case OBT_BIN:
+            assert(tmp.bin);
+            tmp.bin->deref();
+            break;
+
+         default:
+            assert(false);
+      }
+
+      tmp_type = OBT_NONE;
    }
 
-   DLLLOCAL ora_bind(char* name, int size, const char* typ) : type(OBT_PH) {
-      v.ph.name = name;
-      v.ph.maxsize = size;
-      v.ph.type = typ ? strdup(typ) : 0;
+public:
+   unsigned char type;
+
+   // placeholder: output name
+   char* ph_name;          // name for output hash
+   int ph_maxsize;         // maximum size, -1 = default for type
+   char* ph_type;          // qore datatype for column
+
+   unsigned char tmp_type;
+   ora_tmp_u tmp;
+
+   DLLLOCAL ora_bind() : type(OB_BIND), ph_name(0), ph_maxsize(0), ph_type(0), tmp_type(OBT_NONE) {
+   }
+
+   DLLLOCAL ora_bind(char* name, int size, const char* typ, unsigned char t = OB_PH) 
+      : type(t), ph_name(name), 
+        ph_maxsize(size), ph_type(typ ? strdup(typ) : 0), tmp_type(OBT_NONE) {
    }
 
    DLLLOCAL ~ora_bind() {
-#ifdef DEBUG
-      if (type == OBT_PH) {
-         assert(!v.ph.name);
-         assert(!v.ph.type);
-      }
-      else
-         assert(type == OBT_BIND);
-#endif
+      assert(!ph_name);
+      assert(!ph_type);
+      assert(tmp_type == OBT_NONE);
+   }
+
+   DLLLOCAL const char* getName() const {
+      assert(ph_name);
+      return ph_name;
    }
 
    DLLLOCAL void resetBind() {
-      if (type == OBT_BIND)
-         return;
-
-      assert(type != OBT_PH);
-
-      switch (type) {
-         case OBT_STR:
-            assert(v.tstr);
-            delete v.tstr;
-            break;
-         case OBT_BIN:
-            assert(v.bin);
-            v.bin->deref();
-            break;
-      }
-
-      type = OBT_BIND;
+      resetTmp();
    }
 
    DLLLOCAL void setMaxSize(int ms) {
-      assert(type == OBT_PH);
-      v.ph.maxsize = ms;
+      assert(type == OB_PH);
+      ph_maxsize = ms;
    }
 
    DLLLOCAL void setType(const char* typ) {
-      assert(type == OBT_PH);
-      if (v.ph.type)
-	 free(v.ph.type);
-      v.ph.type = strdup(typ);
+      assert(type == OB_PH);
+      if (ph_type)
+	 free(ph_type);
+      ph_type = strdup(typ);
    }
 
    DLLLOCAL void resetPlaceholder(bool free_name = true) {
-      assert(type == OBT_PH);
+      assert(type == OB_PH);
 
-      if (free_name && v.ph.name) {
-         free(v.ph.name);
-         v.ph.name = 0;
+      if (free_name && ph_name) {
+         free(ph_name);
+         ph_name = 0;
       }
 
-      if (v.ph.type) {
-         free(v.ph.type);
-         v.ph.type = 0;
+      if (ph_type) {
+         free(ph_type);
+         ph_type = 0;
       }
+
+      resetTmp();
    }
 
    DLLLOCAL void save(QoreString* nstr) {
-      assert(type == OBT_BIND);
-      type = OBT_STR;
-      v.tstr = nstr;
+      assert(tmp_type == OBT_NONE);
+      tmp_type = OBT_STR;
+      tmp.tstr = nstr;
    }
    
    DLLLOCAL void save(BinaryNode* tb) {
-      assert(type == OBT_BIND);
-      type = OBT_BIN;
-      v.bin = tb;
+      assert(tmp_type == OBT_NONE);
+      tmp_type = OBT_BIN;
+      tmp.bin = tb;
    }
    
    DLLLOCAL bool isType(const char* t) const {
-      assert(type == OBT_PH);
-      return !strcmp(v.ph.type, t);
+      assert(type == OB_PH);
+      return !strcmp(ph_type, t);
    }
 
    DLLLOCAL bool isValue() const {
-      return type != OBT_PH;
+      return type == OB_BIND;
    }
 
    DLLLOCAL bool isPlaceholder() const {
-      return type == OBT_PH;
+      return type != OB_BIND;
    }
 };
 
@@ -142,19 +155,19 @@ protected:
 
    DLLLOCAL void resetValue(ExceptionSink* xsink);
 
-   DLLLOCAL void setValue(const AbstractQoreNode *v, ExceptionSink* xsink) {
+   DLLLOCAL void setValue(const AbstractQoreNode* v, ExceptionSink* xsink) {
       if (value)
 	 value->deref(xsink);
       value = v ? v->refSelf() : 0;
    }
 
-   DLLLOCAL void setPlaceholderIntern(int size, const char *typ, const AbstractQoreNode *v, ExceptionSink* xsink) {
+   DLLLOCAL void setPlaceholderIntern(int size, const char *typ, const AbstractQoreNode* v, ExceptionSink* xsink) {
       setValue(v, xsink);
       data.setMaxSize(size);
       data.setType(typ);
    }
 
-   DLLLOCAL int setPlaceholder(const AbstractQoreNode *v, ExceptionSink* xsink) {
+   DLLLOCAL int setPlaceholder(const AbstractQoreNode* v, ExceptionSink* xsink) {
       resetPlaceholder(xsink, false);
 
       // assume string if no argument passed
@@ -165,31 +178,41 @@ protected:
 
       qore_type_t vtype = v->getType();
       if (vtype == NT_HASH) {
-	 const QoreHashNode *h = reinterpret_cast<const QoreHashNode *>(v);
+	 const QoreHashNode* h = reinterpret_cast<const QoreHashNode*>(v);
 	 // get and check data type
-	 const AbstractQoreNode *t = h->getKeyValue("type");
+	 const AbstractQoreNode* t = h->getKeyValue("type");
 	 if (!t) {
 	    xsink->raiseException("DBI-EXEC-EXCEPTION", "missing 'type' key in placeholder hash");
 	    return -1;
 	 }
 
-	 const QoreStringNode *str = dynamic_cast<const QoreStringNode *>(t);
-	 if (!str) {
+         if (t->getType() != NT_STRING) {
 	    xsink->raiseException("DBI-EXEC-EXCEPTION", "expecting type name as value of 'type' key, got '%s'", t->getTypeName());
 	    return -1;
-	 }
-	 // get and check size
-	 const AbstractQoreNode *sz = h->getKeyValue("size");
-	 int size = sz ? sz->getAsInt() : -1;
+         }
+	 const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(t);
+
+         int size = -1;
+
+         t = h->getKeyValue("value");
+         if (t) {
+            assert(!value);
+            value = t->refSelf();            
+         }
+         else {
+            // get and check size
+            const AbstractQoreNode* sz = h->getKeyValue("size");
+            size = sz ? sz->getAsInt() : -1;
+         }
 
 	 //QoreStringValueHelper strdebug(v);
 	 //printd(5, "OraBindNode::setPlaceholder() adding placeholder name=%s, size=%d, type=%s, value=%s\n", tstr.getBuffer(), size, str->getBuffer(), strdebug->getBuffer());
 	 setPlaceholderIntern(size, str->getBuffer(), h, xsink);
       }
       else if (vtype == NT_STRING)
-	 setPlaceholderIntern(-1, (reinterpret_cast<const QoreStringNode *>(v))->getBuffer(), 0, xsink);
+	 setPlaceholderIntern(-1, (reinterpret_cast<const QoreStringNode* >(v))->getBuffer(), 0, xsink);
       else if (vtype == NT_INT)
-	 setPlaceholderIntern((reinterpret_cast<const QoreBigIntNode *>(v))->val, "string", 0, xsink);
+	 setPlaceholderIntern((reinterpret_cast<const QoreBigIntNode* >(v))->val, "string", 0, xsink);
       else {
 	 xsink->raiseException("DBI-BIND-EXCEPTION", "expecting string or hash for placeholder description, got '%s'", v->getTypeName());
 	 return -1;
@@ -202,9 +225,13 @@ protected:
       data.setType(typ);
    }
 
+   DLLLOCAL void bindValue(int pos, const AbstractQoreNode* v, ExceptionSink* xsink);
+   DLLLOCAL void bindPlaceholder(int pos, ExceptionSink* xsink);
+   DLLLOCAL int bindDate(int pos, ExceptionSink* xsink);
+
 public:
    // value to be bound, if any
-   AbstractQoreNode *value;
+   AbstractQoreNode* value;
 
    ora_bind data;
 
@@ -234,14 +261,15 @@ public:
    }
 
    // for placeholder nodes
-   DLLLOCAL inline OraBindNode(QoreOracleStatement& stmt, char* name, int size, const char* typ, const AbstractQoreNode* v) : 
+   DLLLOCAL inline OraBindNode(QoreOracleStatement& stmt, char* name, int size, const char* typ, const AbstractQoreNode* v = 0) : 
       OraColumnValue(stmt),
       value(v ? v->refSelf() : 0), data(name, size, typ), strlob(0), clob_allocated(false), bndp(0) {
       indicator = 0;
       pIndicator = (dvoid*)&indicator;
    }
 
-   DLLLOCAL inline ~OraBindNode() {
+   DLLLOCAL ~OraBindNode() {
+      assert(!value);
    }
 
    DLLLOCAL bool isValue() const {
@@ -256,16 +284,14 @@ public:
    DLLLOCAL int set(const AbstractQoreNode* v, ExceptionSink* xsink);
    DLLLOCAL void reset(ExceptionSink* xsink, bool free_name = true);
 
-   DLLLOCAL void bindValue(int pos, ExceptionSink* xsink);
+   DLLLOCAL void bind(int pos, ExceptionSink* xsink);
 
-   DLLLOCAL int bindDate(int pos, ExceptionSink* xsink);
-   DLLLOCAL void bindPlaceholder(int pos, ExceptionSink* xsink);
-   DLLLOCAL AbstractQoreNode *getValue(bool horizontal, ExceptionSink* xsink);
+   DLLLOCAL AbstractQoreNode* getValue(bool horizontal, ExceptionSink* xsink);
 
    DLLLOCAL int setupDateDescriptor(ExceptionSink* xsink);
 };
 
-typedef std::vector<OraBindNode *> node_list_t;
+typedef std::vector<OraBindNode* > node_list_t;
 
 class QorePreparedStatement : public QoreOracleStatement {
 protected:
@@ -275,16 +301,16 @@ protected:
    bool hasOutput;
    bool defined;
 
-   DLLLOCAL void parseQuery(const QoreListNode *args, ExceptionSink* xsink);
+   DLLLOCAL void parseQuery(const QoreListNode* args, ExceptionSink* xsink);
 
-   DLLLOCAL void add(OraBindNode *c) {
+   DLLLOCAL void add(OraBindNode* c) {
       node_list.push_back(c);
    }
 
    DLLLOCAL int bindOracle(ExceptionSink* xsink);
 
 public:
-   //DLLLOCAL QorePreparedStatement(Datasource *ods, const QoreString *ostr, const QoreListNode *args, ExceptionSink* n_xsink, bool doBinding = true);
+   //DLLLOCAL QorePreparedStatement(Datasource *ods, const QoreString *ostr, const QoreListNode* args, ExceptionSink* n_xsink, bool doBinding = true);
 
    DLLLOCAL QorePreparedStatement(Datasource *ods) : QoreOracleStatement(ods), str(0), columns(0), hasOutput(false), defined(false) {
    }
@@ -297,26 +323,26 @@ public:
 
    DLLLOCAL void reset(ExceptionSink* xsink);
    
-   DLLLOCAL int prepare(const QoreString &sql, const QoreListNode *args, bool parse, ExceptionSink* xsink);
+   DLLLOCAL int prepare(const QoreString &sql, const QoreListNode* args, bool parse, ExceptionSink* xsink);
 
-   DLLLOCAL OraBindNode *add(const AbstractQoreNode *v) {
-      OraBindNode *c = new OraBindNode(*this, v);
+   DLLLOCAL OraBindNode* add(const AbstractQoreNode* v) {
+      OraBindNode* c = new OraBindNode(*this, v);
       add(c);
       //printd(5, "QorePreparedStatement::add()\n");
       return c;
    }
 
-   DLLLOCAL OraBindNode *add(char *name, int size = -1, const char *type = 0, const AbstractQoreNode *val = 0) {
-      OraBindNode *c = new OraBindNode(*this, name, size, type, val);
+   DLLLOCAL OraBindNode* add(char *name, int size = -1, const char *type = 0, const AbstractQoreNode* val = 0) {
+      OraBindNode* c = new OraBindNode(*this, name, size, type, val);
       add(c);
       //printd(5, "QorePreparedStatement::add()\n");
       hasOutput = true;
       return c;
    }
 
-   DLLLOCAL int bind(const QoreListNode *args, ExceptionSink* xsink);
-   DLLLOCAL int bindPlaceholders(const QoreListNode *args, ExceptionSink* xsink);
-   DLLLOCAL int bindValues(const QoreListNode *args, ExceptionSink* xsink);
+   DLLLOCAL int bind(const QoreListNode* args, ExceptionSink* xsink);
+   DLLLOCAL int bindPlaceholders(const QoreListNode* args, ExceptionSink* xsink);
+   DLLLOCAL int bindValues(const QoreListNode* args, ExceptionSink* xsink);
 
    DLLLOCAL int exec(ExceptionSink* xsink) {
       return execute("QorePreparedStatement::exec()", xsink);
@@ -326,28 +352,30 @@ public:
 
    DLLLOCAL int affectedRows(ExceptionSink* xsink);
 
-   DLLLOCAL QoreHashNode *getOutput(ExceptionSink* xsink) {
+   DLLLOCAL QoreHashNode* getOutput(ExceptionSink* xsink) {
       return getOutputHash(false, xsink);
    }
 
-   DLLLOCAL QoreHashNode *getOutputRows(ExceptionSink* xsink) {
+   DLLLOCAL QoreHashNode* getOutputRows(ExceptionSink* xsink) {
       return getOutputHash(true, xsink);
    }
 
-   DLLLOCAL QoreHashNode *fetchRow(ExceptionSink* xsink);
-   DLLLOCAL QoreListNode *fetchRows(int rows, ExceptionSink* xsink);
-   DLLLOCAL QoreHashNode *fetchColumns(int rows, ExceptionSink* xsink);
+   DLLLOCAL QoreHashNode* fetchRow(ExceptionSink* xsink);
+   DLLLOCAL QoreListNode* fetchRows(int rows, ExceptionSink* xsink);
+   DLLLOCAL QoreHashNode* fetchColumns(int rows, ExceptionSink* xsink);
 
-   DLLLOCAL QoreHashNode *describe(ExceptionSink *xsink);
+#ifdef _QORE_HAS_DBI_DESCRIBE
+   DLLLOCAL QoreHashNode* describe(ExceptionSink *xsink);
+#endif
 
-   DLLLOCAL AbstractQoreNode *execWithPrologue(bool rows, ExceptionSink *xsink);
+   DLLLOCAL AbstractQoreNode* execWithPrologue(bool rows, ExceptionSink *xsink);
 
 #ifdef _QORE_HAS_DBI_SELECT_ROW
-   DLLLOCAL QoreHashNode *selectRow(ExceptionSink* xsink);
+   DLLLOCAL QoreHashNode* selectRow(ExceptionSink* xsink);
 #endif
 
    // rows = true means get a list of hashes, otherwise the default is a hash of lists
-   DLLLOCAL QoreHashNode *getOutputHash(bool rows, ExceptionSink* xsink);
+   DLLLOCAL QoreHashNode* getOutputHash(bool rows, ExceptionSink* xsink);
 };
 
 class QorePreparedStatementHelper : public QorePreparedStatement {

@@ -185,7 +185,9 @@ public:
    DLLLOCAL QoreHashNode *fetchColumns(OraResultSet &columns, int rows, ExceptionSink *xsink);
    DLLLOCAL QoreHashNode *fetchColumns(ExceptionSink *xsink);
 
+#ifdef _QORE_HAS_DBI_DESCRIBE
    DLLLOCAL QoreHashNode *describe(OraResultSet &columns, ExceptionSink *xsink);
+#endif
 
    DLLLOCAL Datasource *getDatasource() const {
       return ds;
