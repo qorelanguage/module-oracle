@@ -33,10 +33,11 @@ namespace Qore::Oracle;
 
 
 //! returns a value to be used to bind a Qore value as an "IN OUT" variable for PL/SQL
-/** @param any Qore variable
+/** @param value any Qore variable
+    @param type an optional parameter to enforce the type of the variable. It is obtained automatically fromn the \c value when it is omitted.
 
     @return a has which can be used for IN OUT binding. Keys:
-    - \c "type" : a string type name of the variable
+    - \c "type" : a string type name of the variable (if it is provided as an argument)
     - \c "value" : a variable/value itself
 
     @par Example:
@@ -52,9 +53,10 @@ my hash $res = $ds.exec("begin qore_test.do_simple_inout(:ostr, :oint, :odt); en
                        );
     @endcode
  */
-hash bindInOut(any value) [flags=CONSTANT] {
+hash bindInOut(any value, *string type) [flags=CONSTANT] {
     QoreHashNode *h = new QoreHashNode();
-    h->setKeyValue("type", new QoreStringNode(value->getTypeName()), xsink);
+    if (type)
+       h->setKeyValue("type", type->refSelf(), xsink);
     h->setKeyValue("value", value->refSelf(), xsink);
     return h;
 }
