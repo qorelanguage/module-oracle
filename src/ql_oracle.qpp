@@ -30,6 +30,35 @@
  */
 //@{
 namespace Qore::Oracle;
+
+
+//! returns a value to be used to bind a Qore value as an "IN OUT" variable for PL/SQL
+/** @param any Qore variable
+
+    @return a has which can be used for IN OUT binding. Keys:
+    - \c "type" : a string type name of the variable
+    - \c "value" : a variable/value itself
+
+    @par Example:
+    @code
+my string $str = "lorem ipsum";
+my int $i = 10;
+my date $d = now();
+
+my hash $res = $ds.exec("begin qore_test.do_simple_inout(:ostr, :oint, :odt); end;",
+                        Oracle::bindInOut($str),
+                        Oracle::bindInOut($i),
+                        Oracle::bindInOut($d)
+                       );
+    @endcode
+ */
+hash bindInOut(any value) [flags=CONSTANT] {
+    QoreHashNode *h = new QoreHashNode();
+    h->setKeyValue("type", new QoreStringNode(value->getTypeName()), xsink);
+    h->setKeyValue("value", value->refSelf(), xsink);
+    return h;
+}
+
 //! returns a value to be used to bind a Qore value as an Oracle object
 /** @param tname the name of the Oracle type to bind
     @param values a hash where the keys are Oracle object attributes
