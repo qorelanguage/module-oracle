@@ -142,7 +142,6 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
    
    if (ntype == NT_STRING) {
       const QoreStringNode *bstr = reinterpret_cast<const QoreStringNode*>(v);
-      dtype = SQLT_STR;
 
       qore_size_t len;
 
@@ -169,9 +168,10 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
       }
 
       // bind it
-      if ((len + 1) > CLOB_THRESHOLD) {
-	 //printd(5, "binding string %p len=%lld as CLOB\n", buf.ptr, len);
+      if ((len + 1) > CLOB_THRESHOLD && in_only) {
+	 //printd(5, "binding string %p len: %lld as CLOB\n", buf.ptr, len);
 	 // bind as a CLOB
+         dtype = SQLT_CLOB;
 
 	 // allocate LOB descriptor
 	 if (conn->descriptorAlloc((dvoid **)&strlob, OCI_DTYPE_LOB, "OraBindNode::bindValue() alloc LOB descriptor", xsink))
@@ -191,6 +191,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
          stmt.bindByPos(bndp, pos, &strlob, 0, SQLT_CLOB, xsink, pIndicator);
       }
       else {	 
+         dtype = SQLT_STR;
 	 // bind as a string
          stmt.bindByPos(bndp, pos, buf.ptr, len + 1, SQLT_STR, xsink, pIndicator);
          //printd(5, "OraBindNode::bindValue() this: %p size: %d '%s'\n", this, len + 1, buf.ptr);
@@ -816,7 +817,7 @@ QoreHashNode *QorePreparedStatement::getOutputHash(bool rows, ExceptionSink* xsi
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
 
    for (node_list_t::iterator i = node_list.begin(), e = node_list.end(); i != e; ++i) {
-      printd(0, "QorePreparedStatement::getOutputHash() this: %p i: %p '%s' (%s) dtype: %d\n", this, *i, (*i)->data.getName(), (*i)->data.ph_type, (*i)->dtype);
+      //printd(5, "QorePreparedStatement::getOutputHash() this: %p i: %p '%s' (%s) dtype: %d\n", this, *i, (*i)->data.getName(), (*i)->data.ph_type, (*i)->dtype);
       if ((*i)->isPlaceholder())
 	 h->setKeyValue((*i)->data.getName(), (*i)->getValue(rows, xsink), xsink);
    }
