@@ -147,44 +147,25 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
       qore_size_t len;
 
       // convert to the db charset if necessary
-      if (bstr->getEncoding() != stmt.getEncoding()) {
-	 TempString nstr(bstr->QoreString::convertEncoding(stmt.getEncoding(), xsink));
-	 if (*xsink)
-	    return;
-         if (in_only) {
-            len = nstr->size();
-            buf.ptr = (void*)nstr->getBuffer();
-            data.save(nstr.release());
-         }
-         else {
-            qore_size_t mx = data.ph_maxsize > 0 ? data.ph_maxsize : 0;
-            if (mx <= 0)
-               mx = DBI_DEFAULT_STR_LEN;
-            if (mx > nstr->capacity())
-               nstr->allocate(mx);
-
-            len = nstr->capacity() - 1;
-            buf.ptr = (void*)nstr->giveBuffer();
-         }
+      TempString nstr(bstr->getEncoding() != stmt.getEncoding()
+                      ? bstr->QoreString::convertEncoding(stmt.getEncoding(), xsink)
+                      : new QoreString(*bstr));
+      if (*xsink)
+         return;
+      if (in_only) {
+         len = nstr->size();
+         buf.ptr = (void*)nstr->getBuffer();
+         data.save(nstr.release());
       }
       else {
-         // bind a copy of the value to buffer
-         TempString nstr(new QoreString(*bstr));
-         if (in_only) {
-            len = nstr->size();
-            buf.ptr = (void*)nstr->getBuffer();
-            data.save(nstr.release());
-         }
-         else {
-            qore_size_t mx = data.ph_maxsize > 0 ? data.ph_maxsize : 0;
-            if (mx <= 0)
-               mx = DBI_DEFAULT_STR_LEN;
-            if (mx > nstr->capacity())
-               nstr->allocate(mx);
-
-            len = nstr->capacity() - 1;
-            buf.ptr = (void*)nstr->giveBuffer();
-         }
+         qore_size_t mx = data.ph_maxsize > 0 ? data.ph_maxsize : 0;
+         if (mx <= 0)
+            mx = DBI_DEFAULT_STR_LEN;
+         if (mx > nstr->capacity())
+            nstr->allocate(mx);
+         
+         len = nstr->capacity() - 1;
+         buf.ptr = (void*)nstr->giveBuffer();
       }
 
       // bind it
@@ -233,6 +214,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
    }
 
    if (ntype == NT_BINARY) {
+      dtype = SQLT_BIN;
       const BinaryNode *b = reinterpret_cast<const BinaryNode*>(v);
       // bind a copy of the value in case of in/out variables
       SimpleRefHolder<BinaryNode> tb(b->copy());
@@ -248,18 +230,20 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
    }
 
    if (ntype == NT_BOOLEAN) {
-      buf.i4 = reinterpret_cast<const QoreBoolNode*>(v)->getValue();
+      dtype = SQLT_INT;
+      buf.i8 = reinterpret_cast<const QoreBoolNode*>(v)->getValue();
 
-      stmt.bindByPos(bndp, pos, &buf.i4, sizeof(int), SQLT_INT, xsink, pIndicator);
+      stmt.bindByPos(bndp, pos, &buf.i8, sizeof(int64), SQLT_INT, xsink, pIndicator);
       return;
    }
 
    if (ntype == NT_INT) {
       const QoreBigIntNode *b = reinterpret_cast<const QoreBigIntNode*>(v);
       if (b->val <= MAXINT32 && b->val >= -MAXINT32) {
-	 buf.i4 = (int)b->val;
+         dtype = SQLT_INT;
+         buf.i8 = (int64)(int)b->val;
 
-         stmt.bindByPos(bndp, pos, &buf.i4, sizeof(int), SQLT_INT, xsink, pIndicator);
+         stmt.bindByPos(bndp, pos, &buf.i8, sizeof(int64), SQLT_INT, xsink, pIndicator);
       }
       else { // bind as a string value
 	 dtype = SQLT_STR;
@@ -292,8 +276,10 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
 
    if (ntype == NT_FLOAT) {
 #if defined(SQLT_BDOUBLE) && defined(USE_NEW_NUMERIC_TYPES)
+      dtype = SQLT_BDOUBLE;
       stmt.bindByPos(bndp, pos, &(reinterpret_cast<QoreFloatNode*>(const_cast<AbstractQoreNode*>(v))->f), sizeof(double), SQLT_BDOUBLE, xsink, pIndicator);
 #else
+      dtype = SQLT_FLT;
       stmt.bindByPos(bndp, pos, &(reinterpret_cast<QoreFloatNode*>(const_cast<AbstractQoreNode*>(v))->f), sizeof(double), SQLT_FLT, xsink, pIndicator);
 #endif
       return;
@@ -830,6 +816,7 @@ QoreHashNode *QorePreparedStatement::getOutputHash(bool rows, ExceptionSink* xsi
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
 
    for (node_list_t::iterator i = node_list.begin(), e = node_list.end(); i != e; ++i) {
+      printd(0, "QorePreparedStatement::getOutputHash() this: %p i: %p '%s' (%s) dtype: %d\n", this, *i, (*i)->data.getName(), (*i)->data.ph_type, (*i)->dtype);
       if ((*i)->isPlaceholder())
 	 h->setKeyValue((*i)->data.getName(), (*i)->getValue(rows, xsink), xsink);
    }
