@@ -265,6 +265,8 @@ QoreHashNode *QoreOracleStatement::describe(OraResultSet &resultset, ExceptionSi
    QoreString dbtypestr("native_type");
    QoreString internalstr("internal_id");
 
+   int charSize = ds->getQoreEncoding() == QCS_UTF8 ? 4 : 1;
+
    // copy data or perform per-value processing if needed
    for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
       OraColumnBuffer *w = *i;
@@ -275,7 +277,7 @@ QoreHashNode *QoreOracleStatement::describe(OraResultSet &resultset, ExceptionSi
       case SQLT_CHR:
          col->setKeyValue(typestr, new QoreBigIntNode(NT_STRING), xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("VARCHAR2"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/4), xsink);
+         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/charSize), xsink);
          break;
       case SQLT_NUM:
          col->setKeyValue(typestr, new QoreBigIntNode(NT_NUMBER), xsink);
@@ -296,17 +298,17 @@ QoreHashNode *QoreOracleStatement::describe(OraResultSet &resultset, ExceptionSi
       case SQLT_AVC:
          col->setKeyValue(typestr, new QoreBigIntNode(NT_STRING), xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("CHAR"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/4), xsink);
+         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/charSize), xsink);
          break;
       case SQLT_CLOB:
          col->setKeyValue(typestr, new QoreBigIntNode(NT_STRING), xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("CLOB"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/4), xsink);
+         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/charSize), xsink);
          break;
       case SQLT_BLOB:
          col->setKeyValue(typestr, new QoreBigIntNode(NT_BINARY), xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("BLOB"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/4), xsink);
+         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/charSize), xsink);
          break;
       case SQLT_NTY:
          col->setKeyValue(typestr, new QoreBigIntNode(NT_HASH), xsink);
