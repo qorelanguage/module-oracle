@@ -6,7 +6,7 @@
 
   Qore Programming Language
 
-  Copyright 2003 - 2012 David Nichols
+  Copyright 2003 - 2014 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -76,6 +76,9 @@ static int dbi_oracle_caps = (
 #endif
 #ifdef DBI_CAP_AUTORECONNECT
    |DBI_CAP_AUTORECONNECT
+#endif
+#ifdef _QORE_HAS_DBI_EVENTS
+   |DBI_CAP_EVENTS
 #endif
    );
 
