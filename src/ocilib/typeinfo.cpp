@@ -85,7 +85,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
     OCIParam *parmh1     = NULL;
     OCIParam *parmh2     = NULL;
     mtext *str           = NULL;
-    int etype            = OCI_DESC_COLUMN;
+    //int etype            = OCI_DESC_COLUMN;
     int ptype            = 0;
     ub1 item_type        = 0;
     ub4 attr_type        = 0;
@@ -306,7 +306,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
                 typinf->nb_cols = 1;
                 
                 ptype  = OCI_DESC_COLLECTION;
-                etype  = OCI_DESC_TYPE;
+                //etype  = OCI_DESC_TYPE;
                 parmh2 = parmh1;
 
                 OCI_CALL2Q

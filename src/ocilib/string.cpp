@@ -562,7 +562,9 @@ void * OCI_StringFromStringPtr(OCI_Library *pOCILib, OCIString *str, void **buf,
     void *ret = NULL;  
   
     int olen  = 0;
+#if !defined(OCI_CHARSET_MIXED) && defined(OCI_CHECK_DATASTRINGS)
     int osize = 0;
+#endif
     int esize = 0;
     int msize = 0;
 
@@ -637,7 +639,7 @@ void * OCI_StringFromStringPtr(OCI_Library *pOCILib, OCIString *str, void **buf,
 
 #else
 
-        osize = 0;
+        //osize = 0;
         ret   = tmp;
 
 #endif
