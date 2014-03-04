@@ -220,11 +220,12 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
       // bind a copy of the value in case of in/out variables
       SimpleRefHolder<BinaryNode> tb(b->copy());
       qore_size_t len = tb->size();
+
+      printd(5, "OraBindNode::bindValue() BLOB ptr: %p size: %d\n", tb->getPtr(), tb->size());
+
       buf.ptr = (void*)(in_only ? tb->getPtr() : tb->giveBuffer());
       if (in_only)
          data.save(tb.release());
-
-      printd(5, "OraBindNode::bindValue() BLOB ptr: %p size: %d\n", tb->getPtr(), tb->size());
 
       stmt.bindByPos(bndp, pos, buf.ptr, len, SQLT_BIN, xsink, pIndicator);
       return;
