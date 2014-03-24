@@ -1,5 +1,7 @@
 MNAME=oracle
 
+AUTOMAKE_OPTIONS = foreign subdir-objects
+
 .qpp.cpp:
 	qpp $<
 

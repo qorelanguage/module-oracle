@@ -729,6 +729,9 @@ int QorePreparedStatement::bindValues(const QoreListNode *args, ExceptionSink* x
    return 0;
 }
 
+#define QODC_LINE 1
+#define QODC_BLOCK 2
+
 void QorePreparedStatement::parseQuery(const QoreListNode *args, ExceptionSink* xsink) {
    //printd(5, "parseQuery() args=%p str=%s\n", args, str->getBuffer());
  
@@ -737,80 +740,122 @@ void QorePreparedStatement::parseQuery(const QoreListNode *args, ExceptionSink* 
    const char *p = str->getBuffer();
    unsigned index = 0;
    QoreString tmp(getEncoding());
+
+   int comment = 0;
+
    while (*p) {
-      if (!quote && (*p) == '%' && (p == str->getBuffer() || !isalnum(*(p-1)))) { // found value marker
-	 const AbstractQoreNode *v = args ? args->retrieve_entry(index++) : NULL;
+      if (!quote) {
+         if (!comment) {
+            if ((*p) == '-' && (*(p+1)) == '-') {
+               comment = QODC_LINE;
+               p += 2;
+               continue;
+            }
+            
+            if ((*p) == '/' && (*(p+1)) == '*') {
+               comment = QODC_BLOCK;
+               p += 2;
+               continue;
+            }
+         }
+         else {
+            if (comment == QODC_LINE) {
+               if ((*p) == '\n' || ((*p) == '\r'))
+                  comment = 0;
+               ++p;
+               continue;
+            }
 
-	 int offset = p - str->getBuffer();
+            if ((*p) == '*' && (*(p+1)) == '/') {
+               comment = 0;
+               p += 2;
+               continue;
+            }
 
-	 ++p;
-	 if ((*p) == 'd') {
-	    DBI_concat_numeric(&tmp, v);
-	    str->replace(offset, 2, &tmp);
-	    p = str->getBuffer() + offset + tmp.strlen();
-	    tmp.clear();
-	    continue;
-	 }
-	 if ((*p) == 's') {
-	    if (DBI_concat_string(&tmp, v, xsink))
-	       break;
-	    str->replace(offset, 2, &tmp);
-	    p = str->getBuffer() + offset + tmp.strlen();
-	    tmp.clear();
-	    continue;
-	 }
-	 if ((*p) != 'v') {
-	    xsink->raiseException("DBI-EXEC-PARSE-EXCEPTION", "invalid value specification (expecting '%v' or '%%d', got %%%c)", *p);
-	    break;
-	 }
-	 ++p;
-	 if (isalpha(*p)) {
-	    xsink->raiseException("DBI-EXEC-PARSE-EXCEPTION", "invalid value specification (expecting '%v' or '%%d', got %%v%c*)", *p);
-	    break;
-	 }
+            ++p;
+            continue;
+         }
 
-	 // replace value marker with generated name
-	 tmp.sprintf(":qdodvrs___%d", node_list.size());
-	 str->replace(offset, 2, &tmp);
-	 p = str->getBuffer() + offset + tmp.strlen();
-	 tmp.clear();
+         if ((*p) == '%' && (p == str->getBuffer() || !isalnum(*(p-1)))) { // found value marker
+            const AbstractQoreNode *v = args ? args->retrieve_entry(index++) : NULL;
 
-	 // 	 printd(5, "QorePreparedStatement::parseQuery() newstr=%s\n", str->getBuffer());
-	 // 	 printd(5, "QorePreparedStatement::parseQuery() adding value type=%s\n",v ? v->getTypeName() : "<NULL>");
-	 add(v);
+            int offset = p - str->getBuffer();
+
+            ++p;
+            if ((*p) == 'd') {
+               DBI_concat_numeric(&tmp, v);
+               str->replace(offset, 2, &tmp);
+               p = str->getBuffer() + offset + tmp.strlen();
+               tmp.clear();
+               continue;
+            }
+            if ((*p) == 's') {
+               if (DBI_concat_string(&tmp, v, xsink))
+                  break;
+               str->replace(offset, 2, &tmp);
+               p = str->getBuffer() + offset + tmp.strlen();
+               tmp.clear();
+               continue;
+            }
+            if ((*p) != 'v') {
+               xsink->raiseException("DBI-EXEC-PARSE-EXCEPTION", "invalid value specification (expecting '%v' or '%%d', got %%%c)", *p);
+               break;
+            }
+            ++p;
+            if (isalpha(*p)) {
+               xsink->raiseException("DBI-EXEC-PARSE-EXCEPTION", "invalid value specification (expecting '%v' or '%%d', got %%v%c*)", *p);
+               break;
+            }
+
+            // replace value marker with generated name
+            tmp.sprintf(":qdodvrs___%d", node_list.size());
+            str->replace(offset, 2, &tmp);
+            p = str->getBuffer() + offset + tmp.strlen();
+            tmp.clear();
+
+            // 	 printd(5, "QorePreparedStatement::parseQuery() newstr=%s\n", str->getBuffer());
+            // 	 printd(5, "QorePreparedStatement::parseQuery() adding value type=%s\n",v ? v->getTypeName() : "<NULL>");
+            add(v);
+            continue;
+         }
+
+         if ((*p) == ':') { // found placeholder marker
+            ++p;
+            if (!isalpha(*p))
+               continue;
+
+            // get placeholder name
+            QoreString tstr;
+            while (isalnum(*p) || (*p) == '_')
+               tstr.concat(*(p++));
+
+            // add default placeholder
+            OraBindNode *n = add(tstr.giveBuffer(), -1);
+
+            const AbstractQoreNode *v = args ? args->retrieve_entry(index++) : NULL;
+
+            if (n->set(v, xsink))
+               break;
+            continue;
+         }
+
+         // allow quoting of ':' and '%' characters
+         if ((*p) == '\\' && (*(p+1) == ':' || *(p+1) == '%')) {
+            str->splice(p - str->getBuffer(), 1, xsink);
+            p += 2;
+         }
       }
-      else if (!quote && (*p) == ':') { // found placeholder marker
-	 ++p;
-	 if (!isalpha(*p))
-	    continue;
 
-	 // get placeholder name
-	 QoreString tstr;
-	 while (isalnum(*p) || (*p) == '_')
-	    tstr.concat(*(p++));
-
-	 // add default placeholder
-	 OraBindNode *n = add(tstr.giveBuffer(), -1);
-
-	 const AbstractQoreNode *v = args ? args->retrieve_entry(index++) : NULL;
-
-	 if (n->set(v, xsink))
-	    break;
-      }
-      else if (((*p) == '\'') || ((*p) == '\"')) {
+      if (((*p) == '\'') || ((*p) == '\"')) {
 	 if (!quote)
 	    quote = *p;
 	 else if (quote == (*p))
 	    quote = 0;
 	 ++p;
+         continue;
       }
-      // allow quoting of ':' and '%' characters
-      else if (!quote && (*p) == '\\' && (*(p+1) == ':' || *(p+1) == '%')) {
-	 str->splice(p - str->getBuffer(), 1, xsink);
-	 p += 2;
-      }
-      else
-	 ++p;
+
+      ++p;
    }
 }
 
