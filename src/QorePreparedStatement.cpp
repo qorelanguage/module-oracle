@@ -75,6 +75,12 @@ void OraBindNode::bind(int pos, ExceptionSink* xsink) {
       return;
    }
 
+   // TODO/FIXME: NTY is not possible to bind as IN OUT yet
+   if (data.isType(ORACLE_OBJECT) || data.isType(ORACLE_COLLECTION)) {
+      bindPlaceholder(pos, xsink);
+      return;
+   }
+
    if (!is_nothing(value) && !is_null(value)) {
       // convert value to declared buffer type and then do bind with value
       if (data.isType("string") || data.isType("clob")) {
@@ -497,12 +503,31 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
        subdtype = SQLT_NTY_OBJECT;
        dtype = SQLT_NTY;
 
+#if 0
        const QoreHashNode * h = reinterpret_cast<const QoreHashNode*>(value);
        if (h->existsKey("^values^"))
            buf.oraObj = objBindQore(conn, h, xsink); // IN/OUT
        else {
            const QoreStringNode * str = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("value"));
            buf.oraObj = objPlaceholderQore(conn, str->getBuffer(), xsink); // IN
+       }
+#endif
+       // It seems the value is string insteag of hash for IN only NTY since the IN/OUT implementation
+       // Qorus #802 Oracle NTY binding by placeholder ends with BIND-EXCEPTION: type 'OracleCollection' is not supported for SQL binding by value and placeholder (eg IN OUT)
+       switch (value->getType()) {
+           case NT_STRING:
+               buf.oraObj = objPlaceholderQore(conn, reinterpret_cast<QoreStringNode*>(value)->getBuffer(), xsink); // IN
+               break;
+           case NT_HASH: {
+               const QoreHashNode* h = reinterpret_cast<QoreHashNode*>(value);
+               if (h->existsKey("^values^"))
+                   buf.oraObj = objBindQore(conn, h, xsink); // IN/OUT
+               else
+                   xsink->raiseException("BIND-EXCEPTION", "Unable to bind hash as Object without key '^values^'");
+               break;
+           }
+           default:
+               xsink->raiseException("BIND-EXCEPTION", "Unable to bind Object from '%s' type", value->getTypeName());
        }
 
        if (*xsink)
@@ -523,12 +548,31 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
        subdtype = SQLT_NTY_COLLECTION;
        dtype = SQLT_NTY;
 
+#if 0
        const QoreHashNode * h = reinterpret_cast<const QoreHashNode*>(value);
        if (h->existsKey("^values^"))
            buf.oraColl = collBindQore(conn, h, xsink); // IN/OUT
        else {
            const QoreStringNode * str = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("value"));
            buf.oraColl = collPlaceholderQore(conn, str->getBuffer(), xsink); // IN
+       }
+#endif
+       // It seems the value is string insteag of hash for IN only NTY since the IN/OUT implementation
+       // Qorus #802 Oracle NTY binding by placeholder ends with BIND-EXCEPTION: type 'OracleCollection' is not supported for SQL binding by value and placeholder (eg IN OUT)
+       switch (value->getType()) {
+           case NT_STRING:
+               buf.oraColl = collPlaceholderQore(conn, reinterpret_cast<QoreStringNode*>(value)->getBuffer(), xsink); // IN
+               break;
+           case NT_HASH: {
+               const QoreHashNode* h = reinterpret_cast<QoreHashNode*>(value);
+               if (h->existsKey("^values^"))
+                   buf.oraColl = collBindQore(conn, h, xsink); // IN/OUT
+               else
+                   xsink->raiseException("BIND-EXCEPTION", "Unable to bind hash as Collection without key '^values^'");
+               break;
+           }
+           default:
+               xsink->raiseException("BIND-EXCEPTION", "Unable to bind Collection from '%s' type", value->getTypeName());
        }
 
        if (*xsink)
