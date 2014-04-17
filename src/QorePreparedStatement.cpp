@@ -515,25 +515,25 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
        // It seems the value is string instead of hash for IN only NTY since the IN/OUT implementation
        // Qorus #802 Oracle NTY binding by placeholder ends with BIND-EXCEPTION: type 'OracleCollection' is not supported for SQL binding by value and placeholder (eg IN OUT)
        switch (get_node_type(value)) {
-           case NT_STRING:
-               buf.oraObj = objPlaceholderQore(conn, reinterpret_cast<QoreStringNode*>(value)->getBuffer(), xsink); // IN
-               break;
-           case NT_HASH: {
-               const QoreHashNode* h = reinterpret_cast<QoreHashNode*>(value);
-               if (h->existsKey("^values^"))
-                   buf.oraObj = objBindQore(conn, h, xsink); // IN/OUT
-               else
-                   xsink->raiseException("BIND-EXCEPTION", "Unable to bind hash as Object without key '^values^'");
-               break;
-           }
-           default:
-               xsink->raiseException("BIND-EXCEPTION", "Unable to bind Object from '%s' type", value->getTypeName());
+          case NT_STRING:
+             buf.oraObj = objPlaceholderQore(conn, reinterpret_cast<QoreStringNode*>(value)->getBuffer(), xsink); // IN
+             break;
+          case NT_HASH: {
+             const QoreHashNode* h = reinterpret_cast<QoreHashNode*>(value);
+             if (h->existsKey("^values^"))
+                buf.oraObj = objBindQore(conn, h, xsink); // IN/OUT
+             else
+                xsink->raiseException("BIND-EXCEPTION", "Unable to bind hash as Object without key '^values^'");
+             break;
+          }
+          default:
+             xsink->raiseException("BIND-EXCEPTION", "Unable to bind Object from '%s' type", get_type_name(value));
        }
 
        if (*xsink)
-           return;
+          return;
 
-       stmt.bindByPos(bndp, pos,  0, 0, SQLT_NTY, xsink, &ind);
+       stmt.bindByPos(bndp, pos, 0, 0, SQLT_NTY, xsink, &ind);
 
        conn->checkerr(OCIBindObject(bndp, conn->errhp,
                                      buf.oraObj->typinf->tdo, (void**)&buf.oraObj->handle, 0,
@@ -810,6 +810,7 @@ void QorePreparedStatement::parseQuery(const QoreListNode *args, ExceptionSink* 
                continue;
             }
 
+	    assert(comment == QODC_BLOCK);
             if ((*p) == '*' && (*(p+1)) == '/') {
                comment = 0;
                p += 2;
