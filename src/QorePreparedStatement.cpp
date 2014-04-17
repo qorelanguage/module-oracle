@@ -512,9 +512,9 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
            buf.oraObj = objPlaceholderQore(conn, str->getBuffer(), xsink); // IN
        }
 #endif
-       // It seems the value is string insteag of hash for IN only NTY since the IN/OUT implementation
+       // It seems the value is string instead of hash for IN only NTY since the IN/OUT implementation
        // Qorus #802 Oracle NTY binding by placeholder ends with BIND-EXCEPTION: type 'OracleCollection' is not supported for SQL binding by value and placeholder (eg IN OUT)
-       switch (value->getType()) {
+       switch (get_node_type(value)) {
            case NT_STRING:
                buf.oraObj = objPlaceholderQore(conn, reinterpret_cast<QoreStringNode*>(value)->getBuffer(), xsink); // IN
                break;
@@ -557,9 +557,9 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
            buf.oraColl = collPlaceholderQore(conn, str->getBuffer(), xsink); // IN
        }
 #endif
-       // It seems the value is string insteag of hash for IN only NTY since the IN/OUT implementation
+       // It seems the value is string instead of hash for IN only NTY since the IN/OUT implementation
        // Qorus #802 Oracle NTY binding by placeholder ends with BIND-EXCEPTION: type 'OracleCollection' is not supported for SQL binding by value and placeholder (eg IN OUT)
-       switch (value->getType()) {
+       switch (get_node_type(value)) {
            case NT_STRING:
                buf.oraColl = collPlaceholderQore(conn, reinterpret_cast<QoreStringNode*>(value)->getBuffer(), xsink); // IN
                break;
