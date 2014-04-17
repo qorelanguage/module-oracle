@@ -572,7 +572,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
                break;
            }
            default:
-               xsink->raiseException("BIND-EXCEPTION", "Unable to bind Collection from '%s' type", value->getTypeName());
+               xsink->raiseException("BIND-EXCEPTION", "Unable to bind Collection from '%s' type", get_type_name(value));
        }
 
        if (*xsink)
