@@ -148,7 +148,6 @@ public:
    }
 };
 
-
 class OraBindNode : public OraColumnValue {
 protected:
    DLLLOCAL void resetPlaceholder(ExceptionSink* xsink, bool free_name = true);
@@ -224,9 +223,11 @@ protected:
       return 0;
    }
 
+   /*
    DLLLOCAL void setType(const char* typ) {
       data.setType(typ);
    }
+   */
 
    DLLLOCAL void bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool in_only = true);
    DLLLOCAL void bindPlaceholder(int pos, ExceptionSink* xsink);

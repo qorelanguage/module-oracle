@@ -83,7 +83,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %{module_dir}
-%doc COPYING README RELEASE-NOTES ChangeLog AUTHORS
+%doc COPYING.MIT COPYING.LGPL README RELEASE-NOTES ChangeLog AUTHORS
 
 %package doc
 Summary: oracle module for Qore

@@ -28,7 +28,7 @@ noinst_HEADERS = src/oracle-config.h \
 
 USER_MODULES = qlib/OracleExtensions.qm
 
-EXTRA_DIST = COPYING ChangeLog AUTHORS README \
+EXTRA_DIST = COPYING.MIT COPYING.LGPL ChangeLog AUTHORS README \
 	RELEASE-NOTES \
 	src/ql_oracle.qpp \
 	src/QC_AQMessage.qpp \
