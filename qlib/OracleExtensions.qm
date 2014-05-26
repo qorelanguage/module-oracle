@@ -266,7 +266,7 @@ public class OracleInstrumentationBase
         The transaction handling is for example:
 
             - select: check if there is a transaction: no? rollback after run.
-            - exec: yes! do not rollback - the transaction will be handled upsetream in user code
+            - exec: yes! do not rollback - the transaction will be handled upstream in user code
 
      */
     bool setAutomaticDBInfo(*OracleExtensions::OracleApplicationInfo item, bool checkTransaction=True) {
@@ -1089,6 +1089,10 @@ public class OracleDatasourcePool inherits OracleExtensions::OracleDatasourceBas
         m_ds = ds;
     }
 
+    any methodGate(string meth) {
+        return callObjectMethodArgs(m_ds, meth, argv);
+    }
+
 } # class OracleDatasourcePool
 
 
@@ -1138,6 +1142,10 @@ public class OracleDatasource inherits OracleExtensions::OracleDatasourceBase {
     
     nothing setAutoCommit(bool auto) {
         m_ds.setAutoCommit(auto);
+    }
+
+    any methodGate(string meth) {
+        return callObjectMethodArgs(m_ds, meth, argv);
     }
 
 } # class OracleDatasource
