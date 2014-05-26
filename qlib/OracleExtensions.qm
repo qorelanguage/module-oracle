@@ -23,7 +23,7 @@ DEALINGS IN THE SOFTWARE.
 */
 
 %new-style
-%requires qore >= 0.8.7
+%requires qore >= 0.8.10
 %requires oracle
 
 module OracleExtensions {
