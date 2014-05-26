@@ -468,6 +468,7 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - copy all values when binding by value in case they are bound to an IN OUT variable, in which case memory corruption would occur previously
     - support for IN OUT variables by giving a hash argument with the "value" key as the input value for the output variable
     - placeholders and quotes in SQL comments are ignored
+    - user modules moved to top-level qore module directory from version-specific module directory since they are valid for multiple versions of qore
 
     @subsection oracle31 oracle Driver Version 3.1
     

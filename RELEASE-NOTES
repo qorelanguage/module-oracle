@@ -11,6 +11,8 @@ version 3.2
 * support for IN OUT variables by giving a hash argument with the "value" key
   as the input value for the output variable
 * ignore placeholders and quotes in SQL comments
+* user modules moved to top-level qore module directory from version-specific
+  module directory since they are valid for multiple versions of qore
 
 
 ***********
