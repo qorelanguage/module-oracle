@@ -55,8 +55,10 @@ void * OCI_MemAlloc2(OCI_Library *pOCILib, int ptr_type, size_t block_size, size
         if (zero_fill == TRUE)
             memset(ptr, 0, size);
     }
+/*
     else
        OCI_ExceptionMemory2(pOCILib, ptr_type, size, NULL, NULL);
+*/
 
     return ptr;
 }
@@ -77,7 +79,9 @@ void * OCI_MemRealloc2(OCI_Library *pOCILib, void * ptr_mem, int ptr_type, size_
     {
         OCI_MemFree(ptr_mem);
 
+/*
         OCI_ExceptionMemory2(pOCILib, ptr_type, size, NULL, NULL);
+*/
     }
 
     return ptr;

@@ -300,7 +300,7 @@ boolean OCI_API OCI_LobRead2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
     else
         csfrm = SQLCS_IMPLICIT;
 
-    OCI_CHECK_MIN(pOCILib, lob->con, NULL, (*byte_count), 1, FALSE);
+    OCI_CHECK_MIN(pOCILib, lob->con, NULL, (*byte_count), 1, FALSE, xsink);
 
 #ifdef OCI_LOB2_API_ENABLED
 
@@ -492,8 +492,7 @@ boolean OCI_API OCI_LobWrite2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
     else
         csfrm = SQLCS_IMPLICIT;
 
-
-    OCI_CHECK_MIN(pOCILib, lob->con, NULL, (*byte_count), 1, FALSE);
+    OCI_CHECK_MIN(pOCILib, lob->con, NULL, (*byte_count), 1, FALSE, xsink);
 
 #ifdef OCI_LOB2_API_ENABLED
 
@@ -951,8 +950,7 @@ boolean OCI_API OCI_LobAppend2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
     else
         csfrm = SQLCS_IMPLICIT;
 
-
-    OCI_CHECK_MIN(pOCILib, lob->con, NULL, (*byte_count), 1, FALSE);
+    OCI_CHECK_MIN(pOCILib, lob->con, NULL, (*byte_count), 1, FALSE, xsink);
 
 #ifdef OCI_LOB2_API_ENABLED
 
@@ -961,14 +959,16 @@ boolean OCI_API OCI_LobAppend2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
         ub8 size_in_out_char = (ub8) (*char_count);
         ub8 size_in_out_byte = (ub8) (*byte_count);
 
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, lob->con,
 
             OCILobWriteAppend2(lob->con->cxt, lob->con->err, lob->handle,
                                &size_in_out_byte, &size_in_out_char,
                                obuf, (ub8)  (*byte_count), (ub1) OCI_ONE_PIECE,
-                               (dvoid *) NULL, NULL, csid, csfrm)
+                               (dvoid *) NULL, NULL, csid, csfrm),
+
+	    xsink
         )
 
 
@@ -988,13 +988,15 @@ boolean OCI_API OCI_LobAppend2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
         else
             size_in_out_char_byte = (*char_count);
 
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, lob->con,
 
             OCILobWriteAppend(lob->con->cxt, lob->con->err, lob->handle,
                               &size_in_out_char_byte, obuf,  (*byte_count),
-                              (ub1) OCI_ONE_PIECE, (dvoid *) NULL, NULL, csid, csfrm)
+                              (ub1) OCI_ONE_PIECE, (dvoid *) NULL, NULL, csid, csfrm),
+
+	    xsink
         )
 
         if (lob->type == OCI_BLOB)

@@ -439,13 +439,13 @@
  *
  */
 
-#define OCI_CHECK_MIN(ocilib, con, stmt, v, m, ret)			\
+#define OCI_CHECK_MIN(ocilib, con, stmt, v, m, ret, xsink)			\
                                                                                \
     if ((v) < (m))                                                             \
     {                                                                          \
-       OCI_ExceptionMinimumValue2(ocilib, (con), (stmt), m);		\
+       OCI_ExceptionMinimumValue2(ocilib, (con), (stmt), m, xsink);		\
                                                                                \
-        return (ret);                                                          \
+       return (ret);							\
     } 
 
 /**
@@ -599,11 +599,11 @@
  *
  */
 
-#define OCI_CHECK_FEATURE(ocilib, con, feat, ver,  ret)			\
+#define OCI_CHECK_FEATURE(ocilib, con, feat, ver, ret, xsink)			\
                                                                                    \
     if (ocilib->version_runtime < ver || (((con) != NULL) && (con)->ver_num < ver)) \
     {                                                                              \
-       OCI_ExceptionNotAvailable2(ocilib, con, feat);			\
+       OCI_ExceptionNotAvailable2(ocilib, con, feat, xsink);			\
         return ret;                                                                \
     }
 
@@ -640,9 +640,9 @@
  *
  */
 
-#define OCI_CHECK_TIMESTAMP_ENABLED(ocilib, con,  ret)			\
+#define OCI_CHECK_TIMESTAMP_ENABLED(ocilib, con, ret, xsink)			\
                                                                                \
-   OCI_CHECK_FEATURE(ocilib, con, OCI_FEATURE_TIMESTAMP, OCI_9_0, ret)
+    OCI_CHECK_FEATURE(ocilib, con, OCI_FEATURE_TIMESTAMP, OCI_9_0, ret, xsink)
 
 /**
  * @brief 
@@ -727,11 +727,11 @@
  *
  */
 
-#define OCI_CHECK_DATABASE_NOTIFY_ENABLED(ocilib, ret)			\
+#define OCI_CHECK_DATABASE_NOTIFY_ENABLED(ocilib, ret, xsink)			\
                                                                                \
     if (ocilib->version_runtime < OCI_10_2)                                     \
     {                                                                          \
-       OCI_ExceptionNotAvailable2(ocilib, NULL, OCI_FEATURE_DATABASE_NOTIFY); \
+       OCI_ExceptionNotAvailable2(ocilib, NULL, OCI_FEATURE_DATABASE_NOTIFY, xsink); \
         return ret;                                                            \
     }
 

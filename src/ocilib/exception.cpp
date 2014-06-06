@@ -163,7 +163,6 @@ static const mtext * OCILib_ErrorMsg[] =
 
 #endif
 
-/*
 static const mtext * OCILib_OraFeatures[] =
 {
     MT("Oracle 9i support for Unicode data"),
@@ -174,6 +173,7 @@ static const mtext * OCILib_OraFeatures[] =
     MT("Oracle 10g R2 remote database startup/shutdown")
 };
 
+/*
 static const mtext * OCILib_StmtStates[] =
 {
     MT("closed"),
@@ -188,7 +188,7 @@ static const mtext * OCILib_DirPathStates[] =
     MT("converted"),
     MT("terminated")
 };
-
+*/
 
 static const mtext * OCILib_HandleNames[] =
 {
@@ -196,7 +196,6 @@ static const mtext * OCILib_HandleNames[] =
     MT("OCI descriptors"),
     MT("OCI Object handles")
 };
-*/
 
 /* ************************************************************************ *
  *                             PRIVATE FUNCTIONS
@@ -451,8 +450,7 @@ void OCI_ExceptionMemory2(OCI_Library *pOCILib, int type, size_t nb_bytes, OCI_C
  * OCI_ExceptionNotAvailable
  * ------------------------------------------------------------------------ */
 
-/*
-void OCI_ExceptionNotAvailable2(OCI_Library *pOCILib, OCI_Connection *con, int feature)
+void OCI_ExceptionNotAvailable2(OCI_Library *pOCILib, OCI_Connection *con, int feature, ExceptionSink* xsink)
 {
     OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
@@ -468,9 +466,8 @@ void OCI_ExceptionNotAvailable2(OCI_Library *pOCILib, OCI_Connection *con, int f
                   OCILib_OraFeatures[feature-1]);
     }
 
-    OCI_ExceptionRaise2(pOCILib, err);
+    OCI_ExceptionRaise2(pOCILib, err, xsink);
 }
-*/
 
 /* ------------------------------------------------------------------------ *
  * OCI_ExceptionDatatypeNotSupported
@@ -579,8 +576,7 @@ void OCI_ExceptionOutOfBounds2(OCI_Library *pOCILib, OCI_Connection *con, int va
  * OCI_ExceptionUnfreedData
  * ------------------------------------------------------------------------ */
 
-/*
-void  OCI_ExceptionUnfreedData2(OCI_Library *pOCILib, int type_elem, int nb_elem)
+void  OCI_ExceptionUnfreedData2(OCI_Library *pOCILib, int type_elem, int nb_elem, ExceptionSink* xsink)
 {
     OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
@@ -595,9 +591,8 @@ void  OCI_ExceptionUnfreedData2(OCI_Library *pOCILib, int type_elem, int nb_elem
                   nb_elem, OCILib_HandleNames[type_elem-1]);
     }
 
-    OCI_ExceptionRaise2(pOCILib, err);
+    OCI_ExceptionRaise2(pOCILib, err, xsink);
 }
-*/
 
 /* ------------------------------------------------------------------------ *
  * OCI_ExceptionRuntimeLoading
@@ -655,8 +650,7 @@ void OCI_ExceptionAttributeNotFound2(OCI_Library *pOCILib, OCI_Connection *con, 
  * OCI_ExceptionMinimumValue
  * ------------------------------------------------------------------------ */
 
-/*
-void OCI_ExceptionMinimumValue2(OCI_Library *pOCILib, OCI_Connection *con, OCI_Statement *stmt, int min)
+void OCI_ExceptionMinimumValue2(OCI_Library *pOCILib, OCI_Connection *con, OCI_Statement *stmt, int min, ExceptionSink* xsink)
 {
     OCI_Error *err = OCI_ExceptionGetError(pOCILib, FALSE);
 
@@ -670,9 +664,8 @@ void OCI_ExceptionMinimumValue2(OCI_Library *pOCILib, OCI_Connection *con, OCI_S
                   OCILib_ErrorMsg[OCI_ERR_MIN_VALUE], min);
     }
 
-    OCI_ExceptionRaise2(pOCILib, err);
+    OCI_ExceptionRaise2(pOCILib, err, xsink);
 }
-*/
 
 /* ------------------------------------------------------------------------ *
  * OCI_ExceptionTypeNotCompatible

@@ -133,13 +133,13 @@ OCI_Interval * OCI_API OCI_IntervalCreate(OCI_Connection *con, unsigned int type
 }
 */
 
-OCI_Interval * OCI_API OCI_IntervalCreate2(OCI_Library *pOCILib, OCI_Connection *con, unsigned int type)
+OCI_Interval * OCI_API OCI_IntervalCreate2(OCI_Library *pOCILib, OCI_Connection *con, unsigned int type, ExceptionSink* xsink)
 {
     OCI_Interval *itv = NULL;
 
     OCI_CHECK_INITIALIZED2(pOCILib, NULL);
 
-    OCI_CHECK_INTERVAL_ENABLED(pOCILib, con, NULL);
+    OCI_CHECK_INTERVAL_ENABLED(pOCILib, con, NULL, xsink);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
@@ -164,7 +164,7 @@ boolean OCI_API OCI_IntervalFree2(OCI_Library *pOCILib, OCI_Interval *itv)
 {
     OCI_CHECK_PTR(pOCILib, OCI_IPC_INTERVAL, itv, FALSE);
 
-    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE);
+    //OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
@@ -203,7 +203,7 @@ boolean OCI_API OCI_IntervalAssign2(OCI_Library *pOCILib, OCI_Interval *itv,  OC
     OCI_CHECK_PTR(pOCILib, OCI_IPC_INTERVAL, itv,     FALSE);
     OCI_CHECK_PTR(pOCILib, OCI_IPC_INTERVAL, itv_src, FALSE);
 
-    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE);
+    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE, xsink);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
@@ -245,7 +245,7 @@ boolean OCI_API OCI_IntervalGetDaySecond2(OCI_Library *pOCILib, OCI_Interval *it
     OCI_CHECK_PTR(pOCILib, OCI_IPC_INT, sec,  FALSE);
     OCI_CHECK_PTR(pOCILib, OCI_IPC_INT, fsec, FALSE);
 
-    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE);
+    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE, xsink);
 
     *day  = 0;
     *hour = 0;
@@ -298,7 +298,7 @@ boolean OCI_API OCI_IntervalGetYearMonth2(OCI_Library *pOCILib, OCI_Interval *it
     OCI_CHECK_PTR(pOCILib, OCI_IPC_INT, year,  FALSE);
     OCI_CHECK_PTR(pOCILib, OCI_IPC_INT, month, FALSE);
 
-    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE);
+    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE, xsink);
 
     *year  = 0;
     *month = 0;
@@ -345,7 +345,7 @@ boolean OCI_API OCI_IntervalSetDaySecond2(OCI_Library *pOCILib, OCI_Interval *it
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_INTERVAL, itv, FALSE);
 
-    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE);
+    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE, xsink);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
@@ -390,7 +390,7 @@ boolean OCI_API OCI_IntervalSetYearMonth2(OCI_Library *pOCILib, OCI_Interval *it
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_INTERVAL, itv, FALSE);
 
-    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE);
+    OCI_CHECK_INTERVAL_ENABLED(pOCILib, itv->con, FALSE, xsink);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 

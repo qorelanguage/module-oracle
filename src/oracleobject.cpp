@@ -324,7 +324,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                 
                 if (col->type == OCI_CDT_TIMESTAMP) {
                    //printd(0, "bind %p: %s.%s: %d: binding timestamp\n", &obj, tname, cname, i);
-                   OCI_Timestamp* dt = OCI_TimestampCreate2(&d->ocilib, d->ocilib_cn, col->subtype);
+                   OCI_Timestamp* dt = OCI_TimestampCreate2(&d->ocilib, d->ocilib_cn, col->subtype, xsink);
                    if (!dt) {
                       if (!*xsink)
                          xsink->raiseException("BIND-NTY-ERROR", "failed to create timestamp object for object attribute %s.%s", tname, cname);
@@ -376,7 +376,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                 if (col->type == OCI_CDT_INTERVAL) {
                     if (col->ocode == SQLT_INTERVAL_YM) {
                        //printd(0, "bind %p: %s.%s: %d: binding interval ym\n", &obj, tname, cname, i);
-                       OCI_Interval* dt = OCI_IntervalCreate2(&d->ocilib, d->ocilib_cn, OCI_INTERVAL_YM);
+                       OCI_Interval* dt = OCI_IntervalCreate2(&d->ocilib, d->ocilib_cn, OCI_INTERVAL_YM, xsink);
                        if (!dt) {
                           if (!*xsink)
                              xsink->raiseException("BIND-NTY-ERROR", "failed to create interval object for object attribute %s.%s", tname, cname);
@@ -399,7 +399,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                     //printd(0, "bind %p %s.%s: %d: binding interval ds\n", &obj, tname, cname, i);
 
                     // SQLT_INTERVAL_DS
-                    OCI_Interval* dt = OCI_IntervalCreate2(&d->ocilib, d->ocilib_cn, OCI_INTERVAL_DS);
+                    OCI_Interval* dt = OCI_IntervalCreate2(&d->ocilib, d->ocilib_cn, OCI_INTERVAL_DS, xsink);
                     if (!dt) {
                        if (!*xsink)
                           xsink->raiseException("BIND-NTY-ERROR", "failed to create interval object for object attribute %s.%s", tname, cname);
@@ -1005,7 +1005,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	    // date
 	    const DateTimeNode * dn = reinterpret_cast<const DateTimeNode*>(val);
 	    if (col->type == OCI_CDT_TIMESTAMP) {
-               OCI_Timestamp* dt = OCI_TimestampCreate2(&d->ocilib, d->ocilib_cn, col->subtype);
+               OCI_Timestamp* dt = OCI_TimestampCreate2(&d->ocilib, d->ocilib_cn, col->subtype, xsink);
                if (!dt) {
                   if (!*xsink)
                      xsink->raiseException("BIND-NTY-ERROR", "failed to create timestamp object for collection '%s'", tname);
@@ -1050,7 +1050,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	    // intervals
 	    else if (col->type == OCI_CDT_INTERVAL) {
                if (col->ocode == SQLT_INTERVAL_YM) {
-                  OCI_Interval* dt = OCI_IntervalCreate2(&d->ocilib, d->ocilib_cn, OCI_INTERVAL_YM);
+                  OCI_Interval* dt = OCI_IntervalCreate2(&d->ocilib, d->ocilib_cn, OCI_INTERVAL_YM, xsink);
                   if (!dt) {
                      if (!*xsink)
                         xsink->raiseException("BIND-NTY-ERROR", "failed to create interval object for collection '%s'", tname);
@@ -1070,7 +1070,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
                }
                else {
                   // SQLT_INTERVAL_DS
-                  OCI_Interval* dt = OCI_IntervalCreate2(&d->ocilib, d->ocilib_cn, OCI_INTERVAL_DS);
+                  OCI_Interval* dt = OCI_IntervalCreate2(&d->ocilib, d->ocilib_cn, OCI_INTERVAL_DS, xsink);
                   if (!dt) {
                      if (!*xsink)
                         xsink->raiseException("BIND-NTY-ERROR", "failed to create interval object for collection '%s'", tname);

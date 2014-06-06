@@ -196,8 +196,14 @@ QoreOracleConnection::~QoreOracleConnection() {
       delete ocilib_cn;
    }
 
-   if (ocilib_init)
-      OCI_Cleanup2(&ocilib);
+   if (ocilib_init) {
+      ExceptionSink xsink;
+      OCI_Cleanup2(&ocilib, &xsink);
+#ifndef DEBUG
+      // ignore cleanup exceptions in non-debugging mode
+      xsink.clear();
+#endif
+   }
 
    if (errhp)
       OCIHandleFree(errhp, OCI_HTYPE_ERROR);

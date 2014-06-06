@@ -1217,7 +1217,7 @@ boolean OCI_API OCI_Cleanup(void)
 }
 */
 
-boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
+boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
@@ -1317,7 +1317,7 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
 
     if (pOCILib->nb_hndlp > 0)
     {
-       OCI_ExceptionUnfreedData2(pOCILib, OCI_HDLE_HANDLE, pOCILib->nb_hndlp);
+       OCI_ExceptionUnfreedData2(pOCILib, OCI_HDLE_HANDLE, pOCILib->nb_hndlp, xsink);
         res = FALSE;
     }
 
@@ -1325,7 +1325,7 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
 
     if (pOCILib->nb_descp > 0)
     {
-       OCI_ExceptionUnfreedData2(pOCILib, OCI_HDLE_DESCRIPTOR, pOCILib->nb_descp);
+       OCI_ExceptionUnfreedData2(pOCILib, OCI_HDLE_DESCRIPTOR, pOCILib->nb_descp, xsink);
         res = FALSE;
     }
 
@@ -1333,7 +1333,7 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
 
     if (pOCILib->nb_objinst > 0)
     {
-       OCI_ExceptionUnfreedData2(pOCILib, OCI_HDLE_OBJECT, pOCILib->nb_objinst);
+       OCI_ExceptionUnfreedData2(pOCILib, OCI_HDLE_OBJECT, pOCILib->nb_objinst, xsink);
         res = FALSE;
     }
 

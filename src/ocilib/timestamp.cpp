@@ -137,13 +137,13 @@ OCI_Timestamp * OCI_API OCI_TimestampCreate(OCI_Connection *con,
 */
 
 OCI_Timestamp * OCI_API OCI_TimestampCreate2(OCI_Library *pOCILib, OCI_Connection *con,
-					     unsigned int type)
+					     unsigned int type, ExceptionSink* xsink)
 {
     OCI_Timestamp *tmsp = NULL;
 
     OCI_CHECK_INITIALIZED2(pOCILib, NULL);
 
-    OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, con, NULL);
+    OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, con, NULL, xsink);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
@@ -173,9 +173,9 @@ boolean OCI_API OCI_TimestampFree(OCI_Timestamp *tmsp)
 boolean OCI_API OCI_TimestampFree2(OCI_Library *pOCILib, OCI_Timestamp *tmsp)
 {
    assert(tmsp);
-   //OCI_CHECK_PTRQ(pOCILib, OCI_IPC_TIMESTAMP, tmsp, FALSE, xsink);
+   OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp, FALSE);
 
-    OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, tmsp->con, FALSE);
+   //OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, tmsp->con, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
@@ -225,7 +225,7 @@ boolean OCI_API OCI_TimestampAssign2(OCI_Library *pOCILib, OCI_Timestamp *tmsp, 
     //OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp,     FALSE);
     //OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp_src, FALSE);
 
-    OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, tmsp->con, FALSE);
+    OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, tmsp->con, FALSE, xsink);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
@@ -267,7 +267,7 @@ boolean OCI_API OCI_TimestampConstruct2(OCI_Library *pOCILib, OCI_Timestamp *tms
     assert(tmsp);
     //OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp, FALSE);
 
-    OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, tmsp->con, FALSE);
+    OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, tmsp->con, FALSE, xsink);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
