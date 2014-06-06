@@ -13,6 +13,9 @@ version 3.2
 * ignore placeholders and quotes in SQL comments
 * user modules moved to top-level qore module directory from version-specific
   module directory since they are valid for multiple versions of qore
+* fixed a major bug where a lost connection during an SQL operation using
+  named types could cause a crash due to the database-specific private context
+  becoming invalid and then used after deletion
 
 
 ***********

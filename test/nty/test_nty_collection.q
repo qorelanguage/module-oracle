@@ -9,8 +9,8 @@ switch (gethostname()) {
     case /^el6/:
     case /^quark/: $connstr = "oracle:omquser/omquser@el6"; break;
     case /^el5/:
-    case /^xbox/:
-    case /^ren/: $connstr = "oracle:omquser/omquser@xbox"; break;
+    case /^xbox/: $connstr = "oracle:omquser/omquser@xbox"; break;
+    case /^ren/: $connstr = "oracle:omquser/omquser@el6"; break;
     default: $connstr = "oracle:omqtest/omqtest@stimpy"; break;
 }
 

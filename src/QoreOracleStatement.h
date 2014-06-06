@@ -49,13 +49,18 @@ public:
    DLLLOCAL QoreOracleStatement(Datasource *n_ds, OCIStmt *n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), is_select(false), fetch_done(false) {
    }
 
-   DLLLOCAL ~QoreOracleStatement() {
+   DLLLOCAL virtual ~QoreOracleStatement() {
       if (stmthp)
          del();
    }
 
    DLLLOCAL operator bool() const {
       return stmthp;
+   }
+
+   // this virtual function is called when the connection is closed while executing SQL so that
+   // the current state can be freed while the driver-specific context data is still present
+   DLLLOCAL virtual void clearAbortedConnection(ExceptionSink* xsink) {
    }
 
    DLLLOCAL void reset(ExceptionSink *xsink) {

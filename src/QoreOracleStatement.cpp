@@ -53,12 +53,16 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
 	 //printd(0, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect\n");
 	 if (conn->logon(xsink)) {
             //printd(5, "QoreOracleStatement::execute() conn=%p reconnect failed, marking connection as closed\n", conn);
+            // free current statement state while the driver-specific context data is still present
+            clearAbortedConnection(xsink);
 	    // close datasource and remove private data
 	    ds->connectionAborted();
 	    return -1;
 	 }
          if (conn->checkWarnings(xsink)) {
              //printd(5, "QoreOracleStatement::execute() conn=%p reconnect failed, marking connection as closed\n", conn);
+            // free current statement state while the driver-specific context data is still present
+            clearAbortedConnection(xsink);
             // close datasource and remove private data
             ds->connectionAborted();
             return -1;

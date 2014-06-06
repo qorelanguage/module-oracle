@@ -469,6 +469,7 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - support for IN OUT variables by giving a hash argument with the "value" key as the input value for the output variable
     - placeholders and quotes in SQL comments are ignored
     - user modules moved to top-level qore module directory from version-specific module directory since they are valid for multiple versions of qore
+    - fixed a major bug where a lost connection during an SQL operation using named types could cause a crash due to the database-specific private context becoming invalid and then used after deletion
 
     @subsection oracle31 oracle Driver Version 3.1
     
