@@ -182,7 +182,7 @@ boolean OCI_API OCI_AgentFree
 /* --------------------------------------------------------------------------------------------- *
  * OCI_AgentGetName
  * --------------------------------------------------------------------------------------------- */
-
+/*
 const mtext * OCI_API OCI_AgentGetName
 (
 	OCI_Library *pOCILib,
@@ -203,11 +203,12 @@ const mtext * OCI_API OCI_AgentGetName
 
     return agent->name;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_AgentSetName
  * --------------------------------------------------------------------------------------------- */
 
+/*
 boolean OCI_API OCI_AgentSetName
 (
     OCI_Library *pOCILib,
@@ -226,11 +227,12 @@ boolean OCI_API OCI_AgentSetName
 
     return res;
 }
+*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_AgentGetAddress
  * --------------------------------------------------------------------------------------------- */
-
+/*
 const mtext * OCI_API OCI_AgentGetAddress
 (
     OCI_Library *pOCILib,
@@ -251,11 +253,12 @@ const mtext * OCI_API OCI_AgentGetAddress
 
     return agent->address;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_AgentSetAddress
  * --------------------------------------------------------------------------------------------- */
 
+/*
 boolean OCI_API OCI_AgentSetAddress
 (
     OCI_Library *pOCILib,
@@ -274,3 +277,4 @@ boolean OCI_API OCI_AgentSetAddress
 
     return res;
 }
+*/

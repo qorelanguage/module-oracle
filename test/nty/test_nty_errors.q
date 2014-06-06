@@ -79,7 +79,6 @@ catch ($ex) {
     printf("%N\n", $ex);
 }
 
-
 try {
     printf("\Collection (sub/internal) is not bound correctly\n");
     my list $colcs = ( ( "foo", "bar" ),  );
@@ -92,20 +91,22 @@ catch ($ex) {
     printf("%N\n", $ex);
 }
 
+/*
 printf("OBJECT IN\n");
 my hash $obj = (
-                "A_DATE" : now_ms(),
-                "A_TSTAMP" : now_ms(),
-                "A_TSTAMP_TZ" : now_ms(),
-                "A_INT_YM" : now_ms(),
-                "A_INT_DS" : now_ms(),
-                );
+    "A_DATE" : now_ms(),
+    "A_TSTAMP" : now_ms(),
+    "A_TSTAMP_TZ" : now_ms(),
+    "A_INT_YM" : now_ms(),
+    "A_INT_DS" : now_ms(),
+    );
 
 my $r = $db.exec("begin qore_test.do_obj_timestamp(%v, :retval); end;",
-                 bindOracleObject("OMQ.TEST_OBJECT_TIMESTAMP", $obj),
+                 bindOracleObject("TEST_OBJECT_TIMESTAMP", $obj),
                  Type::String);
 printf("object: %N\n", $r);
 $db.rollback();
+*/
 
 printf("\nOBJECT OUT\n");
 my $r1 = $db.exec("begin qore_test.get_obj_timestamp(:retval); end;", placeholderOracleObject("TEST_OBJECT_TIMESTAMP"));

@@ -107,7 +107,7 @@ void OraColumnValue::del(ExceptionSink *xsink) {
          break;
 
       case SQLT_NTY:
-         freeObject();
+         freeObject(xsink);
          break;
 
       default:
@@ -272,7 +272,7 @@ QoreStringNode* OraColumnValue::doReturnString(bool destructive) {
    return str;
 }
 
-void OraColumnValue::freeObject() {
+void OraColumnValue::freeObject(ExceptionSink* xsink) {
    assert(dtype == SQLT_NTY);
    assert(subdtype == SQLT_NTY_OBJECT || subdtype == SQLT_NTY_COLLECTION);
 
@@ -283,13 +283,13 @@ void OraColumnValue::freeObject() {
    if (subdtype == SQLT_NTY_OBJECT) {
       //printd(5, "OraColumnValue::getValue() freed OBJECT: %p\n", buf.oraObj);
       if (buf.oraObj) {
-         OCI_ObjectFree2(&conn->ocilib, buf.oraObj);
+         OCI_ObjectFree2(&conn->ocilib, buf.oraObj, xsink);
       }
    }
    else {
       //printd(5, "OraColumnValue::freeObject() freed COLLECTION: %p\n", buf.oraColl);
       if (buf.oraColl) {
-         OCI_CollFree2(&conn->ocilib, buf.oraColl);
+         OCI_CollFree2(&conn->ocilib, buf.oraColl, xsink);
       }
    }
 }

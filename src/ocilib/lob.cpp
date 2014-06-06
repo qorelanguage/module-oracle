@@ -43,7 +43,7 @@
  * ------------------------------------------------------------------------ */
 
  OCI_Lob * OCI_LobInit(OCI_Library *pOCILib, OCI_Connection *con, OCI_Lob **plob,
-                       OCILobLocator *handle, ub4 type)
+                       OCILobLocator *handle, ub4 type, ExceptionSink* xsink)
 {
     ub2 csid      = OCI_DEFAULT;
     ub1 csfrm     = OCI_DEFAULT;
@@ -94,22 +94,26 @@
                                                           (size_t) 0, (dvoid **) NULL));
             }
 
-            OCI_CALL2
+            OCI_CALL2Q
             (
                 pOCILib, res, lob->con,
 
                 OCIAttrSet((dvoid *) lob->handle, (ub4) OCI_DTYPE_LOB,
                            (dvoid *) &empty, (ub4) sizeof(empty),
-                           (ub4) OCI_ATTR_LOBEMPTY, lob->con->err)
+                           (ub4) OCI_ATTR_LOBEMPTY, lob->con->err),
+
+		xsink
             )
 
-            OCI_CALL2
+            OCI_CALL2Q
             (
                 pOCILib, res, lob->con,
 
                 OCILobCreateTemporary(lob->con->cxt, lob->con->err,
                                       lob->handle, csid, csfrm, lobtype,
-                                      FALSE, OCI_DURATION_SESSION)
+                                      FALSE, OCI_DURATION_SESSION),
+
+		xsink
             )
 
         }
@@ -123,7 +127,7 @@
 
     if (res == FALSE)
     {
-        OCI_LobFree(pOCILib, lob);
+       OCI_LobFree(pOCILib, lob, xsink);
         lob = NULL;
     }
 
@@ -143,7 +147,7 @@ OCI_Lob * OCI_API OCI_LobCreate(OCI_Connection *con, unsigned int type)
     return OCI_LobCreate2(&OCILib, con, type);
 }
 */
-OCI_Lob * OCI_API OCI_LobCreate2(OCI_Library *pOCILib, OCI_Connection *con, unsigned int type)
+OCI_Lob * OCI_API OCI_LobCreate2(OCI_Library *pOCILib, OCI_Connection *con, unsigned int type, ExceptionSink* xsink)
 {
     OCI_Lob *lob = NULL;
 
@@ -151,7 +155,7 @@ OCI_Lob * OCI_API OCI_LobCreate2(OCI_Library *pOCILib, OCI_Connection *con, unsi
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_CONNECTION, con, NULL);
 
-    lob = OCI_LobInit(pOCILib, con, &lob, NULL, type);
+    lob = OCI_LobInit(pOCILib, con, &lob, NULL, type, xsink);
 
     OCI_RESULT(pOCILib, lob != NULL);
 
@@ -162,7 +166,7 @@ OCI_Lob * OCI_API OCI_LobCreate2(OCI_Library *pOCILib, OCI_Connection *con, unsi
  * OCI_LobFree
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_LobFree(OCI_Library *pOCILib, OCI_Lob *lob)
+boolean OCI_API OCI_LobFree(OCI_Library *pOCILib, OCI_Lob *lob, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
@@ -170,13 +174,15 @@ boolean OCI_API OCI_LobFree(OCI_Library *pOCILib, OCI_Lob *lob)
 
     OCI_CHECK_OBJECT_FETCHED(lob, FALSE);
 
-    if (OCI_LobIsTemporary2(pOCILib, lob) == TRUE)
+    if (OCI_LobIsTemporary2(pOCILib, lob, xsink) == TRUE)
     {
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, lob->con,
 
-            OCILobFreeTemporary(lob->con->cxt, lob->con->err, lob->handle)
+            OCILobFreeTemporary(lob->con->cxt, lob->con->err, lob->handle),
+
+	    xsink
         )
     }
 
@@ -211,7 +217,7 @@ unsigned int OCI_API OCI_LobGetType(OCI_Library *pOCILib, OCI_Lob *lob)
 /* ------------------------------------------------------------------------ *
  * OCI_LobSeek
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_LobSeek(OCI_Library *pOCILib, OCI_Lob *lob, big_uint offset, unsigned int mode)
 {
     boolean res   = TRUE;
@@ -236,11 +242,12 @@ boolean OCI_API OCI_LobSeek(OCI_Library *pOCILib, OCI_Lob *lob, big_uint offset,
 
     return res;
 }
+*/
 
 /* ------------------------------------------------------------------------ *
  * OCI_LobGetOffset
  * ------------------------------------------------------------------------ */
-
+/*
 big_uint OCI_API OCI_LobGetOffset(OCI_Library *pOCILib, OCI_Lob *lob)
 {
     OCI_CHECK_PTR(pOCILib, OCI_IPC_LOB, lob, 0);
@@ -249,7 +256,7 @@ big_uint OCI_API OCI_LobGetOffset(OCI_Library *pOCILib, OCI_Lob *lob)
 
     return lob->offset - 1;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_LobRead2
  * ------------------------------------------------------------------------ */
@@ -597,7 +604,8 @@ unsigned int OCI_API OCI_LobWrite(OCI_Library *pOCILib, OCI_Lob *lob, void *buff
  * OCI_LobTruncate
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_LobTruncate(OCI_Library *pOCILib, OCI_Lob *lob, big_uint size)
+/*
+boolean OCI_API OCI_LobTruncate(OCI_Library *pOCILib, OCI_Lob *lob, big_uint size, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
@@ -607,11 +615,13 @@ boolean OCI_API OCI_LobTruncate(OCI_Library *pOCILib, OCI_Lob *lob, big_uint siz
 
     if (pOCILib->use_lob_ub8)
     {
-         OCI_CALL2
+         OCI_CALL2Q
          (
             pOCILib, res, lob->con,
 
-            OCILobTrim2(lob->con->cxt, lob->con->err, lob->handle, (ub8) size)
+            OCILobTrim2(lob->con->cxt, lob->con->err, lob->handle, (ub8) size),
+
+	    xsink
          )
     }
     else
@@ -619,11 +629,13 @@ boolean OCI_API OCI_LobTruncate(OCI_Library *pOCILib, OCI_Lob *lob, big_uint siz
 #endif
 
     {
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, lob->con,
 
-            OCILobTrim(lob->con->cxt, lob->con->err, lob->handle, (ub4) size)
+            OCILobTrim(lob->con->cxt, lob->con->err, lob->handle, (ub4) size),
+
+	    xsink
         )
     }
 
@@ -631,11 +643,12 @@ boolean OCI_API OCI_LobTruncate(OCI_Library *pOCILib, OCI_Lob *lob, big_uint siz
 
     return res;
 }
+*/
 
 /* ------------------------------------------------------------------------ *
  * OCI_LobErase
  * ------------------------------------------------------------------------ */
-
+/*
 big_uint OCI_API OCI_LobErase(OCI_Library *pOCILib, OCI_Lob *lob, big_uint offset, big_uint size)
 {
     boolean res  = TRUE;
@@ -681,12 +694,13 @@ big_uint OCI_API OCI_LobErase(OCI_Library *pOCILib, OCI_Lob *lob, big_uint offse
 
     return size;
 }
+*/
 
 /* ------------------------------------------------------------------------ *
  * OCI_LobGetLength
  * ------------------------------------------------------------------------ */
 
-big_uint OCI_API OCI_LobGetLength(OCI_Library *pOCILib, OCI_Lob *lob)
+big_uint OCI_API OCI_LobGetLength(OCI_Library *pOCILib, OCI_Lob *lob, ExceptionSink* xsink)
 {
     boolean res   = TRUE;
     big_uint size = 0;
@@ -699,12 +713,14 @@ big_uint OCI_API OCI_LobGetLength(OCI_Library *pOCILib, OCI_Lob *lob)
     {
         ub8 lob_size = 0;
 
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, lob->con,
 
             OCILobGetLength2(lob->con->cxt, lob->con->err, lob->handle,
-                             (ub8 *) &lob_size)
+                             (ub8 *) &lob_size),
+
+	    xsink
         )
 
         size = (big_uint) lob_size;
@@ -716,11 +732,13 @@ big_uint OCI_API OCI_LobGetLength(OCI_Library *pOCILib, OCI_Lob *lob)
     {
         ub4 lob_size = 0;
 
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, lob->con,
 
-            OCILobGetLength(lob->con->cxt, lob->con->err, lob->handle, &lob_size)
+            OCILobGetLength(lob->con->cxt, lob->con->err, lob->handle, &lob_size),
+
+	    xsink
         )
 
         size = (big_uint) lob_size;
@@ -734,7 +752,7 @@ big_uint OCI_API OCI_LobGetLength(OCI_Library *pOCILib, OCI_Lob *lob)
 /* ------------------------------------------------------------------------ *
  * OCI_LobGetChunkSize
  * ------------------------------------------------------------------------ */
-
+/*
 unsigned int OCI_API OCI_LobGetChunkSize(OCI_Library *pOCILib, OCI_Lob *lob)
 {
     boolean res = TRUE;
@@ -753,11 +771,11 @@ unsigned int OCI_API OCI_LobGetChunkSize(OCI_Library *pOCILib, OCI_Lob *lob)
 
     return (unsigned int) size;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_LobCopy
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_LobCopy(OCI_Library *pOCILib, OCI_Lob *lob, OCI_Lob *lob_src, big_uint offset_dst,
                             big_uint offset_src, big_uint count)
 {
@@ -801,11 +819,11 @@ boolean OCI_API OCI_LobCopy(OCI_Library *pOCILib, OCI_Lob *lob, OCI_Lob *lob_src
 
     return res;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_LobCopyFromFile
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_LobCopyFromFile(OCI_Library *pOCILib, OCI_Lob *lob, OCI_File *file,
                                     big_uint offset_dst,
                                     big_uint offset_src,
@@ -852,11 +870,12 @@ boolean OCI_API OCI_LobCopyFromFile(OCI_Library *pOCILib, OCI_Lob *lob, OCI_File
 
     return res;
 }
+*/
 
 /* ------------------------------------------------------------------------ *
  * OCI_LobAppend2
  * ------------------------------------------------------------------------ */
-
+#if 0
 boolean OCI_API OCI_LobAppend2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
                                unsigned int *char_count,
                                unsigned int *byte_count, ExceptionSink* xsink)
@@ -1005,11 +1024,12 @@ boolean OCI_API OCI_LobAppend2(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer,
 
     return res;
 }
+#endif
 
 /* ------------------------------------------------------------------------ *
  * OCI_LobAppend
  * ------------------------------------------------------------------------ */
-
+/*
 unsigned int OCI_API OCI_LobAppend(OCI_Library *pOCILib, OCI_Lob *lob, void *buffer, unsigned int len, ExceptionSink* xsink)
 {
     unsigned int  char_count = 0;
@@ -1034,11 +1054,11 @@ unsigned int OCI_API OCI_LobAppend(OCI_Library *pOCILib, OCI_Lob *lob, void *buf
 
     return (ptr_count ? *ptr_count : 0);
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_LobAppendLob
  * ------------------------------------------------------------------------ */
-
+#if 0
 boolean OCI_API OCI_LobAppendLob(OCI_Library *pOCILib, OCI_Lob *lob, OCI_Lob *lob_src)
 {
     boolean  res    = TRUE;
@@ -1071,6 +1091,7 @@ boolean OCI_API OCI_LobAppendLob(OCI_Library *pOCILib, OCI_Lob *lob, OCI_Lob *lo
 
     return res;
 }
+#endif
 
 /* ------------------------------------------------------------------------ *
  * OCI_LobIsTemporary
@@ -1082,18 +1103,20 @@ boolean OCI_API OCI_LobIsTemporary(OCI_Lob *lob)
 }
 */
 
-boolean OCI_API OCI_LobIsTemporary2(OCI_Library *pOCILib, OCI_Lob *lob)
+boolean OCI_API OCI_LobIsTemporary2(OCI_Library *pOCILib, OCI_Lob *lob, ExceptionSink* xsink)
 {
     boolean value = FALSE;
     boolean res   = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_LOB, lob, FALSE);
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
         pOCILib, res, lob->con,
 
-        OCILobIsTemporary(pOCILib->env, lob->con->err, lob->handle, &value)
+        OCILobIsTemporary(pOCILib->env, lob->con->err, lob->handle, &value),
+
+	xsink
     )
 
     OCI_RESULT(pOCILib, res);
@@ -1104,7 +1127,7 @@ boolean OCI_API OCI_LobIsTemporary2(OCI_Library *pOCILib, OCI_Lob *lob)
 /* ------------------------------------------------------------------------ *
  * OCI_LobOpen
  * ------------------------------------------------------------------------ */
-
+ /*
 boolean OCI_API OCI_LobOpen(OCI_Library *pOCILib, OCI_Lob *lob, unsigned int mode)
 {
     boolean res = TRUE;
@@ -1122,11 +1145,11 @@ boolean OCI_API OCI_LobOpen(OCI_Library *pOCILib, OCI_Lob *lob, unsigned int mod
 
     return res;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_LobClose
  * ------------------------------------------------------------------------ */
-
+ /*
 boolean OCI_API OCI_LobClose(OCI_Library *pOCILib, OCI_Lob *lob)
 {
     boolean res = TRUE;
@@ -1144,12 +1167,12 @@ boolean OCI_API OCI_LobClose(OCI_Library *pOCILib, OCI_Lob *lob)
 
     return res;
 }
-
+ */
 /* ------------------------------------------------------------------------ *
  * OCI_LobAssign
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_LobAssign(OCI_Library *pOCILib, OCI_Lob *lob, OCI_Lob *lob_src)
+boolean OCI_API OCI_LobAssign(OCI_Library *pOCILib, OCI_Lob *lob, OCI_Lob *lob_src, ExceptionSink* xsink)
 {
     boolean res   = TRUE;
 
@@ -1158,22 +1181,26 @@ boolean OCI_API OCI_LobAssign(OCI_Library *pOCILib, OCI_Lob *lob, OCI_Lob *lob_s
 
     if (lob->hstate == OCI_OBJECT_ALLOCATED)
     {
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, lob->con,
 
             OCILobLocatorAssign(lob->con->cxt, lob->con->err,
-                                lob_src->handle, &lob->handle)
+                                lob_src->handle, &lob->handle),
+
+	    xsink
         )
     }
     else
     {
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, lob->con,
 
             OCILobAssign(pOCILib->env, lob->con->err,
-                         lob_src->handle, &lob->handle)
+                         lob_src->handle, &lob->handle),
+
+	    xsink
         )
     }
 
@@ -1185,7 +1212,7 @@ boolean OCI_API OCI_LobAssign(OCI_Library *pOCILib, OCI_Lob *lob, OCI_Lob *lob_s
 /* ------------------------------------------------------------------------ *
  * OCI_LobGetMaxSize
  * ------------------------------------------------------------------------ */
-
+/*
 big_uint OCI_API OCI_LobGetMaxSize(OCI_Library *pOCILib, OCI_Lob *lob)
 {
     boolean res   = TRUE;
@@ -1212,11 +1239,11 @@ big_uint OCI_API OCI_LobGetMaxSize(OCI_Library *pOCILib, OCI_Lob *lob)
 
     return size;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_LobFlush
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_LobFlush(OCI_Library *pOCILib, OCI_Lob *lob)
 {
     boolean res   = TRUE;
@@ -1234,12 +1261,12 @@ boolean OCI_API OCI_LobFlush(OCI_Library *pOCILib, OCI_Lob *lob)
 
     return res;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_LobEnableBuffering
  * ------------------------------------------------------------------------ */
 
-
+/*
 boolean OCI_API OCI_LobEnableBuffering(OCI_Library *pOCILib, OCI_Lob *lob, boolean value)
 {
     boolean res   = TRUE;
@@ -1269,5 +1296,5 @@ boolean OCI_API OCI_LobEnableBuffering(OCI_Library *pOCILib, OCI_Lob *lob, boole
 
     return res;
 }
-
+*/
 

@@ -65,6 +65,19 @@
             (res) = TRUE;                                                      \
     }
 
+#define OCI_CALL0Q(ocilib, res, err, fct, xsink)				\
+                                                                               \
+    {                                                                          \
+        (res) = (boolean) fct;                                                 \
+        if (OCI_NO_ERROR((res)) == FALSE)                                      \
+        {                                                                      \
+            (res) = ((res) == OCI_SUCCESS_WITH_INFO);                          \
+            OCI_ExceptionOCI2(ocilib, (err), NULL, NULL, res, xsink);		\
+        }                                                                      \
+        else                                                                   \
+            (res) = TRUE;                                                      \
+    }
+
 /**
  * @brief 
  * Conditional OCI call with return value checking
@@ -236,6 +249,22 @@
         }                                                                      \
     }
 
+#define OCI_CALL4Q(ocilib, res, err, con, fct, xsink)                          \
+                                                                               \
+    {                                                                          \
+        if ((res) == TRUE)                                                     \
+        {                                                                      \
+            (res) = (boolean) fct;                                             \
+            if (OCI_NO_ERROR((res)) == FALSE)                                  \
+            {                                                                  \
+                (res) = ((res) == OCI_SUCCESS_WITH_INFO);                      \
+                OCI_ExceptionOCI2(ocilib, (err), (con), NULL, res, xsink);     \
+            }                                                                  \
+            else                                                               \
+                (res) = TRUE;                                                  \
+        }                                                                      \
+    }
+
 /**
  * @brief 
  * Direct OCI call with return value checking
@@ -296,6 +325,9 @@
  *
  */
 
+#define OCI_CHECK_PTR(ocilib, type, ptr, ret) assert(ptr)
+
+/*
 #define OCI_CHECK_PTR(ocilib, type, ptr, ret)				\
                                                                                \
     if ((ptr) == NULL)                                                         \
@@ -304,6 +336,7 @@
                                                                                \
         return (ret);                                                          \
     }           
+*/
 
 #define OCI_CHECK_PTRQ(ocilib, type, ptr, ret, xsink)				\
                                                                                \
@@ -428,15 +461,16 @@
  *
  */
 
-#define OCI_CHECK_COMPAT(ocilib, con, exp, ret)				\
+#define OCI_CHECK_COMPAT(ocilib, con, exp, ret) assert(exp)
+
+#define OCI_CHECK_COMPATQ(ocilib, con, exp, ret, xsink)			\
                                                                                \
     if ((exp) == FALSE)                                                         \
     {                                                                          \
-       OCI_ExceptionTypeNotCompatible2(ocilib, (con));			\
+       OCI_ExceptionTypeNotCompatible2(ocilib, (con), xsink);			\
                                                                                \
         return (ret);                                                          \
     } 
-
 
 /* ************************************************************************ *
                   INTERNAL STATES/ATTRIBUTES CHECKING MACROS
@@ -539,6 +573,9 @@
  *
  */
 
+#define OCI_CHECK_INITIALIZED2(ocilib, ret) assert(ocilib->loaded)
+
+/*
 #define OCI_CHECK_INITIALIZED2(ocilib, ret)				\
                                                                                \
         if (ocilib->loaded == FALSE)                                            \
@@ -546,14 +583,7 @@
             OCI_ExceptionNotInitialized2(ocilib);                                     \
             return ret;                                                        \
         }
-
-#define OCI_CHECK_INITIALIZED2Q(ocilib, ret, xsink)				\
-                                                                               \
-        if (ocilib->loaded == FALSE)                                            \
-        {                                                                      \
-	   OCI_ExceptionNotInitialized2(ocilib, xsink);			\
-            return ret;                                                        \
-        }
+*/
 
 /**
  * @brief 

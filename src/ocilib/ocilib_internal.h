@@ -51,7 +51,8 @@ boolean OCI_API OCI_SetTrace
     OCI_Library *pOCILib,
     OCI_Connection *con,
     unsigned int    trace,
-    const mtext    *value
+    const mtext    *value,
+    ExceptionSink* xsink
 );
 
 boolean OCI_API OCI_Ping(OCI_Library *pOCILib, OCI_Connection *con, ExceptionSink* xsink);
@@ -168,7 +169,7 @@ OCI_Coll * OCI_CollInit
     ExceptionSink* xsink
 );
 
-boolean OCI_CollAssign(OCI_Library *pOCILib, OCI_Coll *coll, OCI_Coll *coll_src);
+boolean OCI_CollAssign(OCI_Library *pOCILib, OCI_Coll *coll, OCI_Coll *coll_src, ExceptionSink* xsink);
 
 /* ------------------------------------------------------------------------ *
  * column.c
@@ -225,7 +226,8 @@ OCI_Dequeue * OCI_API OCI_DequeueCreate
 boolean OCI_API OCI_DequeueFree
 (
     OCI_Library *pOCILib,
-    OCI_Dequeue *dequeue
+    OCI_Dequeue *dequeue,
+    ExceptionSink *xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
@@ -467,67 +469,37 @@ boolean OCI_API OCI_EnqueuePut
  * OCI_EnqueueGetVisibility
  * --------------------------------------------------------------------------------------------- */
 
-unsigned int OCI_API OCI_EnqueueGetVisibility
-(
-    OCI_Library *pOCILib,
-    OCI_Enqueue *enqueue
-);
+//unsigned int OCI_API OCI_EnqueueGetVisibility(    OCI_Library *pOCILib,    OCI_Enqueue *enqueue);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_EnqueueSetVisibility
  * --------------------------------------------------------------------------------------------- */
 
-boolean OCI_API OCI_EnqueueSetVisibility
-(
-    OCI_Library *pOCILib,
-    OCI_Enqueue *enqueue,
-    unsigned int visibility
-);
+//boolean OCI_API OCI_EnqueueSetVisibility(    OCI_Library *pOCILib,    OCI_Enqueue *enqueue,    unsigned int visibility);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_EnqueueGetSequenceDeviation
  * --------------------------------------------------------------------------------------------- */
 
-unsigned int OCI_API OCI_EnqueueGetSequenceDeviation
-(
-    OCI_Library *pOCILib,
-    OCI_Enqueue *enqueue
-);
+//unsigned int OCI_API OCI_EnqueueGetSequenceDeviation(    OCI_Library *pOCILib,    OCI_Enqueue *enqueue);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_EnqueueSetDeviation
  * --------------------------------------------------------------------------------------------- */
 
-boolean OCI_API OCI_EnqueueSetSequenceDeviation
-(
-    OCI_Library *pOCILib,
-    OCI_Enqueue *enqueue,
-    unsigned int sequence
-);
+//boolean OCI_API OCI_EnqueueSetSequenceDeviation(    OCI_Library *pOCILib,    OCI_Enqueue *enqueue,    unsigned int sequence);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_EnqueueSetRelativeMsgID
  * --------------------------------------------------------------------------------------------- */
 
-boolean OCI_API OCI_EnqueueGetRelativeMsgID
-(
-    OCI_Library *pOCILib,
-    OCI_Enqueue  *enqueue,
-    void         *id,
-    unsigned int *len
-);
+//boolean OCI_API OCI_EnqueueGetRelativeMsgID(    OCI_Library *pOCILib,    OCI_Enqueue  *enqueue,    void         *id,    unsigned int *len);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_EnqueueSetRelativeMsgID
  * --------------------------------------------------------------------------------------------- */
 
-boolean OCI_API OCI_EnqueueSetRelativeMsgID
-(
-    OCI_Library *pOCILib,
-    OCI_Enqueue  *enqueue,
-    const void   *id,
-    unsigned int  len
-);
+//boolean OCI_API OCI_EnqueueSetRelativeMsgID(    OCI_Library *pOCILib,    OCI_Enqueue  *enqueue,    const void   *id,    unsigned int  len);
 
 /* ------------------------------------------------------------------------ *
  * error.c
@@ -808,10 +780,11 @@ OCI_Lob * OCI_LobInit
     OCI_Connection *con,
     OCI_Lob **plob,
     OCILobLocator *handle,
-    ub4 type
+    ub4 type,
+    ExceptionSink* xsink
 );
 
-boolean OCI_LobAssign(OCI_Library *pOCILib, OCI_Lob *lob, OCI_Lob *lob_src);
+boolean OCI_LobAssign(OCI_Library *pOCILib, OCI_Lob *lob, OCI_Lob *lob_src, ExceptionSink* xsink);
 
 /* ------------------------------------------------------------------------ *
  * long.c
@@ -951,18 +924,15 @@ OCI_Msg * OCI_API OCI_MsgCreate
 boolean OCI_API OCI_MsgFree
 (
     OCI_Library *pOCILib,
-    OCI_Msg *msg
+    OCI_Msg *msg,
+    ExceptionSink* xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgReset
  * --------------------------------------------------------------------------------------------- */
 
-boolean OCI_API OCI_MsgReset
-(
-    OCI_Library *pOCILib,
-    OCI_Msg *msg
-);
+boolean OCI_API OCI_MsgReset(OCI_Library *pOCILib, OCI_Msg *msg, ExceptionSink* xsink);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetObject
@@ -982,28 +952,21 @@ boolean OCI_API OCI_MsgSetObject
 (
     OCI_Library *pOCILib,
     OCI_Msg    *msg,
-    OCI_Object *obj
+    OCI_Object *obj,
+    ExceptionSink* xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetAttemptCount
  * --------------------------------------------------------------------------------------------- */
 
-int OCI_API OCI_MsgGetAttemptCount
-(
-    OCI_Library *pOCILib,
-    OCI_Msg *msg
-);
+//int OCI_API OCI_MsgGetAttemptCount(OCI_Library *pOCILib, OCI_Msg *msg);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetEnqueueDelay
  * --------------------------------------------------------------------------------------------- */
 
-int OCI_API OCI_MsgGetEnqueueDelay
-(
-    OCI_Library *pOCILib,
-    OCI_Msg *msg
-);
+//int OCI_API OCI_MsgGetEnqueueDelay(OCI_Library *pOCILib, OCI_Msg *msg);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetEnqueueDelay
@@ -1013,28 +976,21 @@ boolean OCI_API OCI_MsgSetEnqueueDelay
 (
     OCI_Library *pOCILib,
     OCI_Msg *msg,
-    int      value
+    int      value,
+    ExceptionSink* xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetEnqueueTime
  * --------------------------------------------------------------------------------------------- */
 
-OCI_Date * OCI_API OCI_MsgGetEnqueueTime
-(
-    OCI_Library *pOCILib,
-    OCI_Msg *msg
-);
+//OCI_Date * OCI_API OCI_MsgGetEnqueueTime(OCI_Library *pOCILib, OCI_Msg *msg);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetExpiration
  * --------------------------------------------------------------------------------------------- */
 
-int OCI_API OCI_MsgGetExpiration
-(
-    OCI_Library *pOCILib,
-    OCI_Msg *msg
-);
+//int OCI_API OCI_MsgGetExpiration(OCI_Library *pOCILib, OCI_Msg *msg);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetExpiration
@@ -1044,28 +1000,21 @@ boolean OCI_API OCI_MsgSetExpiration
 (
     OCI_Library *pOCILib,
     OCI_Msg *msg,
-    int      value
+    int      value,
+    ExceptionSink* xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetState
  * --------------------------------------------------------------------------------------------- */
 
-unsigned int OCI_API OCI_MsgGetState
-(
-    OCI_Library *pOCILib,
-    OCI_Msg *msg
-);
+//unsigned int OCI_API OCI_MsgGetState(OCI_Library *pOCILib, OCI_Msg *msg);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetPriority
  * --------------------------------------------------------------------------------------------- */
 
-int OCI_API OCI_MsgGetPriority
-(
-    OCI_Library *pOCILib,
-    OCI_Msg *msg
-);
+//int OCI_API OCI_MsgGetPriority(OCI_Library *pOCILib, OCI_Msg *msg);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetPriority
@@ -1075,54 +1024,33 @@ boolean OCI_API OCI_MsgSetPriority
 (
     OCI_Library *pOCILib,
     OCI_Msg *msg,
-    int      value
+    int      value,
+    ExceptionSink* xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetID
  * --------------------------------------------------------------------------------------------- */
 
-boolean OCI_API OCI_MsgGetID
-(
-    OCI_Library *pOCILib,
-    OCI_Msg      *msg,
-    void         *id,
-    unsigned int *len
-);
+//boolean OCI_API OCI_MsgGetID(OCI_Library *pOCILib, OCI_Msg *msg, void *id, unsigned int *len);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetOriginalID
  * --------------------------------------------------------------------------------------------- */
 
-boolean OCI_API OCI_MsgGetOriginalID
-(
-    OCI_Library *pOCILib,
-    OCI_Msg      *msg,
-    void         *id,
-    unsigned int *len
-);
+//boolean OCI_API OCI_MsgGetOriginalID(OCI_Library *pOCILib, OCI_Msg *msg, void *id, unsigned int *len);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetOriginalID
  * --------------------------------------------------------------------------------------------- */
 
-boolean OCI_API OCI_MsgSetOriginalID
-(
-    OCI_Library *pOCILib,
-    OCI_Msg      *msg,
-    const void   *id,
-    unsigned int len
-);
+boolean OCI_API OCI_MsgSetOriginalID(OCI_Library *pOCILib, OCI_Msg *msg, const void *id, unsigned int len, ExceptionSink* xsink);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetCorrelation
  * --------------------------------------------------------------------------------------------- */
 
-const mtext * OCI_API OCI_MsgGetCorrelation
-(
-    OCI_Library *pOCILib,
-    OCI_Msg *msg
-);
+//const mtext * OCI_API OCI_MsgGetCorrelation(OCI_Library *pOCILib, OCI_Msg *msg);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetCorrelation
@@ -1132,62 +1060,39 @@ boolean OCI_API OCI_MsgSetCorrelation
 (
     OCI_Library *pOCILib,
     OCI_Msg     *msg,
-    const mtext *correlation
+    const mtext *correlation,
+    ExceptionSink* xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetExceptionQueue
  * --------------------------------------------------------------------------------------------- */
 
-const mtext * OCI_API OCI_MsgGetExceptionQueue
-(
-    OCI_Library *pOCILib,
-    OCI_Msg *msg
-);
+//const mtext * OCI_API OCI_MsgGetExceptionQueue(OCI_Library *pOCILib, OCI_Msg *msg);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetExceptionQueue
  * --------------------------------------------------------------------------------------------- */
 
-boolean OCI_API OCI_MsgSetExceptionQueue
-(
-    OCI_Library *pOCILib,
-    OCI_Msg     *msg,
-    const mtext *queue
-);
+boolean OCI_API OCI_MsgSetExceptionQueue(OCI_Library *pOCILib, OCI_Msg *msg, const mtext *queue, ExceptionSink* xsink);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetSender
  * --------------------------------------------------------------------------------------------- */
 
-OCI_Agent * OCI_API OCI_MsgGetSender
-(
-    OCI_Library *pOCILib,
-    OCI_Msg   *msg
-);
+//OCI_Agent * OCI_API OCI_MsgGetSender(    OCI_Library *pOCILib,    OCI_Msg   *msg);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetSender
  * --------------------------------------------------------------------------------------------- */
 
-boolean OCI_API OCI_MsgSetSender
-(
-    OCI_Library *pOCILib,
-    OCI_Msg   *msg,
-    OCI_Agent *sender
-);
+boolean OCI_API OCI_MsgSetSender(OCI_Library *pOCILib, OCI_Msg *msg, OCI_Agent *sender, ExceptionSink* xsink);
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetConsumers
  * --------------------------------------------------------------------------------------------- */
 
-boolean OCI_API OCI_MsgSetConsumers
-(
-    OCI_Library *pOCILib,
-    OCI_Msg     *msg,
-    OCI_Agent  **consumers,
-    unsigned int count
-);
+boolean OCI_API OCI_MsgSetConsumers(    OCI_Library *pOCILib,    OCI_Msg     *msg,    OCI_Agent  **consumers,    unsigned int count, ExceptionSink* xsink);
 
 /* ------------------------------------------------------------------------ *
  * number.c
@@ -1272,7 +1177,8 @@ OCI_Object * OCI_ObjectInit
 void OCI_ObjectReset
 (
     OCI_Library *pOCILib,
-    OCI_Object *obj
+    OCI_Object *obj,
+    ExceptionSink* xsink
 );
 /*
 int OCI_ObjectGetAttrIndex
@@ -1424,7 +1330,8 @@ boolean OCI_StringToStringPtr
     OCIError *err,
     void *value,
     void **buf,
-    int *buflen
+    int *buflen,
+    ExceptionSink* xsink
 );
 
 boolean OCI_StringGetFromAttrHandle
@@ -1434,7 +1341,8 @@ boolean OCI_StringGetFromAttrHandle
     void           *handle,
     unsigned int    type,
     unsigned int    attr,
-    mtext         **str
+    mtext         **str,
+    ExceptionSink* xsink
 );
 
 boolean OCI_StringSetToAttrHandle
@@ -1445,7 +1353,8 @@ boolean OCI_StringSetToAttrHandle
     unsigned int    type,
     unsigned int    attr,
     mtext         **str,
-    const mtext    *value
+    const mtext    *value,
+    ExceptionSink* xsink
 );
 
 /* ------------------------------------------------------------------------ *
@@ -1470,13 +1379,13 @@ boolean OCI_TypeInfoClose
     OCI_TypeInfo *typeinf
 );
 
-boolean OCI_ThreadKeyFree(OCI_Library *pOCILib, OCI_ThreadKey *key);
-boolean OCI_ThreadKeyGet(OCI_Library *pOCILib, OCI_ThreadKey* key, void **value);
-boolean OCI_ThreadKeySet(OCI_Library *pOCILib, OCI_ThreadKey *key, void *value);
-OCI_Mutex * OCI_MutexCreateInternal(OCI_Library * pOCILib);
-boolean OCI_API OCI_MutexFree(OCI_Library * pOCILib, OCI_Mutex *mutex);
-boolean OCI_API OCI_MutexAcquire(OCI_Library * pOCILib, OCI_Mutex *mutex);
-boolean OCI_API OCI_MutexRelease(OCI_Library * pOCILib, OCI_Mutex *mutex);
+//boolean OCI_ThreadKeyFree(OCI_Library *pOCILib, OCI_ThreadKey *key);
+//boolean OCI_ThreadKeyGet(OCI_Library *pOCILib, OCI_ThreadKey* key, void **value);
+//boolean OCI_ThreadKeySet(OCI_Library *pOCILib, OCI_ThreadKey *key, void *value);
+//OCI_Mutex * OCI_MutexCreateInternal(OCI_Library * pOCILib, ExceptionSink* xsink);
+//boolean OCI_API OCI_MutexFree(OCI_Library * pOCILib, OCI_Mutex *mutex, ExceptionSink* xsink);
+//boolean OCI_API OCI_MutexAcquire(OCI_Library * pOCILib, OCI_Mutex *mutex, ExceptionSink* xsink);
+//boolean OCI_API OCI_MutexRelease(OCI_Library * pOCILib, OCI_Mutex *mutex, ExceptionSink* xsink);
 
 OCI_Ref * OCI_RefInit
 (

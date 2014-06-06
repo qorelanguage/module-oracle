@@ -1548,7 +1548,8 @@ boolean OCI_API OCI_SetTrace
     OCI_Library *pOCILib,
     OCI_Connection *con,
     unsigned int    trace,
-    const mtext    *value
+    const mtext    *value,
+    ExceptionSink* xsink
 )
 {
     boolean res = TRUE;
@@ -1670,12 +1671,14 @@ boolean OCI_API OCI_SetTrace
             osize = 0;
         }
 
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, con,
 
             OCIAttrSet((dvoid *) con->ses, (ub4) OCI_HTYPE_SESSION,
-                       (dvoid *) ostr, (ub4) osize, attrib, con->err)
+                       (dvoid *) ostr, (ub4) osize, attrib, con->err),
+
+	    xsink
         )
 
         OCI_ReleaseMetaString(ostr);

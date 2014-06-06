@@ -95,8 +95,8 @@ OCI_Dequeue * OCI_API OCI_DequeueCreate
 
     if (res == FALSE)
     {
-        OCI_DequeueFree(pOCILib, dequeue);
-        dequeue = NULL;
+       OCI_DequeueFree(pOCILib, dequeue, xsink);
+       dequeue = NULL;
     }
 
     return dequeue;
@@ -109,7 +109,8 @@ OCI_Dequeue * OCI_API OCI_DequeueCreate
 boolean OCI_API OCI_DequeueFree
 (
     OCI_Library *pOCILib,
-    OCI_Dequeue *dequeue
+    OCI_Dequeue *dequeue,
+    ExceptionSink *xsink
 )
 {
     OCI_CHECK_PTR(pOCILib, OCI_IPC_DEQUEUE, dequeue, FALSE);
@@ -118,7 +119,7 @@ boolean OCI_API OCI_DequeueFree
 
     if (dequeue->msg != NULL)
     {
-        OCI_MsgFree(pOCILib, dequeue->msg);
+       OCI_MsgFree(pOCILib, dequeue->msg, xsink);
     }
 
     /* free local agent  */
@@ -150,10 +151,10 @@ boolean OCI_API OCI_DequeueFree
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueListen
  * --------------------------------------------------------------------------------------------- */
-
+/*
 OCI_Agent * OCI_API OCI_DequeueListen
 (
-	OCI_Library *pOCILib,
+   OCI_Library *pOCILib,
     OCI_Dequeue *dequeue,
     int          timeout
 )
@@ -164,7 +165,7 @@ OCI_Agent * OCI_API OCI_DequeueListen
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_DEQUEUE, dequeue, NULL);
 
-    /* listen only if OCI_DequeueSetAgentList has been called */
+    // listen only if OCI_DequeueSetAgentList has been called
 
     if (dequeue->agent_list != NULL)
     {
@@ -175,7 +176,7 @@ OCI_Agent * OCI_API OCI_DequeueListen
                            dequeue->agent_list, (ub4) dequeue->agent_count,
                            (sb4) timeout, &handle, OCI_DEFAULT);
 
-        /* check returned error code */
+        // check returned error code
 
         if (ret == OCI_ERROR)
         {
@@ -183,7 +184,7 @@ OCI_Agent * OCI_API OCI_DequeueListen
                         (OraText *) NULL, &code, (OraText *) NULL, (ub4) 0,
                         (ub4) OCI_HTYPE_ERROR);
 
-            /* raise error only if the call has not been timed out */
+            // raise error only if the call has not been timed out
 
             if (code != OCI_ERR_AQ_LISTEN_TIMEOUT)
             {
@@ -193,7 +194,7 @@ OCI_Agent * OCI_API OCI_DequeueListen
             }
         }
 
-        /* init local agent object */
+        // init local agent object
 
         if ((res == TRUE) && (ret == OCI_SUCCESS) && (handle != NULL))
         {
@@ -205,6 +206,7 @@ OCI_Agent * OCI_API OCI_DequeueListen
 
     return agent;
 }
+*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueGet
@@ -228,7 +230,7 @@ OCI_Msg * OCI_API OCI_DequeueGet
 
     /* reset message */
 
-    res = OCI_MsgReset(pOCILib, dequeue->msg);
+    res = OCI_MsgReset(pOCILib, dequeue->msg, xsink);
 
     //printd(5, "OCI_DequeueGet() OCI_MsgReset res: %d\n", res);
 
@@ -311,7 +313,7 @@ OCI_Msg * OCI_API OCI_DequeueGet
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueGetConsumerName
  * --------------------------------------------------------------------------------------------- */
-
+/*
 const mtext * OCI_API OCI_DequeueGetConsumer
 (
     OCI_Library *pOCILib,
@@ -335,11 +337,12 @@ const mtext * OCI_API OCI_DequeueGetConsumer
 
     return dequeue->consumer;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueSetConsumerName
  * --------------------------------------------------------------------------------------------- */
 
+#if 0
 boolean OCI_API OCI_DequeueSetConsumer
 (
     OCI_Library *pOCILib,
@@ -363,6 +366,7 @@ boolean OCI_API OCI_DequeueSetConsumer
 
     return res;
 }
+#endif
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueGetCorrelation
@@ -512,7 +516,7 @@ boolean OCI_API OCI_DequeueSetRelativeMsgID
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueGetVisibility
  * --------------------------------------------------------------------------------------------- */
-
+/*
 unsigned int OCI_API OCI_DequeueGetVisibility
 (
     OCI_Library *pOCILib,
@@ -540,11 +544,12 @@ unsigned int OCI_API OCI_DequeueGetVisibility
 
     return (int) ret;
 }
+*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueSetVisibility
  * --------------------------------------------------------------------------------------------- */
-
+/*
 boolean OCI_API OCI_DequeueSetVisibility
 (
     OCI_Library *pOCILib,
@@ -573,11 +578,13 @@ boolean OCI_API OCI_DequeueSetVisibility
 
     return res;
 }
+*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueGetMode
  * --------------------------------------------------------------------------------------------- */
 
+/*
 unsigned int OCI_API OCI_DequeueGetMode
 (
     OCI_Library *pOCILib,
@@ -605,11 +612,13 @@ unsigned int OCI_API OCI_DequeueGetMode
 
     return (int) ret;
 }
+*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueSetMode
  * --------------------------------------------------------------------------------------------- */
 
+/*
 boolean OCI_API OCI_DequeueSetMode
 (
     OCI_Library *pOCILib,
@@ -638,11 +647,12 @@ boolean OCI_API OCI_DequeueSetMode
 
     return res;
 }
+*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueGetNavigation
  * --------------------------------------------------------------------------------------------- */
-
+/*
 unsigned int OCI_API OCI_DequeueGetNavigation
 (
     OCI_Library *pOCILib,
@@ -670,11 +680,12 @@ unsigned int OCI_API OCI_DequeueGetNavigation
 
     return (int) ret;
 }
+*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueSetNavigation
  * --------------------------------------------------------------------------------------------- */
-
+/*
 boolean OCI_API OCI_DequeueSetNavigation
 (
     OCI_Library *pOCILib,
@@ -703,11 +714,12 @@ boolean OCI_API OCI_DequeueSetNavigation
 
     return res;
 }
+*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueGetWaitTime
  * --------------------------------------------------------------------------------------------- */
-
+/*
 int OCI_API OCI_DequeueGetWaitTime
 (
     OCI_Library *pOCILib,
@@ -735,11 +747,12 @@ int OCI_API OCI_DequeueGetWaitTime
 
     return (int) ret;
 }
+*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueSetWaitTime
  * --------------------------------------------------------------------------------------------- */
-
+/*
 boolean OCI_API OCI_DequeueSetWaitTime
 (
     OCI_Library*   pOCILib,
@@ -771,11 +784,13 @@ boolean OCI_API OCI_DequeueSetWaitTime
 
     return res;
 }
+*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueSetAgentList
  * --------------------------------------------------------------------------------------------- */
 
+/*
 boolean OCI_API OCI_DequeueSetAgentList
 (
     OCI_Library *pOCILib,
@@ -816,6 +831,7 @@ boolean OCI_API OCI_DequeueSetAgentList
 
     return res;
 }
+*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueSubscribe

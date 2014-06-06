@@ -35,10 +35,6 @@ ORACLE_SOURCES = oracle.cpp \
 	ocilib/object.cpp \
 	ocilib/interval.cpp \
 	ocilib/date.cpp \
-	ocilib/threadkey.cpp \
-	ocilib/mutex.cpp \
-	ocilib/ref.cpp \
-	ocilib/file.cpp \
 	ocilib/connection.cpp \
 	ocilib/msg.cpp \
 	ocilib/enqueue.cpp \

@@ -108,7 +108,7 @@ struct OraColumnValue {
 
    DLLLOCAL QoreStringNode* doReturnString(bool destructive);
 
-   DLLLOCAL void freeObject();
+   DLLLOCAL void freeObject(ExceptionSink* xsink);
 
    DLLLOCAL AbstractQoreNode *getValue(ExceptionSink *xsink, bool horizontal, bool destructive = false);
 };

@@ -196,13 +196,7 @@ boolean OCI_API OCI_IntervalFree2(OCI_Library *pOCILib, OCI_Interval *itv)
 /* ------------------------------------------------------------------------ *
  * OCI_IntervalAssign
  * ------------------------------------------------------------------------ */
-/*
-boolean OCI_API OCI_IntervalAssign(OCI_Interval *itv,  OCI_Interval *itv_src)
-{
-    return OCI_IntervalAssign2(&OCILib, itv, itv_src);
-}
-*/
-boolean OCI_API OCI_IntervalAssign2(OCI_Library *pOCILib, OCI_Interval *itv,  OCI_Interval *itv_src)
+boolean OCI_API OCI_IntervalAssign2(OCI_Library *pOCILib, OCI_Interval *itv,  OCI_Interval *itv_src, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
@@ -213,12 +207,14 @@ boolean OCI_API OCI_IntervalAssign2(OCI_Library *pOCILib, OCI_Interval *itv,  OC
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
-    OCI_CALL4
+    OCI_CALL4Q
     (
         pOCILib, res, itv->err, itv->con,
 
         OCIIntervalAssign((dvoid *) pOCILib->env, itv->err,
-                          itv_src->handle, itv->handle)
+                          itv_src->handle, itv->handle),
+
+	xsink
     )
 
 #endif
@@ -239,7 +235,7 @@ boolean OCI_API OCI_IntervalGetDaySecond(OCI_Interval *itv, int *day, int *hour,
 }
 */
 boolean OCI_API OCI_IntervalGetDaySecond2(OCI_Library *pOCILib, OCI_Interval *itv, int *day, int *hour,
-                                         int *min, int *sec, int *fsec)
+                                         int *min, int *sec, int *fsec, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
@@ -259,13 +255,15 @@ boolean OCI_API OCI_IntervalGetDaySecond2(OCI_Library *pOCILib, OCI_Interval *it
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
-    OCI_CALL4
+    OCI_CALL4Q
     (
         pOCILib, res, itv->err, itv->con,
 
         OCIIntervalGetDaySecond((dvoid *) pOCILib->env, itv->err,
                                 (sb4 *) day, (sb4 *) hour, (sb4 *) min,
-                                (sb4 *) sec, (sb4 *) fsec, itv->handle)
+                                (sb4 *) sec, (sb4 *) fsec, itv->handle),
+
+	xsink
     )
 
 #else
@@ -292,7 +290,7 @@ boolean OCI_API OCI_IntervalGetYearMonth(OCI_Interval *itv, int *year, int *mont
     return OCI_IntervalGetYearMonth2(&OCILib, itv, year, month);
 }
 */
-boolean OCI_API OCI_IntervalGetYearMonth2(OCI_Library *pOCILib, OCI_Interval *itv, int *year, int *month)
+boolean OCI_API OCI_IntervalGetYearMonth2(OCI_Library *pOCILib, OCI_Interval *itv, int *year, int *month, ExceptionSink* xsink)
 {
     boolean res = FALSE;
 
@@ -307,12 +305,14 @@ boolean OCI_API OCI_IntervalGetYearMonth2(OCI_Library *pOCILib, OCI_Interval *it
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
-    OCI_CALL4
+    OCI_CALL4Q
     (
         pOCILib, res, itv->err, itv->con,
 
         OCIIntervalGetYearMonth((dvoid *) pOCILib->env, itv->err,
-                                (sb4 *) year, (sb4 *) month, itv->handle)
+                                (sb4 *) year, (sb4 *) month, itv->handle),
+
+	xsink
     )
 
 #else
@@ -339,7 +339,7 @@ boolean OCI_API OCI_IntervalSetDaySecond(OCI_Interval *itv, int day,int hour,
 }
 */
 boolean OCI_API OCI_IntervalSetDaySecond2(OCI_Library *pOCILib, OCI_Interval *itv, int day,int hour,
-                                         int min, int sec, int fsec)
+					  int min, int sec, int fsec, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
@@ -349,13 +349,15 @@ boolean OCI_API OCI_IntervalSetDaySecond2(OCI_Library *pOCILib, OCI_Interval *it
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
-    OCI_CALL4
+    OCI_CALL4Q
     (
         pOCILib, res, itv->err, itv->con,
 
         OCIIntervalSetDaySecond((dvoid *) pOCILib->env, itv->err,
                                 (sb4) day, (sb4) hour, (sb4) min,
-                                (sb4) sec, (sb4) fsec, itv->handle)
+                                (sb4) sec, (sb4) fsec, itv->handle),
+
+	xsink
     )
 
 #else
@@ -382,7 +384,7 @@ boolean OCI_API OCI_IntervalSetYearMonth(OCI_Interval *itv, int year, int month)
     return OCI_IntervalSetYearMonth2(&OCILib, itv, year, month);
 }
 */
-boolean OCI_API OCI_IntervalSetYearMonth2(OCI_Library *pOCILib, OCI_Interval *itv, int year, int month)
+boolean OCI_API OCI_IntervalSetYearMonth2(OCI_Library *pOCILib, OCI_Interval *itv, int year, int month, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
@@ -392,12 +394,14 @@ boolean OCI_API OCI_IntervalSetYearMonth2(OCI_Library *pOCILib, OCI_Interval *it
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
-    OCI_CALL4
+    OCI_CALL4Q
     (
         pOCILib, res, itv->err, itv->con,
 
         OCIIntervalSetYearMonth((dvoid *) pOCILib->env, itv->err,
-                                (sb4) year, (sb4) month, itv->handle)
+                                (sb4) year, (sb4) month, itv->handle),
+
+	xsink
     )
 
 #else

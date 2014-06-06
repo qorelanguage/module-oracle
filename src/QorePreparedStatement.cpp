@@ -613,7 +613,7 @@ void OraBindNode::resetValue(ExceptionSink* xsink) {
       OCIDescriptorFree(strlob, OCI_DTYPE_LOB);
    }
    else if (dtype == SQLT_NTY)
-      freeObject();
+      freeObject(xsink);
    else if (dtype == QORE_SQLT_TIMESTAMP) {
       if (buf.odt) {
          //printd(5, "OraBindNode::resetValue() freeing timestamp descriptor type %d ptr %p\n", QORE_DTYPE_TIMESTAMP, buf.odt);

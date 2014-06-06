@@ -42,7 +42,7 @@
  * OCI_MutexCreateInternal
  * ------------------------------------------------------------------------ */
 
-OCI_Mutex * OCI_MutexCreateInternal(OCI_Library * pOCILib)
+OCI_Mutex * OCI_MutexCreateInternal(OCI_Library * pOCILib, ExceptionSink* xsink)
 {
     OCI_Mutex *mutex = NULL;
     boolean res      = TRUE;
@@ -63,11 +63,13 @@ OCI_Mutex * OCI_MutexCreateInternal(OCI_Library * pOCILib)
 
         /* allocate mutex handle */
 
-        OCI_CALL3
+        OCI_CALL3Q
         (
             pOCILib, res, mutex->err,
             
-            OCIThreadMutexInit(pOCILib->env, mutex->err, &mutex->handle)
+            OCIThreadMutexInit(pOCILib->env, mutex->err, &mutex->handle),
+
+	    xsink
         )
     }
     else
@@ -90,7 +92,7 @@ OCI_Mutex * OCI_MutexCreateInternal(OCI_Library * pOCILib)
  * OCI_MutexCreate
  * ------------------------------------------------------------------------ */
 
-OCI_Mutex * OCI_API OCI_MutexCreate(OCI_Library * pOCILib)
+OCI_Mutex * OCI_API OCI_MutexCreate(OCI_Library * pOCILib, ExceptionSink* xsink)
 {
     OCI_Mutex *mutex = NULL;
 
@@ -107,7 +109,7 @@ OCI_Mutex * OCI_API OCI_MutexCreate(OCI_Library * pOCILib)
  * OCI_MutexFree
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_MutexFree(OCI_Library * pOCILib, OCI_Mutex *mutex)
+boolean OCI_API OCI_MutexFree(OCI_Library * pOCILib, OCI_Mutex *mutex, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
@@ -117,11 +119,13 @@ boolean OCI_API OCI_MutexFree(OCI_Library * pOCILib, OCI_Mutex *mutex)
 
     if (mutex->handle != NULL)
     {
-        OCI_CALL0
+        OCI_CALL0Q
         (
             pOCILib, res, mutex->err, 
             
-            OCIThreadMutexDestroy(pOCILib->env, mutex->err, &mutex->handle)
+            OCIThreadMutexDestroy(pOCILib->env, mutex->err, &mutex->handle),
+
+	    xsink
         )
     }
 
@@ -145,17 +149,19 @@ boolean OCI_API OCI_MutexFree(OCI_Library * pOCILib, OCI_Mutex *mutex)
  * OCI_MutexAcquire
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_MutexAcquire(OCI_Library * pOCILib, OCI_Mutex *mutex)
+boolean OCI_API OCI_MutexAcquire(OCI_Library * pOCILib, OCI_Mutex *mutex, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_MUTEX, mutex, FALSE);
 
-    OCI_CALL3
+    OCI_CALL3Q
     (
         pOCILib, res, mutex->err, 
         
-        OCIThreadMutexAcquire(pOCILib->env, mutex->err, mutex->handle)
+        OCIThreadMutexAcquire(pOCILib->env, mutex->err, mutex->handle),
+
+	xsink
     )
     
     OCI_RESULT(pOCILib, res);
@@ -167,17 +173,19 @@ boolean OCI_API OCI_MutexAcquire(OCI_Library * pOCILib, OCI_Mutex *mutex)
  * OCI_MutexRelease
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_MutexRelease(OCI_Library * pOCILib, OCI_Mutex *mutex)
+boolean OCI_API OCI_MutexRelease(OCI_Library * pOCILib, OCI_Mutex *mutex, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_MUTEX, mutex, FALSE);
 
-    OCI_CALL3
+    OCI_CALL3Q
     (
         pOCILib, res, mutex->err, 
         
-        OCIThreadMutexRelease(pOCILib->env, mutex->err, mutex->handle)
+        OCIThreadMutexRelease(pOCILib->env, mutex->err, mutex->handle),
+
+	xsink
     )
   
     OCI_RESULT(pOCILib, res);

@@ -898,6 +898,7 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, OCIErr
 
         LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadProcessInit", OCIThreadProcessInit,
                    OCITHREADPROCESSINIT);
+	/*
         LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadInit", OCIThreadInit,
                    OCITHREADINIT);
         LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadTerm", OCIThreadTerm,
@@ -917,7 +918,9 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, OCIErr
                    OCITHREADJOIN);
         LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadClose", OCIThreadClose,
                    OCITHREADCLOSE);
+	*/
 
+	/*
         LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadMutexInit", OCIThreadMutexInit,
                    OCITHREADMUTEXINIT);
         LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadMutexDestroy", OCIThreadMutexDestroy,
@@ -926,7 +929,9 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, OCIErr
                    OCITHREADMUTEXACQUIRE);
         LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadMutexRelease", OCIThreadMutexRelease,
                    OCITHREADMUTEXRELEASE);
+	*/
 
+	/*
         LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadKeyInit", OCIThreadKeyInit,
                    OCITHREADKEYINIT);
         LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadKeyDestroy", OCIThreadKeyDestroy,
@@ -935,6 +940,7 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, OCIErr
                    OCITHREADKEYSET);
         LIB_SYMBOL(pOCILib->lib_handle, "OCIThreadKeyGet", OCIThreadKeyGet,
                    OCITHREADKEYGET);
+	*/
 
         LIB_SYMBOL(pOCILib->lib_handle, "OCIConnectionPoolCreate", OCIConnectionPoolCreate,
                    OCICONNECTIONPOOLCREATE);
@@ -1142,17 +1148,17 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, OCIErr
 
     if (res == TRUE)
     {
+       /*
        if (OCI_LIB_THREADED(pOCILib))
         {
             OCIThreadProcessInit();
 
             res = (OCI_SUCCESS == OCIThreadInit(pOCILib->env, pOCILib->err));
         }
-
+       */
         /* create thread key for thread errors */
 
-//         pOCILib->key_errs  = OCI_ThreadKeyCreateInternal((POCI_THREADKEYDEST) OCI_ErrorFree);
-    
+       //pOCILib->key_errs  = OCI_ThreadKeyCreateInternal((POCI_THREADKEYDEST) OCI_ErrorFree);
         /* allocate connections internal list */
 
         if (res == TRUE)
@@ -1252,6 +1258,7 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
 
     /* finalize OCIThread object support */
 
+    /*
     if (OCI_LIB_THREADED(pOCILib))
     {
         OCI_CALL0
@@ -1261,9 +1268,10 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
             OCIThreadTerm(pOCILib->env, pOCILib->err)
         )
     }
+    */
 
     /* free error thread key */
-
+    /*
     if (pOCILib->key_errs != NULL)
     {
         OCI_ThreadKey *key = pOCILib->key_errs;
@@ -1275,6 +1283,7 @@ boolean OCI_API OCI_Cleanup2(OCI_Library *pOCILib)
         OCI_ThreadKeySet(pOCILib, key, NULL);
         OCI_ThreadKeyFree(pOCILib, key);
     }
+    */
 
     /* set unloaded flag */
 

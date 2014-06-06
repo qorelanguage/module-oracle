@@ -137,7 +137,7 @@ OCI_Timestamp * OCI_API OCI_TimestampCreate(OCI_Connection *con,
 */
 
 OCI_Timestamp * OCI_API OCI_TimestampCreate2(OCI_Library *pOCILib, OCI_Connection *con,
-                                            unsigned int type)
+					     unsigned int type)
 {
     OCI_Timestamp *tmsp = NULL;
 
@@ -172,7 +172,8 @@ boolean OCI_API OCI_TimestampFree(OCI_Timestamp *tmsp)
 
 boolean OCI_API OCI_TimestampFree2(OCI_Library *pOCILib, OCI_Timestamp *tmsp)
 {
-   OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp, FALSE);
+   assert(tmsp);
+   //OCI_CHECK_PTRQ(pOCILib, OCI_IPC_TIMESTAMP, tmsp, FALSE, xsink);
 
     OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, tmsp->con, FALSE);
 
@@ -215,23 +216,27 @@ boolean OCI_API OCI_TimestampAssign(OCI_Timestamp *tmsp, OCI_Timestamp *tmsp_src
     return OCI_TimestampAssign2(&OCILib, tmsp, tmsp_src);
 }
 */
-boolean OCI_API OCI_TimestampAssign2(OCI_Library *pOCILib, OCI_Timestamp *tmsp, OCI_Timestamp *tmsp_src)
+boolean OCI_API OCI_TimestampAssign2(OCI_Library *pOCILib, OCI_Timestamp *tmsp, OCI_Timestamp *tmsp_src, ExceptionSink* xsink)
 {
     boolean res = TRUE;
-
-    OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp,     FALSE);
-    OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp_src, FALSE);
+    
+    assert(tmsp);
+    assert(tmsp_src);
+    //OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp,     FALSE);
+    //OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp_src, FALSE);
 
     OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, tmsp->con, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
-    OCI_CALL4
+    OCI_CALL4Q
     (
         pOCILib, res, tmsp->err, tmsp->con,
 
         OCIDateTimeAssign((dvoid *) pOCILib->env, tmsp->err,
-                          tmsp_src->handle, tmsp->handle)
+                          tmsp_src->handle, tmsp->handle),
+
+	xsink
     )
 
 #endif
@@ -255,17 +260,18 @@ boolean OCI_API OCI_TimestampConstruct(OCI_Timestamp *tmsp, int year,int month,
 
 boolean OCI_API OCI_TimestampConstruct2(OCI_Library *pOCILib, OCI_Timestamp *tmsp, int year,int month,
                                       int day, int hour,  int min, int sec,
-                                      int fsec, const mtext *timezone)
+					int fsec, const mtext *timezone, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
-    OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp, FALSE);
+    assert(tmsp);
+    //OCI_CHECK_PTR(pOCILib, OCI_IPC_TIMESTAMP, tmsp, FALSE);
 
     OCI_CHECK_TIMESTAMP_ENABLED(pOCILib, tmsp->con, FALSE);
 
 #if OCI_VERSION_COMPILE >= OCI_9_0
 
-    OCI_CALL4
+    OCI_CALL4Q
     (
         pOCILib, res, tmsp->err, tmsp->con,
 
@@ -274,7 +280,9 @@ boolean OCI_API OCI_TimestampConstruct2(OCI_Library *pOCILib, OCI_Timestamp *tms
                                          (sb2) year, (ub1) month, (ub1) day,
                                          (ub1) hour, (ub1) min,(ub1) sec,
                                          (ub4) fsec, (OraText *) timezone,
-                                         (size_t) (timezone ? mtextsize(timezone) : 0))
+			     (size_t) (timezone ? mtextsize(timezone) : 0)),
+
+	xsink
     )
 
 #else

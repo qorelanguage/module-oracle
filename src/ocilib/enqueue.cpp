@@ -179,7 +179,7 @@ boolean OCI_API OCI_EnqueuePut
 /* --------------------------------------------------------------------------------------------- *
  * OCI_EnqueueGetVisibility
  * --------------------------------------------------------------------------------------------- */
-
+/*
 unsigned int OCI_API OCI_EnqueueGetVisibility
 (
     OCI_Library *pOCILib,
@@ -207,11 +207,11 @@ unsigned int OCI_API OCI_EnqueueGetVisibility
 
     return (int) ret;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_EnqueueSetVisibility
  * --------------------------------------------------------------------------------------------- */
-
+/*
 boolean OCI_API OCI_EnqueueSetVisibility
 (
     OCI_Library *pOCILib,
@@ -240,11 +240,11 @@ boolean OCI_API OCI_EnqueueSetVisibility
 
     return res;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_EnqueueGetSequenceDeviation
  * --------------------------------------------------------------------------------------------- */
-
+/*
 unsigned int OCI_API OCI_EnqueueGetSequenceDeviation
 (
     OCI_Library *pOCILib,
@@ -272,11 +272,11 @@ unsigned int OCI_API OCI_EnqueueGetSequenceDeviation
 
     return (int) ret;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_EnqueueSetDeviation
  * --------------------------------------------------------------------------------------------- */
-
+/*
 boolean OCI_API OCI_EnqueueSetSequenceDeviation
 (
     OCI_Library *pOCILib,
@@ -305,11 +305,11 @@ boolean OCI_API OCI_EnqueueSetSequenceDeviation
 
     return res;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_EnqueueSetRelativeMsgID
  * --------------------------------------------------------------------------------------------- */
-
+/*
 boolean OCI_API OCI_EnqueueGetRelativeMsgID
 (
     OCI_Library *pOCILib,
@@ -355,11 +355,11 @@ boolean OCI_API OCI_EnqueueGetRelativeMsgID
 
     return res;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_EnqueueSetRelativeMsgID
  * --------------------------------------------------------------------------------------------- */
-
+/*
 boolean OCI_API OCI_EnqueueSetRelativeMsgID
 (
     OCI_Library *pOCILib,
@@ -397,4 +397,4 @@ boolean OCI_API OCI_EnqueueSetRelativeMsgID
 
     return res;
 }
-
+*/

@@ -203,7 +203,7 @@ boolean OCI_API OCI_DateArrayFree(OCI_Date **dates)
 /* ------------------------------------------------------------------------ *
  * OCI_DateAddDays
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_DateAddDays(OCI_Library *pOCILib, OCI_Date *date, int nb)
 {
     boolean res = TRUE;
@@ -221,11 +221,12 @@ boolean OCI_API OCI_DateAddDays(OCI_Library *pOCILib, OCI_Date *date, int nb)
 
     return res;
 }
+*/
 
 /* ------------------------------------------------------------------------ *
  * OCI_DateAddMonths
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_DateAddMonths(OCI_Library *pOCILib, OCI_Date *date, int nb)
 {
     boolean res = TRUE;
@@ -243,23 +244,25 @@ boolean OCI_API OCI_DateAddMonths(OCI_Library *pOCILib, OCI_Date *date, int nb)
 
     return res;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_DateAssign
  * ------------------------------------------------------------------------ */
 
-boolean OCI_API OCI_DateAssign(OCI_Library *pOCILib, OCI_Date *date, OCI_Date *date_src)
+boolean OCI_API OCI_DateAssign(OCI_Library *pOCILib, OCI_Date *date, OCI_Date *date_src, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_DATE, date,     FALSE);
     OCI_CHECK_PTR(pOCILib, OCI_IPC_DATE, date_src, FALSE);
 
-    OCI_CALL4
+    OCI_CALL4Q
     (
         pOCILib, res, date->err, date->con,
 
-        OCIDateAssign(date->err, date_src->handle, date->handle)
+        OCIDateAssign(date->err, date_src->handle, date->handle),
+
+	xsink
     )
 
     OCI_RESULT(pOCILib, res);
@@ -270,7 +273,7 @@ boolean OCI_API OCI_DateAssign(OCI_Library *pOCILib, OCI_Date *date, OCI_Date *d
 /* ------------------------------------------------------------------------ *
  * OCI_DateCheck
  * ------------------------------------------------------------------------ */
-
+/*
 int OCI_API OCI_DateCheck(OCI_Library *pOCILib, OCI_Date *date)
 {
     boolean res = TRUE;
@@ -289,11 +292,11 @@ int OCI_API OCI_DateCheck(OCI_Library *pOCILib, OCI_Date *date)
 
     return (int) valid;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_DateCompare
  * ------------------------------------------------------------------------ */
-
+/*
 int OCI_API OCI_DateCompare(OCI_Library *pOCILib, OCI_Date *date, OCI_Date *date2)
 {
     boolean res = TRUE;
@@ -312,11 +315,11 @@ int OCI_API OCI_DateCompare(OCI_Library *pOCILib, OCI_Date *date, OCI_Date *date
 
     return (int) value;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_DateDaysBetween
  * ------------------------------------------------------------------------ */
-
+/*
 int OCI_API OCI_DateDaysBetween(OCI_Library *pOCILib, OCI_Date *date, OCI_Date *date2)
 {
     boolean res = TRUE;
@@ -336,11 +339,11 @@ int OCI_API OCI_DateDaysBetween(OCI_Library *pOCILib, OCI_Date *date, OCI_Date *
 
     return (sb4) nb;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_DateFromText
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_DateFromText(OCI_Library *pOCILib, OCI_Date *date, const mtext *str,
                                  const mtext *fmt)
 {
@@ -374,11 +377,11 @@ boolean OCI_API OCI_DateFromText(OCI_Library *pOCILib, OCI_Date *date, const mte
 
     return res;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_DateGetDate
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_DateGetDate(OCI_Library *pOCILib, OCI_Date *date, int *year, int *month, int *day)
 {
     sb2 yr = 0;
@@ -404,11 +407,11 @@ boolean OCI_API OCI_DateGetDate(OCI_Library *pOCILib, OCI_Date *date, int *year,
 
     return TRUE;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_DateGetTime
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_DateGetTime(OCI_Library *pOCILib, OCI_Date *date, int *hour, int *min, int *sec)
 {
     ub1 hr = 0;
@@ -434,22 +437,22 @@ boolean OCI_API OCI_DateGetTime(OCI_Library *pOCILib, OCI_Date *date, int *hour,
 
     return TRUE;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_DateGetDateTime
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_DateGetDateTime(OCI_Library *pOCILib, OCI_Date *date, int *year, int *month,
                                     int *day, int *hour, int *min, int *sec)
 {
     return (OCI_DateGetDate(pOCILib, date, year, month, day) &&
             OCI_DateGetTime(pOCILib, date, hour, min, sec));
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_DateLastDay
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_DateLastDay(OCI_Library *pOCILib, OCI_Date *date)
 {
     boolean res = TRUE;
@@ -467,11 +470,11 @@ boolean OCI_API OCI_DateLastDay(OCI_Library *pOCILib, OCI_Date *date)
 
     return res;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_DateNextDay
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_DateNextDay(OCI_Library *pOCILib, OCI_Date *date, const mtext *day)
 {
     boolean res = TRUE;
@@ -497,7 +500,7 @@ boolean OCI_API OCI_DateNextDay(OCI_Library *pOCILib, OCI_Date *date, const mtex
 
     return res;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_DateSetDate
  * ------------------------------------------------------------------------ */
@@ -542,7 +545,7 @@ boolean OCI_API OCI_DateSetDateTime(OCI_Library *pOCILib, OCI_Date *date, int ye
 /* ------------------------------------------------------------------------ *
  * OCI_DateSysDate
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_DateSysDate(OCI_Library *pOCILib, OCI_Date *date)
 {
     boolean res = TRUE;
@@ -560,11 +563,11 @@ boolean OCI_API OCI_DateSysDate(OCI_Library *pOCILib, OCI_Date *date)
 
     return res;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_DateToText
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_API OCI_DateToText(OCI_Library *pOCILib, OCI_Date *date, const mtext *fmt, int size,
                                mtext *str)
 {
@@ -578,7 +581,7 @@ boolean OCI_API OCI_DateToText(OCI_Library *pOCILib, OCI_Date *date, const mtext
     OCI_CHECK_PTR(pOCILib, OCI_IPC_STRING, str, FALSE);
     OCI_CHECK_PTR(pOCILib, OCI_IPC_STRING, fmt, FALSE);
 
-    /* init output buffer in case of OCI failure */
+    // init output buffer in case of OCI failure
 
     str[0] = 0;
 
@@ -599,7 +602,7 @@ boolean OCI_API OCI_DateToText(OCI_Library *pOCILib, OCI_Date *date, const mtext
     OCI_ReleaseMetaString(ostr1);
     OCI_ReleaseMetaString(ostr2);
 
-    /* set null string terminator*/
+    // set null string terminator
 
     osize1 /= (int) sizeof(mtext);
 
@@ -609,11 +612,11 @@ boolean OCI_API OCI_DateToText(OCI_Library *pOCILib, OCI_Date *date, const mtext
 
     return res;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_DateZoneToZone
  * ------------------------------------------------------------------------ */
-
+ /*
 boolean OCI_API OCI_DateZoneToZone(OCI_Library *pOCILib, OCI_Date *date, const mtext *zone1,
                                    const mtext *zone2)
 {
@@ -647,11 +650,11 @@ boolean OCI_API OCI_DateZoneToZone(OCI_Library *pOCILib, OCI_Date *date, const m
 
     return res;
 }
-
+*/
 /* ------------------------------------------------------------------------ *
  * OCI_DateToCTime
  * ------------------------------------------------------------------------ */
-
+ /*
 boolean OCI_API OCI_DateToCTime(OCI_Library *pOCILib, OCI_Date *date, struct tm *ptm, time_t *pt)
 {
     time_t time = (time_t) -1;
@@ -683,7 +686,7 @@ boolean OCI_API OCI_DateToCTime(OCI_Library *pOCILib, OCI_Date *date, struct tm 
 
     return (time != (time_t) -1);
 }
-
+ */
 /* ------------------------------------------------------------------------ *
  * OCI_DateFromCTime
  * ------------------------------------------------------------------------ */
@@ -693,7 +696,7 @@ boolean OCI_API OCI_DateFromCTime(OCI_Date *date, struct tm *ptm, time_t t)
     return OCI_DateFromCTime2(&OCILib, date, ptm, t);
 }
 */
-
+ /*
 boolean OCI_API OCI_DateFromCTime2(OCI_Library *pOCILib, OCI_Date *date, struct tm *ptm, time_t t)
 {
     OCI_CHECK_PTR(pOCILib, OCI_IPC_DATE, date, FALSE);
@@ -716,3 +719,4 @@ boolean OCI_API OCI_DateFromCTime2(OCI_Library *pOCILib, OCI_Date *date, struct 
 
     return TRUE;
 }
+ */

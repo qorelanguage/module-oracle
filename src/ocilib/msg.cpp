@@ -93,7 +93,7 @@ OCI_Msg * OCI_API OCI_MsgCreate
 
     if (res == FALSE)
     {
-        OCI_MsgFree(pOCILib, msg);
+       OCI_MsgFree(pOCILib, msg, xsink);
         msg = NULL;
     }
 
@@ -107,7 +107,8 @@ OCI_Msg * OCI_API OCI_MsgCreate
 boolean OCI_API OCI_MsgFree
 (
     OCI_Library *pOCILib,
-    OCI_Msg *msg
+    OCI_Msg *msg,
+    ExceptionSink* xsink
 )
 {
     boolean res = TRUE;
@@ -127,7 +128,7 @@ boolean OCI_API OCI_MsgFree
     {
         msg->obj->hstate =  OCI_OBJECT_ALLOCATED;
 
-        OCI_ObjectFree2(pOCILib, msg->obj);
+        OCI_ObjectFree2(pOCILib, msg->obj, xsink);
 
         msg->obj = NULL;
     }
@@ -136,11 +137,13 @@ boolean OCI_API OCI_MsgFree
 
     if ((msg->typinf->tcode == OCI_UNKNOWN)&& ( msg->id != NULL))
     {
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, msg->typinf->con,
 
-            OCIRawResize(pOCILib->env, pOCILib->err, 0, (OCIRaw **) &msg->payload)
+            OCIRawResize(pOCILib->env, pOCILib->err, 0, (OCIRaw **) &msg->payload),
+
+	    xsink
         )
     }
 
@@ -149,11 +152,13 @@ boolean OCI_API OCI_MsgFree
     if (msg->id != NULL)
     {
 
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, msg->typinf->con,
 
-            OCIRawResize(pOCILib->env, pOCILib->err, 0, (OCIRaw **) &msg->id)
+            OCIRawResize(pOCILib->env, pOCILib->err, 0, (OCIRaw **) &msg->id),
+
+	    xsink
         )
     }
 
@@ -171,11 +176,11 @@ boolean OCI_API OCI_MsgFree
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgReset
  * --------------------------------------------------------------------------------------------- */
-
 boolean OCI_API OCI_MsgReset
 (
     OCI_Library *pOCILib,
-    OCI_Msg *msg
+    OCI_Msg *msg,
+    ExceptionSink *xsink
 )
 {
     boolean res = TRUE;
@@ -184,15 +189,15 @@ boolean OCI_API OCI_MsgReset
     void  *null_ptr  = NULL;
 
     res =   (
-                OCI_MsgSetExpiration(pOCILib, msg, -1)            &&
-                OCI_MsgSetEnqueueDelay(pOCILib, msg, 0)           &&
-                OCI_MsgSetPriority(pOCILib, msg,0)                &&
-                OCI_MsgSetOriginalID(pOCILib, msg, null_ptr, len) &&
-                OCI_MsgSetSender(pOCILib, msg, NULL)              &&
-                OCI_MsgSetConsumers(pOCILib, msg, (OCI_Agent**)null_ptr, len)  &&
-                OCI_MsgSetCorrelation(pOCILib, msg, NULL)         &&
-                OCI_MsgSetExceptionQueue(pOCILib, msg, NULL)
-            );
+       OCI_MsgSetExpiration(pOCILib, msg, -1, xsink)            &&
+       OCI_MsgSetEnqueueDelay(pOCILib, msg, 0, xsink)           &&
+       OCI_MsgSetPriority(pOCILib, msg, 0, xsink)                &&
+       OCI_MsgSetOriginalID(pOCILib, msg, null_ptr, len, xsink) &&
+       OCI_MsgSetSender(pOCILib, msg, NULL, xsink)              &&
+       OCI_MsgSetConsumers(pOCILib, msg, (OCI_Agent**)null_ptr, len, xsink)  &&
+       OCI_MsgSetCorrelation(pOCILib, msg, NULL, xsink)         &&
+       OCI_MsgSetExceptionQueue(pOCILib, msg, NULL, xsink)
+       );
 
     if (res == TRUE)
     {
@@ -202,7 +207,7 @@ boolean OCI_API OCI_MsgReset
         }
         else
         {
-            res = OCI_MsgSetObject(pOCILib, msg, (OCI_Object*)null_ptr);
+	   res = OCI_MsgSetObject(pOCILib, msg, (OCI_Object*)null_ptr, xsink);
         }
     }
 
@@ -242,20 +247,21 @@ boolean OCI_API OCI_MsgSetObject
 (
     OCI_Library *pOCILib,
     OCI_Msg    *msg,
-    OCI_Object *obj
+    OCI_Object *obj,
+    ExceptionSink* xsink
 )
 {
     boolean res = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_MSG, msg, FALSE);
 
-    OCI_CHECK_COMPAT(pOCILib, msg->typinf->con, msg->typinf->tcode != OCI_UNKNOWN, FALSE);
+    OCI_CHECK_COMPATQ(pOCILib, msg->typinf->con, msg->typinf->tcode != OCI_UNKNOWN, FALSE, xsink);
 
     if (obj != NULL)
     {
         /* assign the given object to the message internal object */
 
-        res = OCI_ObjectAssign2(pOCILib, (OCI_Object *) msg->obj, obj);
+       res = OCI_ObjectAssign2(pOCILib, (OCI_Object *) msg->obj, obj, xsink);
 
         if (res == TRUE)
         {
@@ -272,10 +278,11 @@ boolean OCI_API OCI_MsgSetObject
     return res;
 }
 
+
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetRaw
  * --------------------------------------------------------------------------------------------- */
-#if 0
+/*
 boolean OCI_API OCI_MsgGetRaw
 (
     OCI_Library *pOCILib,
@@ -312,11 +319,11 @@ boolean OCI_API OCI_MsgGetRaw
 
     return TRUE;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetRaw
  * --------------------------------------------------------------------------------------------- */
-
+/*
 boolean OCI_API OCI_MsgSetRaw
 (
     OCI_Library *pOCILib,
@@ -352,11 +359,11 @@ boolean OCI_API OCI_MsgSetRaw
 
     return res;
 }
-#endif
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetAttemptCount
  * --------------------------------------------------------------------------------------------- */
-
+/*
 int OCI_API OCI_MsgGetAttemptCount
 (
     OCI_Library *pOCILib,
@@ -384,11 +391,11 @@ int OCI_API OCI_MsgGetAttemptCount
 
     return (int) ret;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetEnqueueDelay
  * --------------------------------------------------------------------------------------------- */
-
+/*
 int OCI_API OCI_MsgGetEnqueueDelay
 (
     OCI_Library *pOCILib,
@@ -416,7 +423,7 @@ int OCI_API OCI_MsgGetEnqueueDelay
 
     return (int) ret;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetEnqueueDelay
  * --------------------------------------------------------------------------------------------- */
@@ -425,7 +432,8 @@ boolean OCI_API OCI_MsgSetEnqueueDelay
 (
     OCI_Library *pOCILib,
     OCI_Msg *msg,
-    int      value
+    int      value,
+    ExceptionSink* xsink
 )
 {
     boolean res = TRUE;
@@ -433,7 +441,7 @@ boolean OCI_API OCI_MsgSetEnqueueDelay
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_MSG, msg, 0);
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
         pOCILib, res, msg->typinf->con,
 
@@ -442,7 +450,9 @@ boolean OCI_API OCI_MsgSetEnqueueDelay
                    (dvoid *) &sval,
                    (ub4    ) sizeof(sval),
                    (ub4    ) OCI_ATTR_DELAY,
-                   pOCILib->err)
+                   pOCILib->err),
+
+	xsink
     )
 
     OCI_RESULT(pOCILib, res);
@@ -453,7 +463,7 @@ boolean OCI_API OCI_MsgSetEnqueueDelay
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetEnqueueTime
  * --------------------------------------------------------------------------------------------- */
-
+/*
 OCI_Date * OCI_API OCI_MsgGetEnqueueTime
 (
     OCI_Library *pOCILib,
@@ -489,11 +499,11 @@ OCI_Date * OCI_API OCI_MsgGetEnqueueTime
 
     return date;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetExpiration
  * --------------------------------------------------------------------------------------------- */
-
+/*
 int OCI_API OCI_MsgGetExpiration
 (
     OCI_Library *pOCILib,
@@ -521,7 +531,7 @@ int OCI_API OCI_MsgGetExpiration
 
     return (int) ret;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetExpiration
  * --------------------------------------------------------------------------------------------- */
@@ -530,7 +540,8 @@ boolean OCI_API OCI_MsgSetExpiration
 (
     OCI_Library *pOCILib,
     OCI_Msg *msg,
-    int      value
+    int      value,
+    ExceptionSink* xsink
 )
 {
     boolean res = TRUE;
@@ -538,7 +549,7 @@ boolean OCI_API OCI_MsgSetExpiration
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_MSG, msg, FALSE);
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
         pOCILib, res, msg->typinf->con,
 
@@ -547,7 +558,9 @@ boolean OCI_API OCI_MsgSetExpiration
                    (dvoid *) &sval,
                    (ub4    ) sizeof(sval),
                    (ub4    ) OCI_ATTR_EXPIRATION,
-                   pOCILib->err)
+                   pOCILib->err),
+
+	xsink
     )
 
     OCI_RESULT(pOCILib, res);
@@ -558,7 +571,7 @@ boolean OCI_API OCI_MsgSetExpiration
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetState
  * --------------------------------------------------------------------------------------------- */
-
+/*
 unsigned int OCI_API OCI_MsgGetState
 (
     OCI_Library *pOCILib,
@@ -582,7 +595,7 @@ unsigned int OCI_API OCI_MsgGetState
                    pOCILib->err)
     )
 
-    /* increment value to handle return code OCI_UNKNOWN on failure */
+    // increment value to handle return code OCI_UNKNOWN on failure
 
     if (res == TRUE)
     {
@@ -597,11 +610,12 @@ unsigned int OCI_API OCI_MsgGetState
 
     return (int) ret;
 }
+*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetPriority
  * --------------------------------------------------------------------------------------------- */
-
+/*
 int OCI_API OCI_MsgGetPriority
 (
     OCI_Library *pOCILib,
@@ -629,6 +643,7 @@ int OCI_API OCI_MsgGetPriority
 
     return (int) ret;
 }
+*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetPriority
@@ -638,7 +653,8 @@ boolean OCI_API OCI_MsgSetPriority
 (
     OCI_Library *pOCILib,
     OCI_Msg *msg,
-    int      value
+    int      value,
+    ExceptionSink* xsink
 )
 {
     boolean res = TRUE;
@@ -646,7 +662,7 @@ boolean OCI_API OCI_MsgSetPriority
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_MSG, msg, FALSE);
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
         pOCILib, res, msg->typinf->con,
 
@@ -655,7 +671,9 @@ boolean OCI_API OCI_MsgSetPriority
                    (dvoid *) &sval,
                    (ub4    ) sizeof(sval),
                    (ub4    ) OCI_ATTR_PRIORITY,
-                   pOCILib->err)
+                   pOCILib->err),
+
+	xsink
     )
 
     OCI_RESULT(pOCILib, res);
@@ -663,11 +681,10 @@ boolean OCI_API OCI_MsgSetPriority
     return res;
 }
 
-
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetID
  * --------------------------------------------------------------------------------------------- */
-
+/*
 boolean OCI_API OCI_MsgGetID
 (
     OCI_Library *pOCILib,
@@ -704,11 +721,11 @@ boolean OCI_API OCI_MsgGetID
 
     return res;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetOriginalID
  * --------------------------------------------------------------------------------------------- */
-
+/*
 boolean OCI_API OCI_MsgGetOriginalID
 (
     OCI_Library *pOCILib,
@@ -758,17 +775,17 @@ boolean OCI_API OCI_MsgGetOriginalID
 
     return res;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetOriginalID
  * --------------------------------------------------------------------------------------------- */
-
 boolean OCI_API OCI_MsgSetOriginalID
 (
     OCI_Library *pOCILib,
     OCI_Msg      *msg,
     const void   *id,
-    unsigned int len
+    unsigned int len,
+    ExceptionSink *xsink
 )
 {
     boolean res   = TRUE;
@@ -776,15 +793,17 @@ boolean OCI_API OCI_MsgSetOriginalID
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_MSG,  msg, FALSE);
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
         pOCILib, res, msg->typinf->con,
 
         OCIRawAssignBytes(pOCILib->env, pOCILib->err,
-                          (ub1*) id, (ub4) len, (OCIRaw **) &value)
+                          (ub1*) id, (ub4) len, (OCIRaw **) &value),
+
+	xsink
     )
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
         pOCILib, res, msg->typinf->con,
 
@@ -793,7 +812,9 @@ boolean OCI_API OCI_MsgSetOriginalID
                    (dvoid *) &value,
                    (ub4    ) 0,
                    (ub4    ) OCI_ATTR_ORIGINAL_MSGID,
-                   pOCILib->err)
+                   pOCILib->err),
+
+	xsink
     )
 
     OCI_RESULT(pOCILib, res);
@@ -804,7 +825,7 @@ boolean OCI_API OCI_MsgSetOriginalID
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetCorrelation
  * --------------------------------------------------------------------------------------------- */
-
+/*
 const mtext * OCI_API OCI_MsgGetCorrelation
 (
     OCI_Library *pOCILib,
@@ -828,16 +849,16 @@ const mtext * OCI_API OCI_MsgGetCorrelation
 
     return msg->correlation;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetCorrelation
  * --------------------------------------------------------------------------------------------- */
-
 boolean OCI_API OCI_MsgSetCorrelation
 (
     OCI_Library *pOCILib,
     OCI_Msg     *msg,
-    const mtext *correlation
+    const mtext *correlation,
+    ExceptionSink* xsink
 )
 {
     boolean res = TRUE;
@@ -849,7 +870,7 @@ boolean OCI_API OCI_MsgSetCorrelation
                                      OCI_DTYPE_AQMSG_PROPERTIES,
                                      OCI_ATTR_CORRELATION,
                                      &msg->correlation,
-                                     correlation);
+                                     correlation, xsink);
 
     OCI_RESULT(pOCILib, res);
 
@@ -859,7 +880,7 @@ boolean OCI_API OCI_MsgSetCorrelation
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetExceptionQueue
  * --------------------------------------------------------------------------------------------- */
-
+/*
 const mtext * OCI_API OCI_MsgGetExceptionQueue
 (
     OCI_Library *pOCILib,
@@ -883,7 +904,7 @@ const mtext * OCI_API OCI_MsgGetExceptionQueue
 
     return msg->except_queue;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetExceptionQueue
  * --------------------------------------------------------------------------------------------- */
@@ -892,7 +913,8 @@ boolean OCI_API OCI_MsgSetExceptionQueue
 (
     OCI_Library *pOCILib,
     OCI_Msg     *msg,
-    const mtext *queue
+    const mtext *queue,
+    ExceptionSink *xsink
 )
 {
     boolean res = TRUE;
@@ -904,7 +926,7 @@ boolean OCI_API OCI_MsgSetExceptionQueue
                                      OCI_DTYPE_AQMSG_PROPERTIES,
                                      OCI_ATTR_EXCEPTION_QUEUE,
                                      &msg->except_queue,
-                                     queue);
+                                     queue, xsink);
 
     OCI_RESULT(pOCILib, res);
 
@@ -914,7 +936,7 @@ boolean OCI_API OCI_MsgSetExceptionQueue
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgGetSender
  * --------------------------------------------------------------------------------------------- */
-
+/*
 OCI_Agent * OCI_API OCI_MsgGetSender
 (
     OCI_Library *pOCILib,
@@ -948,23 +970,23 @@ OCI_Agent * OCI_API OCI_MsgGetSender
 
     return sender;
 }
-
+*/
 /* --------------------------------------------------------------------------------------------- *
  * OCI_MsgSetSender
  * --------------------------------------------------------------------------------------------- */
-
 boolean OCI_API OCI_MsgSetSender
 (
     OCI_Library *pOCILib,
     OCI_Msg   *msg,
-    OCI_Agent *sender
+    OCI_Agent *sender,
+    ExceptionSink *xsink
 )
 {
     boolean res = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_MSG, msg, FALSE);
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
         pOCILib, res, msg->typinf->con,
 
@@ -973,7 +995,9 @@ boolean OCI_API OCI_MsgSetSender
                    (dvoid *) (sender ? sender->handle : NULL),
                    (ub4    ) 0,
                    (ub4    ) OCI_ATTR_SENDER_ID,
-                   pOCILib->err)
+                   pOCILib->err),
+
+	xsink
     )
 
     OCI_RESULT(pOCILib, res);
@@ -990,7 +1014,8 @@ boolean OCI_API OCI_MsgSetConsumers
     OCI_Library *pOCILib,
     OCI_Msg     *msg,
     OCI_Agent  **consumers,
-    unsigned int count
+    unsigned int count,
+    ExceptionSink *xsink
 )
 {
     boolean res          = TRUE;
@@ -998,7 +1023,7 @@ boolean OCI_API OCI_MsgSetConsumers
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_MSG, msg, FALSE);
 
-    /* allocate local array of OCIAQAgent handles if needed */
+    // allocate local array of OCIAQAgent handles if needed
 
     if ((consumers != NULL) && (count > 0))
     {
@@ -1019,7 +1044,7 @@ boolean OCI_API OCI_MsgSetConsumers
         count = 0;
     }
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
         pOCILib, res, msg->typinf->con,
 
@@ -1028,11 +1053,13 @@ boolean OCI_API OCI_MsgSetConsumers
                    (dvoid *) handles,
                    (ub4    ) count,
                    (ub4    ) OCI_ATTR_RECIPIENT_LIST,
-                   pOCILib->err)
+                   pOCILib->err),
+
+	xsink
     )
 
 
-    /* free local array of OCIAQAgent handles if needed */
+    // free local array of OCIAQAgent handles if needed
 
     if (handles != NULL)
     {

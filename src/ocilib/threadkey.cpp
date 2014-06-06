@@ -89,14 +89,14 @@ OCI_ThreadKey * OCI_ThreadKeyCreateInternal(OCI_Library *pOCILib, POCI_THREADKEY
 /* ------------------------------------------------------------------------ *
  * OCI_ThreadKeyFree
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_ThreadKeyFree(OCI_Library *pOCILib, OCI_ThreadKey *key)
 {
     boolean res = TRUE;
 
     OCI_CHECK(key == NULL, FALSE);
 
-    /* close key handle */
+    // close key handle
 
     if (key->handle != NULL)
     {
@@ -108,14 +108,14 @@ boolean OCI_ThreadKeyFree(OCI_Library *pOCILib, OCI_ThreadKey *key)
         )
     }
 
-    /* close error handle */
+    // close error handle
 
     if (key->err != NULL)
     {
        OCI_HandleFree2(pOCILib, key->err, OCI_HTYPE_ERROR);
     }
 
-    /* free key structure */
+    // free key structure
 
     OCI_FREE(key);
 
@@ -123,11 +123,12 @@ boolean OCI_ThreadKeyFree(OCI_Library *pOCILib, OCI_ThreadKey *key)
 
     return res;
 }
+*/
 
 /* ------------------------------------------------------------------------ *
  * OCI_ThreadKeySet
  * ------------------------------------------------------------------------ */
-
+/*
 boolean OCI_ThreadKeySet(OCI_Library *pOCILib, OCI_ThreadKey *key, void *value)
 {
     boolean res = TRUE;
@@ -143,11 +144,12 @@ boolean OCI_ThreadKeySet(OCI_Library *pOCILib, OCI_ThreadKey *key, void *value)
 
     return res;
 }
+*/
 
 /* ------------------------------------------------------------------------ *
  * OCI_ThreadKeyGet
  * ------------------------------------------------------------------------ */
-
+ /*
 boolean OCI_ThreadKeyGet(OCI_Library *pOCILib, OCI_ThreadKey* key, void **value)
 {
     boolean res  = TRUE;
@@ -163,4 +165,4 @@ boolean OCI_ThreadKeyGet(OCI_Library *pOCILib, OCI_ThreadKey* key, void **value)
   
     return res;
 }
-
+ */

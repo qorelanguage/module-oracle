@@ -292,7 +292,7 @@ void AQQueuePriv::disconnectUnlocked(ExceptionSink* xsink) {
          aqSubscriptionManager.removeUnlocked(this);
          stopSubscriptionUnlocked(xsink);
       }
-      OCI_DequeueFree(&m_conn->ocilib, m_dequeue);
+      OCI_DequeueFree(&m_conn->ocilib, m_dequeue, xsink);
       m_dequeue = 0;
    }
    if (m_typeInfo) {
@@ -333,7 +333,9 @@ int AQQueuePriv::connectUnlocked(ExceptionSink *xsink) {
 
    // use QoreString instead of a fixed-size buffer to deal with arbitrary-length strings
    QoreStringMaker value("Qore AQ Queue: %s", qn->getBuffer());
-   OCI_SetTrace(&m_conn->ocilib, m_conn->ocilib_cn, OCI_TRC_MODULE, value.getBuffer());
+   OCI_SetTrace(&m_conn->ocilib, m_conn->ocilib_cn, OCI_TRC_MODULE, value.getBuffer(), xsink);
+   if (*xsink)
+      return -1;
 
    assert(!m_typeInfo);
    m_typeInfo = OCI_TypeInfoGet2(&m_conn->ocilib, m_conn->ocilib_cn, tn->getBuffer(), OCI_TIF_TYPE, xsink);
@@ -396,7 +398,7 @@ bool AQQueuePriv::post(AQMessagePriv *message, ExceptionSink *xsink) {
        xsink->raiseException("AQQUEUE-ERROR", "failed to create(bind) object");
        return false;
     }
-    ON_BLOCK_EXIT(OCI_ObjectFree2, &m_conn->ocilib, o);
+    ON_BLOCK_EXIT(OCI_ObjectFree2, &m_conn->ocilib, o, xsink);
 
     OCI_Msg *m = OCI_MsgCreate(&m_conn->ocilib, m_typeInfo, xsink);
     if (!m) {
@@ -404,24 +406,28 @@ bool AQQueuePriv::post(AQMessagePriv *message, ExceptionSink *xsink) {
           xsink->raiseException("AQQUEUE-ERROR", "cannot allocate message object");
        return false;
     }
-    ON_BLOCK_EXIT(OCI_MsgFree, &m_conn->ocilib, m);
+    ON_BLOCK_EXIT(OCI_MsgFree, &m_conn->ocilib, m, xsink);
 
-    if (!OCI_MsgSetObject(&m_conn->ocilib, m, o)) {
-    	xsink->raiseException("AQQUEUE-ERROR", "cannot se message object");
-    	return false;
+    if (!OCI_MsgSetObject(&m_conn->ocilib, m, o, xsink)) {
+       if (!*xsink)
+          xsink->raiseException("AQQUEUE-ERROR", "cannot se message object");
+       return false;
     }
 
-    if (!OCI_MsgSetEnqueueDelay(&m_conn->ocilib, m, message->getEnqueueDelay())) {
-    	xsink->raiseException("AQQUEUE-ERROR", "failed to set message delay");
-    	return false;
+    if (!OCI_MsgSetEnqueueDelay(&m_conn->ocilib, m, message->getEnqueueDelay(), xsink)) {
+       if (!*xsink)
+          xsink->raiseException("AQQUEUE-ERROR", "failed to set message delay");
+       return false;
     }
-    if (!OCI_MsgSetExpiration(&m_conn->ocilib, m, message->getExpiration())) {
-    	xsink->raiseException("AQQUEUE-ERROR", "failed to set expiration");
-    	return false;
+    if (!OCI_MsgSetExpiration(&m_conn->ocilib, m, message->getExpiration(), xsink)) {
+       if (!*xsink)
+          xsink->raiseException("AQQUEUE-ERROR", "failed to set expiration");
+       return false;
     }
-    if (!OCI_MsgSetPriority(&m_conn->ocilib, m, message->getPriority())) {
-    	xsink->raiseException("AQQUEUE-ERROR", "failed to set priority");
-    	return false;
+    if (!OCI_MsgSetPriority(&m_conn->ocilib, m, message->getPriority(), xsink)) {
+       if (!*xsink)
+          xsink->raiseException("AQQUEUE-ERROR", "failed to set priority");
+       return false;
     }
     
     QoreStringNodeHolder correlation(message->getCorrelation());
@@ -430,9 +436,10 @@ bool AQQueuePriv::post(AQMessagePriv *message, ExceptionSink *xsink) {
         TempEncodingHelper encoded(*correlation, m_conn->ds.getQoreEncoding(), xsink);
         if (*xsink)
            return false;
-        if (!OCI_MsgSetCorrelation(&m_conn->ocilib, m, encoded->getBuffer())) {
-    	    xsink->raiseException("AQQUEUE-ERROR", "failed to set correlation");
-    	    return false;
+        if (!OCI_MsgSetCorrelation(&m_conn->ocilib, m, encoded->getBuffer(), xsink)) {
+           if (!*xsink)
+              xsink->raiseException("AQQUEUE-ERROR", "failed to set correlation");
+           return false;
         }
     }
 
@@ -463,7 +470,7 @@ bool AQQueuePriv::post(const QoreHashNode *h, ExceptionSink *xsink) {
       xsink->raiseException("AQQUEUE-ERROR", "failed to create(bind) object");
       return false;
    }
-   ON_BLOCK_EXIT(OCI_ObjectFree2, &m_conn->ocilib, obj);
+   ON_BLOCK_EXIT(OCI_ObjectFree2, &m_conn->ocilib, obj, xsink);
 
    OCI_Msg* msg = OCI_MsgCreate(&m_conn->ocilib, m_typeInfo, xsink);
    if (!msg) {
@@ -471,10 +478,11 @@ bool AQQueuePriv::post(const QoreHashNode *h, ExceptionSink *xsink) {
          xsink->raiseException("AQQUEUE-ERROR", "cannot allocate message");
       return false;
    }
-   ON_BLOCK_EXIT(OCI_MsgFree, &m_conn->ocilib, msg);
+   ON_BLOCK_EXIT(OCI_MsgFree, &m_conn->ocilib, msg, xsink);
 
-   if (!OCI_MsgSetObject(&m_conn->ocilib, msg, obj)) {
-      xsink->raiseException("AQQUEUE-ERROR", "cannot set message object");
+   if (!OCI_MsgSetObject(&m_conn->ocilib, msg, obj, xsink)) {
+      if (!*xsink)
+         xsink->raiseException("AQQUEUE-ERROR", "cannot set message object");
       return false;
    }
 
@@ -560,7 +568,7 @@ QoreObject* AQQueuePriv::getMessage(QoreObject* self, int timeout, ExceptionSink
       return 0;
    }
 
-    ON_BLOCK_EXIT(OCI_ObjectFree2, &m_conn->ocilib, o);
+   ON_BLOCK_EXIT(OCI_ObjectFree2, &m_conn->ocilib, o, xsink);
 
     ReferenceHolder<> obj(objToQore(m_conn, o, xsink), xsink);
     if (!obj) {

@@ -2,7 +2,7 @@
 version 3.2
 ***********
 
-* added more Qore exception handling in ocilib object/NTY APIs
+* added more Qore error and exception handling in ocilib object/NTY APIs
 * ensure all strings written to the DB are converted to the target character
   encoding before writing
 * copy all values when binding by value in case they are bound to an IN OUT

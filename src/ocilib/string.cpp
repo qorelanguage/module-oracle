@@ -658,7 +658,7 @@ void * OCI_StringFromStringPtr(OCI_Library *pOCILib, OCIString *str, void **buf,
  * ------------------------------------------------------------------------ */
 
 boolean OCI_StringToStringPtr(OCI_Library *pOCILib, OCIString **str, OCIError *err, void *value, 
-                              void **buf, int *buflen)
+                              void **buf, int *buflen, ExceptionSink* xsink)
 {
     boolean res = TRUE;
     void *ostr  = NULL;  
@@ -677,17 +677,17 @@ boolean OCI_StringToStringPtr(OCI_Library *pOCILib, OCIString **str, OCIError *e
 
 #ifdef OCI_CHARSET_MIXED
 
-    /* value is wchar_t and must be converted to ANSI */
+    // value is wchar_t and must be converted to ANSI
  
     esize  = (int) 1;
     olen   = (int) dtslen((dtext*) value);
     osize  = olen;
 
-    /* do we need to use a buffer */
+    // do we need to use a buffer
 
     if (olen > 0)
     {
-        /* do we need to allocate/reallocate the buffer */
+        // do we need to allocate/reallocate the buffer
 
         if ((*buf) == NULL)
         {           
@@ -713,11 +713,13 @@ boolean OCI_StringToStringPtr(OCI_Library *pOCILib, OCIString **str, OCIError *e
 
 #endif
 
-    OCI_CALL3
+    OCI_CALL3Q
     (
        pOCILib, res, err, 
 
-        OCIStringAssignText(pOCILib->env, err, (oratext *) ostr, (ub4) osize, str)
+       OCIStringAssignText(pOCILib->env, err, (oratext *) ostr, (ub4) osize, str), 
+
+       xsink
     )
 
 #ifndef OCI_CHARSET_MIXED
@@ -739,7 +741,8 @@ boolean OCI_StringGetFromAttrHandle
     void           *handle,
     unsigned int    type,
     unsigned int    attr,
-    mtext         **str
+    mtext         **str,
+    ExceptionSink* xsink
 )
 {
     boolean res      = TRUE;
@@ -749,7 +752,7 @@ boolean OCI_StringGetFromAttrHandle
 
     OCI_CHECK(str == NULL, FALSE);
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
         pOCILib, res, con,
 
@@ -758,7 +761,9 @@ boolean OCI_StringGetFromAttrHandle
                    (dvoid *) &ostr,
                    (ub4   *) &osize,
                    (ub4    ) attr,
-                   con->err)
+                   con->err),
+
+	xsink
     )
 
     if ((res == TRUE) && (ostr != NULL))
@@ -819,7 +824,8 @@ boolean OCI_StringSetToAttrHandle
     unsigned int    type,
     unsigned int    attr,
     mtext         **str,
-    const mtext    *value
+    const mtext    *value,
+    ExceptionSink* xsink
 )
 {
     boolean res = TRUE;
@@ -833,7 +839,7 @@ boolean OCI_StringSetToAttrHandle
         osize = 0;
     }
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
         pOCILib, res, con,
 
@@ -842,7 +848,9 @@ boolean OCI_StringSetToAttrHandle
                    (dvoid *) ostr,
                    (ub4    ) osize,
                    (ub4    ) attr,
-                   con->err)
+                   con->err),
+
+	xsink
     )
 
     OCI_ReleaseMetaString(ostr);

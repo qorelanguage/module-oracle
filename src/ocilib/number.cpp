@@ -43,7 +43,7 @@
  * ------------------------------------------------------------------------ */
 
 boolean OCI_NumberGet2(OCI_Library *pOCILib, OCI_Connection *con,  OCINumber *data, void *value,
-		       uword size, uword flag)
+		       uword size, uword flag, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
@@ -53,11 +53,13 @@ boolean OCI_NumberGet2(OCI_Library *pOCILib, OCI_Connection *con,  OCINumber *da
         
     if (flag & OCI_NUM_DOUBLE)
     {
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, con, 
             
-            OCINumberToReal(con->err, data, size, value)
+            OCINumberToReal(con->err, data, size, value),
+
+	    xsink
         )
     }
     else
@@ -67,11 +69,13 @@ boolean OCI_NumberGet2(OCI_Library *pOCILib, OCI_Connection *con,  OCINumber *da
         if (flag & OCI_NUM_UNSIGNED)
             sign = OCI_NUMBER_UNSIGNED;
 
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, con, 
             
-            OCINumberToInt(con->err, data, size, sign, value)
+            OCINumberToInt(con->err, data, size, sign, value),
+
+	    xsink
         )
     }
             
@@ -83,7 +87,7 @@ boolean OCI_NumberGet2(OCI_Library *pOCILib, OCI_Connection *con,  OCINumber *da
  * ------------------------------------------------------------------------ */
 
 boolean OCI_NumberSet2(OCI_Library *pOCILib, OCI_Connection *con,  OCINumber *data, void *value, 
-                      uword size, uword flag)
+                      uword size, uword flag, ExceptionSink* xsink)
 {
     boolean res = TRUE;
 
@@ -93,11 +97,13 @@ boolean OCI_NumberSet2(OCI_Library *pOCILib, OCI_Connection *con,  OCINumber *da
         
     if (flag & OCI_NUM_DOUBLE)
     {
-        OCI_CALL2
+        OCI_CALL2Q
         (
 	   pOCILib, res, con, 
             
-            OCINumberFromReal(con->err, value, size, (OCINumber *) data)
+	   OCINumberFromReal(con->err, value, size, (OCINumber *) data),
+
+	   xsink
         )
     }
     else
@@ -107,11 +113,13 @@ boolean OCI_NumberSet2(OCI_Library *pOCILib, OCI_Connection *con,  OCINumber *da
         if (flag & OCI_NUM_UNSIGNED)
             sign = OCI_NUMBER_UNSIGNED;
 
-        OCI_CALL2
+        OCI_CALL2Q
         (
             pOCILib, res, con, 
             
-            OCINumberFromInt(con->err, value, size, sign, (OCINumber *) data)
+            OCINumberFromInt(con->err, value, size, sign, (OCINumber *) data),
+
+	    xsink
         )
     }
             
@@ -125,7 +133,7 @@ boolean OCI_NumberSet2(OCI_Library *pOCILib, OCI_Connection *con,  OCINumber *da
 
 boolean OCI_NumberConvertStr2(OCI_Library *pOCILib, OCI_Connection *con,  OCINumber *num, 
                             const dtext *str, int str_size, 
-                            const mtext* fmt, ub4 fmt_size)
+                            const mtext* fmt, ub4 fmt_size, ExceptionSink* xsink)
 {
     boolean res = TRUE;
     void *ostr1 = NULL;
@@ -161,13 +169,15 @@ boolean OCI_NumberConvertStr2(OCI_Library *pOCILib, OCI_Connection *con,  OCINum
 
     memset(num, 0, sizeof(*num));
 
-    OCI_CALL2
+    OCI_CALL2Q
     (
        pOCILib, res, con, 
         
-        OCINumberFromText(con->err, (oratext *) ostr1, (ub4) osize1,
-                                    (oratext *) ostr2, (ub4) osize2, 
-                                    (oratext *) NULL,  (ub4) 0, num)
+       OCINumberFromText(con->err, (oratext *) ostr1, (ub4) osize1,
+			  (oratext *) ostr2, (ub4) osize2, 
+			  (oratext *) NULL,  (ub4) 0, num),
+
+       xsink
     )
 
 #ifndef OCI_CHARSET_MIXED
@@ -188,12 +198,12 @@ boolean OCI_NumberConvertStr2(OCI_Library *pOCILib, OCI_Connection *con,  OCINum
 
 boolean OCI_NumberGetFromStr2(OCI_Library *pOCILib, OCI_Connection *con,  void *value, uword size,
                              uword type, const dtext *str, int str_size, 
-                             const mtext* fmt, ub4 fmt_size)
+                             const mtext* fmt, ub4 fmt_size, ExceptionSink* xsink)
 {
     OCINumber num;
   
     OCI_CHECK(value == NULL, FALSE);
   
-    return (OCI_NumberConvertStr2(pOCILib, con, &num, str, str_size, fmt, fmt_size) &&
-            OCI_NumberGet2(pOCILib, con, &num, value, size, type));
+    return (OCI_NumberConvertStr2(pOCILib, con, &num, str, str_size, fmt, fmt_size, xsink) &&
+            OCI_NumberGet2(pOCILib, con, &num, value, size, type, xsink));
  }
