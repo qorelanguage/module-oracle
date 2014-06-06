@@ -608,9 +608,11 @@ void OraBindNode::resetValue(ExceptionSink* xsink) {
          QoreOracleConnection* conn = stmt.getData();
          //printd(5, "deallocating temporary clob\n");
          conn->checkerr(OCILobFreeTemporary(conn->svchp, conn->errhp, strlob), "OraBindNode::resetValue() free temporary CLOB", xsink);
+         clob_allocated = 0;
       }
       //printd(5, "freeing clob descriptor\n");
       OCIDescriptorFree(strlob, OCI_DTYPE_LOB);
+      strlob = 0;
    }
    else if (dtype == SQLT_NTY)
       freeObject();

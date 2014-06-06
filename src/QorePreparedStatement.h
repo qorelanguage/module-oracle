@@ -318,10 +318,16 @@ public:
    DLLLOCAL QorePreparedStatement(Datasource *ods) : QoreOracleStatement(ods), str(0), columns(0), hasOutput(false), defined(false) {
    }
 
-   DLLLOCAL ~QorePreparedStatement() {
+   DLLLOCAL virtual ~QorePreparedStatement() {
       assert(!stmthp);
       assert(!columns);
       assert(node_list.empty());
+   }
+
+   // this virtual function is called when the connection is closed while executing SQL so that
+   // the current state can be freed while the driver-specific context data is still present
+   DLLLOCAL virtual void clearAbortedConnection(ExceptionSink* xsink) {
+      reset(xsink);
    }
 
    DLLLOCAL void reset(ExceptionSink* xsink);
