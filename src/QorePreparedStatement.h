@@ -229,8 +229,8 @@ protected:
    }
    */
 
-   DLLLOCAL void bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool in_only = true);
-   DLLLOCAL void bindPlaceholder(int pos, ExceptionSink* xsink);
+   DLLLOCAL void bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool& is_nty, bool in_only = true);
+   DLLLOCAL void bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink);
    DLLLOCAL int bindDate(int pos, ExceptionSink* xsink);
 
 public:
@@ -288,7 +288,7 @@ public:
    DLLLOCAL int set(const AbstractQoreNode* v, ExceptionSink* xsink);
    DLLLOCAL void reset(ExceptionSink* xsink, bool free_name = true);
 
-   DLLLOCAL void bind(int pos, ExceptionSink* xsink);
+   DLLLOCAL void bind(int pos, bool& is_nty, ExceptionSink* xsink);
 
    DLLLOCAL AbstractQoreNode* getValue(bool horizontal, ExceptionSink* xsink);
 
@@ -304,6 +304,7 @@ protected:
    OraResultSet *columns;
    bool hasOutput;
    bool defined;
+   bool has_nty;
 
    DLLLOCAL void parseQuery(const QoreListNode* args, ExceptionSink* xsink);
 
@@ -316,7 +317,7 @@ protected:
 public:
    //DLLLOCAL QorePreparedStatement(Datasource *ods, const QoreString *ostr, const QoreListNode* args, ExceptionSink* n_xsink, bool doBinding = true);
 
-   DLLLOCAL QorePreparedStatement(Datasource *ods) : QoreOracleStatement(ods), str(0), columns(0), hasOutput(false), defined(false) {
+   DLLLOCAL QorePreparedStatement(Datasource *ods) : QoreOracleStatement(ods), str(0), columns(0), hasOutput(false), defined(false), has_nty(false) {
    }
 
    DLLLOCAL virtual ~QorePreparedStatement() {
@@ -329,6 +330,17 @@ public:
    // the current state can be freed while the driver-specific context data is still present
    DLLLOCAL virtual void clearAbortedConnection(ExceptionSink* xsink) {
       reset(xsink);
+   }
+
+   // this virtual function is called after the connection has been closed and reopened while executing SQL
+   DLLLOCAL virtual int resetAbortedConnection(ExceptionSink* xsink) {
+      // if we have NTYs then we have to reset the statement and cannot recover it in a new logon session
+      if (has_nty) {
+         reset(xsink);
+         return -1;
+      }
+
+      return 0;
    }
 
    DLLLOCAL void reset(ExceptionSink* xsink);

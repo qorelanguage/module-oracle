@@ -72,6 +72,9 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
          if (wasInTransaction(ds))
 	    return -1;
 
+         if (resetAbortedConnection(xsink))
+            return -1;
+
 #ifdef DEBUG
          // otherwise show the exception on stdout in debug mode
          xsink->handleExceptions();
