@@ -47,6 +47,9 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
          if (wasInTransaction(ds))
 	    xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost while in a transaction; transaction has been lost", ds->getUsername(), ds->getDBName());
 
+         if (resetAbortedConnection(xsink))
+            return -1;
+
 	 // try to reconnect
 	 conn->logoff();
 

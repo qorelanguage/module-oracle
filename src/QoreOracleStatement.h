@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2013 David Nichols
+  Copyright (C) 2003 - 2014 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -57,6 +57,11 @@ public:
    // this virtual function is called when the connection is closed while executing SQL so that
    // the current state can be freed while the driver-specific context data is still present
    DLLLOCAL virtual void clearAbortedConnection(ExceptionSink* xsink) {
+   }
+
+   // this virtual function is called after the connection has been closed and reopened while executing SQL
+   DLLLOCAL virtual int resetAbortedConnection(ExceptionSink* xsink) {
+      return 0;
    }
 
    DLLLOCAL operator bool() const {
