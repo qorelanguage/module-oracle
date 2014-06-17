@@ -41,7 +41,7 @@
 /* --------------------------------------------------------------------------------------------- *
  * OCI_AgentInit
  * --------------------------------------------------------------------------------------------- */
-
+/*
 OCI_Agent * OCI_AgentInit
 (
     OCI_Library *pOCILib,
@@ -57,7 +57,7 @@ OCI_Agent * OCI_AgentInit
 
     OCI_CHECK(pagent == NULL, NULL);
 
-    /* allocate agent structure */
+    // allocate agent structure
 
     if (*pagent == NULL)
     {
@@ -68,7 +68,7 @@ OCI_Agent * OCI_AgentInit
     {
         agent = *pagent;
 
-        /* reinit */
+        // reinit
 
         OCI_FREE(agent->name);
         OCI_FREE(agent->address);
@@ -91,14 +91,14 @@ OCI_Agent * OCI_AgentInit
             agent->hstate = OCI_OBJECT_FETCHED_CLEAN;
         }
 
-        /* set name attribute if provided */
+        // set name attribute if provided
 
         if ((res == TRUE) && (name != NULL) && (name[0] != 0))
         {
             res = OCI_AgentSetName(pOCILib, agent, name);
         }
 
-        /* set address attribute if provided */
+        // set address attribute if provided
 
         if ((res == TRUE) && (address != NULL) && (address[0] != 0))
         {
@@ -110,7 +110,7 @@ OCI_Agent * OCI_AgentInit
         res = FALSE;
     }
 
-    /* check for failure */
+    // check for failure
 
     if (res == FALSE)
     {
@@ -120,6 +120,7 @@ OCI_Agent * OCI_AgentInit
 
     return agent;
 }
+*/
 
 /* ********************************************************************************************* *
  *                            PUBLIC FUNCTIONS
@@ -128,7 +129,7 @@ OCI_Agent * OCI_AgentInit
 /* --------------------------------------------------------------------------------------------- *
  * OCI_AgentCreate
  * --------------------------------------------------------------------------------------------- */
-
+ /*
 OCI_Agent * OCI_API OCI_AgentCreate
 (
     OCI_Library *pOCILib,
@@ -149,7 +150,7 @@ OCI_Agent * OCI_API OCI_AgentCreate
 
     return agent;
 }
-
+ */
 /* --------------------------------------------------------------------------------------------- *
  * OCI_AgentFree
  * --------------------------------------------------------------------------------------------- */
@@ -207,13 +208,13 @@ const mtext * OCI_API OCI_AgentGetName
 /* --------------------------------------------------------------------------------------------- *
  * OCI_AgentSetName
  * --------------------------------------------------------------------------------------------- */
-
-/*
+ /*
 boolean OCI_API OCI_AgentSetName
 (
     OCI_Library *pOCILib,
     OCI_Agent   *agent,
-    const mtext *name
+    const mtext *name,
+    ExceptionSink* xsink
 )
 {
     boolean res = TRUE;
@@ -221,14 +222,13 @@ boolean OCI_API OCI_AgentSetName
     OCI_CHECK_PTR(pOCILib, OCI_IPC_AGENT, agent, FALSE);
 
     res =  OCI_StringSetToAttrHandle(pOCILib, agent->con, agent->handle,  OCI_DTYPE_AQAGENT,
-                                     OCI_ATTR_AGENT_NAME, &agent->name, name);
+                                     OCI_ATTR_AGENT_NAME, &agent->name, name, xsink);
 
     OCI_RESULT(pOCILib, res);
 
     return res;
 }
-*/
-
+ */
 /* --------------------------------------------------------------------------------------------- *
  * OCI_AgentGetAddress
  * --------------------------------------------------------------------------------------------- */
@@ -257,13 +257,13 @@ const mtext * OCI_API OCI_AgentGetAddress
 /* --------------------------------------------------------------------------------------------- *
  * OCI_AgentSetAddress
  * --------------------------------------------------------------------------------------------- */
-
-/*
+ /*
 boolean OCI_API OCI_AgentSetAddress
 (
     OCI_Library *pOCILib,
     OCI_Agent   *agent,
-    const mtext *address
+    const mtext *address,
+    ExceptionSink* xsink
 )
 {
     boolean res = TRUE;
@@ -271,10 +271,10 @@ boolean OCI_API OCI_AgentSetAddress
     OCI_CHECK_PTR(pOCILib, OCI_IPC_AGENT, agent, FALSE);
 
     res = OCI_StringSetToAttrHandle(pOCILib, agent->con, agent->handle, OCI_DTYPE_AQAGENT,
-                                    OCI_ATTR_AGENT_ADDRESS, &agent->address, address);
+                                    OCI_ATTR_AGENT_ADDRESS, &agent->address, address, xsink);
 
     OCI_RESULT(pOCILib, res);
 
     return res;
 }
-*/
+ */

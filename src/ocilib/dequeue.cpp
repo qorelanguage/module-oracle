@@ -752,7 +752,6 @@ int OCI_API OCI_DequeueGetWaitTime
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueSetWaitTime
  * --------------------------------------------------------------------------------------------- */
-/*
 boolean OCI_API OCI_DequeueSetWaitTime
 (
     OCI_Library*   pOCILib,
@@ -784,7 +783,6 @@ boolean OCI_API OCI_DequeueSetWaitTime
 
     return res;
 }
-*/
 
 /* --------------------------------------------------------------------------------------------- *
  * OCI_DequeueSetAgentList

@@ -116,7 +116,8 @@ boolean OCI_API OCI_AgentSetName
 (
     OCI_Library *pOCILib,
     OCI_Agent   *agent,
-    const mtext *name
+    const mtext *name,
+    ExceptionSink* xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
@@ -137,7 +138,8 @@ boolean OCI_API OCI_AgentSetAddress
 (
     OCI_Library *pOCILib,
     OCI_Agent   *agent,
-    const mtext *address
+    const mtext *address,
+    ExceptionSink* xsink
 );
 
 /* --------------------------------------------------------------------------------------------- *
