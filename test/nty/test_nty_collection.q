@@ -11,7 +11,7 @@ switch (gethostname()) {
     case /^el5/:
     case /^xbox/: $connstr = "oracle:omquser/omquser@xbox"; break;
     case /^ren/: $connstr = "oracle:omquser/omquser@el6"; break;
-    default: $connstr = "oracle:omqtest/omqtest@stimpy"; break;
+    default: $connstr = "oracle:omquser/omquser@xbox"; break;
 }
 
 my Datasource $db($connstr);

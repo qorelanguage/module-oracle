@@ -271,27 +271,58 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                break;
             }
 
-            case SQLT_NUM:
-	       if (col->scale == -127 && col->prec > 0) {
-		  //printd(5, "objBindQore() binding double: %g\n", val->getAsFloat());
-		  // float
-		  if (!OCI_ObjectSetDouble2(&d->ocilib, *obj, cname, val->getAsFloat(), xsink)) {
-                     if (!*xsink)
-                        xsink->raiseException("BIND-NTY-ERROR", "unable to assign a value to double-precision object attribute %s.%s", tname, cname);
-                     return 0;
-                  }
-		  break;
-	       }
-	       // else fall through to SQL_INT
+            case SQLT_NUM: {
+                switch (val->getType()) {
+                    case NT_STRING:
+                    case NT_FLOAT: {
+                        if (!OCI_ObjectSetDouble2(&d->ocilib, *obj, cname, val->getAsFloat(), xsink)) {
+                            if (!*xsink)
+                                xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a value to double-precision object attribute %s.%s", tname, cname);
+                            return 0;
+                        }
+                        break;
+                    }
+                    case NT_INT: {
+                        if (!OCI_ObjectSetBigInt2(&d->ocilib, *obj, cname, val->getAsBigInt(), xsink)) {
+                            if (!*xsink)
+                                xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a value to integer object attribute %s.%s", tname, cname);
+                            return 0;
+                        }
+                        break;
+                    }
+#if 0
+                    case NT_NUMBER: {
+                        QoreStringNodeValueHelper str(val);
+                        if (str->is_equal_soft(val, xsink)) {
+                            if (!*xsink) {
+                                xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to bind value of type: '%s' to object attribute %s.%s. Out of boundaries.", val->getTypeName(), tname, cname);
+                                return 0;
+                            }
+                        }
+                        if (!OCI_ObjectSetDouble2(&d->ocilib, *obj, cname, val->getAsFloat(), xsink)) {
+                            if (!*xsink)
+                                xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a value to number object attribute %s.%s", tname, cname);
+                            return 0;
+                        }
+                        break;
+                    }
+#endif
+                    default:
+                        xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to bind value of Qore type: '%s' to object attribute %s.%s", val->getTypeName(), tname, cname);
+                        return 0;
+                    break;
+                }
+                break;
+            }
 
             case SQLT_INT:
-	       //printd(5, "objBindQore() binding int64: %lld\n", val->getAsBigInt());
-	       if (!OCI_ObjectSetBigInt2(&d->ocilib, *obj, cname, val->getAsBigInt(), xsink)) {
-                  if (!*xsink)
-                     xsink->raiseException("BIND-NTY-ERROR", "unable to assign a value to integer object attribute %s.%s", tname, cname);
-                  return 0;
-               }
-	       break;
+                //printd(5, "objBindQore() binding int64: %lld\n", val->getAsBigInt());
+                if (!OCI_ObjectSetBigInt2(&d->ocilib, *obj, cname, val->getAsBigInt(), xsink)) {
+                    if (!*xsink)
+                        xsink->raiseException("BIND-NTY-ERROR", "unable to assign a value to integer object attribute %s.%s", tname, cname);
+                    return 0;
+                }
+                break;
 
             case SQLT_FLT:
 #if OCI_VERSION_COMPILE >= OCI_10_1
@@ -955,17 +986,32 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	    break;
 	 }
 
-	 case SQLT_NUM:
-	    if (col->scale == -127 && col->prec > 0) {
-	       // float
-	       if (!OCI_ElemSetDouble(&d->ocilib, e, val->getAsFloat(), xsink)) {
-                  if (!*xsink)
-                     xsink->raiseException("BIND-NTY-ERROR", "failed to assign double-precision value to element for collection '%s'", tname);
-                  return 0;
-               }
-	       break;
-	    }
-	    // else fall through to SQLT_INT
+            case SQLT_NUM: {
+                switch (val->getType()) {
+                    case NT_STRING:
+                    case NT_FLOAT: {
+                        if (!OCI_ElemSetDouble(&d->ocilib, e, val->getAsFloat(), xsink)) {
+                            if (!*xsink)
+                                xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a value to double element for collection '%s'", tname);
+                            return 0;
+                        }
+                        break;
+                    }
+                    case NT_INT: {
+                        if (!OCI_ElemSetBigInt(&d->ocilib, e, val->getAsBigInt(), xsink)) {
+                            if (!*xsink)
+                                xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a value to integer element for collection '%s'", tname);
+                            return 0;
+                        }
+                        break;
+                    }
+                    default:
+                        xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to bind value of Qore type: '%s' element for collection '%s'", val->getTypeName(), tname);
+                        return 0;
+                    break;
+                }
+                break;
+            }
 
 	 case SQLT_INT:
 	    if (!OCI_ElemSetBigInt(&d->ocilib, e, val->getAsBigInt(), xsink)) {
