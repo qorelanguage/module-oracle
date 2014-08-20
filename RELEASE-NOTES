@@ -19,6 +19,7 @@ version 3.2
 * fixed a major bug where a crash generated internally in the OCI library
   would occur when NTYs were bound in a prepared statement and the statement
   was executed in a new logon session after transparent reconnection
+* fixed bugs binding values to number attributes of NTYs and collections
 
 
 ***********

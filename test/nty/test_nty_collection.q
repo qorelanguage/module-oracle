@@ -9,6 +9,7 @@ switch (gethostname()) {
     case /^el6/:
     case /^quark/: $connstr = "oracle:omquser/omquser@el6"; break;
     case /^el5/:
+    case /^manatee/:
     case /^xbox/: $connstr = "oracle:omquser/omquser@xbox"; break;
     case /^ren/: $connstr = "oracle:omquser/omquser@el6"; break;
     default: $connstr = "oracle:omquser/omquser@xbox"; break;
@@ -31,7 +32,7 @@ $db.rollback();
 
 
 printf("\nCOLLECTION IN number\n");
-$col = 2, 213,NULL, NOTHING, 666;
+$col = 2, 213,NULL, NOTHING, "23932", 500n, 3.1415927;
 $c = $db.exec("begin qore_test.do_coll_num(%v, :retval); end;",
                  bindOracleCollection("COL_TEST_NUM", $col));
 printf("collection: %N\n", $c);

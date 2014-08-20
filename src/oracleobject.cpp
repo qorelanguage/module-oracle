@@ -233,8 +233,6 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
         bool e;
         const AbstractQoreNode* val = th->getKeyValueExistence(cname, e);
 
-//         qore_type_t ntype = val->getType();
-        
         if (!e || is_null(val) || is_nothing(val)) {
 	   if (!OCI_ObjectSetNull2(&d->ocilib, *obj, cname, xsink)) {
               if (!*xsink)
@@ -273,44 +271,48 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
 
             case SQLT_NUM: {
                 switch (val->getType()) {
-                    case NT_STRING:
-                    case NT_FLOAT: {
-                        if (!OCI_ObjectSetDouble2(&d->ocilib, *obj, cname, val->getAsFloat(), xsink)) {
-                            if (!*xsink)
-                                xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a value to double-precision object attribute %s.%s", tname, cname);
-                            return 0;
-                        }
-                        break;
-                    }
-                    case NT_INT: {
-                        if (!OCI_ObjectSetBigInt2(&d->ocilib, *obj, cname, val->getAsBigInt(), xsink)) {
-                            if (!*xsink)
-                                xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a value to integer object attribute %s.%s", tname, cname);
-                            return 0;
-                        }
-                        break;
-                    }
-#if 0
-                    case NT_NUMBER: {
-                        QoreStringNodeValueHelper str(val);
-                        if (str->is_equal_soft(val, xsink)) {
-                            if (!*xsink) {
-                                xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to bind value of type: '%s' to object attribute %s.%s. Out of boundaries.", val->getTypeName(), tname, cname);
-                                return 0;
-                            }
-                        }
-                        if (!OCI_ObjectSetDouble2(&d->ocilib, *obj, cname, val->getAsFloat(), xsink)) {
-                            if (!*xsink)
-                                xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a value to number object attribute %s.%s", tname, cname);
-                            return 0;
-                        }
-                        break;
-                    }
+                   case NT_STRING: {
+                      const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(val);
+                      if (!OCI_ObjectSetNumberFromString(&d->ocilib, *obj, cname, str->getBuffer(), (int)str->size(), xsink)) {
+                         if (!*xsink)
+                            xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a string value to object attribute %s.%s", tname, cname);
+                         return 0;
+                      }
+                      break;
+                   }
+                   case NT_FLOAT: {
+                      if (!OCI_ObjectSetDouble2(&d->ocilib, *obj, cname, val->getAsFloat(), xsink)) {
+                         if (!*xsink)
+                            xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a float value to object attribute %s.%s", tname, cname);
+                         return 0;
+                      }
+                      break;
+                   }
+                   case NT_INT: {
+                      if (!OCI_ObjectSetBigInt2(&d->ocilib, *obj, cname, val->getAsBigInt(), xsink)) {
+                         if (!*xsink)
+                            xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign an integer value to object attribute %s.%s", tname, cname);
+                         return 0;
+                      }
+                      break;
+                   }
+#ifdef _QORE_HAS_NUMBER_TYPE
+                   case NT_NUMBER: {
+                      const QoreNumberNode* n = reinterpret_cast<const QoreNumberNode*>(val);
+                      QoreString str;
+                      n->getStringRepresentation(str);
+                      if (!OCI_ObjectSetNumberFromString(&d->ocilib, *obj, cname, str.getBuffer(), (int)str.size(), xsink)) {
+                         if (!*xsink)
+                            xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a string value to object attribute %s.%s", tname, cname);
+                         return 0;
+                      }                      
+                      break;
+                   }
 #endif
-                    default:
-                        xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to bind value of Qore type: '%s' to object attribute %s.%s", val->getTypeName(), tname, cname);
-                        return 0;
-                    break;
+                   default:
+                      xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to bind value of Qore type: '%s' to object attribute %s.%s", val->getTypeName(), tname, cname);
+                      return 0;
+                      break;
                 }
                 break;
             }
@@ -958,7 +960,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	 continue;
       }
 
-      switch (col->ocode)      {
+      switch (col->ocode) {
 	 case SQLT_LNG: // long
 	 case SQLT_AFC:
 	 case SQLT_AVC:
@@ -986,33 +988,53 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	    break;
 	 }
 
-            case SQLT_NUM: {
-                switch (val->getType()) {
-                    case NT_STRING:
-                    case NT_FLOAT: {
-                        if (!OCI_ElemSetDouble(&d->ocilib, e, val->getAsFloat(), xsink)) {
-                            if (!*xsink)
-                                xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a value to double element for collection '%s'", tname);
-                            return 0;
-                        }
-                        break;
-                    }
-                    case NT_INT: {
-                        if (!OCI_ElemSetBigInt(&d->ocilib, e, val->getAsBigInt(), xsink)) {
-                            if (!*xsink)
-                                xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a value to integer element for collection '%s'", tname);
-                            return 0;
-                        }
-                        break;
-                    }
-                    default:
-                        xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to bind value of Qore type: '%s' element for collection '%s'", val->getTypeName(), tname);
-                        return 0;
-                    break;
-                }
-                break;
+         case SQLT_NUM:
+            switch (val->getType()) {
+               case NT_STRING: {
+                  const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(val);
+                  if (!OCI_ElemSetNumberFromString(&d->ocilib, e, str->getBuffer(), (int)str->size(), xsink)) {
+                     if (!*xsink)
+                        xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a string value to element for collection '%s'", tname);
+                     return 0;
+                  }
+                  break;
+               }
+               case NT_FLOAT: {
+                  if (!OCI_ElemSetDouble(&d->ocilib, e, val->getAsFloat(), xsink)) {
+                     if (!*xsink)
+                        xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a float value to element for collection '%s'", tname);
+                     return 0;
+                  }
+                  break;
+               }
+               case NT_INT: {
+                  if (!OCI_ElemSetBigInt(&d->ocilib, e, val->getAsBigInt(), xsink)) {
+                     if (!*xsink)
+                        xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a value to integer element for collection '%s'", tname);
+                     return 0;
+                  }
+                  break;
+               }
+#ifdef _QORE_HAS_NUMBER_TYPE
+               case NT_NUMBER: {
+                  const QoreNumberNode* n = reinterpret_cast<const QoreNumberNode*>(val);
+                  QoreString str;
+                  n->getStringRepresentation(str);
+                  if (!OCI_ElemSetNumberFromString(&d->ocilib, e, str.getBuffer(), (int)str.size(), xsink)) {
+                     if (!*xsink)
+                        xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign an arbitrary-precision number value to element for collection '%s'", tname);
+                     return 0;
+                  }                      
+                  break;
+               }
+#endif
+               default:
+                  xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to bind value of Qore type: '%s' element for collection '%s'", val->getTypeName(), tname);
+                  return 0;
+                  break;
             }
-
+            break;
+               
 	 case SQLT_INT:
 	    if (!OCI_ElemSetBigInt(&d->ocilib, e, val->getAsBigInt(), xsink)) {
                if (!*xsink)

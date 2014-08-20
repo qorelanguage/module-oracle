@@ -10,6 +10,7 @@ switch (gethostname()) {
     case /^quark/: $connstr = "oracle:omquser/omquser@el6"; break;
     case /^el5/:
     case /^xbox/:
+    case /^manatee/:
     case /^ren/: $connstr = "oracle:omquser/omquser@xbox"; break;
     default: $connstr = "oracle:omqtest/omqtest@stimpy"; break;
 }
@@ -19,7 +20,7 @@ $db.open();
 
 printf("OBJECT IN\n");
 my hash $obj = ("A_TEXT": "1",
-                "A_NUMBER": 2,
+                "A_NUMBER": -2.1n,
                 "A_NUM_1": 1,
                 "A_TEXTC" : "foo bar",
                 "A_CLOB" : "lorem ipsum clob sir amet",
