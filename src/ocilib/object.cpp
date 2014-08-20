@@ -419,6 +419,30 @@ void * OCI_ObjectGetAttr(OCI_Object *obj, unsigned int index, OCIInd **pind)
     return ((char *) obj->handle + offset);
 }
 
+boolean OCI_ObjectSetNumberFromString(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, const char* str, int size, ExceptionSink* xsink) {
+   boolean res = FALSE;
+   int index   = 0;
+
+   OCI_CHECK_PTR(pOCILib, OCI_IPC_OBJECT, obj, FALSE);
+
+   index = OCI_ObjectGetAttrIndex2(pOCILib, obj, attr, OCI_CDT_NUMERIC, xsink);
+
+   if (index >= 0)
+   {
+      OCIInd *ind     = NULL;
+      OCINumber *num  = (OCINumber*)OCI_ObjectGetAttr(obj, index, &ind);
+
+      res = OCI_NumberConvertStr2(pOCILib, obj->con, num, str, size, NUM_FMT, NUM_FMT_LEN);
+
+      if (res == TRUE)
+	 *ind = OCI_IND_NOTNULL;
+   }
+   
+   OCI_RESULT(pOCILib, res);
+
+   return res;
+}
+
 /* ------------------------------------------------------------------------ *
  * OCI_ObjectSetNumber
  * ------------------------------------------------------------------------ */

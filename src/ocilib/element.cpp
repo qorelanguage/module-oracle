@@ -145,6 +145,22 @@ boolean OCI_ElemSetNullIndicator(OCI_Elem *elem, OCIInd value)
     return res;
 }
 
+boolean OCI_ElemSetNumberFromString(OCI_Library* pOCILib, OCI_Elem* elem, const char* str, int size, ExceptionSink* xsink) {
+   boolean res = FALSE;
+
+   OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
+   OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_NUMERIC, FALSE);
+
+   res = OCI_NumberConvertStr2(pOCILib, elem->con, (OCINumber*)elem->handle, str, size, NUM_FMT, NUM_FMT_LEN);
+
+   if (res)
+      OCI_ElemSetNullIndicator(elem, OCI_IND_NOTNULL);
+
+   OCI_RESULT(pOCILib, res);
+
+   return res;
+}
+
 /* ------------------------------------------------------------------------ *
  * OCI_ElemSetNumber
  * ------------------------------------------------------------------------ */

@@ -40,6 +40,9 @@
 
 #include <qore/Qore.h>
 
+#define NUM_FMT "9999999999999999999999999999999999.99999999999999999999999"
+#define NUM_FMT_LEN (sizeof(NUM_FMT)-1)
+
 /* ************************************************************************ *
  *                             PRIVATE TYPES
  * ************************************************************************ */
@@ -976,6 +979,7 @@ OCI_EXPORT void OCI_ExceptionDirPathState2(OCI_Library *pOCILib, OCI_DirPath *dp
 OCI_EXPORT void OCI_ExceptionOCIEnvironment2(OCI_Library *pOCILib);
 OCI_EXPORT boolean OCI_API OCI_DateFromCTime2(OCI_Library *pOCILib, OCI_Date *date, struct tm *ptm, time_t t);
 OCI_EXPORT boolean OCI_API OCI_TimestampFree2(OCI_Library *pOCILib, OCI_Timestamp *tmsp);
+OCI_EXPORT boolean OCI_ElemSetNumberFromString(OCI_Library *pOCILib, OCI_Elem* elem, const char* str, int size, ExceptionSink* xsink);
 OCI_EXPORT boolean OCI_ElemSetNumber2(OCI_Library *pOCILib, OCI_Elem  *elem, void *value, uword size, uword flag);
 OCI_EXPORT OCI_Date * OCI_API  OCI_ElemGetDate2(OCI_Library *pOCILib, OCI_Elem *elem);
 OCI_EXPORT boolean OCI_API OCI_ElemSetDate2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Date *value);
@@ -1029,6 +1033,7 @@ sword OCI_DescriptorArrayFree2(OCI_Library *pOCILib, dvoid **descp, CONST ub4 ty
 sword OCI_ObjectNew2(OCI_Library *pOCILib, OCIEnv *env, OCIError *err, CONST OCISvcCtx *svc, OCITypeCode typecode, OCIType *tdo, dvoid *table, OCIDuration duration, boolean value, dvoid **instance);
 sword OCI_OCIObjectFree2(OCI_Library *pOCILib, OCIEnv *env, OCIError *err, dvoid *instance, ub2 flags);
 int OCI_ObjectGetAttrIndex2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, int type, ExceptionSink* xsink = 0);
+boolean OCI_ObjectSetNumberFromString(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, const char* str, int size, ExceptionSink* xsink);
 boolean OCI_ObjectSetNumber2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, void *value, uword size, uword flag);
 boolean OCI_ObjectGetNumber2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr, void *value, uword size, uword flag, ExceptionSink* xsink = 0);
 OCI_Date * OCI_API OCI_ObjectGetDate2(OCI_Library *pOCILib, OCI_Object *obj, const mtext *attr);
