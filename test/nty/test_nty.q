@@ -1,12 +1,98 @@
-#/usr/bin/env qore
-%include test_nty_commons.q
+#!/usr/bin/env qore
+
 %requires oracle
+
+const TYPE_NUMBER = 0;
+const TYPE_STRING = 1;
+const TYPE_OBJECT = 2;
+
+const NUM_1_999 = 898;
+const NUM_INT = 456;
+const NUM_DBL = 3.1415927;
+
+const STR_1 = "c";
+const STR_10 = "nzsuxobymr";
+const STR_100 = "ziafgnjvmiijgezxivssbooduhfkzdschhwnpopcimbxrnxaqqhcnavuqfpfrbyuqfwvspaqiuptblelxmnmeoxxnmthqnwzrysk";
+const STR_1000 = "hazmsuxjfhiqefmoxnumctthzjqzksnmegkweyrmryjhkpreejwvkchhjpmcnkvkosmiddapleunjlletmvuuutowwzrjmxfqwqotstqoqjunslcbhxifpzkpmanqyvcblcdeeuhdeoimeryexzocwqgjrckrospclxsxfkfmmqstqiujabsulikceovtmxfqmajkcdrjqgvnzasrddlabaeqlnqsikcyrcdtmlsqioiljduirguoykgxo";
+const STR_DATE = "11-SEP-14";
+const STR_FDATE = "2014-09-11 00:00:00.000000 Thu +02:00 (CEST)";
+const STR_DATE_PLUS_1 = "2014-09-12 00:00:00.000000 Fri +02:00 (CEST)";
+const STR_DATE_MINUS_100 = "2014-06-03 00:00:00.000000 Tue +02:00 (CEST)";
+const TIMESTAMP_STR = "11-SEP-14 12.00.00.000000 AM +02:00";
+
+our date $c_date =  date("2014-09-11");
+
+const STR_FOO = "foo";
+const STR_BAR = "bar";
+const STR_END = "end";
+const STR_CLOB = "lorem ipsum clob sir amet";
+const STR_NULL = "{NULL}";
+
+const OBJ_SUPP = (STR_FOO, NUM_1_999);
+
+const OBJ_HASH_MAIN = ( "A_TEXT"  : STR_1,
+                        "A_NUMBER": NUM_INT,
+                        "A_TEXTC" : STR_FOO,
+                        "A_CLOB"  : STR_CLOB,
+                        "A_DATE"  : STR_DATE,
+                        );
+const OBJ_HASH_MAIN_IN = (STR_1, NUM_INT, STR_FOO, STR_CLOB, "01-JAN-70");
+
+const OBJ_HASH_SUPP = ("TEXT2" : STR_FOO, "NUMBER2" : NUM_1_999);
+
+const OBJ_HASH_IN = ( "A_TEXT"   : STR_1,
+                      "A_NUMBER" : NUM_INT,
+                      "A_TEXTC"  : STR_FOO,
+                      "A_CLOB"   : STR_CLOB,
+                      "A_DATE"   : STR_FDATE,
+                      "A_OBJECT" : ("TEXT2"  : STR_10,
+                                    "NUMBER2": NUM_1_999,),
+                      );
+
+const VARCHAR2_LST_IN = (STR_FOO, STR_BAR, NULL, NOTHING, STR_END);
+const VARCHAR2_LST_OUT = (STR_10, STR_100, NULL, STR_1);
+const NUM_LST_IN = (NUM_INT,  NUM_INT, NULL, NOTHING, NULL, "456", 456n, NUM_INT);
+const NUM_LST_OUT = (NUM_INT, NUM_INT, NULL, NUM_INT);
+const CLOB_LST_IN = (STR_FOO, STR_BAR, NULL, NOTHING, STR_END);
+const CLOB_LST_OUT = (STR_100, STR_100, NULL, STR_100);
+const DATE_LST_IN = (STR_DATE, STR_DATE, NULL, NOTHING, STR_DATE);
+const DATE_LST_OUT = (STR_DATE_MINUS_100, STR_FDATE, NULL, STR_DATE_PLUS_1);
+const OBJ_LST_OUT = (OBJ_HASH_IN, NULL, OBJ_HASH_IN, OBJ_HASH_IN);
+const STR_LST_IN = ((STR_FOO, STR_BAR), (STR_FOO, STR_BAR), (STR_FOO, STR_BAR));
+const STR_LST_OUT =(VARCHAR2_LST_OUT, NULL, VARCHAR2_LST_OUT, VARCHAR2_LST_OUT);
+const TIMESTAMP_LST_IN = (TIMESTAMP_STR, TIMESTAMP_STR, NULL, NOTHING, TIMESTAMP_STR);
+
+const COL_WIDTH = 100;
+const OFFSET = 5;
+
+const COLL_VARCHAR2_OUT  = 0;
+const COLL_VARCHAR2_IN   = 1;
+const COLL_NUMBER_IN     = 2;
+const COLL_NUMBER_OUT    = 3;
+const COLL_CLOB_IN       = 4;
+const COLL_CLOB_OUT      = 5;
+const COLL_DATE_IN       = 6;
+const COLL_DATE_OUT      = 7;
+const COLL_OBJECT_IN     = 8;
+const COLL_OBJECT_OUT    = 9;
+const COLL_STRING_IN     = 10;
+const COLL_STRING_OUT    = 11;
+const COLL_OBJECTS_IN    = 12;
+const COLL_OBJECTS_OUT   = 13;
+const COLL_TIMESTAMP_IN  = 14;
+const COLL_TIMESTAMP_OUT = 15;
+
+our int $success_count = 0;
+our string $err_msg;
+our string $connstr;
 
 start();
 
 sub start() {
 
-    my string $connstr = "oracle:omqtest/omqtest@xbox";
+	parse_command_line();
+   
+	#my string $connstr = "oracle:omqtest/omqtest@xbox";
     our Datasource $db($connstr);
     $db.open();
 
@@ -55,44 +141,92 @@ sub start() {
 
 }
 
+const opts = (
+	"help"		 : "help,h",
+	"datasource" : "datasource,d=i",
+	);
+
+sub usage() {
+    printf(
+            "usage: %s [options]	<iterations>
+            -h, --help				shows this help text
+            -ds,--datasource=ARG	datasource string
+            \n",
+            get_script_name());
+    exit(1);
+}
+
+
+sub parse_command_line() {
+    
+	my GetOpt $g(opts);
+    $o = $g.parse(\$ARGV);
+	
+    if (exists $o."_ERRORS_") {
+        printf("%s\n", $o."_ERRORS_"[0]);
+        exit(1);
+    }
+    if ($o.help)
+        usage();
+
+    $o.iters = shift $ARGV;
+    if (elements $ARGV) {
+        printf("error, excess arguments on command-line\n");
+        usage();
+    }
+	if(!exists $o.iters)
+	{
+		switch (gethostname()) {
+			case /^qube/: $connstr = "oracle:omquser2/omquser2@qube"; break;
+			case /^el6/:
+			case /^quark/: $connstr = "oracle:omquser/omquser@el6"; break;
+			case /^el5/:
+			case /^manatee/:
+			case /^xbox/: $connstr = "oracle:omquser/omquser@xbox"; break;
+			case /^ren/: $connstr = "oracle:omqtest/omqtest@xbox"; break;
+			default: $connstr = "oracle:omquser/omquser@xbox"; break;
+		}
+	} else {
+		$connstr = $o.iters;
+	}
+
+}
+
+
+
+
 sub test_varchar2_in(int id) {
     my hash $c = $db.exec("begin qore_test.do_coll(%v, :retval); end;", bindOracleCollection("COL_TEST", VARCHAR2_LST_IN));
-    #print_rslt($id, VARCHAR2_LST_IN, $c);
     print_result($id, "collection IN varchar2", cmp_result(NOTHING, $c.retval, COLL_VARCHAR2_IN), VARCHAR2_LST_IN, $c.retval);
     $db.rollback();
 }
 
 sub test_varchar2_out(int id) {
     my $r2 = $db.exec("begin qore_test.get_coll(:retval); end;", placeholderOracleCollection("COL_TEST"));
-    #print_rslt($id, VARCHAR2_LST_OUT, $r2);
     print_result($id, "collection OUT varchar2", cmp_result(VARCHAR2_LST_OUT, $r2.retval, COLL_VARCHAR2_OUT), VARCHAR2_LST_OUT, $r2);
     $db.rollback();
 }
 
 sub test_number_in(int id) {
     my $c = $db.exec("begin qore_test.do_coll_num(%v, :retval); end;", bindOracleCollection("COL_TEST_NUM", NUM_LST_IN));
-    #print_rslt($id, NUM_LST_IN, $c);
     print_result($id, "collection IN number", cmp_result(NOTHING, $c.retval, COLL_NUMBER_IN), NUM_LST_IN, $c.retval);
     $db.rollback();
 }
 
 sub test_number_out(int id) {
     my $r2 = $db.exec("begin qore_test.get_coll_num(:retval); end;", placeholderOracleCollection("COL_TEST_NUM"));
-    #print_rslt($id, NUM_LST_OUT, $r2);
     print_result($id, "collection OUT number", cmp_result(NUM_LST_OUT, $r2.retval, COLL_NUMBER_OUT), NUM_LST_OUT, $r2);
     $db.rollback();
 }
 
 sub test_clob_in(int id) {
     my $c = $db.exec("begin qore_test.do_coll_clob(%v, :retval); end;", bindOracleCollection("COL_TEST_CLOB", CLOB_LST_IN));
-    #print_rslt($id, CLOB_LST_IN, $c);
     print_result($id, "collection IN clob", cmp_result(NOTHING, $c.retval, COLL_CLOB_IN), CLOB_LST_IN, $c.retval);
     $db.rollback();
 }
 
 sub test_clob_out(int id) {
     my $r2 = $db.exec("begin qore_test.get_coll_clob(:retval); end;", placeholderOracleCollection("COL_TEST_clob"));
-    #print_rslt($id, CLOB_LST_OUT, $r2);
     print_result($id, "collection OUT clob", cmp_result(CLOB_LST_OUT, $r2.retval, COLL_CLOB_OUT), CLOB_LST_OUT, $r2);
     $db.rollback();
 }
@@ -101,14 +235,12 @@ sub test_date_in(int id) {
 
 	my list $inp = ($c_date, $c_date, NULL, NOTHING, $c_date);
     my $c = $db.exec("begin qore_test.do_coll_date(%v, :retval); end;", bindOracleCollection("COL_TEST_date", $inp));
-    #print_rslt($id, DATE_LST_IN, $c);
     print_result($id, "collection IN date", cmp_result(NOTHING, $c.retval, COLL_DATE_IN), DATE_LST_IN, $c.retval);
     $db.rollback();
 }
 
 sub test_date_out(int id) {
     my $r3 = $db.exec("begin qore_test.get_coll_date(:retval); end;", placeholderOracleCollection("COL_TEST_date"));
-    #print_rslt($id, DATE_LST_OUT, $r3);
 	my list $cmp_list = ($c_date-100D, $c_date, NULL, $c_date+1D);
     print_result($id, "collection OUT date", cmp_result($cmp_list, $r3.retval, COLL_DATE_OUT), $cmp_list, $r3.retval);
     $db.rollback();
@@ -118,14 +250,12 @@ sub test_object_collection_in(int id) {
     my hash $obj = OBJ_HASH_MAIN + ( "A_OBJECT" : bindOracleObject("TEST_OBJECT_2", OBJ_HASH_SUPP),); 
     my list $colo = bindOracleObject("TEST_OBJECT", $obj), bindOracleObject("TEST_OBJECT", $obj), bindOracleObject("TEST_OBJECT", $obj);
     my $d = $db.exec("begin qore_test.do_coll_obj(%v, :retval); end;", bindOracleCollection("COL_TEST_obj", $colo));
-	#print_rslt($id, $colo, $d);
     print_result($id, "collection IN object", cmp_result(NOTHING, $d.retval, COLL_OBJECT_IN), $colo, $d.retval);
     $db.rollback();
 }
 
 sub test_object_collection_out(int id) {
     my $r3 = $db.exec("begin qore_test.get_coll_obj(:retval); end;", placeholderOracleCollection("COL_TEST_obj"));
-    #print_rslt($id, OBJ_LST_OUT, $r3);
     print_result($id, "collection OUT object", cmp_result(OBJ_LST_OUT, $r3, COLL_OBJECT_OUT), OBJ_LST_OUT, $r3);
     $db.rollback();
 }
@@ -133,14 +263,12 @@ sub test_object_collection_out(int id) {
 sub test_string_in(int id) {
     my list $col = ( bindOracleCollection("COL_TEST", (STR_FOO, STR_BAR)), bindOracleCollection("COL_TEST", (STR_FOO , STR_BAR)), bindOracleCollection("COL_TEST", (STR_FOO , STR_BAR)));
     my $c = $db.exec("begin qore_test.do_coll_coll_str(%v, :retval); end;", bindOracleCollection("COL_TEST_coll_str", $col));
-    #print_rslt($id, STR_LST_IN, $c);
     print_result($id, "collection IN string", cmp_result(NOTHING, $c.retval, COLL_STRING_IN), STR_LST_IN, $c.retval);
     $db.rollback();
 }
 
 sub test_string_out(int id) {
     my $r4 = $db.exec("begin qore_test.get_coll_coll_str(:retval); end;", placeholderOracleCollection("COL_TEST_coll_str"));
-    #print_rslt($id, STR_LST_OUT, $r4);
     print_result($id, "collection OUT string", cmp_result(STR_LST_OUT, $r4, COLL_STRING_OUT), STR_LST_OUT, $r4);
     $db.rollback();
 }
@@ -267,9 +395,175 @@ sub test_object_select() {
 }
 */
 
-sub print_rslt(int id, any input, any output) {
-    printf("\n%d\n", $id);
-    printf("input == %N\n", $input);
-    printf("output == %N\n", $output);
-    printf("done\n");
+sub print_details(int level, string type, any data, *hash support) {
+    switch ($level) {
+        case 0 :
+            printf("%s\n", $type);
+            printf("%s\n", $support.in_str);
+            break;
+        case 1 :
+            printf("%s\n", $type);
+            printf("data : \n%N\n", $data);
+            printf("more :\n");
+            printf("string : \n%s\n", $support.in_str);
+            break;
+        case 2 :
+            printf("%s\n", $type);
+            printf("%y\n", $data);
+        default : #do nothing
+    }
 }
+
+sub print_char(string c, int width) {
+    for(int $i=0; $i<$width; $i++) {
+        printf("%s", $c);
+    }
+}
+
+sub print_row(list row_data) {
+
+    print_char('-', COL_WIDTH);
+    printf(" -----------\n");
+    printf("%s ", $row_data[0]);
+    print_char(' ', COL_WIDTH + OFFSET - $row_data[0].length());
+    printf(" %s\n\n", $row_data[1]);
+
+}
+
+sub print_result(int id, string msg, bool result, any input, any output) {
+
+    if ($result) {
+        $success_count++;
+        print_char('-', COL_WIDTH);
+        printf(" -----------\n");
+        printf("TEST-%d: %s ", $id, $msg);
+        print_char(' ', COL_WIDTH - OFFSET - $msg.length());
+        printf(" PASS\n");
+    } else {
+        print_char('-', COL_WIDTH);
+        printf(" -----------\n");
+        printf("TEST-%d: %s ", $id, $msg);
+        print_char(' ', COL_WIDTH - OFFSET - $msg.length());
+        printf(" FAIL\n");
+        printf("\n");
+        printf("%s\n", $msg);
+        print_details(2, "INPUT", $input);
+        print_details(2, "OUTUT", $output);
+    }
+}
+
+bool sub cmp_result(any $input, any $output, int type) {
+
+    if(!exists $input) {
+        my string $cmp_str = get_cmp_str($type);
+        if(exists $cmp_str) {
+            return $cmp_str == $output;
+        }
+        return $input == $output;
+    }
+    else if($output.type() == "list") {
+        if($input.size() != $output.size()) {
+            sprintf($msg, "[ERROR] Input and output size doen't match : DETAILS input size==[%d] output size==[%d]", $input.size(), $output.size());
+            return Qore::False;
+        }
+        for(my int $i=0; $i<$input.size(); $i++){
+           if($input[$i] != $output[$i]) {
+                printf("%s, %s\n", $input[$i].type(), $output[$i].type());
+                sprintf($msg, "[ERROR] Results doesn't match : DETAILS: input==[%s] output==[%s]\n", $input[$i], $ouput[$i]);
+                return Qore::False;
+           }
+        }
+        return Qore::True;
+    }
+    else if($output.type() == "hash") {
+        return Qore::True;
+    }
+    return $input == $output;
+
+}
+
+sub get_cmp_str(int v_type) {
+
+    switch ($v_type) {
+        case COLL_VARCHAR2_IN   : return "|" + create_cmp_str_1(VARCHAR2_LST_IN, TYPE_STRING);
+        case COLL_NUMBER_IN     : return "|" + create_cmp_str_1(NUM_LST_IN, TYPE_NUMBER);
+        case COLL_CLOB_IN       : return "|" + create_cmp_str_1(CLOB_LST_IN, TYPE_NUMBER);
+        case COLL_DATE_IN       : return "|" + create_cmp_str_1(DATE_LST_IN, TYPE_NUMBER);
+        case COLL_OBJECT_IN     :
+                                    my string $cmp_str = "|";
+                                    for(my int $i=0; $i<3; $i++){
+                                        $cmp_str += ($i+1) + "=" +create_cmp_str_1(OBJ_HASH_MAIN_IN, TYPE_OBJECT);
+                                    }
+                                    return $cmp_str;
+        case COLL_STRING_IN     : return create_cmp_str_1(STR_LST_IN, TYPE_STRING);
+        case COLL_OBJECTS_IN    :
+                                    my string $cmp_str = "\n|";
+                                    for($i=0; $i<2; $i++){
+                                        $cmp_str += ($i+1) + "=" + create_cmp_str_1(OBJ_HASH_MAIN_IN, TYPE_OBJECT);
+                                    }
+                                    $cmp_str += "\n{NULL}\n|";
+                                    for($i=0; $i<3; $i++){
+                                        $cmp_str += ($i+1) + "=" + create_cmp_str_1(OBJ_HASH_MAIN_IN, TYPE_OBJECT);
+                                    }
+                                    return $cmp_str;
+        case COLL_TIMESTAMP_IN  : return "|" + create_cmp_str_1(TIMESTAMP_LST_IN, TYPE_NUMBER);
+        default : return NOTHING;
+    }
+
+}
+
+string sub getKeyValuePair(string key, any val, int v_type) {
+
+    if($v_type == TYPE_STRING) {
+        if(!exists $val) $val = "{NULL}";
+        else if($val == NULL) $val = "{NULL}";
+    }
+
+    return $key + "=" + $val + "|";
+
+}
+
+
+sub create_cmp_str_1(list col, int v_type) {
+
+    my string $ret_str = "";
+
+    if($v_type == TYPE_OBJECT) {
+        $ret_str = $col[0];
+        for(my int $j=1; $j<$col.size(); $j++) {
+            my any $val = $col[$j];
+            $ret_str += "-" + $val;
+        }
+        $ret_str += "|";
+    }
+    else {
+        for(my int $i=0; $i<$col.size(); $i++){
+            if($col[$i].type() == "list"){
+                if($ret_str == "|") $ret_str = "\n";
+                else $ret_str += "\n";
+                for(my int $j=0; $j<$col[$i].size(); $j++){
+                    $ret_str += getKeyValuePair(($j+1) + "", $col[$i][$j], TYPE_STRING);
+                }
+            } else {
+                $ret_str += getKeyValuePair(($i+1) + "", $col[$i], $v_type);
+            }
+        }
+    }
+    return $ret_str;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
