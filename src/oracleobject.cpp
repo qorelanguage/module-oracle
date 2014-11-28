@@ -232,6 +232,11 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
         //}
         bool e;
         const AbstractQoreNode* val = th->getKeyValueExistence(cname, e);
+        if (!e) {
+           QoreString cn(cname);
+           cn.tolwr();
+           val = th->getKeyValueExistence(cn.getBuffer(), e);
+        }
 
         if (!e || is_null(val) || is_nothing(val)) {
 	   if (!OCI_ObjectSetNull2(&d->ocilib, *obj, cname, xsink)) {
