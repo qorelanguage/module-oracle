@@ -20,6 +20,7 @@ version 3.2
   would occur when NTYs were bound in a prepared statement and the statement
   was executed in a new logon session after transparent reconnection
 * fixed bugs binding values to number attributes of NTYs and collections
+* allow NTY keys to be given in lower case
 
 
 ***********

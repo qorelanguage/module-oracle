@@ -366,17 +366,20 @@ sub test_object_insert(int id) {
 	on_success $db.commit();
 	on_error $db.rollback();
 	
-	try {	
-		my $rins = $db.exec("insert into t_object_test values (%v, %v, %v)",
+	try {
+	    # ensure we can insert with lower-case object keys
+	    my hash $h;
+	    map $h.($1.key.lwr()) = $1.value, OBJ_HASH_IN.pairIterator();
+
+	    my $rins = $db.exec("insert into t_object_test values (%v, %v, %v)",
 				1,
-				bindOracleObject("TEST_tab_OBJECT", OBJ_HASH_IN),
+				bindOracleObject("TEST_tab_OBJECT", $h),
 				bindOracleCollection("TEST_tab_coll", (NUM_INT, NUM_INT, NULL, NOTHING, NUM_INT,))
 				);
-		if($rins == 1) 
-			print_result($id, "object direct insert", Qore::True, "object insert to db succesfull", $rins);
-		else
-			print_result($id, "object direct insert", Qore::False, "object insert to db unsuccesfull", $rins);
-
+	    if($rins == 1) 
+		print_result($id, "object direct insert", Qore::True, "object insert to db succesfull", $rins);
+	    else
+		print_result($id, "object direct insert", Qore::False, "object insert to db unsuccesfull", $rins);
 	} catch ($ex) {
 			print_result($id, "object direct insert", Qore::False, "object insert to db unsuccesfull", $ex);
 	}
