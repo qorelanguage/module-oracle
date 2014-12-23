@@ -195,6 +195,12 @@ boolean OCI_API OCI_CollAssign(OCI_Library *pOCILib, OCI_Coll *coll, OCI_Coll *c
     OCI_CHECK_PTR(pOCILib, OCI_IPC_COLLECTION, coll,     FALSE);
     OCI_CHECK_PTR(pOCILib, OCI_IPC_COLLECTION, coll_src, FALSE);
 
+    if (coll->typinf->cols[0].icode != coll_src->typinf->cols[0].icode) {
+        xsink->raiseException("ORACLE-COLLECTION-ERROR", "Cannot assign collection of type '%s' into '%s'", coll->typinf->cols[0].name, coll_src->typinf->cols[0].name);
+        return res;
+    }
+
+
     OCI_CHECK_COMPATQ(pOCILib, coll->con,
 		      coll->typinf->cols[0].icode == coll_src->typinf->cols[0].icode,
 		      FALSE, xsink);

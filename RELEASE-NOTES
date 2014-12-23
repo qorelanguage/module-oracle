@@ -1,3 +1,7 @@
+
+* proper exception instead of assertion is raised when there are multiple
+  objects (different types) added to a collection
+
 ***********
 version 3.2
 ***********
