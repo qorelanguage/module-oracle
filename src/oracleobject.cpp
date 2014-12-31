@@ -29,7 +29,14 @@
 
 void ocilib_err_handler(OCI_Error *err, ExceptionSink* xsink) {
    if (xsink && !err->warning) {
-      QoreStringNode* desc = new QoreStringNodeMaker("ORA-%05d: %s", OCI_ErrorGetOCICode(err), OCI_ErrorGetString(err));
+      QoreStringNode* desc = new QoreStringNode();
+      int ocicode = OCI_ErrorGetOCICode(err);
+      if (ocicode)
+         desc->sprintf("ORA-%05d: ", ocicode);
+      int ocilibcode = OCI_ErrorGetInternalCode2(err);
+      if (ocilibcode)
+         desc->sprintf("ocilib error %d: ", ocilibcode);
+      desc->concat(OCI_ErrorGetString(err));
       desc->trim_trailing();
       xsink->raiseException("ORACLE-OCI-ERROR", desc);
    }
@@ -37,9 +44,11 @@ void ocilib_err_handler(OCI_Error *err, ExceptionSink* xsink) {
       // TODO/FIXME: xsink handling here.
       printf("internal OCILIB error:\n"
              "  code  : ORA-%05i\n"
+             "  icode : %d\n"
              "  msg   : %s\n",
              //"  sql   : %s\n",
              OCI_ErrorGetOCICode(err), 
+             OCI_ErrorGetInternalCode2(err),
              OCI_ErrorGetString(err)
              //OCI_GetSql(OCI_ErrorGetStatement(err))
              //"<not available>"

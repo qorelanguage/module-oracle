@@ -623,8 +623,6 @@ boolean OCI_API OCI_ObjectAssign2(OCI_Library *pOCILib, OCI_Object *obj, OCI_Obj
         return res;
     }
 
-    OCI_CHECK_COMPAT(pOCILib, obj->con, obj->typinf->tdo == obj_src->typinf->tdo, FALSE);
-
     OCI_CALL2Q
     (
         pOCILib, res, obj->con,

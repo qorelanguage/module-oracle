@@ -1,7 +1,4 @@
 
-* proper exception instead of assertion is raised when there are multiple
-  objects (different types) added to a collection
-
 ***********
 version 3.2
 ***********
@@ -25,6 +22,9 @@ version 3.2
   was executed in a new logon session after transparent reconnection
 * fixed bugs binding values to number attributes of NTYs and collections
 * allow NTY keys to be given in lower case
+* a proper exception is raised (instead of an assertion in debug mode or a
+  crash) when there are multiple objects of different incompatible types added
+  to a collection
 
 
 ***********
