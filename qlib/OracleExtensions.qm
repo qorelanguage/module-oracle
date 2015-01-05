@@ -1090,7 +1090,7 @@ public class OracleDatasourcePool inherits OracleExtensions::OracleDatasourceBas
     }
 
     any methodGate(string meth) {
-        return callObjectMethodArgs(m_ds, meth, argv);
+        return call_object_method_args(m_ds, meth, argv);
     }
 
 } # class OracleDatasourcePool
@@ -1145,7 +1145,7 @@ public class OracleDatasource inherits OracleExtensions::OracleDatasourceBase {
     }
 
     any methodGate(string meth) {
-        return callObjectMethodArgs(m_ds, meth, argv);
+        return call_object_method_args(m_ds, meth, argv);
     }
 
 } # class OracleDatasource
@@ -1308,15 +1308,15 @@ any sub stmtTest(object o) {
 }
 
 any sub test(object o, string m) {
-    any ret = callObjectMethodArgs(o, m, argv);
+    any ret = call_object_method_args(o, m, argv);
     printf("%s::%s(%n) - %N\n", o.className(), m, argv, ret);
     return ret;
 }
 
 sub testData(object o1, object o2, string m) {
     #printf("test: %s\n", m);
-    any d1 = callObjectMethodArgs(o1, m, argv);
-    any d2 = callObjectMethodArgs(o2, m, argv);
+    any d1 = call_object_method_args(o1, m, argv);
+    any d2 = call_object_method_args(o2, m, argv);
     
     if (d1 != d2)
         throw "TEST-DATA-ERROR", sprintf("call: %s; data mismatch: %n \n\n%n", m, d1, d2);
