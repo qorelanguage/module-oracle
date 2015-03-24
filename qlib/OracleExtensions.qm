@@ -35,6 +35,10 @@ module OracleExtensions {
 }
 
 /*  Version History
+    * 2015-03-24 v1.2: Petr Vanek <petr.vanek@qoretechnologies.com>
+      + small refactoring to allow using base classes with Qore::SQL::datasource and Qore::SQL::DatasourcePool
+      + abstract OracleInstrumentationBase::setAppInfoCallback(*string oraclient, *string oramodule, *string oraaction);
+      + abstract bool OracleInstrumentationBase::currentThreadInTransaction();
     * 2014-01-24 v1.1: Petr Vanek <petr.vanek@qoretechnologies.com>
       + OracleSQLstatement implemented
       + documentation fixes
@@ -254,7 +258,6 @@ public class OracleInstrumentationBase
         userInfo = NOTHING;
     }
     
-    object privateDS() { return m_ds; }
     *code autoCode() { return autoCode; }
     
     #! Obtain info about transaction capturing and try to get available Application Info
@@ -279,7 +282,7 @@ public class OracleInstrumentationBase
         # ensure there is no transaction at the beginning to be safe
         # to ROLLBACK auditing changes
         bool doRollback = False;
-        if (checkTransaction && !m_ds.currentThreadInTransaction()) {
+        if (checkTransaction && !currentThreadInTransaction()) {
             doRollback = True;
         }
 
@@ -298,6 +301,17 @@ public class OracleInstrumentationBase
 
         return doRollback;
     }
+
+    #! A method automatically called from setAppInfo() to allow custom implementations.
+    /** setAppInfoCallback() should be reimplemented in any of inherited
+        class to allow set app info without m_ds or similar workarounds.
+        Custom implementation can use advantages of direct Datasource/Pool
+        inheritance.
+     */
+    abstract setAppInfoCallback(*string oraclient, *string oramodule, *string oraaction);
+
+    #! A backend provided currentThreadInTransaction() for wrappeed or inheritted Datasource/Pool
+    abstract bool currentThreadInTransaction();
 
     #! Set the explicit @ref instrumentation_info. The transaction lock is taken.
     /**
@@ -319,10 +333,7 @@ public class OracleInstrumentationBase
         }
 
         try {
-            m_ds.exec("begin
-                    dbms_application_info.set_client_info(%v);
-                    dbms_application_info.set_module(%v, %v);
-                end;", audit.client, audit.module, audit.action);
+            setAppInfoCallback(audit.client, audit.module, audit.action);
         }
         catch (ex) {
             # We don't want to throw a real error here because it's just a helper
@@ -371,6 +382,19 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     *string getHostName() { return m_ds.getHostName(); }
     #! AbstractDatasource implementation for Datasource and DatasourcePool
     bool inTransaction() { return m_ds.inTransaction(); }
+
+    #! Set app info by wrapped Datasource/Pool object    
+    setAppInfoCallback(*string oraclient, *string oramodule, *string oraaction) {
+        m_ds.exec("begin
+                dbms_application_info.set_client_info(%v);
+                dbms_application_info.set_module(%v, %v);
+            end;", oraclient, oramodule, oraaction);
+    }
+
+    #! A backend provided m_ds.currentThreadInTransaction() for wrappeed Datasource/Pool
+    bool currentThreadInTransaction() {
+        return m_ds.currentThreadInTransaction();
+    }
 
     #! Start new transaction with Aplication info set as strings
     /**
@@ -1092,6 +1116,8 @@ public class OracleDatasourcePool inherits OracleExtensions::OracleDatasourceBas
     any methodGate(string meth) {
         return call_object_method_args(m_ds, meth, argv);
     }
+    
+    DatasourcePool getDS() { return m_ds; }
 
 } # class OracleDatasourcePool
 
@@ -1246,6 +1272,19 @@ public class OracleSQLStatement inherits Qore::SQL::SQLStatement, OracleExtensio
     {
         m_ds = ds.privateDS();
     }
+
+    #! Set app info by wrapped Datasource/Pool object
+    setAppInfoCallback(*string oraclient, *string oramodule, *string oraaction) {
+        m_ds.exec("begin
+                dbms_application_info.set_client_info(%v);
+                dbms_application_info.set_module(%v, %v);
+            end;", oraclient, oramodule, oraaction);
+    }
+
+    #! A backend provided m_ds.currentThreadInTransaction() for wrappeed Datasource/Pool
+    bool currentThreadInTransaction() {
+        return m_ds.currentThreadInTransaction();
+    }
     
     #! SQLStatement::exec with @ref instrumentation_info_auto
     nothing exec() {
@@ -1293,7 +1332,7 @@ our string connstr = "oracle:pvanek_omq/omq@xbox";
 any sub stmtTest(object o) {
     OracleExtensions::OracleSQLStatement stmt(o);
     
-    stmt.prepare("select workflow_instanceid from workflow_instance where workflowid = %v and rownum < 4");
+    stmt.prepare("select workflow_instanceid from workflow_instance where workflowid = %v and rownum < 4 order by rowid");
     stmt.bind(201);
 
     while (stmt.next()) {
@@ -1319,7 +1358,7 @@ sub testData(object o1, object o2, string m) {
     any d2 = call_object_method_args(o2, m, argv);
     
     if (d1 != d2)
-        throw "TEST-DATA-ERROR", sprintf("call: %s; data mismatch: %n \n\n%n", m, d1, d2);
+        throw "TEST-DATA-ERROR", sprintf("call: %s; data mismatch: %N \n\n%N", m, d1, d2);
 }
 
 
@@ -1451,7 +1490,7 @@ sub testDataDiffs() {
     string sql = "select * from all_tables where owner = %v and table_name = %v order by table_name";
 
     testData(d1, d2, "exec", sql, d1.getUserName().upr(), "WORKFLOWS");
-    testData(d1, d2, "execRaw", "select * from user_tables", d1.getUserName().upr(), "WORKFLOWS");
+    testData(d1, d2, "execRaw", "select * from user_tables order by table_name", d1.getUserName().upr(), "WORKFLOWS");
     testData(d1, d2, "select", sql, d1.getUserName().upr(), "WORKFLOWS");
     testData(d1, d2, "selectRow", sql, d1.getUserName().upr(), "WORKFLOWS");
     testData(d1, d2, "selectRows", sql, d1.getUserName().upr(), "WORKFLOWS");
