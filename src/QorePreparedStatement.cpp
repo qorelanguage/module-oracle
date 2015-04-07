@@ -503,6 +503,8 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
             return;
 
          size = str->strlen();
+         if (size < 100)
+            size = 100;
          buf.ptr = malloc(sizeof(char) * (size + 1));
 	 strcpy((char *)buf.ptr, str->getBuffer());
       }
@@ -512,6 +514,7 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
 	 ((char *)buf.ptr)[0] = '\0';
       }
 
+      // we actually bind as a string
       stmt.bindByPos(bndp, pos, buf.ptr, size, SQLT_STR, xsink, &ind);
    }
    else if (data.isType("hash")) {
