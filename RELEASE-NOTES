@@ -25,6 +25,7 @@ version 3.2
 * a proper exception is raised (instead of an assertion in debug mode or a
   crash) when there are multiple objects of different incompatible types added
   to a collection
+* implementing binding number types by placeholder (including in/out vars)
 
 
 ***********

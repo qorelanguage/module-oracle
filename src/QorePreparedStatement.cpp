@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2006 - 2014 Qore Technologies, sro
+  Copyright (C) 2006 - 2015 Qore Technologies, sro
   
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -491,6 +491,28 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
       dtype = SQLT_FLT;
       stmt.bindByPos(bndp, pos, &buf.f8, sizeof(double), SQLT_FLT, xsink, &ind);
 #endif
+   }
+   else if (data.isType("number")) {
+      dtype = SQLT_NUM;
+      buf.ptr = 0;
+
+      size_t size;
+      if (value) {
+	 QoreStringValueHelper str(value, stmt.getEncoding(), xsink);
+         if (*xsink)
+            return;
+
+         size = str->strlen();
+         buf.ptr = malloc(sizeof(char) * (size + 1));
+	 strcpy((char *)buf.ptr, str->getBuffer());
+      }
+      else {
+         size = 100;
+         buf.ptr = malloc(sizeof(char) * (size + 1));
+	 ((char *)buf.ptr)[0] = '\0';
+      }
+
+      stmt.bindByPos(bndp, pos, buf.ptr, size, SQLT_STR, xsink, &ind);
    }
    else if (data.isType("hash")) {
       dtype = SQLT_RSET;

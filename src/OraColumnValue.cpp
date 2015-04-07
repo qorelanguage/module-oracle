@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2013 David Nichols
+  Copyright (C) 2003 - 2015 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
 
 #include "oracle.h"
 
-static DateTimeNode *convert_date_time(unsigned char *str) {
+static DateTimeNode* convert_date_time(unsigned char *str) {
    int year;
    if ((str[0] < 100) || (str[1] < 100))
       year = 9999; 
@@ -121,7 +121,7 @@ void OraColumnValue::del(ExceptionSink *xsink) {
 
 #define ORA_ROWID_LEN 25
 
-AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal, bool destructive) {
+AbstractQoreNode* OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal, bool destructive) {
    // SQL NULL returned
    if (ind == -1)
       return null();
@@ -266,7 +266,7 @@ QoreStringNode* OraColumnValue::doReturnString(bool destructive) {
    if (!destructive)
       return new QoreStringNode((const char*)buf.ptr, stmt.getEncoding());
    int len = strlen((char*)buf.ptr);
-   QoreStringNode *str = new QoreStringNode((char*)buf.ptr, len, len + 1, stmt.getEncoding());
+   QoreStringNode* str = new QoreStringNode((char*)buf.ptr, len, len + 1, stmt.getEncoding());
    //printd(5, "OraColumnValue::doReturnString() this: %p buf.ptr: %p\n", this, buf.ptr);
    buf.ptr = 0;
    return str;
