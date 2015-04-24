@@ -302,6 +302,8 @@
     Keys which are not found in the keys-attribute mappings are silently
     ignored. If there is a missing key for any attribute, an exception is thrown.
 
+    @note Strings/integers are converted to date in collections and objects when required - collection of datetimes, object datetime attributes, etc. So eg. 1970-01-01 is the value of "wrong" strings.
+
     Functions can be nested so there can be for example list (collection)
     of objects and vice versa:
 
