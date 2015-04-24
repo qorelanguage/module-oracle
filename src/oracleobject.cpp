@@ -1084,8 +1084,8 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	 case SQLT_INTERVAL_DS:
 #endif
 	 {
-	    // date
-	    const DateTimeNode * dn = reinterpret_cast<const DateTimeNode*>(val);
+            // we have to bind date node here
+            DateTimeValueHelper dn(val);
 	    if (col->type == OCI_CDT_TIMESTAMP) {
                OCI_Timestamp* dt = OCI_TimestampCreate2(&d->ocilib, d->ocilib_cn, col->subtype, xsink);
                if (!dt) {
