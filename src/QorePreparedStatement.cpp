@@ -55,12 +55,12 @@ void OraBindNode::reset(ExceptionSink* xsink, bool free_name) {
 }
 
 int OraBindNode::setupDateDescriptor(ExceptionSink* xsink) {
-   QoreOracleConnection *conn = (QoreOracleConnection *)stmt.getData();
+   QoreOracleConnection* conn = (QoreOracleConnection*)stmt.getData();
 
    dtype = QORE_SQLT_TIMESTAMP;
    buf.odt = NULL;
     
-   if (conn->descriptorAlloc((dvoid **)&buf.odt, QORE_DTYPE_TIMESTAMP, "OraBindNode::setupDateDecriptor()", xsink))
+   if (conn->descriptorAlloc((dvoid**)&buf.odt, QORE_DTYPE_TIMESTAMP, "OraBindNode::setupDateDecriptor()", xsink))
       return -1;
    return 0;
 }
@@ -132,7 +132,7 @@ void OraBindNode::bind(int pos, bool& is_nty, ExceptionSink* xsink) {
 }
 
 void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool& is_nty, bool in_only) {
-   QoreOracleConnection *conn = (QoreOracleConnection *)stmt.getData();
+   QoreOracleConnection* conn = (QoreOracleConnection*)stmt.getData();
 
    ind = 0;
 
@@ -147,7 +147,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
    qore_type_t ntype = v->getType();
    
    if (ntype == NT_STRING) {
-      const QoreStringNode *bstr = reinterpret_cast<const QoreStringNode*>(v);
+      const QoreStringNode* bstr = reinterpret_cast<const QoreStringNode*>(v);
 
       qore_size_t len;
 
@@ -180,7 +180,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
          dtype = SQLT_CLOB;
 
 	 // allocate LOB descriptor
-	 if (conn->descriptorAlloc((dvoid **)&strlob, OCI_DTYPE_LOB, "OraBindNode::bindValue() alloc LOB descriptor", xsink))
+	 if (conn->descriptorAlloc((dvoid**)&strlob, OCI_DTYPE_LOB, "OraBindNode::bindValue() alloc LOB descriptor", xsink))
 	    return;
 
 	 // create temporary CLOB
@@ -208,7 +208,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
    }
 
    if (ntype == NT_DATE) {
-      const DateTimeNode *d = reinterpret_cast<const DateTimeNode*>(v);
+      const DateTimeNode* d = reinterpret_cast<const DateTimeNode*>(v);
 
       if (setupDateDescriptor(xsink))
 	 return;
@@ -222,7 +222,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
 
    if (ntype == NT_BINARY) {
       dtype = SQLT_BIN;
-      const BinaryNode *b = reinterpret_cast<const BinaryNode*>(v);
+      const BinaryNode* b = reinterpret_cast<const BinaryNode*>(v);
       // bind a copy of the value in case of in/out variables
       SimpleRefHolder<BinaryNode> tb(b->copy());
       qore_size_t len = tb->size();
@@ -246,7 +246,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
    }
 
    if (ntype == NT_INT) {
-      const QoreBigIntNode *b = reinterpret_cast<const QoreBigIntNode*>(v);
+      const QoreBigIntNode* b = reinterpret_cast<const QoreBigIntNode*>(v);
       if (b->val <= MAXINT32 && b->val >= -MAXINT32) {
          dtype = SQLT_INT;
          buf.i8 = (int64)(int)b->val;
@@ -261,7 +261,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
          data.save(tstr);
 
 	 //printd(5, "binding number '%s'\n", buf.ptr);
-         stmt.bindByPos(bndp, pos, (char *)tstr->getBuffer(), tstr->strlen() + 1, SQLT_STR, xsink, pIndicator);
+         stmt.bindByPos(bndp, pos, (char* )tstr->getBuffer(), tstr->strlen() + 1, SQLT_STR, xsink, pIndicator);
       }
       return;
    }
@@ -272,12 +272,12 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
       // bind as a string value
       dtype = SQLT_STR;
 
-      QoreString *tstr = new QoreString(stmt.getEncoding());
+      QoreString* tstr = new QoreString(stmt.getEncoding());
       n->getStringRepresentation(*tstr);
       data.save(tstr);
 
       //printd(5, "binding number '%s'\n", buf.ptr);
-      stmt.bindByPos(bndp, pos, (char *)tstr->getBuffer(), tstr->strlen() + 1, SQLT_STR, xsink, pIndicator);
+      stmt.bindByPos(bndp, pos, (char* )tstr->getBuffer(), tstr->strlen() + 1, SQLT_STR, xsink, pIndicator);
       return;
    }
 #endif
@@ -295,14 +295,14 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
 
    if (ntype == NT_HASH) {
       //printd(5, "hash structure in the Oracle IN attribute\n");
-      const QoreHashNode * h = reinterpret_cast<const QoreHashNode*>(v);
+      const QoreHashNode*  h = reinterpret_cast<const QoreHashNode*>(v);
       if (!h->existsKey("type") || !h->existsKey("^oratype^") || !h->existsKey("^values^")) {
          xsink->raiseException("ORACLE-BIND-VALUE-ERROR",
                                "Plain hash/list cannot be bound as an Oracle Object/Collection; use bindOracleObject()/bindOracleCollection()");
          return;
       }
       
-      const QoreStringNode * t = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("type"));
+      const QoreStringNode*  t = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("type"));
       if (t->compare(ORACLE_OBJECT) == 0) {
          //printd(5, "binding hash as an oracle object\n");
          is_nty = true;
@@ -352,7 +352,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
 }
 
 void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
-   QoreOracleConnection *conn = (QoreOracleConnection *)stmt.getData();
+   QoreOracleConnection* conn = (QoreOracleConnection*)stmt.getData();
 
    //printd(5, "OraBindNode::bindPlaceholder() this: %p, conn: %p, pos: %d type: %s, size: %d buf.ptr: %p\n", this, conn, pos, data.ph_type, data.ph_maxsize, buf.ptr);
 
@@ -378,11 +378,11 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
          if (*xsink)
             return;
          
-	 strncpy((char *)buf.ptr, str->getBuffer(), data.ph_maxsize);
-	 ((char *)buf.ptr)[data.ph_maxsize] = '\0';	 
+	 strncpy((char* )buf.ptr, str->getBuffer(), data.ph_maxsize);
+	 ((char* )buf.ptr)[data.ph_maxsize] = '\0';	 
       }
       else
-	 ((char *)buf.ptr)[0] = '\0';
+	 ((char* )buf.ptr)[0] = '\0';
 
       stmt.bindByPos(bndp, pos, buf.ptr, data.ph_maxsize + 1, SQLT_STR, xsink, &ind);
    }
@@ -408,7 +408,7 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
 
       if (value) {
 	 if (value->getType() == NT_BINARY) {
-	    const BinaryNode *bin = reinterpret_cast<const BinaryNode*>(value);
+	    const BinaryNode* bin = reinterpret_cast<const BinaryNode*>(value);
 	    // if too big, raise an exception (not likely to happen)
 	    if (bin->size() > 0x7fffffff) {
 	       xsink->raiseException("BIND-ERROR", "value passed for binding is %lld bytes long, which is too big to bind as a long binary value, maximum size is %d bytes", bin->size(), 0x7fffffff);
@@ -506,12 +506,12 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
          if (size < 100)
             size = 100;
          buf.ptr = malloc(sizeof(char) * (size + 1));
-	 strcpy((char *)buf.ptr, str->getBuffer());
+	 strcpy((char* )buf.ptr, str->getBuffer());
       }
       else {
          size = 100;
          buf.ptr = malloc(sizeof(char) * (size + 1));
-	 ((char *)buf.ptr)[0] = '\0';
+	 ((char* )buf.ptr)[0] = '\0';
       }
 
       // we actually bind as a string
@@ -533,11 +533,11 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
       dtype = SQLT_NTY;
 
 #if 0
-       const QoreHashNode * h = reinterpret_cast<const QoreHashNode*>(value);
+       const QoreHashNode*  h = reinterpret_cast<const QoreHashNode*>(value);
        if (h->existsKey("^values^"))
            buf.oraObj = objBindQore(conn, h, xsink); // IN/OUT
        else {
-           const QoreStringNode * str = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("value"));
+           const QoreStringNode*  str = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("value"));
            buf.oraObj = objPlaceholderQore(conn, str->getBuffer(), xsink); // IN
        }
 #endif
@@ -579,15 +579,6 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
       subdtype = SQLT_NTY_COLLECTION;
       dtype = SQLT_NTY;
 
-#if 0
-       const QoreHashNode * h = reinterpret_cast<const QoreHashNode*>(value);
-       if (h->existsKey("^values^"))
-           buf.oraColl = collBindQore(conn, h, xsink); // IN/OUT
-       else {
-           const QoreStringNode * str = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("value"));
-           buf.oraColl = collPlaceholderQore(conn, str->getBuffer(), xsink); // IN
-       }
-#endif
        // It seems the value is string instead of hash for IN only NTY since the IN/OUT implementation
        // Qorus #802 Oracle NTY binding by placeholder ends with BIND-EXCEPTION: type 'OracleCollection' is not supported for SQL binding by value and placeholder (eg IN OUT)
        switch (get_node_type(value)) {
@@ -657,8 +648,8 @@ void OraBindNode::resetValue(ExceptionSink* xsink) {
    dtype = 0;
 }
 
-AbstractQoreNode *OraBindNode::getValue(bool horizontal, ExceptionSink* xsink) {
-    //printd(5, "AbstractQoreNode *OraBindNode::getValue %d\n", indicator);
+AbstractQoreNode* OraBindNode::getValue(bool horizontal, ExceptionSink* xsink) {
+    //printd(5, "AbstractQoreNode* OraBindNode::getValue %d\n", indicator);
     if (indicator != 0)
         return null();
 
@@ -705,7 +696,7 @@ int QorePreparedStatement::define(ExceptionSink* xsink) {
    return *xsink ? -1 : 0;
 }
 
-int QorePreparedStatement::prepare(const QoreString &sql, const QoreListNode *args, bool parse, ExceptionSink* xsink) {
+int QorePreparedStatement::prepare(const QoreString& sql, const QoreListNode* args, bool parse, ExceptionSink* xsink) {
    // create copy of string and convert encoding if necessary
    str = sql.convertEncoding(getEncoding(), xsink);
    if (*xsink)
@@ -750,12 +741,12 @@ int QorePreparedStatement::bindOracle(ExceptionSink* xsink) {
    return 0;
 }
 
-int QorePreparedStatement::bind(const QoreListNode *args, ExceptionSink* xsink) {
+int QorePreparedStatement::bind(const QoreListNode* args, ExceptionSink* xsink) {
    for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
-      OraBindNode *w = node_list[i];
+      OraBindNode* w = node_list[i];
 
       // get bind argument
-      const AbstractQoreNode *v = args ? args->retrieve_entry(i) : 0;
+      const AbstractQoreNode* v = args ? args->retrieve_entry(i) : 0;
 
       if (w->set(v, xsink))
 	 return -1;
@@ -767,15 +758,15 @@ int QorePreparedStatement::bind(const QoreListNode *args, ExceptionSink* xsink) 
    return 0;
 }
 
-int QorePreparedStatement::bindPlaceholders(const QoreListNode *args, ExceptionSink* xsink) {
+int QorePreparedStatement::bindPlaceholders(const QoreListNode* args, ExceptionSink* xsink) {
    unsigned arg_offset = 0;
    for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
-      OraBindNode *w = node_list[i];
+      OraBindNode* w = node_list[i];
       if (w->isValue())
 	 continue;
 
       // get bind argument
-      const AbstractQoreNode *v = args ? args->retrieve_entry(arg_offset++) : 0;
+      const AbstractQoreNode* v = args ? args->retrieve_entry(arg_offset++) : 0;
 
       if (w->set(v, xsink))
 	 return -1;
@@ -787,15 +778,15 @@ int QorePreparedStatement::bindPlaceholders(const QoreListNode *args, ExceptionS
    return 0;
 }
 
-int QorePreparedStatement::bindValues(const QoreListNode *args, ExceptionSink* xsink) {
+int QorePreparedStatement::bindValues(const QoreListNode* args, ExceptionSink* xsink) {
    unsigned arg_offset = 0;
    for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
-      OraBindNode *w = node_list[i];
+      OraBindNode* w = node_list[i];
       if (!w->isValue())
 	 continue;
 
       // get bind argument
-     const AbstractQoreNode *v = args ? args->retrieve_entry(arg_offset++) : 0;
+     const AbstractQoreNode* v = args ? args->retrieve_entry(arg_offset++) : 0;
 
      if (w->set(v, xsink))
 	return -1;
@@ -810,12 +801,12 @@ int QorePreparedStatement::bindValues(const QoreListNode *args, ExceptionSink* x
 #define QODC_LINE 1
 #define QODC_BLOCK 2
 
-void QorePreparedStatement::parseQuery(const QoreListNode *args, ExceptionSink* xsink) {
+void QorePreparedStatement::parseQuery(const QoreListNode* args, ExceptionSink* xsink) {
    //printd(5, "parseQuery() args=%p str=%s\n", args, str->getBuffer());
  
    char quote = 0;
 
-   const char *p = str->getBuffer();
+   const char* p = str->getBuffer();
    unsigned index = 0;
    QoreString tmp(getEncoding());
 
@@ -856,7 +847,7 @@ void QorePreparedStatement::parseQuery(const QoreListNode *args, ExceptionSink* 
          }
 
          if ((*p) == '%' && (p == str->getBuffer() || !isalnum(*(p-1)))) { // found value marker
-            const AbstractQoreNode *v = args ? args->retrieve_entry(index++) : NULL;
+            const AbstractQoreNode* v = args ? args->retrieve_entry(index++) : NULL;
 
             int offset = p - str->getBuffer();
 
@@ -909,9 +900,9 @@ void QorePreparedStatement::parseQuery(const QoreListNode *args, ExceptionSink* 
                tstr.concat(*(p++));
 
             // add default placeholder
-            OraBindNode *n = add(tstr.giveBuffer(), -1);
+            OraBindNode* n = add(tstr.giveBuffer(), -1);
 
-            const AbstractQoreNode *v = args ? args->retrieve_entry(index++) : NULL;
+            const AbstractQoreNode* v = args ? args->retrieve_entry(index++) : NULL;
 
             if (n->set(v, xsink))
                break;
@@ -938,7 +929,7 @@ void QorePreparedStatement::parseQuery(const QoreListNode *args, ExceptionSink* 
    }
 }
 
-QoreHashNode *QorePreparedStatement::getOutputHash(bool rows, ExceptionSink* xsink) {
+QoreHashNode* QorePreparedStatement::getOutputHash(bool rows, ExceptionSink* xsink) {
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
 
    for (node_list_t::iterator i = node_list.begin(), e = node_list.end(); i != e; ++i) {
@@ -951,7 +942,7 @@ QoreHashNode *QorePreparedStatement::getOutputHash(bool rows, ExceptionSink* xsi
 }
 
 #ifdef _QORE_HAS_DBI_SELECT_ROW
-QoreHashNode *QorePreparedStatement::selectRow(ExceptionSink* xsink) {
+QoreHashNode* QorePreparedStatement::selectRow(ExceptionSink* xsink) {
    if (!is_select) {
       xsink->raiseException("ORACLE-SELECT-ROW-ERROR", "the SQL passed to the selectRow() method is not a select statement");
       return 0;
@@ -964,7 +955,7 @@ QoreHashNode *QorePreparedStatement::selectRow(ExceptionSink* xsink) {
 }
 #endif
 
-AbstractQoreNode *QorePreparedStatement::execWithPrologue(bool rows, ExceptionSink* xsink) {
+AbstractQoreNode* QorePreparedStatement::execWithPrologue(bool rows, ExceptionSink* xsink) {
    if (exec(xsink))
       return 0;
 
@@ -1000,23 +991,23 @@ int QorePreparedStatement::affectedRows(ExceptionSink* xsink) {
    return rc;
 }
 
-QoreHashNode *QorePreparedStatement::fetchRow(ExceptionSink* xsink) {
+QoreHashNode* QorePreparedStatement::fetchRow(ExceptionSink* xsink) {
    assert(columns);
    return QoreOracleStatement::fetchRow(*columns, xsink);
 }
 
-QoreListNode *QorePreparedStatement::fetchRows(int rows, ExceptionSink* xsink) {
+QoreListNode* QorePreparedStatement::fetchRows(int rows, ExceptionSink* xsink) {
    assert(columns);
    return QoreOracleStatement::fetchRows(*columns, rows, xsink);
 }
 
-QoreHashNode *QorePreparedStatement::fetchColumns(int rows, ExceptionSink* xsink) {
+QoreHashNode* QorePreparedStatement::fetchColumns(int rows, ExceptionSink* xsink) {
    assert(columns);
    return QoreOracleStatement::fetchColumns(*columns, rows, xsink);
 }
 
 #ifdef _QORE_HAS_DBI_DESCRIBE
-QoreHashNode *QorePreparedStatement::describe(ExceptionSink *xsink) {
+QoreHashNode* QorePreparedStatement::describe(ExceptionSink* xsink) {
    assert(columns);
    return QoreOracleStatement::describe(*columns, xsink);
 }

@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2014 David Nichols
+  Copyright (C) 2003 - 2015 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -35,8 +35,8 @@ class OraResultSet;
 
 class QoreOracleStatement {
 protected:
-   Datasource *ds;
-   OCIStmt *stmthp;
+   Datasource* ds;
+   OCIStmt* stmthp;
    bool is_select,
       fetch_done;
 
@@ -46,7 +46,7 @@ protected:
    }
 
 public:
-   DLLLOCAL QoreOracleStatement(Datasource *n_ds, OCIStmt *n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), is_select(false), fetch_done(false) {
+   DLLLOCAL QoreOracleStatement(Datasource* n_ds, OCIStmt* n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), is_select(false), fetch_done(false) {
    }
 
    DLLLOCAL virtual ~QoreOracleStatement() {
@@ -68,7 +68,7 @@ public:
       return 0;
    }
 
-   DLLLOCAL void reset(ExceptionSink *xsink) {
+   DLLLOCAL void reset(ExceptionSink* xsink) {
       // free OCI handle
       if (stmthp) {
          del();
@@ -79,12 +79,12 @@ public:
       fetch_done = false;
    }
 
-   DLLLOCAL int allocate(ExceptionSink *xsink) {
+   DLLLOCAL int allocate(ExceptionSink* xsink) {
       assert(!stmthp);
 
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
       
-      if (conn.handleAlloc((dvoid **)&stmthp, OCI_HTYPE_STMT, "QoreOracleStatement::allocate()", xsink)) {
+      if (conn.handleAlloc((dvoid**)&stmthp, OCI_HTYPE_STMT, "QoreOracleStatement::allocate()", xsink)) {
          stmthp = 0;
          return -1;
       }
@@ -93,33 +93,33 @@ public:
    }
 
    // returns 0=OK, -1=ERROR
-   DLLLOCAL int paramGet(OCIParam *&parmp, unsigned pos) {
+   DLLLOCAL int paramGet(OCIParam*& parmp, unsigned pos) {
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
       return OCIParamGet(stmthp, OCI_HTYPE_STMT, conn.errhp, (void**)&parmp, pos) == OCI_SUCCESS ? 0 : -1;
    }
 
-   DLLLOCAL int attrGet(OCIParam *parmp, void *attributep, unsigned &sizep, unsigned attrtype, ExceptionSink *xsink) {
+   DLLLOCAL int attrGet(OCIParam* parmp, void* attributep, unsigned &sizep, unsigned attrtype, ExceptionSink* xsink) {
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
       return conn.checkerr(OCIAttrGet(parmp, OCI_DTYPE_PARAM, attributep, &sizep, attrtype, conn.errhp), "QoreOracleStatement::attrGet():param1", xsink);
    }
 
-   DLLLOCAL int attrGet(OCIParam *parmp, void *attributep, unsigned attrtype, ExceptionSink *xsink) {
+   DLLLOCAL int attrGet(OCIParam* parmp, void* attributep, unsigned attrtype, ExceptionSink* xsink) {
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
       return conn.checkerr(OCIAttrGet(parmp, OCI_DTYPE_PARAM, attributep, 0, attrtype, conn.errhp), "QoreOracleStatement::attrGet():param2", xsink);
    }
 
-   DLLLOCAL int attrGet(void *attributep, unsigned &sizep, unsigned attrtype, ExceptionSink *xsink) {
+   DLLLOCAL int attrGet(void* attributep, unsigned &sizep, unsigned attrtype, ExceptionSink* xsink) {
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
       return conn.checkerr(OCIAttrGet(stmthp, OCI_HTYPE_STMT, attributep, &sizep, attrtype, conn.errhp), "QoreOracleStatement::attrGet():stmt1", xsink);
    }
 
-   DLLLOCAL int attrGet(void *attributep, unsigned attrtype, ExceptionSink *xsink) {
+   DLLLOCAL int attrGet(void* attributep, unsigned attrtype, ExceptionSink* xsink) {
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
       return conn.checkerr(OCIAttrGet(stmthp, OCI_HTYPE_STMT, attributep, 0, attrtype, conn.errhp), "QoreOracleStatement::attrGet():stmt2", xsink);
    }
 
    // returns 0=OK, -1=ERROR (exception), 1=no data
-   DLLLOCAL int fetch(ExceptionSink *xsink, unsigned rows = 1) {
+   DLLLOCAL int fetch(ExceptionSink* xsink, unsigned rows = 1) {
       int status;
 
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
@@ -139,21 +139,21 @@ public:
       return 0;
    }
 
-   DLLLOCAL int defineDynamic(OCIDefine *defp, void *ctx, OCICallbackDefine cb, ExceptionSink *xsink) {
+   DLLLOCAL int defineDynamic(OCIDefine* defp, void* ctx, OCICallbackDefine cb, ExceptionSink* xsink) {
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
       return conn.checkerr(OCIDefineDynamic(defp, conn.errhp, ctx, cb),
                            "QoreOracleStatement::defineDynamic()", xsink);
    }
 
-   DLLLOCAL int defineByPos(OCIDefine *&defp, unsigned pos, void *valuep, int value_sz, unsigned short dty, void *indp, ExceptionSink *xsink, ub4 mode = OCI_DEFAULT) {
+   DLLLOCAL int defineByPos(OCIDefine*& defp, unsigned pos, void* valuep, int value_sz, unsigned short dty, void* indp, ExceptionSink* xsink, ub4 mode = OCI_DEFAULT) {
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
       return conn.checkerr(OCIDefineByPos(stmthp, &defp, conn.errhp, pos, valuep, value_sz, dty, indp, 0, 0, mode),
 			     "QoreOracleStatement::defineByPos()", xsink);
    }
 
-   DLLLOCAL int bindByPos(OCIBind *&bndp, unsigned pos, void *valuep, int value_sz, unsigned short dty, ExceptionSink *xsink, void *indp) {
+   DLLLOCAL int bindByPos(OCIBind*& bndp, unsigned pos, void* valuep, int value_sz, unsigned short dty, ExceptionSink* xsink, void* indp) {
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
       return conn.checkerr(OCIBindByPos(stmthp, &bndp, conn.errhp, pos, valuep, value_sz, dty, indp, 0, 0, 0, 0, OCI_DEFAULT), 
@@ -161,10 +161,10 @@ public:
    }
 
 
-   DLLLOCAL int prepare(QoreString &str, ExceptionSink *xsink) {
+   DLLLOCAL int prepare(QoreString& str, ExceptionSink* xsink) {
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
-      int rc = conn.checkerr(OCIStmtPrepare(stmthp, conn.errhp, (text *)str.getBuffer(), str.strlen(), OCI_NTV_SYNTAX, OCI_DEFAULT), 
+      int rc = conn.checkerr(OCIStmtPrepare(stmthp, conn.errhp, (text*)str.getBuffer(), str.strlen(), OCI_NTV_SYNTAX, OCI_DEFAULT), 
 			     "QoreOracleStatement::prepare()", xsink);
       if (!rc) {
 	 // see what kind of statement was prepared and set the flag accordingly
@@ -179,36 +179,36 @@ public:
       return rc;
    }
 
-   DLLLOCAL int execute(const char *who, ExceptionSink *xsink);
+   DLLLOCAL int execute(const char* who, ExceptionSink* xsink);
 
-   DLLLOCAL bool next(ExceptionSink *xsink) {
+   DLLLOCAL bool next(ExceptionSink* xsink) {
       return fetch(xsink) ? false : true;
    }
 
-   DLLLOCAL QoreHashNode *fetchRow(OraResultSet &columns, ExceptionSink *xsink);
+   DLLLOCAL QoreHashNode* fetchRow(OraResultSet& columns, ExceptionSink* xsink);
 #ifdef _QORE_HAS_DBI_SELECT_ROW
-   DLLLOCAL QoreHashNode *fetchSingleRow(ExceptionSink *xsink);
+   DLLLOCAL QoreHashNode* fetchSingleRow(ExceptionSink* xsink);
 #endif
-   DLLLOCAL QoreListNode *fetchRows(OraResultSet &columns, int rows, ExceptionSink *xsink);
-   DLLLOCAL QoreListNode *fetchRows(ExceptionSink *xsink);
+   DLLLOCAL QoreListNode* fetchRows(OraResultSet& columns, int rows, ExceptionSink* xsink);
+   DLLLOCAL QoreListNode* fetchRows(ExceptionSink* xsink);
 
-   DLLLOCAL QoreHashNode *fetchColumns(OraResultSet &columns, int rows, ExceptionSink *xsink);
-   DLLLOCAL QoreHashNode *fetchColumns(ExceptionSink *xsink);
+   DLLLOCAL QoreHashNode* fetchColumns(OraResultSet& columns, int rows, ExceptionSink* xsink);
+   DLLLOCAL QoreHashNode* fetchColumns(ExceptionSink* xsink);
 
 #ifdef _QORE_HAS_DBI_DESCRIBE
-   DLLLOCAL QoreHashNode *describe(OraResultSet &columns, ExceptionSink *xsink);
+   DLLLOCAL QoreHashNode* describe(OraResultSet& columns, ExceptionSink* xsink);
 #endif
 
-   DLLLOCAL Datasource *getDatasource() const {
+   DLLLOCAL Datasource* getDatasource() const {
       return ds;
    }
 
-   DLLLOCAL const QoreEncoding *getEncoding() const {
+   DLLLOCAL const QoreEncoding* getEncoding() const {
       return ds->getQoreEncoding();
    }
 
-   DLLLOCAL QoreOracleConnection *getData() const {
-      return (QoreOracleConnection *)ds->getPrivateData();
+   DLLLOCAL QoreOracleConnection* getData() const {
+      return (QoreOracleConnection*)ds->getPrivateData();
    }
 };
 
