@@ -414,4 +414,39 @@ public:
    }
 };
 
+class AbstractDynamicArrayBindData {
+protected:
+   typedef std::vector<sb2> sb2_list_t;
+   sb2_list_t ind_list;
+   
+   const QoreListNode* l;
+   
+public:
+   DLLLOCAL AbstractDynamicArrayBindData(const QoreListNode* n_l) : l(n_l) {
+   }
+
+   DLLLOCAL virtual ~AbstractDynamicArrayBindData() {
+   }
+
+   DLLLOCAL int setupBind(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {
+      assert(l->size());
+      ind_list.resize(l->size());
+
+      return setupBindImpl(bn, pos, in_only, xsink);
+   }
+
+   DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) = 0;
+
+   DLLLOCAL void bindCallback(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp, ub1* piecep, void** indp) {
+      *piecep = OCI_ONE_PIECE;
+      *indp = (void*)&ind_list[iter];
+      //printd(5, "AbstractDynamicArrayBindData::bindCallback() iter: %d alen: %d ind: %d\n", iter, alen_list[iter], ind_list[iter]);
+      
+      bindCallbackImpl(bindp, iter, bufpp, alenp);
+   }
+   
+   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) = 0;
+};
+
+
 #endif

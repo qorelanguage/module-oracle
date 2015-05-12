@@ -31,6 +31,13 @@ static inline bool wasInTransaction(Datasource *ds) {
 #endif
 }
 
+int QoreOracleStatement::setupDateDescriptor(OCIDateTime*& odt, ExceptionSink* xsink) {
+   QoreOracleConnection* conn = (QoreOracleConnection*)getData();
+   if (conn->descriptorAlloc((dvoid**)&odt, QORE_DTYPE_TIMESTAMP, "QoreOracleStatement::setupDateDecriptor()", xsink))
+      return -1;
+   return 0;
+}
+
 int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
    QoreOracleConnection *conn = (QoreOracleConnection *)ds->getPrivateData();
 

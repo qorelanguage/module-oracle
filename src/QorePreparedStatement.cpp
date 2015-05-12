@@ -55,14 +55,10 @@ void OraBindNode::reset(ExceptionSink* xsink, bool free_name) {
 }
 
 int OraBindNode::setupDateDescriptor(ExceptionSink* xsink) {
-   QoreOracleConnection* conn = (QoreOracleConnection*)stmt.getData();
-
    dtype = QORE_SQLT_TIMESTAMP;
    buf.odt = NULL;
-    
-   if (conn->descriptorAlloc((dvoid**)&buf.odt, QORE_DTYPE_TIMESTAMP, "OraBindNode::setupDateDecriptor()", xsink))
-      return -1;
-   return 0;
+
+   return stmt.setupDateDescriptor(buf.odt, xsink);
 }
 
 int OraBindNode::bindDate(int pos, ExceptionSink* xsink) {
@@ -131,58 +127,68 @@ void OraBindNode::bind(int pos, bool& is_nty, ExceptionSink* xsink) {
    bindPlaceholder(pos, is_nty, xsink);
 }
 
-class StrVec {
+template <typename T>
+class PtrVec {
 protected:
    // store pointers to char, we use the low bit to flag values that should not be free'ed
-   typedef std::vector<size_t> strvec_t;
-   strvec_t strvec;
+   typedef std::vector<size_t> ptrvec_t;
+   ptrvec_t ptrvec;
 
 public:
-   DLLLOCAL ~StrVec() {
-      for (strvec_t::iterator i = strvec.begin(), e = strvec.end(); i != e; ++i) {
+   DLLLOCAL ~PtrVec() {
+      for (ptrvec_t::iterator i = ptrvec.begin(), e = ptrvec.end(); i != e; ++i) {
          if (!(*i))
             continue;
          // ignore ptrs with the low bit set
          if (!((*i) & 1))
-            free((char*)*i);
+            free((T*)*i);
       }
    }
 
-   DLLLOCAL const char* get(unsigned i) const {
-      size_t v = strvec[i];
+   DLLLOCAL const T* get(unsigned i) const {
+      size_t v = ptrvec[i];
       if (v & 1)
          v &= ~1;
-      return (char*)v;
+      return (T*)v;
    }
 
-   DLLLOCAL void setDynamic(char* p) {
-      strvec.push_back((size_t)p);
+   DLLLOCAL void setDynamic(T* p) {
+      ptrvec.push_back((size_t)p);
    }
 
-   DLLLOCAL void setStatic(const char* p) {
-      strvec.push_back(((size_t)p) | 1);
+   DLLLOCAL void setStatic(const T* p) {
+      ptrvec.push_back(((size_t)p) | 1);
    }
 
    DLLLOCAL size_t size() const {
-      return strvec.size();
+      return ptrvec.size();
    }
 };
 
-class DynamicArrayBindDataString : public AbstractDynamicArrayBindData {
+typedef PtrVec<char> StrVec;
+
+class DynamicArrayBindString : public AbstractDynamicArrayBindData {
 protected:
-   StrVec strvec;
+   typedef std::vector<ub4> ub4_list_t;
+   ub4_list_t alen_list;
+   qore_type_t expected_type;
+   const char* expected_type_name;
    
+   StrVec strvec;
+
 public:
-   DLLLOCAL DynamicArrayBindDataString(const QoreListNode* n_l) : AbstractDynamicArrayBindData(n_l) {
+   DLLLOCAL DynamicArrayBindString(const QoreListNode* n_l, qore_type_t et = NT_STRING, const char* etn = "string") : AbstractDynamicArrayBindData(n_l), expected_type(et), expected_type_name(etn) {
    }
 
-   DLLLOCAL virtual ~DynamicArrayBindDataString() {
+   DLLLOCAL virtual ~DynamicArrayBindString() {
    }
 
-   DLLLOCAL virtual int setupBind(QoreOracleStatement& stmt, bool in_only, ExceptionSink* xsink) {
-      assert(l->size());
-      ind_list.resize(l->size());
+   DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {
       alen_list.resize(l->size());
+
+      unsigned max = 0;
+
+      const QoreEncoding* enc = bn.stmt.getEncoding();
       
       ConstListIterator li(l);
       while (li.next()) {
@@ -195,37 +201,293 @@ public:
             continue;
          }
 
-         if (t != NT_STRING) {
-            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"string\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+         if (t != expected_type) {
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"%s\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index(), expected_type_name);
             return -1;
          }
 
          assert(!ind_list[li.index()]);
 
-         const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(n);
-         if (in_only && (str->getEncoding() == stmt.getEncoding())) {
-            strvec.setStatic(str->getBuffer());
-            alen_list[li.index()] = str->size() + 1;
+         if (t == NT_STRING) {
+            const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(n);
+            if (in_only && (str->getEncoding() == enc)) {
+               if (str->size() + 1 > max)
+                  max = str->size() + 1;
+               strvec.setStatic(str->getBuffer());
+               alen_list[li.index()] = str->size() + 1;
+            }
+            else {
+               // convert to the db encoding
+               TempEncodingHelper nstr(str, enc, xsink);
+               if (*xsink)
+                  return -1;
+               if (nstr->size() + 1 > max)
+                  max = nstr->size() + 1;
+               alen_list[li.index()] = nstr->size() + 1;
+               assert(!in_only || nstr.is_temp());
+               strvec.setDynamic(nstr.giveBuffer());
+            }
          }
          else {
-            // convert to the db encoding
-            TempEncodingHelper nstr(str, stmt.getEncoding(), xsink);
-            if (*xsink)
-               return -1;
+            QoreStringValueHelper nstr(n);
+            if (nstr->size() + 1 > max)
+               max = nstr->size() + 1;
             alen_list[li.index()] = nstr->size() + 1;
-            assert(!in_only || nstr.is_temp());
-            strvec.setDynamic(nstr.giveBuffer());
+
+            std::auto_ptr<QoreString> tstr(nstr.giveString());
+            strvec.setDynamic(tstr->giveBuffer());
          }
       }
 
+      // bind as a string
+      bn.dtype = SQLT_STR;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, max, SQLT_STR, xsink, 0, OCI_DATA_AT_EXEC);
+
       assert(strvec.size() == l->size());      
-      //printd(5, "DynamicArrayBindDataString::setupBind() this: %p size: %d\n", this, (int)l->size());
+      //printd(5, "DynamicArrayBindString::setupBind() this: %p size: %d\n", this, (int)l->size());
       return 0;
    }
 
-   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp) {
+   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
       *bufpp = (void*)strvec.get(iter);
-      //printd(5, "DynamicArrayBindDataString::bindCallbackImpl() ix: %d bufpp: %p (%s) len: %d\n", iter, bufpp, strvec.get(iter), alen_list[iter]);
+      *alenp = alen_list[iter]; 
+      //printd(5, "DynamicArrayBindString::bindCallbackImpl() ix: %d bufpp: %p (%s) len: %d\n", iter, bufpp, strvec.get(iter), alen_list[iter]);
+   }
+};
+
+class DynamicArrayBindFloat : public AbstractDynamicArrayBindData {
+protected:
+   typedef std::vector<double> doublevec_t;
+   doublevec_t vec;
+   
+public:
+   DLLLOCAL DynamicArrayBindFloat(const QoreListNode* n_l) : AbstractDynamicArrayBindData(n_l) {
+   }
+
+   DLLLOCAL virtual ~DynamicArrayBindFloat() {
+   }
+
+   DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {
+      vec.resize(l->size());
+      
+      ConstListIterator li(l);
+      while (li.next()) {
+         const AbstractQoreNode* n = li.getValue();
+         qore_type_t t = get_node_type(n);
+
+         if (t == NT_NOTHING || t == NT_NULL) {
+            ind_list[li.index()] = -1;
+            continue;
+         }
+
+         if (t != NT_FLOAT) {
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"float\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            return -1;
+         }
+
+         assert(!ind_list[li.index()]);
+
+         vec[li.index()] = reinterpret_cast<const QoreFloatNode*>(n)->f;
+      }
+
+      
+#if defined(SQLT_BDOUBLE) && defined(USE_NEW_NUMERIC_TYPES)
+      bn.dtype = SQLT_BDOUBLE;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, sizeof(double), SQLT_BDOUBLE, xsink, 0, OCI_DATA_AT_EXEC);
+#else
+      bn.dtype = SQLT_FLT;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, sizeof(double), SQLT_FLT, xsink, 0, OCI_DATA_AT_EXEC);
+#endif
+
+      return 0;
+   }
+
+   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
+      *bufpp = (void*)&vec[iter];
+      *alenp = sizeof(double);
+   }
+};
+
+class DynamicArrayBindDate : public AbstractDynamicArrayBindData {
+protected:
+   typedef std::vector<OCIDateTime*> datevec_t;
+   datevec_t vec;
+   
+public:
+   DLLLOCAL DynamicArrayBindDate(const QoreListNode* n_l) : AbstractDynamicArrayBindData(n_l) {
+   }
+
+   DLLLOCAL virtual ~DynamicArrayBindDate() {
+      for (datevec_t::iterator i = vec.begin(), e = vec.end(); i != e; ++i) {
+         if ((*i))
+            OCIDescriptorFree(*i, QORE_DTYPE_TIMESTAMP);
+      }
+   }
+
+   DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {
+      vec.resize(l->size());
+
+      QoreOracleConnection* conn = (QoreOracleConnection*)bn.stmt.getData();
+         
+      ConstListIterator li(l);
+      while (li.next()) {
+         const AbstractQoreNode* n = li.getValue();
+         qore_type_t t = get_node_type(n);
+
+         if (t == NT_NOTHING || t == NT_NULL) {
+            ind_list[li.index()] = -1;
+            assert(!vec[li.index()]);
+            continue;
+         }
+
+         if (t != NT_DATE) {
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"date\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            return -1;
+         }
+
+         const DateTimeNode* d = reinterpret_cast<const DateTimeNode*>(n);
+         
+         assert(!ind_list[li.index()]);
+
+         // acquire date descriptor
+         if (bn.stmt.setupDateDescriptor(vec[li.index()], xsink))
+            return -1;
+
+         if (conn->dateTimeConstruct(vec[li.index()], *d, xsink))
+            return -1;         
+      }
+
+      bn.dtype = QORE_SQLT_TIMESTAMP;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, 0, QORE_SQLT_TIMESTAMP, xsink, 0, OCI_DATA_AT_EXEC);
+
+      //printd(5, "DynamicArrayBindDate::setupBind() this: %p size: %d\n", this, (int)l->size());
+      return 0;
+   }
+
+   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
+      *bufpp = (void*)vec[iter];
+      *alenp = 0;
+   }
+};
+
+class DynamicArrayBindBool : public AbstractDynamicArrayBindData {
+protected:
+   typedef std::vector<char> boolvec_t;
+   boolvec_t vec;
+   
+public:
+   DLLLOCAL DynamicArrayBindBool(const QoreListNode* n_l) : AbstractDynamicArrayBindData(n_l) {
+   }
+
+   DLLLOCAL virtual ~DynamicArrayBindBool() {
+   }
+
+   DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {
+      vec.resize(l->size());
+      
+      ConstListIterator li(l);
+      while (li.next()) {
+         const AbstractQoreNode* n = li.getValue();
+         qore_type_t t = get_node_type(n);
+
+         if (t == NT_NOTHING || t == NT_NULL) {
+            ind_list[li.index()] = -1;
+            continue;
+         }
+
+         if (t != NT_BOOLEAN) {
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"boolean\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            return -1;
+         }
+
+         assert(!ind_list[li.index()]);
+
+         vec[li.index()] = reinterpret_cast<const QoreBoolNode*>(n)->getValue();         
+      }
+
+      bn.dtype = SQLT_INT;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, sizeof(char), SQLT_INT, xsink, 0, OCI_DATA_AT_EXEC);
+
+      return 0;
+   }
+
+   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
+      *bufpp = (void*)&vec[iter];
+      *alenp = sizeof(char);
+   }
+};
+
+typedef PtrVec<void> BinVec;
+
+class DynamicArrayBindBinary : public AbstractDynamicArrayBindData {
+protected:
+   typedef std::vector<ub4> ub4_list_t;
+   ub4_list_t alen_list;
+   
+   BinVec binvec;
+
+public:
+   DLLLOCAL DynamicArrayBindBinary(const QoreListNode* n_l) : AbstractDynamicArrayBindData(n_l) {
+   }
+
+   DLLLOCAL virtual ~DynamicArrayBindBinary() {
+   }
+
+   DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {
+      alen_list.resize(l->size());
+
+      unsigned max = 0;
+      
+      ConstListIterator li(l);
+      while (li.next()) {
+         const AbstractQoreNode* n = li.getValue();
+         qore_type_t t = get_node_type(n);
+
+         if (t == NT_NOTHING || t == NT_NULL) {
+            ind_list[li.index()] = -1;
+            binvec.setDynamic(0);
+            continue;
+         }
+
+         if (t != NT_BINARY) {
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"binary\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            return -1;
+         }
+
+         assert(!ind_list[li.index()]);
+
+         const BinaryNode* b = reinterpret_cast<const BinaryNode*>(n);
+
+         if (b->size() > max)
+            max = b->size();
+         
+         alen_list[li.index()] = b->size();
+
+         if (in_only)
+            binvec.setStatic(b->getPtr());
+         else {
+            void* p = malloc(b->size());
+            if (!p) {
+               xsink->outOfMemory();
+               return -1;
+            }
+            memcpy(p, b->getPtr(), b->size());
+            binvec.setDynamic(p);
+         }
+      }
+
+      bn.dtype = SQLT_BIN;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, max, SQLT_BIN, xsink, 0, OCI_DATA_AT_EXEC);
+
+      assert(binvec.size() == l->size());      
+      //printd(5, "DynamicArrayBindBinary::setupBind() this: %p size: %d\n", this, (int)l->size());
+      return 0;
+   }
+
+   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
+      *bufpp = (void*)binvec.get(iter);
+      *alenp = alen_list[iter]; 
+      //printd(5, "DynamicArrayBindBinary::bindCallbackImpl() ix: %d bufpp: %p (%s) len: %d\n", iter, bufpp, binvec.get(iter), alen_list[iter]);
    }
 };
 
@@ -270,12 +532,37 @@ void OraBindNode::bindListValue(ExceptionSink* xsink, int pos, const QoreListNod
 
       switch (t) {
          case NT_STRING: {
-            buf.arraybind = new DynamicArrayBindDataString(l);
+            buf.arraybind = new DynamicArrayBindString(l);
+            break;
+         }
 
-            dtype = SQLT_STR;
-            // bind as a string
-            stmt.bindByPos(bndp, pos, 0, CLOB_THRESHOLD, SQLT_STR, xsink, 0, OCI_DATA_AT_EXEC);
+         case NT_INT: {
+            buf.arraybind = new DynamicArrayBindString(l, NT_INT, "int");
+            break;
+         }
 
+         case NT_NUMBER: {
+            buf.arraybind = new DynamicArrayBindString(l, NT_NUMBER, "number");
+            break;
+         }
+
+         case NT_FLOAT: {
+            buf.arraybind = new DynamicArrayBindFloat(l);
+            break;
+         }
+            
+         case NT_DATE: {
+            buf.arraybind = new DynamicArrayBindDate(l);
+            break;
+         }
+
+         case NT_BOOLEAN: {
+            buf.arraybind = new DynamicArrayBindBool(l);
+            break;
+         }
+
+         case NT_BINARY: {
+            buf.arraybind = new DynamicArrayBindBinary(l);
             break;
          }
 
@@ -289,12 +576,12 @@ void OraBindNode::bindListValue(ExceptionSink* xsink, int pos, const QoreListNod
    // this is possible if the entire list is NOTHING or NULL
    if (t == NT_NOTHING) {
       assert(!buf.arraybind);
-      buf.arraybind = new DynamicArrayBindDataString(l);
+      buf.arraybind = new DynamicArrayBindString(l);
       t = NT_STRING;
    }
 
    assert(buf.arraybind);
-   buf.arraybind->setupBind(stmt, in_only, xsink);
+   buf.arraybind->setupBind(*this, pos, in_only, xsink);
    // execute OCIBindDynamic()
    QoreOracleConnection* conn = (QoreOracleConnection*)stmt.getData();
    conn->checkerr(OCIBindDynamic(bndp, conn->errhp, (void*)buf.arraybind, ora_dynamic_bind_callback, 0, 0), "OraBindNode::bindListValue()", xsink);
@@ -572,7 +859,7 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
       stmt.bindByPos(bndp, pos, buf.ptr, data.ph_maxsize + 1, SQLT_STR, xsink, &ind);
    }
    else if (data.isType("date")) {
-//      printd(5, "oraBindNode::bindPlaceholder() this=%p, timestamp dtype=%d\n", this, QORE_SQLT_TIMESTAMP);
+      //printd(5, "oraBindNode::bindPlaceholder() this=%p, timestamp dtype=%d\n", this, QORE_SQLT_TIMESTAMP);
       if (setupDateDescriptor(xsink))
         return;
 

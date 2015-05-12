@@ -227,6 +227,8 @@ public:
    DLLLOCAL QoreOracleConnection* getData() const {
       return (QoreOracleConnection*)ds->getPrivateData();
    }
+
+   DLLLOCAL int setupDateDescriptor(OCIDateTime*& odt, ExceptionSink* xsink);
 };
 
 #endif

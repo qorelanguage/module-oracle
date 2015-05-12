@@ -72,39 +72,7 @@ struct q_lngraw {
 };
 */
 
-class QoreOracleStatement;
-
-class AbstractDynamicArrayBindData {
-protected:
-   typedef std::vector<sb2> sb2_list_t;
-   //typedef std::vector<ub2> ub2_list_t;
-   typedef std::vector<ub4> ub4_list_t;
-   
-   const QoreListNode* l;
-   
-   sb2_list_t ind_list;
-   ub4_list_t alen_list;
-   
-public:
-   DLLLOCAL AbstractDynamicArrayBindData(const QoreListNode* n_l) : l(n_l) {
-   }
-
-   DLLLOCAL virtual ~AbstractDynamicArrayBindData() {
-   }
-
-   DLLLOCAL virtual int setupBind(QoreOracleStatement& stmt, bool in_only, ExceptionSink* xsink) = 0;
-
-   DLLLOCAL void bindCallback(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp, ub1* piecep, void** indp) {
-      *alenp = alen_list[iter];
-      *piecep = OCI_ONE_PIECE;
-      *indp = (void*)&ind_list[iter];
-      //printd(5, "AbstractDynamicArrayBindData::bindCallback() iter: %d alen: %d ind: %d\n", iter, alen_list[iter], ind_list[iter]);
-      
-      bindCallbackImpl(bindp, iter, bufpp);
-   }
-   
-   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp) = 0;
-};
+class AbstractDynamicArrayBindData;
 
 // FIXME: do not hardcode byte widths - could be incorrect on some platforms
 union ora_value {
@@ -128,6 +96,8 @@ union ora_value {
       return rv;
    }
 };
+
+class QoreOracleStatement;
 
 struct OraColumnValue {
    QoreOracleStatement& stmt;
