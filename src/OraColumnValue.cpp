@@ -1,6 +1,6 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /*
-  OraColumnValue.h
+  OraColumnValue.cpp
 
   Qore Programming Language
 
@@ -36,10 +36,7 @@ static DateTimeNode* convert_date_time(unsigned char *str) {
 
 void OraColumnValue::del(ExceptionSink *xsink) {
    if (array) {
-      if (buf.ptr) {
-         //printd(5, "freeing pointer with free(%p)\n", buf.ptr);
-         free(buf.ptr);
-      }
+      delete buf.arraybind;
       return;            
    }
 

@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2014 David Nichols
+  Copyright (C) 2003 - 2015 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,12 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
    QoreOracleConnection *conn = (QoreOracleConnection *)ds->getPrivateData();
 
    assert(conn->svchp);
-   int status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, is_select ? 0 : 1, 0, 0, 0, OCI_DEFAULT);
+   ub4 iters;
+   if (is_select)
+      iters = 0;
+   else
+      iters = array_size <= 0 ? 1 : array_size;
+   int status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, iters, 0, 0, 0, OCI_DEFAULT);
 
    //printd(0, "QoreOracleStatement::execute() stmthp=%p status=%d (OCI_ERROR=%d)\n", stmthp, status, OCI_ERROR);
    if (status == OCI_ERROR) {
@@ -83,7 +88,7 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
          xsink->clear();
 
 	 //printd(0, "QoreOracleStatement::execute() returned from OCILogon() status=%d\n", status);
-	 status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, is_select ? 0 : 1, 0, 0, 0, OCI_DEFAULT);
+	 status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, iters, 0, 0, 0, OCI_DEFAULT);
 	 if (status && conn->checkerr(status, who, xsink))
 	    return -1;
       }

@@ -155,10 +155,10 @@ public:
 			     "QoreOracleStatement::defineByPos()", xsink);
    }
 
-   DLLLOCAL int bindByPos(OCIBind*& bndp, unsigned pos, void* valuep, int value_sz, unsigned short dty, ExceptionSink* xsink, void* indp) {
+   DLLLOCAL int bindByPos(OCIBind*& bndp, unsigned pos, void* valuep, int value_sz, unsigned short dty, ExceptionSink* xsink, void* indp, ub4 mode = OCI_DEFAULT) {
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
-      return conn.checkerr(OCIBindByPos(stmthp, &bndp, conn.errhp, pos, valuep, value_sz, dty, indp, 0, 0, 0, 0, OCI_DEFAULT), 
+      return conn.checkerr(OCIBindByPos(stmthp, &bndp, conn.errhp, pos, valuep, value_sz, dty, indp, 0, 0, 0, 0, mode), 
 			     "QoreOracleStatement::bindByPos()", xsink);
    }
 

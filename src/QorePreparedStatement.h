@@ -229,7 +229,7 @@ protected:
    }
    */
 
-   DLLLOCAL void bindListValue(ExceptionSink* xsink, int pos, const QoreListNode* l);
+   DLLLOCAL void bindListValue(ExceptionSink* xsink, int pos, const QoreListNode* l, bool in_only);
    
    DLLLOCAL void bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool& is_nty, bool in_only = true);
    DLLLOCAL void bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink);
