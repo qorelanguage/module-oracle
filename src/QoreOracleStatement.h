@@ -201,6 +201,10 @@ public:
          array_size = (int)as;
       return 0;
    }
+
+   DLLLOCAL int getArraySize() const {
+      return array_size;
+   }
    
    DLLLOCAL QoreHashNode* fetchRow(OraResultSet& columns, ExceptionSink* xsink);
 #ifdef _QORE_HAS_DBI_SELECT_ROW
