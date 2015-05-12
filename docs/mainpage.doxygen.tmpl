@@ -475,7 +475,8 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - fixed a major bug where a crash generated internally in the OCI library would occur when NTYs were bound in a prepared statement and the statement was executed in a new logon session after transparent reconnection
     - fixed bugs binding values to number attributes of NTYs and collections
     - fixed a crashing bug handling the case when there are multiple objects of different incompatible types added to a collection; now an exception is raised
-    - implementing binding number types by placeholder (including in/out vars)
+    - implemented binding number types by placeholder (including in/out vars)
+    - implemented binding arrays of scalar values for input and output
 
     @subsection oracle31 oracle Driver Version 3.1
     

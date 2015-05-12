@@ -23,6 +23,32 @@
 
 #include "oracle.h"
 
+#include <stdlib.h>
+
+// OCI callback function for dynamic binds
+static sb4 ora_dynamic_bind_callback(void* ictxp, OCIBind* bindp, ub4 iter, ub4 index, void** bufpp, ub4* alenp, ub1* piecep, void** indp) {
+   AbstractDynamicArrayBindData* arraybind = (AbstractDynamicArrayBindData*)ictxp;
+   //printd(5, "ora_dynamic_bind_callback() arraybind: %p iter: %d index: %d\n", arraybind, iter, index);
+   arraybind->bindCallback(bindp, iter, bufpp, alenp, piecep, indp);
+   return OCI_CONTINUE;
+}
+
+// OCI callback function for dynamic binds for output data where no input data is provided
+static sb4 ora_dynamic_bind_nodata_callback(void* ictxp, OCIBind* bindp, ub4 iter, ub4 index, void** bufpp, ub4* alenp, ub1* piecep, void** indp) {
+   AbstractDynamicArrayBindData* arraybind = (AbstractDynamicArrayBindData*)ictxp;
+   //printd(5, "ora_dynamic_bind_callback() arraybind: %p iter: %d index: %d\n", arraybind, iter, index);
+   arraybind->bindNoDataCallback(bindp, iter, bufpp, alenp, piecep, indp);
+   return OCI_CONTINUE;
+}
+
+// OCI callback function for dynamic binds
+static sb4 ora_dynamic_bind_placeholder_callback(void* ictxp, OCIBind* bindp, ub4 iter, ub4 index, void** bufpp, ub4** alenp, ub1* piecep, void** indp, ub2** rcodepp) {
+   AbstractDynamicArrayBindData* arraybind = (AbstractDynamicArrayBindData*)ictxp;
+   //printd(5, "ora_dynamic_bind_callback() arraybind: %p iter: %d index: %d\n", arraybind, iter, index);
+   arraybind->bindPlaceholderCallback(bindp, iter, bufpp, alenp, piecep, indp, rcodepp);
+   return OCI_CONTINUE;
+}
+
 void OraBindNode::resetPlaceholder(ExceptionSink* xsink, bool free_name) {
    data.resetPlaceholder(free_name);
 
@@ -152,6 +178,13 @@ public:
       return (T*)v;
    }
 
+   DLLLOCAL T* take(unsigned i) {
+      size_t v = ptrvec[i];
+      assert(!(v & 1));
+      ptrvec[i] = 0;
+      return (T*)v;
+   }
+   
    DLLLOCAL void setDynamic(T* p) {
       ptrvec.push_back((size_t)p);
    }
@@ -181,11 +214,13 @@ protected:
    ub4_list_t alen_list;
    qore_type_t expected_type;
    const char* expected_type_name;
+   // max len assigned to placeholder buffers
+   unsigned ph_len;
    
    StrVec strvec;
 
 public:
-   DLLLOCAL DynamicArrayBindString(const QoreListNode* n_l, qore_type_t et = NT_STRING, const char* etn = "string") : AbstractDynamicArrayBindData(n_l), expected_type(et), expected_type_name(etn) {
+   DLLLOCAL DynamicArrayBindString(const QoreListNode* n_l, qore_type_t et = NT_STRING, const char* etn = "string") : AbstractDynamicArrayBindData(n_l), expected_type(et), expected_type_name(etn), ph_len(0) {
    }
 
    DLLLOCAL virtual ~DynamicArrayBindString() {
@@ -273,17 +308,47 @@ public:
    }
 
    DLLLOCAL virtual void bindPlaceholderCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4** alenp) {
-      size_t size = DBI_DEFAULT_STR_LEN + 1;
-      strvec.setDynamic(iter, (char*)malloc(sizeof(char) * size));
+      switch (expected_type) {
+         case NT_INT: ph_len = 33; break;
+         case NT_NUMBER: ph_len = 100; break;
+         default: ph_len = DBI_DEFAULT_STR_LEN + 1; break;
+      }
+      strvec.setDynamic(iter, (char*)malloc(sizeof(char) * ph_len));
       *bufpp = (void*)strvec.get(iter);
-      alen_list[iter] = size;
+      alen_list[iter] = ph_len;
       *alenp = &alen_list[iter];
       //printd(5, "DynamicArrayBindString::bindCallbackImpl() ix: %d bufpp: %p (%s) len: %d\n", iter, bufpp, strvec.get(iter), alen_list[iter]);
    }
 
    DLLLOCAL virtual AbstractQoreNode* getOutputValueImpl(ExceptionSink* xsink, OraBindNode& bn, bool destructive) {
-      assert(false);
-      return 0;
+      ReferenceHolder<QoreListNode> l(new QoreListNode, xsink);
+      assert(ind_list.size() == strvec.size());
+      const QoreEncoding* enc = bn.stmt.getEncoding();
+      for (unsigned i = 0; i < strvec.size(); ++i) {
+         if (ind_list[i]) {
+            l->push(null());
+            continue;
+         }
+         AbstractQoreNode* v;
+         switch (expected_type) {
+            case NT_INT: {
+               const char* buf = strvec.get(i);
+               v = new QoreBigIntNode(strtoll(buf, 0, 10));
+               break;
+            }
+            case NT_NUMBER: {
+               v = new QoreNumberNode(strvec.get(i));
+               break;
+            }
+            default: {
+               char* buf = strvec.take(i);
+               v = buf ? new QoreStringNode(buf, strlen(buf), ph_len, enc) : new QoreStringNode(enc);
+               break;
+            }
+         }
+         l->push(v);
+      }
+      return l.release();
    }
 };
 
@@ -580,20 +645,6 @@ public:
       return 0;
    }
 };
-
-static sb4 ora_dynamic_bind_callback(void* ictxp, OCIBind* bindp, ub4 iter, ub4 index, void** bufpp, ub4* alenp, ub1* piecep, void** indp) {
-   AbstractDynamicArrayBindData* arraybind = (AbstractDynamicArrayBindData*)ictxp;
-   //printd(5, "ora_dynamic_bind_callback() arraybind: %p iter: %d index: %d\n", arraybind, iter, index);
-   arraybind->bindCallback(bindp, iter, bufpp, alenp, piecep, indp);
-   return OCI_CONTINUE;
-}
-
-static sb4 ora_dynamic_bind_placeholder_callback(void* ictxp, OCIBind* bindp, ub4 iter, ub4 index, void** bufpp, ub4** alenp, ub1* piecep, void** indp, ub2** rcodepp) {
-   AbstractDynamicArrayBindData* arraybind = (AbstractDynamicArrayBindData*)ictxp;
-   //printd(5, "ora_dynamic_bind_callback() arraybind: %p iter: %d index: %d\n", arraybind, iter, index);
-   arraybind->bindPlaceholderCallback(bindp, iter, bufpp, alenp, piecep, indp, rcodepp);
-   return OCI_CONTINUE;
-}
 
 void OraBindNode::bindListValue(ExceptionSink* xsink, int pos, const QoreListNode* l, bool in_only) {
    array = true;
@@ -932,23 +983,29 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
 
       if (data.isType("string"))
          buf.arraybind = new DynamicArrayBindString(0);
-      else if (data.isType("date"))
-         buf.arraybind = new DynamicArrayBindDate(0);
-      else if (data.isType("binary"))
-         buf.arraybind = new DynamicArrayBindBinary(0);
       else if (data.isType("integer"))
          buf.arraybind = new DynamicArrayBindString(0, NT_INT, "int");
       else if (data.isType("number"))
          buf.arraybind = new DynamicArrayBindString(0, NT_NUMBER, "number");
+      /** not yet implemented
+      else if (data.isType("date"))
+         buf.arraybind = new DynamicArrayBindDate(0);
+      else if (data.isType("binary"))
+         buf.arraybind = new DynamicArrayBindBinary(0);
       else if (data.isType("float"))
          buf.arraybind = new DynamicArrayBindFloat(0);
+      */
       else {
-         xsink->raiseException("ORACLE-BIND-VALUE-ERROR", "type '%s' is not supported for SQL binding", data.ph_type);
+         xsink->raiseException("ORACLE-BIND-VALUE-ERROR", "type '%s' is not supported for SQL binding for array output buffers", data.ph_type);
          return;
       }
 
       assert(buf.arraybind);
-      buf.arraybind->setupOutputBind(*this, pos, xsink);
+      if (buf.arraybind->setupOutputBind(*this, pos, xsink))
+         return;
+
+      QoreOracleConnection* conn = (QoreOracleConnection*)stmt.getData();
+      conn->checkerr(OCIBindDynamic(bndp, conn->errhp, (void*)buf.arraybind, ora_dynamic_bind_nodata_callback, (void*)buf.arraybind, ora_dynamic_bind_placeholder_callback), "OraBindNode::bindPlaceholder()", xsink);
 
       return;
    }

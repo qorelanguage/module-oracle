@@ -438,6 +438,15 @@ public:
 
    DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) = 0;
 
+   DLLLOCAL void bindNoDataCallback(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp, ub1* piecep, void** indp) {
+      *bufpp = (void*)0;
+      *alenp = 0;
+      *piecep = OCI_ONE_PIECE;
+      ind_list[iter] = -1;
+      *indp = (void*)&ind_list[iter];
+      //printd(5, "AbstractDynamicArrayBindData::bindNoDataCallback() iter: %d alen: %d ind: %d\n", iter, alen_list[iter], ind_list[iter]);
+   }
+   
    DLLLOCAL void bindCallback(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp, ub1* piecep, void** indp) {
       *piecep = OCI_ONE_PIECE;
       *indp = (void*)&ind_list[iter];
