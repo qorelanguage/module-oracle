@@ -131,6 +131,65 @@ void OraBindNode::bind(int pos, bool& is_nty, ExceptionSink* xsink) {
    bindPlaceholder(pos, is_nty, xsink);
 }
 
+/*
+static sb4 ora_dynamic_bind_string_callback(void* ictxp, OCIBind* bindp, ub4 iter, ub4 index, void** bufpp, ub4* alenp, ub1* piecep, void** indp) {
+   const QoreListNode* l = (const QoreListNode*)ictxp;
+   const AbstractQoreNode* n = l->retrieve_entry(index);
+   if (is_null(n) || is_nothing(n)) {
+      //*indp = 
+   }
+   return 0;
+}
+*/
+
+void OraBindNode::bindListValue(ExceptionSink* xsink, int pos, const QoreListNode* l) {
+   if (l->empty()) {
+      // bind a NULL
+      stmt.bindByPos(bndp, pos, 0, 0, SQLT_STR, xsink, pIndicator);
+      return;
+   }
+
+   // ensure all bound arrays are of the same size
+   if (stmt.setArraySize(l->size(), xsink))
+      return;
+
+   array = true;
+   buf.ptr = 0;
+   
+   qore_type_t t = NT_NOTHING;
+   const char* type_name = 0;
+
+   ConstListIterator li(l);
+   while (li.next()) {
+      const AbstractQoreNode* n = li.getValue();
+      qore_type_t nt = get_node_type(n);
+      if (nt == NT_NOTHING || nt == NT_NULL) {
+      }
+      
+      if (type_name) {
+         if (t != nt) {
+            xsink->raiseException("ORACLE-BIND-VALUE-ERROR", "mixed types in list bind; got type \"%s\" in list of type \"%s\"", get_type_name(n), type_name);
+            return;
+         }
+      }
+      else {
+         t = nt;
+         type_name = get_type_name(n);
+      }
+
+      switch (t) {
+         case NT_STRING: {
+            //const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(n);
+            break;
+         }
+
+         default:
+            xsink->raiseException("ORACLE-BIND-VALUE-ERROR", "type '%s' is not supported for SQL binding", n->getTypeName());
+            break;
+      }
+   }
+}
+
 void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool& is_nty, bool in_only) {
    QoreOracleConnection* conn = (QoreOracleConnection*)stmt.getData();
 
@@ -145,6 +204,19 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
    }
 
    qore_type_t ntype = v->getType();
+
+/*
+   // process list binds first
+   if (ntype == NT_LIST) {
+      const QoreListNode* l = reinterpret_cast<const QoreListNode*>(v);
+      bindListValue(xsink, pos, l);
+      return;
+   }
+*/
+
+   // mark statement with a non-list bind
+   if (stmt.setArraySize(0, xsink))
+      return;
    
    if (ntype == NT_STRING) {
       const QoreStringNode* bstr = reinterpret_cast<const QoreStringNode*>(v);

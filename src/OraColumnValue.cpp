@@ -35,6 +35,14 @@ static DateTimeNode* convert_date_time(unsigned char *str) {
 }
 
 void OraColumnValue::del(ExceptionSink *xsink) {
+   if (array) {
+      if (buf.ptr) {
+         //printd(5, "freeing pointer with free(%p)\n", buf.ptr);
+         free(buf.ptr);
+      }
+      return;            
+   }
+
    //printd(5, "OraColumnValue::del() this: %p dtype: %d buf.ptr: %p\n", this, dtype, buf.ptr);
    switch (dtype) {
       case 0:

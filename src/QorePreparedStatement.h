@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2006 - 2014 Qore Technologies, sro
+  Copyright (C) 2006 - 2015 Qore Technologies, sro
   
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -160,7 +160,7 @@ protected:
       value = v ? v->refSelf() : 0;
    }
 
-   DLLLOCAL void setPlaceholderIntern(int size, const char *typ, ExceptionSink* xsink) {
+   DLLLOCAL void setPlaceholderIntern(int size, const char* typ, ExceptionSink* xsink) {
       data.setMaxSize(size);
       data.setType(typ);
    }
@@ -229,6 +229,8 @@ protected:
    }
    */
 
+   DLLLOCAL void bindListValue(ExceptionSink* xsink, int pos, const QoreListNode* l);
+   
    DLLLOCAL void bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool& is_nty, bool in_only = true);
    DLLLOCAL void bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink);
    DLLLOCAL int bindDate(int pos, ExceptionSink* xsink);
@@ -236,12 +238,11 @@ protected:
 public:
    // value to be bound, if any
    AbstractQoreNode* value;
-
    ora_bind data;
+   OCILobLocator* strlob;
+   OCIBind* bndp;
 
-   OCILobLocator *strlob;
    bool clob_allocated;
-   OCIBind *bndp;
 
    // Variable indicator is used as a holder for QoreOracleStatement::bindByPos() indp argument
    // which holds information about NULLs in the bound/placeholder-ed value. See:
@@ -254,20 +255,20 @@ public:
    // when is the Type::Date bound to OUT argument of PL/SQL procedure.
    // See: OraBindNode::getValue() code.
    sb2 indicator;
-   dvoid *pIndicator;
+   dvoid* pIndicator;
    
    // for value nodes
-   DLLLOCAL inline OraBindNode(QoreOracleStatement& stmt, const AbstractQoreNode* v) : 
+   DLLLOCAL OraBindNode(QoreOracleStatement& stmt, const AbstractQoreNode* v) : 
       OraColumnValue(stmt), 
-      value(v ? v->refSelf() : 0), strlob(0), clob_allocated(false), bndp(0) {
+      value(v ? v->refSelf() : 0), strlob(0), bndp(0), clob_allocated(false) {
       indicator = 0;
-      pIndicator = (dvoid *)&indicator;
+      pIndicator = (dvoid*)&indicator;
    }
 
    // for placeholder nodes
-   DLLLOCAL inline OraBindNode(QoreOracleStatement& stmt, char* name, int size, const char* typ, const AbstractQoreNode* v = 0) : 
+   DLLLOCAL OraBindNode(QoreOracleStatement& stmt, char* name, int size, const char* typ, const AbstractQoreNode* v = 0) : 
       OraColumnValue(stmt),
-      value(v ? v->refSelf() : 0), data(name, size, typ), strlob(0), clob_allocated(false), bndp(0) {
+      value(v ? v->refSelf() : 0), data(name, size, typ), strlob(0), bndp(0), clob_allocated(false) {
       indicator = 0;
       pIndicator = (dvoid*)&indicator;
    }
@@ -300,8 +301,8 @@ typedef std::vector<OraBindNode* > node_list_t;
 class QorePreparedStatement : public QoreOracleStatement {
 protected:
    node_list_t node_list;
-   QoreString *str;
-   OraResultSet *columns;
+   QoreString* str;
+   OraResultSet* columns;
    bool hasOutput;
    bool defined;
    bool has_nty;
@@ -315,9 +316,9 @@ protected:
    DLLLOCAL int bindOracle(ExceptionSink* xsink);
 
 public:
-   //DLLLOCAL QorePreparedStatement(Datasource *ods, const QoreString *ostr, const QoreListNode* args, ExceptionSink* n_xsink, bool doBinding = true);
+   //DLLLOCAL QorePreparedStatement(Datasource* ods, const QoreString* ostr, const QoreListNode* args, ExceptionSink* n_xsink, bool doBinding = true);
 
-   DLLLOCAL QorePreparedStatement(Datasource *ods) : QoreOracleStatement(ods), str(0), columns(0), hasOutput(false), defined(false), has_nty(false) {
+   DLLLOCAL QorePreparedStatement(Datasource* ods) : QoreOracleStatement(ods), str(0), columns(0), hasOutput(false), defined(false), has_nty(false) {
    }
 
    DLLLOCAL virtual ~QorePreparedStatement() {
@@ -345,7 +346,7 @@ public:
 
    DLLLOCAL void reset(ExceptionSink* xsink);
    
-   DLLLOCAL int prepare(const QoreString &sql, const QoreListNode* args, bool parse, ExceptionSink* xsink);
+   DLLLOCAL int prepare(const QoreString& sql, const QoreListNode* args, bool parse, ExceptionSink* xsink);
 
    DLLLOCAL OraBindNode* add(const AbstractQoreNode* v) {
       OraBindNode* c = new OraBindNode(*this, v);
@@ -354,7 +355,7 @@ public:
       return c;
    }
 
-   DLLLOCAL OraBindNode* add(char *name, int size = -1, const char *type = 0, const AbstractQoreNode* val = 0) {
+   DLLLOCAL OraBindNode* add(char* name, int size = -1, const char* type = 0, const AbstractQoreNode* val = 0) {
       OraBindNode* c = new OraBindNode(*this, name, size, type, val);
       add(c);
       //printd(5, "QorePreparedStatement::add()\n");
@@ -387,10 +388,10 @@ public:
    DLLLOCAL QoreHashNode* fetchColumns(int rows, ExceptionSink* xsink);
 
 #ifdef _QORE_HAS_DBI_DESCRIBE
-   DLLLOCAL QoreHashNode* describe(ExceptionSink *xsink);
+   DLLLOCAL QoreHashNode* describe(ExceptionSink* xsink);
 #endif
 
-   DLLLOCAL AbstractQoreNode* execWithPrologue(bool rows, ExceptionSink *xsink);
+   DLLLOCAL AbstractQoreNode* execWithPrologue(bool rows, ExceptionSink* xsink);
 
 #ifdef _QORE_HAS_DBI_SELECT_ROW
    DLLLOCAL QoreHashNode* selectRow(ExceptionSink* xsink);
@@ -405,7 +406,7 @@ protected:
    ExceptionSink* xsink;
 
 public:
-   DLLLOCAL QorePreparedStatementHelper(Datasource *ds, ExceptionSink* n_xsink) : QorePreparedStatement(ds), xsink(n_xsink) {
+   DLLLOCAL QorePreparedStatementHelper(Datasource* ds, ExceptionSink* n_xsink) : QorePreparedStatement(ds), xsink(n_xsink) {
    }
    
    DLLLOCAL ~QorePreparedStatementHelper() {

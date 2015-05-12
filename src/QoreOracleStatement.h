@@ -37,6 +37,8 @@ class QoreOracleStatement {
 protected:
    Datasource* ds;
    OCIStmt* stmthp;
+   // for array binds
+   int array_size;
    bool is_select,
       fetch_done;
 
@@ -46,7 +48,7 @@ protected:
    }
 
 public:
-   DLLLOCAL QoreOracleStatement(Datasource* n_ds, OCIStmt* n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), is_select(false), fetch_done(false) {
+   DLLLOCAL QoreOracleStatement(Datasource* n_ds, OCIStmt* n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), array_size(-1), is_select(false), fetch_done(false) {
    }
 
    DLLLOCAL virtual ~QoreOracleStatement() {
@@ -185,6 +187,21 @@ public:
       return fetch(xsink) ? false : true;
    }
 
+   DLLLOCAL int setArraySize(unsigned as, ExceptionSink* xsink) {
+      if (array_size != -1) {
+         if (array_size != (int)as) {
+            if (!array_size)
+               xsink->raiseException("BIND-EXCEPTION", "cannot bind a list with %d elements when a non-list value has already been bound in the same statement; all arguments must be lists of exactly the same size or no arguments can be lists", as);
+            else
+               xsink->raiseException("BIND-EXCEPTION", "cannot bind a list with %d elements when a list of %d elements has already been bound in the same statement; lists must be of exactly the same size", as, array_size);
+            return -1;
+         }
+      }
+      else
+         array_size = (int)as;
+      return 0;
+   }
+   
    DLLLOCAL QoreHashNode* fetchRow(OraResultSet& columns, ExceptionSink* xsink);
 #ifdef _QORE_HAS_DBI_SELECT_ROW
    DLLLOCAL QoreHashNode* fetchSingleRow(ExceptionSink* xsink);
