@@ -35,12 +35,14 @@ static DateTimeNode* convert_date_time(unsigned char *str) {
 }
 
 void OraColumnValue::del(ExceptionSink *xsink) {
+   //printd(5, "OraColumnValue::del() this: %p dtype: %d buf.ptr: %p array: %d\n", this, dtype, buf.ptr, array);
+
    if (array) {
       delete buf.arraybind;
+      array = false;
       return;            
    }
 
-   //printd(5, "OraColumnValue::del() this: %p dtype: %d buf.ptr: %p\n", this, dtype, buf.ptr);
    switch (dtype) {
       case 0:
       case SQLT_INT:

@@ -6,7 +6,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2014 David Nichols
+  Copyright (C) 2003 - 2015 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -84,6 +84,9 @@ static int dbi_oracle_caps = (
 #endif
 #ifdef _QORE_HAS_DBI_EVENTS
    |DBI_CAP_EVENTS
+#endif
+#ifdef DBI_CAP_HAS_ARRAY_BIND
+   |DBI_CAP_HAS_ARRAY_BIND
 #endif
    );
 
