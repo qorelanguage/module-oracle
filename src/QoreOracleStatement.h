@@ -187,13 +187,13 @@ public:
       return fetch(xsink) ? false : true;
    }
 
-   DLLLOCAL int setArraySize(unsigned as, ExceptionSink* xsink) {
+   DLLLOCAL int setArraySize(int pos, unsigned as, ExceptionSink* xsink) {
       if (array_size != -1) {
          if (array_size != (int)as) {
             if (!array_size)
-               xsink->raiseException("BIND-EXCEPTION", "cannot bind a list with %d elements when a non-list value has already been bound in the same statement; all arguments must be lists of exactly the same size or no arguments can be lists", as);
+               xsink->raiseException("BIND-EXCEPTION", "query position %d: cannot bind a list with %d element%s when a non-list value has already been bound in the same statement; all arguments must be lists of exactly the same size or no arguments can be lists", pos, as, as == 1 ? "" : "s");
             else
-               xsink->raiseException("BIND-EXCEPTION", "cannot bind a list with %d elements when a list of %d elements has already been bound in the same statement; lists must be of exactly the same size", as, array_size);
+               xsink->raiseException("BIND-EXCEPTION", "query position %d: cannot bind a list with %d element%s when a list of %d element%s has already been bound in the same statement; lists must be of exactly the same size", pos, as, as == 1 ? "" : "s", array_size, array_size == 1 ? "" : "s");
             return -1;
          }
       }

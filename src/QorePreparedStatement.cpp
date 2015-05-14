@@ -755,7 +755,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
    if (ntype == NT_LIST) {
       const QoreListNode* l = reinterpret_cast<const QoreListNode*>(v);
       // ensure all bound arrays are of the same size
-      if (stmt.setArraySize(l->size(), xsink))
+      if (stmt.setArraySize(pos, l->size(), xsink))
          return;
 
       bindListValue(xsink, pos, l, in_only);
@@ -763,7 +763,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
    }
 
    // mark statement with a non-list bind
-   if (stmt.setArraySize(0, xsink))
+   if (stmt.setArraySize(pos, 0, xsink))
       return;
    
    if (ntype == NT_STRING) {
