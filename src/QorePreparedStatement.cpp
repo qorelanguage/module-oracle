@@ -1303,12 +1303,12 @@ void OraBindNode::resetValue(ExceptionSink* xsink) {
 }
 
 AbstractQoreNode* OraBindNode::getValue(bool horizontal, ExceptionSink* xsink) {
-    //printd(5, "AbstractQoreNode* OraBindNode::getValue %d\n", indicator);
-    if (indicator != 0)
-        return null();
-
-    if (array)
-       return buf.arraybind->getOutputValue(xsink, *this, true);
+   //printd(5, "AbstractQoreNode* OraBindNode::getValue %d\n", indicator);
+   if (indicator != 0)
+      return null();
+   
+   if (array)
+      return buf.arraybind->getOutputValue(xsink, *this, true);
 
    return OraColumnValue::getValue(xsink, horizontal, true);
 }
