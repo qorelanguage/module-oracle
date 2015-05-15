@@ -1307,7 +1307,7 @@ AbstractQoreNode* OraBindNode::getValue(bool horizontal, ExceptionSink* xsink) {
     if (indicator != 0)
         return null();
 
-    if (stmt.getArraySize() > 0)
+    if (array)
        return buf.arraybind->getOutputValue(xsink, *this, true);
 
    return OraColumnValue::getValue(xsink, horizontal, true);
