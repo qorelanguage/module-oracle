@@ -1633,6 +1633,7 @@ void QorePreparedStatement::reset(ExceptionSink* xsink) {
       columns->del(xsink);
       delete columns;
       columns = 0;
+      array_size = 0;
    }
 
    hasOutput = false;

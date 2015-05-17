@@ -39,7 +39,7 @@ void OraColumnValue::del(ExceptionSink *xsink) {
 
    if (array) {
       delete buf.arraybind;
-      buf.arraybind = 0;
+      array = false;
       return;            
    }
 
