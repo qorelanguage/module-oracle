@@ -39,7 +39,7 @@ void OraColumnValue::del(ExceptionSink *xsink) {
 
    if (array) {
       delete buf.arraybind;
-      array = false;
+      buf.arraybind = 0;
       return;            
    }
 
@@ -129,6 +129,7 @@ void OraColumnValue::del(ExceptionSink *xsink) {
 #define ORA_ROWID_LEN 25
 
 AbstractQoreNode* OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal, bool destructive) {
+   assert(!array);
    // SQL NULL returned
    if (ind == -1)
       return null();
@@ -270,6 +271,7 @@ AbstractQoreNode* OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
 }
 
 QoreStringNode* OraColumnValue::doReturnString(bool destructive) {
+   assert(!array);
    if (!destructive)
       return new QoreStringNode((const char*)buf.ptr, stmt.getEncoding());
    int len = strlen((char*)buf.ptr);
@@ -280,6 +282,7 @@ QoreStringNode* OraColumnValue::doReturnString(bool destructive) {
 }
 
 void OraColumnValue::freeObject(ExceptionSink* xsink) {
+   assert(!array);
    assert(dtype == SQLT_NTY);
    assert(subdtype == SQLT_NTY_OBJECT || subdtype == SQLT_NTY_COLLECTION);
 

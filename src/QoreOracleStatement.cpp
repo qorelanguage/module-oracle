@@ -46,7 +46,7 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
    if (is_select)
       iters = 0;
    else
-      iters = array_size <= 0 ? 1 : array_size;
+      iters = !array_size ? 1 : array_size;
    int status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, iters, 0, 0, 0, OCI_DEFAULT);
 
    //printd(0, "QoreOracleStatement::execute() stmthp=%p status=%d (OCI_ERROR=%d)\n", stmthp, status, OCI_ERROR);

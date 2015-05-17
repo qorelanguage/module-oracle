@@ -162,12 +162,15 @@ protected:
    }
 
    DLLLOCAL void setPlaceholderIntern(int size, const char* typ, ExceptionSink* xsink) {
+      assert(!array);
       data.setMaxSize(size);
       data.setType(typ);
    }
 
    DLLLOCAL int setPlaceholder(const AbstractQoreNode* v, ExceptionSink* xsink) {
       resetPlaceholder(xsink, false);
+
+      assert(!array);
 
       // assume string if no argument passed
       if (is_nothing(v)) {
@@ -230,7 +233,7 @@ protected:
    }
    */
 
-   DLLLOCAL void bindListValue(ExceptionSink* xsink, int pos, const QoreListNode* l, bool in_only);
+   DLLLOCAL void bindListValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool in_only);
    
    DLLLOCAL void bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool& is_nty, bool in_only = true);
    DLLLOCAL void bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink);
@@ -430,8 +433,8 @@ public:
    }
 
    DLLLOCAL int setupBind(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {
-      assert(l->size());
-      ind_list.resize(l->size());
+      assert(!l || l->size());
+      ind_list.resize(l ? l->size() : 1);
 
       return setupBindImpl(bn, pos, in_only, xsink);
    }
@@ -439,6 +442,7 @@ public:
    DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) = 0;
 
    DLLLOCAL void bindNoDataCallback(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp, ub1* piecep, void** indp) {
+      assert((ind_list.size() + 1) >= iter);
       *bufpp = (void*)0;
       *alenp = 0;
       *piecep = OCI_ONE_PIECE;
@@ -448,8 +452,10 @@ public:
    }
    
    DLLLOCAL void bindCallback(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp, ub1* piecep, void** indp) {
+      assert(!ind_list.empty());
+      assert(!l || (ind_list.size() + 1) >= iter);
       *piecep = OCI_ONE_PIECE;
-      *indp = (void*)&ind_list[iter];
+      *indp = (void*)&ind_list[l ? iter : 0];
       //printd(5, "AbstractDynamicArrayBindData::bindCallback() iter: %d alen: %d ind: %d\n", iter, alen_list[iter], ind_list[iter]);
       
       bindCallbackImpl(bindp, iter, bufpp, alenp);
@@ -480,6 +486,12 @@ public:
    }
 
    DLLLOCAL virtual AbstractQoreNode* getOutputValueImpl(ExceptionSink* xsink, OraBindNode& bn, bool destructive) = 0;
+
+   DLLLOCAL int reset(ExceptionSink* xsink) {
+      return resetImpl(xsink);
+   }
+
+   DLLLOCAL virtual int resetImpl(ExceptionSink* xsink) = 0;
 };
 
 #endif

@@ -104,6 +104,11 @@ void OraBindNode::bind(int pos, bool& is_nty, ExceptionSink* xsink) {
    }
 
    if (!is_nothing(value) && !is_null(value)) {
+      if (stmt.isArray()) {
+         xsink->raiseException("BIND-EXCEPTION", "position %d: cannot bind in/out values of type '%s' with array binds", pos, get_type_name(value));
+         return;
+      }
+      
       // convert value to declared buffer type and then do bind with value
       if (data.isType("string") || data.isType("clob")) {
          QoreStringNodeValueHelper tmp(value);
@@ -204,6 +209,10 @@ public:
    DLLLOCAL void resize(size_t size) {
       ptrvec.resize(size);
    }
+
+   DLLLOCAL void clear() {
+      ptrvec.clear();
+   }
 };
 
 typedef PtrVec<char> StrVec;
@@ -228,7 +237,8 @@ public:
 
    DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {
       alen_list.resize(l->size());
-
+      strvec.clear();
+      
       unsigned max = 0;
 
       const QoreEncoding* enc = bn.stmt.getEncoding();
@@ -350,6 +360,11 @@ public:
       }
       return l.release();
    }
+
+   DLLLOCAL virtual int resetImpl(ExceptionSink* xsink) {
+      strvec.clear();
+      return 0;
+   }
 };
 
 class DynamicArrayBindFloat : public AbstractDynamicArrayBindData {
@@ -417,22 +432,32 @@ public:
       assert(false);
       return 0;
    }
+
+   DLLLOCAL virtual int resetImpl(ExceptionSink* xsink) {
+      vec.clear();
+      return 0;
+   }
 };
 
 class DynamicArrayBindDate : public AbstractDynamicArrayBindData {
 protected:
    typedef std::vector<OCIDateTime*> datevec_t;
    datevec_t vec;
+
+   DLLLOCAL void resetIntern() {
+      for (datevec_t::iterator i = vec.begin(), e = vec.end(); i != e; ++i) {
+         if ((*i))
+            OCIDescriptorFree(*i, QORE_DTYPE_TIMESTAMP);
+      }
+      vec.clear();
+   }
    
 public:
    DLLLOCAL DynamicArrayBindDate(const QoreListNode* n_l) : AbstractDynamicArrayBindData(n_l) {
    }
 
    DLLLOCAL virtual ~DynamicArrayBindDate() {
-      for (datevec_t::iterator i = vec.begin(), e = vec.end(); i != e; ++i) {
-         if ((*i))
-            OCIDescriptorFree(*i, QORE_DTYPE_TIMESTAMP);
-      }
+      resetIntern();
    }
 
    DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {
@@ -491,6 +516,11 @@ public:
 
    DLLLOCAL virtual AbstractQoreNode* getOutputValueImpl(ExceptionSink* xsink, OraBindNode& bn, bool destructive) {
       assert(false);
+      return 0;
+   }
+
+   DLLLOCAL virtual int resetImpl(ExceptionSink* xsink) {
+      resetIntern();
       return 0;
    }
 };
@@ -554,6 +584,11 @@ public:
    DLLLOCAL virtual AbstractQoreNode* getOutputValueImpl(ExceptionSink* xsink, OraBindNode& bn, bool destructive) {
       // currently not used for output binding
       assert(false);
+      return 0;
+   }
+
+   DLLLOCAL virtual int resetImpl(ExceptionSink* xsink) {
+      vec.clear();
       return 0;
    }
 };
@@ -644,90 +679,351 @@ public:
       assert(false);
       return 0;
    }
+
+   DLLLOCAL virtual int resetImpl(ExceptionSink* xsink) {
+      binvec.clear();
+      return 0;
+   }
 };
 
-void OraBindNode::bindListValue(ExceptionSink* xsink, int pos, const QoreListNode* l, bool in_only) {
+class AbstractDynamicSingleValue : public AbstractDynamicArrayBindData {
+public:
+   DLLLOCAL AbstractDynamicSingleValue() : AbstractDynamicArrayBindData(0) {
+   }
+
+   DLLLOCAL virtual ~AbstractDynamicSingleValue() {
+   }
+   
+   DLLLOCAL virtual void bindPlaceholderCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4** alenp) {
+      assert(false);
+   }
+
+   DLLLOCAL virtual int setupOutputBindImpl(OraBindNode& bn, int pos, ExceptionSink* xsink) {
+      // currently not used for output binding
+      assert(false);
+      return 0;
+   }
+
+   DLLLOCAL virtual AbstractQoreNode* getOutputValueImpl(ExceptionSink* xsink, OraBindNode& bn, bool destructive) {
+      // currently not used for output binding
+      assert(false);
+      return 0;
+   }
+
+   DLLLOCAL virtual int resetImpl(ExceptionSink* xsink) {
+      return 0;
+   }
+};
+
+class DynamicSingleValueNull : public AbstractDynamicSingleValue {
+protected:
+   
+public:
+   DLLLOCAL DynamicSingleValueNull() {
+   }
+
+   DLLLOCAL virtual ~DynamicSingleValueNull() {
+   }
+
+   DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {    
+      ind_list[0] = -1;
+
+      bn.dtype = SQLT_STR;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, sizeof(char), SQLT_STR, xsink, 0, OCI_DATA_AT_EXEC);
+
+      return 0;
+   }
+
+   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
+      *bufpp = 0;
+      *alenp = 0;
+   }
+};
+
+class DynamicSingleValueInt : public AbstractDynamicSingleValue {
+protected:
+   int64 v;
+   
+public:
+   DLLLOCAL DynamicSingleValueInt(int64 n_v) : v(n_v) {
+   }
+
+   DLLLOCAL virtual ~DynamicSingleValueInt() {
+   }
+
+   DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {    
+      ind_list[0] = 0;
+      
+      bn.dtype = SQLT_INT;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, sizeof(int64), SQLT_INT, xsink, 0, OCI_DATA_AT_EXEC);
+
+      return 0;
+   }
+
+   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
+      *bufpp = &v;
+      *alenp = sizeof(int64);
+   }
+};
+
+class DynamicSingleValueFloat : public AbstractDynamicSingleValue {
+protected:
+   double f;
+   
+public:
+   DLLLOCAL DynamicSingleValueFloat(double n_f) : f(n_f) {
+   }
+
+   DLLLOCAL virtual ~DynamicSingleValueFloat() {
+   }
+
+   DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {    
+      ind_list[0] = 0;
+      
+#if defined(SQLT_BDOUBLE) && defined(USE_NEW_NUMERIC_TYPES)
+      bn.dtype = SQLT_BDOUBLE;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, sizeof(double), SQLT_BDOUBLE, xsink, 0, OCI_DATA_AT_EXEC);
+#else
+      bn.dtype = SQLT_FLT;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, sizeof(double), SQLT_FLT, xsink, 0, OCI_DATA_AT_EXEC);
+#endif
+
+      return 0;
+   }
+
+   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
+      *bufpp = &f;
+      *alenp = sizeof(double);
+   }
+};
+
+class DynamicSingleValueString : public AbstractDynamicSingleValue {
+protected:
+   QoreStringNode* str;
+   bool deref;
+   
+public:
+   DLLLOCAL DynamicSingleValueString(QoreStringNode* s, bool dr) : str(s), deref(dr) {
+   }
+
+   DLLLOCAL virtual ~DynamicSingleValueString() {
+      if (deref)
+         str->deref();
+   }
+
+   DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {    
+      ind_list[0] = 0;
+      
+      bn.dtype = SQLT_STR;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, str->size() + 1, SQLT_STR, xsink, 0, OCI_DATA_AT_EXEC);
+
+      return 0;
+   }
+
+   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
+      *bufpp = (void*)str->getBuffer();
+      *alenp = str->size() + 1;
+   }
+};
+
+class DynamicSingleValueDate : public AbstractDynamicSingleValue {
+protected:
+   const DateTimeNode* d;
+   OCIDateTime* dt;
+   
+public:
+   DLLLOCAL DynamicSingleValueDate(const DateTimeNode* n_d) : d(n_d), dt(0) {
+   }
+
+   DLLLOCAL virtual ~DynamicSingleValueDate() {
+   }
+
+   DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {    
+      ind_list[0] = 0;
+
+      QoreOracleConnection* conn = (QoreOracleConnection*)bn.stmt.getData();
+
+      // acquire date descriptor
+      if (bn.stmt.setupDateDescriptor(dt, xsink))
+         return -1;
+
+      if (conn->dateTimeConstruct(dt, *d, xsink))
+         return -1;
+
+      bn.dtype = QORE_SQLT_TIMESTAMP;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, 0, QORE_SQLT_TIMESTAMP, xsink, 0, OCI_DATA_AT_EXEC);
+
+      return 0;
+   }
+
+   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
+      *bufpp = (void*)dt;
+      *alenp = 0;
+   }
+};
+
+class DynamicSingleValueBinary : public AbstractDynamicSingleValue {
+protected:
+   const BinaryNode* b;
+   
+public:
+   DLLLOCAL DynamicSingleValueBinary(const BinaryNode* n_b) : b(n_b) {
+   }
+
+   DLLLOCAL virtual ~DynamicSingleValueBinary() {
+   }
+
+   DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {    
+      ind_list[0] = 0;
+
+      bn.dtype = SQLT_BIN;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, b->size(), SQLT_BIN, xsink, 0, OCI_DATA_AT_EXEC);
+
+      return 0;
+   }
+
+   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
+      *bufpp = (void*)b->getPtr();
+      *alenp = (ub4)b->size();
+   }
+};
+
+void OraBindNode::bindListValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool in_only) {
    array = true;
    buf.arraybind = 0;
    
-   if (l->empty()) {
-      // bind a NULL
-      stmt.bindByPos(bndp, pos, 0, 0, SQLT_STR, xsink, pIndicator);
-      return;
-   }
-
-   qore_type_t t = NT_NOTHING;
-   const char* type_name = 0;
-
-   // first get data type for bind and set up array bind data object
-   ConstListIterator li(l);
-   while (li.next()) {
-      const AbstractQoreNode* n = li.getValue();
-      qore_type_t nt = get_node_type(n);
-      if (nt == NT_NOTHING || nt == NT_NULL)
-         continue;
-      
-      if (type_name) {
-         if (t != nt) {
-            xsink->raiseException("ORACLE-BIND-VALUE-ERROR", "mixed types in list bind; got type \"%s\" in list of type \"%s\"", get_type_name(n), type_name);
-            return;
-         }
-      }
-      else {
-         t = nt;
-         type_name = get_type_name(n);
-      }
-
+   qore_type_t t = get_node_type(v);
+   if (t != NT_LIST) {
       switch (t) {
-         case NT_STRING: {
-            buf.arraybind = new DynamicArrayBindString(l);
+         case NT_NOTHING:
+         case NT_NULL:
+            buf.arraybind = new DynamicSingleValueNull();
             break;
-         }
 
-         case NT_INT: {
-            buf.arraybind = new DynamicArrayBindString(l, NT_INT, "int");
+         case NT_INT:
+            buf.arraybind = new DynamicSingleValueInt(reinterpret_cast<const QoreBigIntNode*>(v)->val);
             break;
-         }
 
+         case NT_BOOLEAN:
+            buf.arraybind = new DynamicSingleValueInt((int)reinterpret_cast<const QoreBoolNode*>(v)->getValue());
+            break;
+            
+         case NT_FLOAT:
+            buf.arraybind = new DynamicSingleValueInt(reinterpret_cast<const QoreFloatNode*>(v)->f);
+            break;
+            
          case NT_NUMBER: {
-            buf.arraybind = new DynamicArrayBindString(l, NT_NUMBER, "number");
-            break;
-         }
-
-         case NT_FLOAT: {
-            buf.arraybind = new DynamicArrayBindFloat(l);
+            const QoreNumberNode* n = reinterpret_cast<const QoreNumberNode*>(v);
+            QoreStringNode* tstr = new QoreStringNode(stmt.getEncoding());
+            n->getStringRepresentation(*tstr);
+            buf.arraybind = new DynamicSingleValueString(tstr, true);
             break;
          }
             
          case NT_DATE: {
-            buf.arraybind = new DynamicArrayBindDate(l);
+            const DateTimeNode* d = reinterpret_cast<const DateTimeNode*>(v);
+            buf.arraybind = new DynamicSingleValueDate(d);
             break;
          }
 
-         case NT_BOOLEAN: {
-            buf.arraybind = new DynamicArrayBindBool(l);
+         case NT_STRING: {
+            const QoreStringNode* bstr = reinterpret_cast<const QoreStringNode*>(v);
+            if (bstr->getEncoding() != stmt.getEncoding()) {
+               QoreStringNode* tmp = bstr->convertEncoding(stmt.getEncoding(), xsink);
+               if (*xsink)
+                  return;
+               buf.arraybind = new DynamicSingleValueString(tmp, true);
+            }
+            else
+               buf.arraybind = new DynamicSingleValueString(const_cast<QoreStringNode*>(bstr), false);
             break;
          }
-
-         case NT_BINARY: {
-            buf.arraybind = new DynamicArrayBindBinary(l);
+            
+         case NT_BINARY:
+            buf.arraybind = new DynamicSingleValueBinary(reinterpret_cast<const BinaryNode*>(v));
             break;
-         }
 
          default:
-            xsink->raiseException("ORACLE-BIND-VALUE-ERROR", "type '%s' is not supported for SQL binding", n->getTypeName());
-            break;
+            xsink->raiseException("ORACLE-BIND-VALUE-ERROR", "single-value type '%s' is not supported for SQL array binding", v->getTypeName());
+            return;
       }
-      break;
    }
+   else {
+      // process list and get element type
+      t = NT_NOTHING;
+      const char* type_name = 0;
 
-   // this is possible if the entire list is NOTHING or NULL
-   if (t == NT_NOTHING) {
-      assert(!buf.arraybind);
-      buf.arraybind = new DynamicArrayBindString(l);
-      t = NT_STRING;
+      const QoreListNode*l = reinterpret_cast<const QoreListNode*>(v);
+      
+      // first get data type for bind and set up array bind data object
+      ConstListIterator li(l);
+      while (li.next()) {
+         const AbstractQoreNode* n = li.getValue();
+         qore_type_t nt = get_node_type(n);
+         if (nt == NT_NOTHING || nt == NT_NULL)
+            continue;
+      
+         if (type_name) {
+            if (t != nt) {
+               xsink->raiseException("ORACLE-BIND-VALUE-ERROR", "mixed types in list bind; got type \"%s\" in list of type \"%s\"", get_type_name(n), type_name);
+               return;
+            }
+         }
+         else {
+            t = nt;
+            type_name = get_type_name(n);
+         }
+         
+         switch (t) {
+            case NT_STRING: {
+               buf.arraybind = new DynamicArrayBindString(l);
+               break;
+            }
+               
+            case NT_INT: {
+               buf.arraybind = new DynamicArrayBindString(l, NT_INT, "int");
+               break;
+            }
+               
+            case NT_NUMBER: {
+               buf.arraybind = new DynamicArrayBindString(l, NT_NUMBER, "number");
+               break;
+            }
+               
+            case NT_FLOAT: {
+               buf.arraybind = new DynamicArrayBindFloat(l);
+               break;
+            }
+               
+            case NT_DATE: {
+               buf.arraybind = new DynamicArrayBindDate(l);
+               break;
+            }
+               
+            case NT_BOOLEAN: {
+               buf.arraybind = new DynamicArrayBindBool(l);
+               break;
+            }
+               
+            case NT_BINARY: {
+               buf.arraybind = new DynamicArrayBindBinary(l);
+               break;
+            }
+               
+            default:
+               xsink->raiseException("ORACLE-BIND-VALUE-ERROR", "type '%s' is not supported for SQL array binding", n->getTypeName());
+               return;
+         }
+         break;
+      }
+      
+      // this is possible if the entire list is NOTHING or NULL
+      if (t == NT_NOTHING) {
+         assert(!buf.arraybind);
+         buf.arraybind = new DynamicSingleValueNull();
+      }
    }
-
+   
    assert(buf.arraybind);
    buf.arraybind->setupBind(*this, pos, in_only, xsink);
    // execute OCIBindDynamic()
@@ -743,15 +1039,15 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
 
    //printd(5, "OraBindNode::bindValue() type=%s\n", v ? v->getTypeName() : "NOTHING");
 
-   // bind a NULL
-   if (is_nothing(v) || is_null(v)) {
-      stmt.bindByPos(bndp, pos, 0, 0, SQLT_STR, xsink, pIndicator);
+   // process list binds first
+   if (stmt.isArray()) {
+      bindListValue(xsink, pos, v, in_only);
       return;
    }
 
-   qore_type_t ntype = v->getType();
+   qore_type_t ntype = get_node_type(v);
 
-   // process list binds first
+   /*
    if (ntype == NT_LIST) {
       const QoreListNode* l = reinterpret_cast<const QoreListNode*>(v);
       // ensure all bound arrays are of the same size
@@ -761,11 +1057,14 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
       bindListValue(xsink, pos, l, in_only);
       return;
    }
-
-   // mark statement with a non-list bind
-   if (stmt.setArraySize(pos, 0, xsink))
-      return;
+   */
    
+   // bind a NULL
+   if (ntype == NT_NOTHING || ntype == NT_NULL) {
+      stmt.bindByPos(bndp, pos, 0, 0, SQLT_STR, xsink, pIndicator);
+      return;
+   }
+
    if (ntype == NT_STRING) {
       const QoreStringNode* bstr = reinterpret_cast<const QoreStringNode*>(v);
 
@@ -881,7 +1180,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
          data.save(tstr);
 
 	 //printd(5, "binding number '%s'\n", buf.ptr);
-         stmt.bindByPos(bndp, pos, (char* )tstr->getBuffer(), tstr->strlen() + 1, SQLT_STR, xsink, pIndicator);
+         stmt.bindByPos(bndp, pos, (char*)tstr->getBuffer(), tstr->strlen() + 1, SQLT_STR, xsink, pIndicator);
       }
       return;
    }
@@ -976,7 +1275,7 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
 
    //printd(5, "OraBindNode::bindPlaceholder() this: %p, conn: %p, pos: %d type: %s, size: %d buf.ptr: %p\n", this, conn, pos, data.ph_type, data.ph_maxsize, buf.ptr);
 
-   if (stmt.getArraySize() > 1) {
+   if (stmt.isArray()) {
       // do a dynamic bind for output values when binding arrays
       array = true;
       buf.arraybind = 0;
@@ -1279,6 +1578,11 @@ void OraBindNode::resetValue(ExceptionSink* xsink) {
 
    data.resetBind();
 
+   if (array) {
+      buf.arraybind->reset(xsink);
+      return;
+   }
+   
    if (strlob) {
       if (clob_allocated) {
          QoreOracleConnection* conn = stmt.getData();
@@ -1304,12 +1608,12 @@ void OraBindNode::resetValue(ExceptionSink* xsink) {
 
 AbstractQoreNode* OraBindNode::getValue(bool horizontal, ExceptionSink* xsink) {
    //printd(5, "AbstractQoreNode* OraBindNode::getValue %d\n", indicator);
-   if (indicator != 0)
-      return null();
-   
    if (array)
       return buf.arraybind->getOutputValue(xsink, *this, true);
 
+   if (indicator != 0)
+      return null();
+   
    return OraColumnValue::getValue(xsink, horizontal, true);
 }
 
@@ -1383,8 +1687,20 @@ int QorePreparedStatement::prepare(const QoreString& sql, const QoreListNode* ar
 }
 
 int QorePreparedStatement::bindOracle(ExceptionSink* xsink) {
-   int pos = 1;
+   for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
+      OraBindNode* w = node_list[i];
+      if (!w->isValue())
+	 continue;
+      
+      // scan for array binds
+      if (get_node_type(w->value) == NT_LIST) {
+         const QoreListNode* l = reinterpret_cast<const QoreListNode*>(w->value);
+         if (setArraySize(i + 1, l->size(), xsink))
+            return -1;
+      }
+   }
 
+   int pos = 1;
    for (node_list_t::iterator i = node_list.begin(), e = node_list.end(); i != e; ++i) {
       (*i)->bind(pos, has_nty, xsink);
 
@@ -1399,14 +1715,16 @@ int QorePreparedStatement::bindOracle(ExceptionSink* xsink) {
 }
 
 int QorePreparedStatement::bind(const QoreListNode* args, ExceptionSink* xsink) {
+   int pos = 1;
    for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
       OraBindNode* w = node_list[i];
-
+      
       // get bind argument
       const AbstractQoreNode* v = args ? args->retrieve_entry(i) : 0;
 
       if (w->set(v, xsink))
 	 return -1;
+      ++pos;
    }
 
    if (bindOracle(xsink))
@@ -1419,7 +1737,7 @@ int QorePreparedStatement::bindPlaceholders(const QoreListNode* args, ExceptionS
    unsigned arg_offset = 0;
    for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
       OraBindNode* w = node_list[i];
-      if (w->isValue())
+      if (!w->isValue())
 	 continue;
 
       // get bind argument
@@ -1443,7 +1761,7 @@ int QorePreparedStatement::bindValues(const QoreListNode* args, ExceptionSink* x
 	 continue;
 
       // get bind argument
-     const AbstractQoreNode* v = args ? args->retrieve_entry(arg_offset++) : 0;
+      const AbstractQoreNode* v = args ? args->retrieve_entry(arg_offset++) : 0;
 
      if (w->set(v, xsink))
 	return -1;

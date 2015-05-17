@@ -38,7 +38,7 @@ protected:
    Datasource* ds;
    OCIStmt* stmthp;
    // for array binds
-   int array_size;
+   unsigned array_size;
    bool is_select,
       fetch_done;
 
@@ -48,7 +48,7 @@ protected:
    }
 
 public:
-   DLLLOCAL QoreOracleStatement(Datasource* n_ds, OCIStmt* n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), array_size(-1), is_select(false), fetch_done(false) {
+   DLLLOCAL QoreOracleStatement(Datasource* n_ds, OCIStmt* n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), array_size(0), is_select(false), fetch_done(false) {
    }
 
    DLLLOCAL virtual ~QoreOracleStatement() {
@@ -188,22 +188,23 @@ public:
    }
 
    DLLLOCAL int setArraySize(int pos, unsigned as, ExceptionSink* xsink) {
-      if (array_size != -1) {
-         if (array_size != (int)as) {
-            if (!array_size)
-               xsink->raiseException("BIND-EXCEPTION", "query position %d: cannot bind a list with %d element%s when a non-list value has already been bound in the same statement; all arguments must be lists of exactly the same size or no arguments can be lists", pos, as, as == 1 ? "" : "s");
-            else
-               xsink->raiseException("BIND-EXCEPTION", "query position %d: cannot bind a list with %d element%s when a list of %d element%s has already been bound in the same statement; lists must be of exactly the same size", pos, as, as == 1 ? "" : "s", array_size, array_size == 1 ? "" : "s");
+      if (array_size > 0) {
+         if (array_size != as) {
+            xsink->raiseException("BIND-EXCEPTION", "query position %d: cannot bind a list with %d element%s when a list of %d element%s has already been bound in the same statement; lists must be of exactly the same size", pos, as, as == 1 ? "" : "s", array_size, array_size == 1 ? "" : "s");
             return -1;
          }
       }
       else
-         array_size = (int)as;
+         array_size = as;
       return 0;
    }
 
-   DLLLOCAL int getArraySize() const {
+   DLLLOCAL unsigned getArraySize() const {
       return array_size;
+   }
+   
+   DLLLOCAL bool isArray() const {
+      return (bool)array_size;
    }
    
    DLLLOCAL QoreHashNode* fetchRow(OraResultSet& columns, ExceptionSink* xsink);
