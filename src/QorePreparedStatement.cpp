@@ -1688,6 +1688,8 @@ int QorePreparedStatement::prepare(const QoreString& sql, const QoreListNode* ar
 }
 
 int QorePreparedStatement::bindOracle(ExceptionSink* xsink) {
+   // reset array_size before new bind. setArraySize uses the 1st value posted as main size
+   array_size = 0;
    for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
       OraBindNode* w = node_list[i];
       if (!w->isValue())
