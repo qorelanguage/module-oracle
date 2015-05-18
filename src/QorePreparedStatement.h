@@ -103,7 +103,7 @@ public:
    DLLLOCAL void setType(const char* typ) {
       assert(type == OB_PH);
       if (ph_type)
-	 free(ph_type);
+         free(ph_type);
       ph_type = strdup(typ);
    }
 
@@ -157,7 +157,7 @@ protected:
 
    DLLLOCAL void setValue(const AbstractQoreNode* v, ExceptionSink* xsink) {
       if (value)
-	 value->deref(xsink);
+         value->deref(xsink);
       value = v ? v->refSelf() : 0;
    }
 
@@ -174,16 +174,16 @@ protected:
 
       // assume string if no argument passed
       if (is_nothing(v)) {
-	 setPlaceholderIntern(-1, "string", xsink);
-	 return 0;
+         setPlaceholderIntern(-1, "string", xsink);
+         return 0;
       }
 
       qore_type_t vtype = v->getType();
       if (vtype == NT_HASH) {
-	 const QoreHashNode* h = reinterpret_cast<const QoreHashNode*>(v);
+         const QoreHashNode* h = reinterpret_cast<const QoreHashNode*>(v);
 
          int size = -1;
-	 const AbstractQoreNode* t = h->getKeyValue("value");
+         const AbstractQoreNode* t = h->getKeyValue("value");
          if (t) {
             assert(!value);
             value = t->refSelf();            
@@ -194,34 +194,34 @@ protected:
             size = sz ? sz->getAsInt() : -1;
          }
 
-	 // get and check data type
-	 t = h->getKeyValue("type");
-	 if (!t) {
+         // get and check data type
+         t = h->getKeyValue("type");
+         if (!t) {
             if (value) {
                setPlaceholderIntern(size, value->getTypeName(), xsink);
                return 0;
             }
-	    xsink->raiseException("DBI-EXEC-EXCEPTION", "missing 'type' key in placeholder hash");
-	    return -1;
-	 }
+            xsink->raiseException("DBI-EXEC-EXCEPTION", "missing 'type' key in placeholder hash");
+            return -1;
+         }
 
          if (t->getType() != NT_STRING) {
-	    xsink->raiseException("DBI-EXEC-EXCEPTION", "expecting type name as value of 'type' key, got '%s'", t->getTypeName());
-	    return -1;
+            xsink->raiseException("DBI-EXEC-EXCEPTION", "expecting type name as value of 'type' key, got '%s'", t->getTypeName());
+            return -1;
          }
-	 const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(t);
+         const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(t);
 
-	 //QoreStringValueHelper strdebug(v);
-	 //printd(5, "OraBindNode::setPlaceholder() adding placeholder name=%s, size=%d, type=%s, value=%s\n", tstr.getBuffer(), size, str->getBuffer(), strdebug->getBuffer());
-	 setPlaceholderIntern(size, str->getBuffer(), xsink);
+         //QoreStringValueHelper strdebug(v);
+         //printd(5, "OraBindNode::setPlaceholder() adding placeholder name=%s, size=%d, type=%s, value=%s\n", tstr.getBuffer(), size, str->getBuffer(), strdebug->getBuffer());
+         setPlaceholderIntern(size, str->getBuffer(), xsink);
       }
       else if (vtype == NT_STRING)
-	 setPlaceholderIntern(-1, (reinterpret_cast<const QoreStringNode* >(v))->getBuffer(), xsink);
+         setPlaceholderIntern(-1, (reinterpret_cast<const QoreStringNode* >(v))->getBuffer(), xsink);
       else if (vtype == NT_INT)
-	 setPlaceholderIntern((reinterpret_cast<const QoreBigIntNode* >(v))->val, "string", xsink);
+         setPlaceholderIntern((reinterpret_cast<const QoreBigIntNode* >(v))->val, "string", xsink);
       else {
-	 xsink->raiseException("DBI-BIND-EXCEPTION", "expecting string or hash for placeholder description, got '%s'", v->getTypeName());
-	 return -1;
+         xsink->raiseException("DBI-BIND-EXCEPTION", "expecting string or hash for placeholder description, got '%s'", v->getTypeName());
+         return -1;
       }
 
       return 0;

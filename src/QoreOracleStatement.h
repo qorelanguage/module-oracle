@@ -162,7 +162,6 @@ public:
 			     "QoreOracleStatement::bindByPos()", xsink);
    }
 
-
    DLLLOCAL int prepare(QoreString& str, ExceptionSink* xsink) {
       QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
