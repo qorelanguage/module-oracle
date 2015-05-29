@@ -909,7 +909,7 @@ void OraBindNode::bindListValue(ExceptionSink* xsink, int pos, const AbstractQor
             break;
             
          case NT_FLOAT:
-            buf.arraybind = new DynamicSingleValueInt(reinterpret_cast<const QoreFloatNode*>(v)->f);
+            buf.arraybind = new DynamicSingleValueFloat(reinterpret_cast<const QoreFloatNode*>(v)->f);
             break;
             
          case NT_NUMBER: {
