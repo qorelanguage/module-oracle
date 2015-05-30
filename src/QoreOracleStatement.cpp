@@ -162,8 +162,6 @@ QoreListNode *QoreOracleStatement::fetchRows(OraResultSet &resultset, int rows, 
    if (resultset.define("QoreOracleStatement::fetchRows():define", xsink))
       return 0;
 
-   int num_rows = 0;
-   
    // now finally fetch the data
    while (next(xsink)) {
       QoreHashNode *h = fetchRow(resultset, xsink);
@@ -173,15 +171,14 @@ QoreListNode *QoreOracleStatement::fetchRows(OraResultSet &resultset, int rows, 
       // add row to list
       l->push(h);
 
-      ++num_rows;
-      if (rows > 0 && num_rows == rows)
+      if (rows > 0 && l->size() == rows)
 	 break;
    }
    //printd(2, "QoreOracleStatement::fetchRows(): %d column(s), %d row(s) retrieved as output\n", resultset.size(), l->size());
    if (!*xsink) {
       if (!fetch_done)
          fetch_done = true;
-      if (l->size() < rows)
+      if ((int)l->size() < rows)
          fetch_complete = true;
       return l.release();
    }
