@@ -146,8 +146,18 @@ QoreListNode *QoreOracleStatement::fetchRows(ExceptionSink *xsink) {
 }
 
 QoreListNode *QoreOracleStatement::fetchRows(OraResultSet &resultset, int rows, ExceptionSink *xsink) {
+   if (fetch_warned) {
+      xsink->raiseException("ORACLE-SELECT-ROWS-ERROR", "SQLStatement::fetchRows() called after the end of data already received");
+      return 0;
+   }
+   
    ReferenceHolder<QoreListNode> l(new QoreListNode, xsink);
 
+   if (fetch_complete) {
+      fetch_warned = true;
+      return l.release();
+   }
+   
    // setup temporary row to accept values
    if (resultset.define("QoreOracleStatement::fetchRows():define", xsink))
       return 0;
@@ -171,6 +181,8 @@ QoreListNode *QoreOracleStatement::fetchRows(OraResultSet &resultset, int rows, 
    if (!*xsink) {
       if (!fetch_done)
          fetch_done = true;
+      if (l->size() < rows)
+         fetch_complete = true;
       return l.release();
    }
    return 0;
@@ -221,9 +233,19 @@ QoreHashNode *QoreOracleStatement::fetchColumns(ExceptionSink *xsink) {
 
 // retrieve results from statement and return hash
 QoreHashNode *QoreOracleStatement::fetchColumns(OraResultSet &resultset, int rows, ExceptionSink *xsink) {
+   if (fetch_warned) {
+      xsink->raiseException("ORACLE-SELECT-COLUMNS-ERROR", "SQLStatement::fetchColumns() called after the end of data already received");
+      return 0;
+   }
+   
    // allocate result hash for result value
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
-      
+
+   if (fetch_complete) {
+      fetch_warned = true;
+      return h.release();
+   }
+
    // create hash elements for each column, assign empty list
    for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
       //printd(5, "QoreOracleStatement::fetchColumns() allocating list for '%s' column\n", w->name);
@@ -264,6 +286,8 @@ QoreHashNode *QoreOracleStatement::fetchColumns(OraResultSet &resultset, int row
    if (!*xsink) {
       if (!fetch_done)
          fetch_done = true;
+      if (num_rows < rows)
+         fetch_complete = true;
       return h.release();
    }
    return 0;

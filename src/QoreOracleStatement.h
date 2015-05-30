@@ -40,7 +40,9 @@ protected:
    // for array binds
    unsigned array_size;
    bool is_select,
-      fetch_done;
+      fetch_done,
+      fetch_complete,
+      fetch_warned;
 
    DLLLOCAL void del() {
       // free OCI handle
@@ -48,7 +50,7 @@ protected:
    }
 
 public:
-   DLLLOCAL QoreOracleStatement(Datasource* n_ds, OCIStmt* n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), array_size(0), is_select(false), fetch_done(false) {
+   DLLLOCAL QoreOracleStatement(Datasource* n_ds, OCIStmt* n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), array_size(0), is_select(false), fetch_done(false), fetch_complete(false), fetch_warned(false) {
    }
 
    DLLLOCAL virtual ~QoreOracleStatement() {

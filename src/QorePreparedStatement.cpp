@@ -52,6 +52,12 @@ static sb4 ora_dynamic_bind_placeholder_callback(void* ictxp, OCIBind* bindp, ub
 void OraBindNode::resetPlaceholder(ExceptionSink* xsink, bool free_name) {
    data.resetPlaceholder(free_name);
 
+   if (array) {
+      delete buf.arraybind;
+      array = false;
+      return;
+   }
+
    // free buffer data if any
    del(xsink);
 

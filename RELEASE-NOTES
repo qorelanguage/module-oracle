@@ -27,6 +27,10 @@ version 3.2
   to a collection
 * implemented binding number types by placeholder (including in/out vars)
 * implemented binding arrays of scalar values for input and output
+* implemented support for returning an empty list or hash after a short read
+  with SQLStatement::fetchRows() or SQLStatement::fetchColumns(); if one of
+  these methods is called a second time after returning an empty data
+  structure, then an exception is raised
 
 
 ***********
