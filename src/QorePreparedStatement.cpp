@@ -891,6 +891,8 @@ public:
 void OraBindNode::bindListValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool in_only) {
    array = true;
    buf.arraybind = 0;
+
+   //printd(5, "OraBindNode::bindListValue() this: %p array: %d\n", this, array);
    
    qore_type_t t = get_node_type(v);
    if (t != NT_LIST) {
@@ -1579,7 +1581,8 @@ void OraBindNode::resetValue(ExceptionSink* xsink) {
    data.resetBind();
 
    if (array) {
-      buf.arraybind->reset(xsink);
+      delete buf.arraybind;
+      array = false;
       return;
    }
    

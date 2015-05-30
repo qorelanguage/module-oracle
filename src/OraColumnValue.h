@@ -106,8 +106,9 @@ struct OraColumnValue {
    int subdtype;         // distinguish the SQLT_NTY subtype
    sb2 ind;              // indicator value
    bool array;
-   
+
    DLLLOCAL OraColumnValue(QoreOracleStatement& n_stmt, ub2 n_dtype = 0, int n_subdtype = SQLT_NTY_NONE) : stmt(n_stmt), dtype(n_dtype), subdtype(n_subdtype), ind(0), array(false) {
+      //printd(5, "OraColumnValue::OraColumnValue() this: %p\n", this);
    }
 
    DLLLOCAL void del(ExceptionSink* xsink);
