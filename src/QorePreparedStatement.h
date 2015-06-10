@@ -216,9 +216,9 @@ protected:
          setPlaceholderIntern(size, str->getBuffer(), xsink);
       }
       else if (vtype == NT_STRING)
-         setPlaceholderIntern(-1, (reinterpret_cast<const QoreStringNode* >(v))->getBuffer(), xsink);
+         setPlaceholderIntern(-1, (reinterpret_cast<const QoreStringNode*>(v))->getBuffer(), xsink);
       else if (vtype == NT_INT)
-         setPlaceholderIntern((reinterpret_cast<const QoreBigIntNode* >(v))->val, "string", xsink);
+         setPlaceholderIntern((reinterpret_cast<const QoreBigIntNode*>(v))->val, "string", xsink);
       else {
          xsink->raiseException("DBI-BIND-EXCEPTION", "expecting string or hash for placeholder description, got '%s'", v->getTypeName());
          return -1;
@@ -300,7 +300,7 @@ public:
    DLLLOCAL int setupDateDescriptor(ExceptionSink* xsink);
 };
 
-typedef std::vector<OraBindNode* > node_list_t;
+typedef std::vector<OraBindNode*> node_list_t;
 
 class QorePreparedStatement : public QoreOracleStatement {
 protected:
@@ -319,6 +319,8 @@ protected:
 
    DLLLOCAL int bindOracle(ExceptionSink* xsink);
 
+   DLLLOCAL int execBulkDmlSelect(unsigned rows, ExceptionSink* xsink);
+   
 public:
    //DLLLOCAL QorePreparedStatement(Datasource* ods, const QoreString* ostr, const QoreListNode* args, ExceptionSink* n_xsink, bool doBinding = true);
 
@@ -371,9 +373,7 @@ public:
    DLLLOCAL int bindPlaceholders(const QoreListNode* args, ExceptionSink* xsink);
    DLLLOCAL int bindValues(const QoreListNode* args, ExceptionSink* xsink);
 
-   DLLLOCAL int exec(ExceptionSink* xsink) {
-      return execute("QorePreparedStatement::exec()", xsink);
-   }
+   DLLLOCAL int exec(ExceptionSink* xsink);
 
    DLLLOCAL int define(ExceptionSink* xsink);
 

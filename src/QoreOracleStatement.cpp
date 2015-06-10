@@ -23,7 +23,7 @@
 
 #include "oracle.h"
 
-static inline bool wasInTransaction(Datasource *ds) {
+static inline bool wasInTransaction(Datasource* ds) {
 #ifdef _QORE_HAS_DATASOURCE_ACTIVETRANSACTION
    return ds->activeTransaction();
 #else
@@ -38,8 +38,8 @@ int QoreOracleStatement::setupDateDescriptor(OCIDateTime*& odt, ExceptionSink* x
    return 0;
 }
 
-int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
-   QoreOracleConnection *conn = (QoreOracleConnection *)ds->getPrivateData();
+int QoreOracleStatement::execute(const char* who, ExceptionSink* xsink) {
+   QoreOracleConnection* conn = (QoreOracleConnection*)ds->getPrivateData();
 
    assert(conn->svchp);
    ub4 iters;
@@ -111,7 +111,7 @@ int QoreOracleStatement::execute(const char *who, ExceptionSink *xsink) {
    return 0;      
 }
 
-QoreHashNode *QoreOracleStatement::fetchRow(OraResultSet &resultset, ExceptionSink *xsink) {
+QoreHashNode* QoreOracleStatement::fetchRow(OraResultSet& resultset, ExceptionSink* xsink) {
    if (!fetch_done) {
       xsink->raiseException("ORACLE-FETCH-ROW-ERROR", "call SQLStatement::next() before calling SQLStatement::fetchRow()");
       return 0;
@@ -137,7 +137,7 @@ QoreHashNode *QoreOracleStatement::fetchRow(OraResultSet &resultset, ExceptionSi
    return h.release();
 }
 
-QoreListNode *QoreOracleStatement::fetchRows(ExceptionSink *xsink) {
+QoreListNode* QoreOracleStatement::fetchRows(ExceptionSink* xsink) {
    OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchRows():params", xsink);
    if (*xsink)
       return 0;
@@ -145,7 +145,7 @@ QoreListNode *QoreOracleStatement::fetchRows(ExceptionSink *xsink) {
    return fetchRows(**resultset, -1, xsink);
 }
 
-QoreListNode *QoreOracleStatement::fetchRows(OraResultSet &resultset, int rows, ExceptionSink *xsink) {
+QoreListNode* QoreOracleStatement::fetchRows(OraResultSet& resultset, int rows, ExceptionSink* xsink) {
    if (fetch_warned) {
       xsink->raiseException("ORACLE-SELECT-ROWS-ERROR", "SQLStatement::fetchRows() called after the end of data already received");
       return 0;
@@ -164,7 +164,7 @@ QoreListNode *QoreOracleStatement::fetchRows(OraResultSet &resultset, int rows, 
 
    // now finally fetch the data
    while (next(xsink)) {
-      QoreHashNode *h = fetchRow(resultset, xsink);
+      QoreHashNode* h = fetchRow(resultset, xsink);
       if (!h)
 	 return 0;
 
@@ -186,7 +186,7 @@ QoreListNode *QoreOracleStatement::fetchRows(OraResultSet &resultset, int rows, 
 }
 
 #ifdef _QORE_HAS_DBI_SELECT_ROW
-QoreHashNode *QoreOracleStatement::fetchSingleRow(ExceptionSink *xsink) {
+QoreHashNode* QoreOracleStatement::fetchSingleRow(ExceptionSink* xsink) {
    OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchRow():params", xsink);
    if (*xsink)
       return 0;
@@ -220,7 +220,7 @@ QoreHashNode *QoreOracleStatement::fetchSingleRow(ExceptionSink *xsink) {
 #endif
 
 // retrieve results from statement and return hash
-QoreHashNode *QoreOracleStatement::fetchColumns(ExceptionSink *xsink) {
+QoreHashNode* QoreOracleStatement::fetchColumns(ExceptionSink* xsink) {
    OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchColumns():params", xsink);
    if (*xsink)
       return 0;
@@ -229,7 +229,7 @@ QoreHashNode *QoreOracleStatement::fetchColumns(ExceptionSink *xsink) {
 }
 
 // retrieve results from statement and return hash
-QoreHashNode *QoreOracleStatement::fetchColumns(OraResultSet &resultset, int rows, ExceptionSink *xsink) {
+QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int rows, ExceptionSink* xsink) {
    if (fetch_warned) {
       xsink->raiseException("ORACLE-SELECT-COLUMNS-ERROR", "SQLStatement::fetchColumns() called after the end of data already received");
       return 0;
@@ -261,7 +261,7 @@ QoreHashNode *QoreOracleStatement::fetchColumns(OraResultSet &resultset, int row
       for (unsigned i = 0; i < resultset.clist.size(); ++i) {
 	 OraColumnBuffer *w = resultset.clist[i];
 	 // get pointer to value of target node
-	 QoreListNode *l = reinterpret_cast<QoreListNode *>(h->getKeyValue(w->name, xsink));
+	 QoreListNode* l = reinterpret_cast<QoreListNode* >(h->getKeyValue(w->name, xsink));
 	 if (!l)
 	    break;
          AbstractQoreNode* n = w->getValue(false, xsink);
@@ -291,7 +291,7 @@ QoreHashNode *QoreOracleStatement::fetchColumns(OraResultSet &resultset, int row
 }
 
 #ifdef _QORE_HAS_DBI_DESCRIBE
-QoreHashNode *QoreOracleStatement::describe(OraResultSet &resultset, ExceptionSink *xsink) {
+QoreHashNode* QoreOracleStatement::describe(OraResultSet& resultset, ExceptionSink* xsink) {
    if (!fetch_done) {
       xsink->raiseException("ORACLE-DESCRIBE-ERROR", "call SQLStatement::next() before calling SQLStatement::describe()");
       return 0;

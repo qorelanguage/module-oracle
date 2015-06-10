@@ -1045,7 +1045,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
 
    ind = 0;
 
-   //printd(5, "OraBindNode::bindValue() type=%s\n", v ? v->getTypeName() : "NOTHING");
+   //printd(5, "OraBindNode::bindValue() type: %s\n", v ? v->getTypeName() : "NOTHING");
 
    // process list binds first
    if (stmt.isArray()) {
@@ -1348,7 +1348,7 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
       stmt.bindByPos(bndp, pos, buf.ptr, data.ph_maxsize + 1, SQLT_STR, xsink, &ind);
    }
    else if (data.isType("date")) {
-      //printd(5, "oraBindNode::bindPlaceholder() this=%p, timestamp dtype=%d\n", this, QORE_SQLT_TIMESTAMP);
+      //printd(5, "oraBindNode::bindPlaceholder() this: %p, timestamp dtype: %d\n", this, QORE_SQLT_TIMESTAMP);
       if (setupDateDescriptor(xsink))
         return;
 
@@ -1573,7 +1573,7 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
 //         assert(0);
    }
    else {
-      //printd(5, "OraBindNode::bindPlaceholder(ds=%p, pos=%d) type=%s, size=%d)\n", ds, pos, data.ph.type, data.ph.maxsize);
+      //printd(5, "OraBindNode::bindPlaceholder(ds: %p, pos: %d) type: %s, size: %d)\n", ds, pos, data.ph.type, data.ph.maxsize);
       xsink->raiseException("BIND-EXCEPTION", "type '%s' is not supported for SQL binding", data.ph_type);
    }
 }
@@ -1626,7 +1626,13 @@ AbstractQoreNode* OraBindNode::getValue(bool horizontal, ExceptionSink* xsink) {
    return OraColumnValue::getValue(xsink, horizontal, true);
 }
 
+int QorePreparedStatement::exec(ExceptionSink* xsink) {
+   return execute("QorePreparedStatement::exec()", xsink);
+}
+
 void QorePreparedStatement::reset(ExceptionSink* xsink) {
+   //printd(5, "QorePreparedStatement::reset() this: %p\n", this);
+
    QoreOracleStatement::reset(xsink);
 
    delete str;
@@ -1662,7 +1668,7 @@ int QorePreparedStatement::define(ExceptionSink* xsink) {
          return -1;
    }
 
-   defined = true;
+   defined = true;   
    columns->define("QorePreparedStatement::define()", xsink);
    return *xsink ? -1 : 0;
 }
@@ -1673,7 +1679,7 @@ int QorePreparedStatement::prepare(const QoreString& sql, const QoreListNode* ar
    if (*xsink)
       return -1;
 
-   //printd(4, "QorePreparedStatement::prepare() ds=%p, conn=%p, SQL='%s', args=%d\n", ds, conn, str->getBuffer(), args ? args->size() : 0);
+   //printd(4, "QorePreparedStatement::prepare() ds: %p, conn: %p, SQL='%s', args: %d\n", ds, conn, str->getBuffer(), args ? args->size() : 0);
 
    // process query string and setup bind value list
    if (parse) {
@@ -1790,7 +1796,7 @@ int QorePreparedStatement::bindValues(const QoreListNode* args, ExceptionSink* x
 #define QODC_BLOCK 2
 
 void QorePreparedStatement::parseQuery(const QoreListNode* args, ExceptionSink* xsink) {
-   //printd(5, "parseQuery() args=%p str=%s\n", args, str->getBuffer());
+   //printd(5, "parseQuery() args: %p str: %s\n", args, str->getBuffer());
  
    char quote = 0;
 
@@ -1871,8 +1877,8 @@ void QorePreparedStatement::parseQuery(const QoreListNode* args, ExceptionSink* 
             p = str->getBuffer() + offset + tmp.strlen();
             tmp.clear();
 
-            //   printd(5, "QorePreparedStatement::parseQuery() newstr=%s\n", str->getBuffer());
-            //   printd(5, "QorePreparedStatement::parseQuery() adding value type=%s\n",v ? v->getTypeName() : "<NULL>");
+            //   printd(5, "QorePreparedStatement::parseQuery() newstr: %s\n", str->getBuffer());
+            //   printd(5, "QorePreparedStatement::parseQuery() adding value type: %s\n",v ? v->getTypeName() : "<NULL>");
             add(v);
             continue;
          }
