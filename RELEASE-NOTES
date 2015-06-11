@@ -31,6 +31,9 @@ version 3.2
   with SQLStatement::fetchRows() or SQLStatement::fetchColumns(); if one of
   these methods is called a second time after returning an empty data
   structure, then an exception is raised
+* implemented support for bulk DML with selects by default and explicitly
+  with SQLStatement::fetchRows() and SQLStatement::fetchColumns(); default
+  prefetch row count: 1000
 
 
 ***********

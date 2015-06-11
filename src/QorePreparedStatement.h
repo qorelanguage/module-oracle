@@ -318,8 +318,6 @@ protected:
    }
 
    DLLLOCAL int bindOracle(ExceptionSink* xsink);
-
-   DLLLOCAL int execBulkDmlSelect(unsigned rows, ExceptionSink* xsink);
    
 public:
    //DLLLOCAL QorePreparedStatement(Datasource* ods, const QoreString* ostr, const QoreListNode* args, ExceptionSink* n_xsink, bool doBinding = true);

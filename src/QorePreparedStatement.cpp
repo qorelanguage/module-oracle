@@ -1616,7 +1616,7 @@ void OraBindNode::resetValue(ExceptionSink* xsink) {
 }
 
 AbstractQoreNode* OraBindNode::getValue(bool horizontal, ExceptionSink* xsink) {
-   //printd(5, "AbstractQoreNode* OraBindNode::getValue %d\n", indicator);
+   //printd(5, "AbstractQoreNode* OraBindNode::getValue() %d\n", indicator);
    if (array)
       return buf.arraybind->getOutputValue(xsink, *this, true);
 
@@ -1627,7 +1627,7 @@ AbstractQoreNode* OraBindNode::getValue(bool horizontal, ExceptionSink* xsink) {
 }
 
 int QorePreparedStatement::exec(ExceptionSink* xsink) {
-   return execute("QorePreparedStatement::exec()", xsink);
+   return execute(xsink, "QorePreparedStatement::exec()");
 }
 
 void QorePreparedStatement::reset(ExceptionSink* xsink) {

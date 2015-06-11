@@ -33,12 +33,21 @@
 
 class OraResultSet;
 
+// default prefetch row count
+#define PREFETCH_DEFAULT 1
+// default prefetch row count for fetching all rows (fetchRows(-1) or fetchColumns(-1))
+#define PREFETCH_BULK 1000
+// maximum prefetch row count
+#define PREFETCH_MAX 32767
+
 class QoreOracleStatement {
 protected:
    Datasource* ds;
    OCIStmt* stmthp;
    // for array binds
    unsigned array_size;
+   // current select prefetch row count
+   unsigned prefetch_rows;
    bool is_select,
       fetch_done,
       fetch_complete,
@@ -49,8 +58,10 @@ protected:
       OCIHandleFree(stmthp, OCI_HTYPE_STMT);
    }
 
+   DLLLOCAL int setPrefetch(ExceptionSink* xsink, int rows = PREFETCH_DEFAULT);
+   
 public:
-   DLLLOCAL QoreOracleStatement(Datasource* n_ds, OCIStmt* n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), array_size(0), is_select(false), fetch_done(false), fetch_complete(false), fetch_warned(false) {
+   DLLLOCAL QoreOracleStatement(Datasource* n_ds, OCIStmt* n_stmthp = 0) : ds(n_ds), stmthp(n_stmthp), array_size(0), prefetch_rows(1), is_select(false), fetch_done(false), fetch_complete(false), fetch_warned(false) {
    }
 
    DLLLOCAL virtual ~QoreOracleStatement() {
@@ -86,7 +97,7 @@ public:
    DLLLOCAL int allocate(ExceptionSink* xsink) {
       assert(!stmthp);
 
-      QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+      QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
       
       if (conn.handleAlloc((dvoid**)&stmthp, OCI_HTYPE_STMT, "QoreOracleStatement::allocate()", xsink)) {
          stmthp = 0;
@@ -98,27 +109,27 @@ public:
 
    // returns 0=OK, -1=ERROR
    DLLLOCAL int paramGet(OCIParam*& parmp, unsigned pos) {
-      QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+      QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
       return OCIParamGet(stmthp, OCI_HTYPE_STMT, conn.errhp, (void**)&parmp, pos) == OCI_SUCCESS ? 0 : -1;
    }
 
    DLLLOCAL int attrGet(OCIParam* parmp, void* attributep, unsigned &sizep, unsigned attrtype, ExceptionSink* xsink) {
-      QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+      QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
       return conn.checkerr(OCIAttrGet(parmp, OCI_DTYPE_PARAM, attributep, &sizep, attrtype, conn.errhp), "QoreOracleStatement::attrGet():param1", xsink);
    }
 
    DLLLOCAL int attrGet(OCIParam* parmp, void* attributep, unsigned attrtype, ExceptionSink* xsink) {
-      QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+      QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
       return conn.checkerr(OCIAttrGet(parmp, OCI_DTYPE_PARAM, attributep, 0, attrtype, conn.errhp), "QoreOracleStatement::attrGet():param2", xsink);
    }
 
    DLLLOCAL int attrGet(void* attributep, unsigned &sizep, unsigned attrtype, ExceptionSink* xsink) {
-      QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+      QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
       return conn.checkerr(OCIAttrGet(stmthp, OCI_HTYPE_STMT, attributep, &sizep, attrtype, conn.errhp), "QoreOracleStatement::attrGet():stmt1", xsink);
    }
 
    DLLLOCAL int attrGet(void* attributep, unsigned attrtype, ExceptionSink* xsink) {
-      QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+      QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
       return conn.checkerr(OCIAttrGet(stmthp, OCI_HTYPE_STMT, attributep, 0, attrtype, conn.errhp), "QoreOracleStatement::attrGet():stmt2", xsink);
    }
 
@@ -126,7 +137,7 @@ public:
    DLLLOCAL int fetch(ExceptionSink* xsink, unsigned rows = 1) {
       int status;
 
-      QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+      QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
       if ((status = OCIStmtFetch2(stmthp, conn.errhp, rows, OCI_FETCH_NEXT, 0, OCI_DEFAULT))) {
 	 if (status == OCI_NO_DATA) {
@@ -144,28 +155,28 @@ public:
    }
 
    DLLLOCAL int defineDynamic(OCIDefine* defp, void* ctx, OCICallbackDefine cb, ExceptionSink* xsink) {
-      QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+      QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
       return conn.checkerr(OCIDefineDynamic(defp, conn.errhp, ctx, cb),
                            "QoreOracleStatement::defineDynamic()", xsink);
    }
 
    DLLLOCAL int defineByPos(OCIDefine*& defp, unsigned pos, void* valuep, int value_sz, unsigned short dty, void* indp, ExceptionSink* xsink, ub4 mode = OCI_DEFAULT) {
-      QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+      QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
       return conn.checkerr(OCIDefineByPos(stmthp, &defp, conn.errhp, pos, valuep, value_sz, dty, indp, 0, 0, mode),
 			     "QoreOracleStatement::defineByPos()", xsink);
    }
 
    DLLLOCAL int bindByPos(OCIBind*& bndp, unsigned pos, void* valuep, int value_sz, unsigned short dty, ExceptionSink* xsink, void* indp, ub4 mode = OCI_DEFAULT) {
-      QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+      QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
       return conn.checkerr(OCIBindByPos(stmthp, &bndp, conn.errhp, pos, valuep, value_sz, dty, indp, 0, 0, 0, 0, mode), 
 			     "QoreOracleStatement::bindByPos()", xsink);
    }
 
    DLLLOCAL int prepare(QoreString& str, ExceptionSink* xsink) {
-      QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+      QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
       int rc = conn.checkerr(OCIStmtPrepare(stmthp, conn.errhp, (text*)str.getBuffer(), str.strlen(), OCI_NTV_SYNTAX, OCI_DEFAULT), 
 			     "QoreOracleStatement::prepare()", xsink);
@@ -182,7 +193,7 @@ public:
       return rc;
    }
 
-   DLLLOCAL int execute(const char* who, ExceptionSink* xsink);
+   DLLLOCAL int execute(ExceptionSink* xsink, const char* who);
 
    DLLLOCAL bool next(ExceptionSink* xsink) {
       return fetch(xsink) ? false : true;

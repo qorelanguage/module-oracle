@@ -38,7 +38,27 @@ int QoreOracleStatement::setupDateDescriptor(OCIDateTime*& odt, ExceptionSink* x
    return 0;
 }
 
-int QoreOracleStatement::execute(const char* who, ExceptionSink* xsink) {
+int QoreOracleStatement::setPrefetch(ExceptionSink* xsink, int rows) {
+   unsigned prefetch = rows < 0 ? PREFETCH_BULK : (rows ? rows : PREFETCH_DEFAULT);
+   if (prefetch > PREFETCH_MAX)
+      prefetch = PREFETCH_MAX;
+   if (prefetch == prefetch_rows)
+      return 0;
+
+   QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
+
+   // set the new prefetch row count
+   int rc = conn.checkerr(OCIAttrSet(stmthp, OCI_HTYPE_STMT, &prefetch, 0, OCI_ATTR_PREFETCH_ROWS, conn.errhp), "QoreOracleStatement::setPrefetch()", xsink);
+   if (!rc) {
+      prefetch_rows = prefetch;
+      //printd(5, "prefetch set to %d\n", prefetch_rows);
+      return 0;
+   }
+
+   return -1;
+}
+
+int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
    QoreOracleConnection* conn = (QoreOracleConnection*)ds->getPrivateData();
 
    assert(conn->svchp);
@@ -49,7 +69,7 @@ int QoreOracleStatement::execute(const char* who, ExceptionSink* xsink) {
       iters = !array_size ? 1 : array_size;
    int status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, iters, 0, 0, 0, OCI_DEFAULT);
 
-   //printd(0, "QoreOracleStatement::execute() stmthp=%p status=%d (OCI_ERROR=%d)\n", stmthp, status, OCI_ERROR);
+   //printd(0, "QoreOracleStatement::execute() stmthp: %p status: %d (OCI_ERROR: %d)\n", stmthp, status, OCI_ERROR);
    if (status == OCI_ERROR) {
       // see if server is connected
       int ping = OCI_Ping(&conn->ocilib, conn->ocilib_cn, xsink);
@@ -64,7 +84,7 @@ int QoreOracleStatement::execute(const char* who, ExceptionSink* xsink) {
 
 	 //printd(0, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect\n");
 	 if (conn->logon(xsink)) {
-            //printd(5, "QoreOracleStatement::execute() conn=%p reconnect failed, marking connection as closed\n", conn);
+            //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", conn);
             // free current statement state while the driver-specific context data is still present
             clearAbortedConnection(xsink);
 	    // close datasource and remove private data
@@ -72,7 +92,7 @@ int QoreOracleStatement::execute(const char* who, ExceptionSink* xsink) {
 	    return -1;
 	 }
          if (conn->checkWarnings(xsink)) {
-             //printd(5, "QoreOracleStatement::execute() conn=%p reconnect failed, marking connection as closed\n", conn);
+             //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", conn);
             // free current statement state while the driver-specific context data is still present
             clearAbortedConnection(xsink);
             // close datasource and remove private data
@@ -94,13 +114,13 @@ int QoreOracleStatement::execute(const char* who, ExceptionSink* xsink) {
          // clear any exceptions that have been ignored
          xsink->clear();
 
-	 //printd(0, "QoreOracleStatement::execute() returned from OCILogon() status=%d\n", status);
+	 //printd(0, "QoreOracleStatement::execute() returned from OCILogon() status: %d\n", status);
 	 status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, iters, 0, 0, 0, OCI_DEFAULT);
 	 if (status && conn->checkerr(status, who, xsink))
 	    return -1;
       }
       else {
-	 //printd(0, "QoreOracleStatement::execute() error, but it's connected; status=%d who=%s\n", status, who);
+	 //printd(0, "QoreOracleStatement::execute() error, but it's connected; status: %d who: %s\n", status, who);
 	 conn->checkerr(status, who, xsink);
 	 return -1;
       }
@@ -157,11 +177,14 @@ QoreListNode* QoreOracleStatement::fetchRows(OraResultSet& resultset, int rows, 
       fetch_warned = true;
       return l.release();
    }
+
+   if (setPrefetch(xsink, rows))
+      return 0;
    
    // setup temporary row to accept values
    if (resultset.define("QoreOracleStatement::fetchRows():define", xsink))
       return 0;
-
+   
    // now finally fetch the data
    while (next(xsink)) {
       QoreHashNode* h = fetchRow(resultset, xsink);
@@ -189,6 +212,9 @@ QoreListNode* QoreOracleStatement::fetchRows(OraResultSet& resultset, int rows, 
 QoreHashNode* QoreOracleStatement::fetchSingleRow(ExceptionSink* xsink) {
    OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchRow():params", xsink);
    if (*xsink)
+      return 0;
+
+   if (setPrefetch(xsink))
       return 0;
 
    ReferenceHolder<QoreHashNode> rv(xsink);
@@ -243,6 +269,9 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
       return h.release();
    }
 
+   if (setPrefetch(xsink, rows))
+      return 0;
+
    // create hash elements for each column, assign empty list
    for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
       //printd(5, "QoreOracleStatement::fetchColumns() allocating list for '%s' column\n", w->name);
@@ -261,7 +290,7 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
       for (unsigned i = 0; i < resultset.clist.size(); ++i) {
 	 OraColumnBuffer *w = resultset.clist[i];
 	 // get pointer to value of target node
-	 QoreListNode* l = reinterpret_cast<QoreListNode* >(h->getKeyValue(w->name, xsink));
+	 QoreListNode* l = reinterpret_cast<QoreListNode*>(h->getKeyValue(w->name, xsink));
 	 if (!l)
 	    break;
          AbstractQoreNode* n = w->getValue(false, xsink);

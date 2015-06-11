@@ -5,10 +5,33 @@
 
 our hash thash;
 our int errors;
-our hash o.verbose = True;
-#o.info = True;
+
+const opts = (
+    "help": "h,help",
+    "info": "i,info",
+    "verbose" : "v,verbose:i+",
+ );
+
+sub usage() {
+   printf("usage: %s <connection-string> [options]
+ -h,--help            this help text
+ -i,--info            show informational messages
+ -v,--verbose         more v's = more information
+",
+           get_script_name());
+    exit();
+}
+
+sub process_command_line() {
+    GetOpt g(opts);
+    our hash o = g.parse(\ARGV);
+    if (o.help)
+        usage();
+}
 
 sub main() {
+    process_command_line();
+    
     *string connstr = shift ARGV;
 
     if (!connstr) {

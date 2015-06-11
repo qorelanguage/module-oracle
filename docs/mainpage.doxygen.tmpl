@@ -478,6 +478,7 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - implemented binding number types by placeholder (including in/out vars)
     - implemented binding arrays of scalar values for input and output
     - implemented support for returning an empty list or hash after a short read with SQLStatement::fetchRows() or SQLStatement::fetchColumns(); if one of these methods is called a second time after returning an empty data structure, then an exception is raised
+    - implemented support for bulk DML with selects by default and explicitly with SQLStatement::fetchRows() and SQLStatement::fetchColumns(); default prefetch row count: 1000
 
     @subsection oracle31 oracle Driver Version 3.1
     
