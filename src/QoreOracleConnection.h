@@ -328,17 +328,18 @@ public:
          return 0;
       }
 #ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
-      assert(!strcasecmp(opt, DBI_OPT_TIMEZONE));
-      assert(get_node_type(val) == NT_STRING);
-      const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(val);
-      const AbstractQoreZoneInfo* tz = find_create_timezone(str->getBuffer(), xsink);
-      if (*xsink)
-         return -1;
-      server_tz = tz;
-#else
-      assert(false);
+      if (!strcasecmp(opt, DBI_OPT_TIMEZONE)) {
+         assert(get_node_type(val) == NT_STRING);
+         const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(val);
+         const AbstractQoreZoneInfo* tz = find_create_timezone(str->getBuffer(), xsink);
+         if (*xsink)
+            return -1;
+         server_tz = tz;
+         return 0;
+      }
 #endif
-      return 0;
+      xsink->raiseException("ORACLE-OPTION-ERROR", "invalid option '%s'; please try again with a valid option name (syntax: option=value)", opt);
+      return -1;
    }
 
    DLLLOCAL AbstractQoreNode* getOption(const char* opt) {

@@ -90,17 +90,17 @@ static int dbi_oracle_caps = (
 #endif
    );
 
-static int oracle_commit(Datasource *ds, ExceptionSink* xsink) {
-   QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+static int oracle_commit(Datasource* ds, ExceptionSink* xsink) {
+   QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
    return conn.commit(xsink);
 }
 
-static int oracle_rollback(Datasource *ds, ExceptionSink* xsink) {
-   QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+static int oracle_rollback(Datasource* ds, ExceptionSink* xsink) {
+   QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
    return conn.rollback(xsink);
 }
 
-static AbstractQoreNode* oracle_exec(Datasource *ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
+static AbstractQoreNode* oracle_exec(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
    QorePreparedStatementHelper bg(ds, xsink);
 
    if (bg.prepare(qstr, args, true, xsink))
@@ -110,7 +110,7 @@ static AbstractQoreNode* oracle_exec(Datasource *ds, const QoreString* qstr, con
 }
 
 #ifdef _QORE_HAS_DBI_EXECRAW
-static AbstractQoreNode* oracle_exec_raw(Datasource *ds, const QoreString* qstr, ExceptionSink* xsink) {
+static AbstractQoreNode* oracle_exec_raw(Datasource* ds, const QoreString* qstr, ExceptionSink* xsink) {
    QorePreparedStatementHelper bg(ds, xsink);
 
    if (bg.prepare(qstr, 0, false, xsink))
@@ -121,7 +121,7 @@ static AbstractQoreNode* oracle_exec_raw(Datasource *ds, const QoreString* qstr,
 #endif
 
 #ifdef _QORE_HAS_DBI_EXECRAWROWS
-static AbstractQoreNode* oracle_exec_raw_rows(Datasource *ds, const QoreString* qstr, ExceptionSink* xsink) {
+static AbstractQoreNode* oracle_exec_raw_rows(Datasource* ds, const QoreString* qstr, ExceptionSink* xsink) {
    QorePreparedStatementHelper bg(ds, xsink);
 
    if (bg.prepare(qstr, 0, false, xsink))
@@ -132,7 +132,7 @@ static AbstractQoreNode* oracle_exec_raw_rows(Datasource *ds, const QoreString* 
 #endif
 
 #ifdef _QORE_HAS_DBI_SELECT_ROW
-static QoreHashNode* oracle_select_row(Datasource *ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
+static QoreHashNode* oracle_select_row(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
    QorePreparedStatementHelper bg(ds, xsink);
 
    if (bg.prepare(qstr, args, true, xsink))
@@ -142,7 +142,7 @@ static QoreHashNode* oracle_select_row(Datasource *ds, const QoreString* qstr, c
 }
 #endif
 
-static AbstractQoreNode* oracle_exec_rows(Datasource *ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
+static AbstractQoreNode* oracle_exec_rows(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
    QorePreparedStatementHelper bg(ds, xsink);
 
    if (bg.prepare(qstr, args, true, xsink))
@@ -151,7 +151,7 @@ static AbstractQoreNode* oracle_exec_rows(Datasource *ds, const QoreString* qstr
    return bg.execWithPrologue(true, xsink);
 }
 
-static int oracle_open(Datasource *ds, ExceptionSink* xsink) {
+static int oracle_open(Datasource* ds, ExceptionSink* xsink) {
    //printd(5, "oracle_open() datasource %p for DB=%s open\n", ds, ds->getDBName());
 
    if (!ds->getUsername()) {
@@ -191,7 +191,7 @@ static int oracle_open(Datasource *ds, ExceptionSink* xsink) {
    return 0;
 }
 
-static int oracle_close(Datasource *ds) {
+static int oracle_close(Datasource* ds) {
    QORE_TRACE("oracle_close()");
 
    QoreOracleConnection *conn = (QoreOracleConnection *)ds->getPrivateData();
@@ -203,14 +203,14 @@ static int oracle_close(Datasource *ds) {
    return 0;
 }
 
-static AbstractQoreNode* oracle_get_server_version(Datasource *ds, ExceptionSink* xsink) {
+static AbstractQoreNode* oracle_get_server_version(Datasource* ds, ExceptionSink* xsink) {
    // get private data structure for connection
-   QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+   QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
    return conn.getServerVersion(xsink);
 }
 
 #ifdef HAVE_OCICLIENTVERSION
-static AbstractQoreNode* oracle_get_client_version(const Datasource *ds, ExceptionSink* xsink) {
+static AbstractQoreNode* oracle_get_client_version(const Datasource* ds, ExceptionSink* xsink) {
    sword major, minor, update, patch, port_update;
 
    OCIClientVersion(&major, &minor, &update, &patch, &port_update);
@@ -225,7 +225,7 @@ static AbstractQoreNode* oracle_get_client_version(const Datasource *ds, Excepti
 #endif
 
 #ifdef _QORE_HAS_PREPARED_STATMENT_API
-static int oracle_stmt_prepare(SQLStatement* stmt, const QoreString& str, const QoreListNode* args, ExceptionSink* xsink) {
+static int oracle_stmt_prepare(SQLStatement* stmt, const QoreString &str, const QoreListNode* args, ExceptionSink* xsink) {
    assert(!stmt->getPrivateData());
 
    QorePreparedStatement* bg = new QorePreparedStatement(stmt->getDatasource());
@@ -234,7 +234,7 @@ static int oracle_stmt_prepare(SQLStatement* stmt, const QoreString& str, const 
    return bg->prepare(str, args, true, xsink);
 }
 
-static int oracle_stmt_prepare_raw(SQLStatement* stmt, const QoreString& str, ExceptionSink* xsink) {
+static int oracle_stmt_prepare_raw(SQLStatement* stmt, const QoreString &str, ExceptionSink* xsink) {
    assert(!stmt->getPrivateData());
 
    QorePreparedStatement* bg = new QorePreparedStatement(stmt->getDatasource());
@@ -350,13 +350,13 @@ static int oracle_stmt_close(SQLStatement* stmt, ExceptionSink* xsink) {
 #ifdef _QORE_HAS_DBI_OPTIONS
 static int oracle_opt_set(Datasource* ds, const char* opt, const AbstractQoreNode* val, ExceptionSink* xsink) {
    // get private data structure for connection
-   QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+   QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
    return conn.setOption(opt, val, xsink);
 }
 
 static AbstractQoreNode* oracle_opt_get(const Datasource* ds, const char* opt) {
    // get private data structure for connection
-   QoreOracleConnection &conn = ds->getPrivateDataRef<QoreOracleConnection>();
+   QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
    return conn.getOption(opt);
 }
 #endif
@@ -429,7 +429,7 @@ QoreStringNode* oracle_module_init() {
    return 0;
 }
 
-void oracle_module_ns_init(QoreNamespace *rns, QoreNamespace *qns) {
+void oracle_module_ns_init(QoreNamespace* rns, QoreNamespace* qns) {
    QORE_TRACE("oracle_module_ns_init()");
    qns->addInitialNamespace(OraNS.copy());
 }

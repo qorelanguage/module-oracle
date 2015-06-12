@@ -34,6 +34,7 @@ version 3.2
 * implemented support for bulk DML with selects by default and explicitly
   with SQLStatement::fetchRows() and SQLStatement::fetchColumns(); default
   prefetch row count: 1000
+* fixed a bug in driver option processing that could lead to a crash
 
 
 ***********
