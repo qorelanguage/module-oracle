@@ -260,11 +260,6 @@ public:
             continue;
          }
 
-         if (t != expected_type) {
-            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"%s\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index(), expected_type_name);
-            return -1;
-         }
-
          assert(!ind_list[li.index()]);
 
          if (t == NT_STRING) {
@@ -989,7 +984,7 @@ void OraBindNode::bindListValue(ExceptionSink* xsink, int pos, const AbstractQor
             }
                
             case NT_INT: {
-               buf.arraybind = new DynamicArrayBindString(l, NT_INT, "int");
+               buf.arraybind = new DynamicArrayBindString(l, NT_NUMBER, "number");
                break;
             }
                
@@ -1291,7 +1286,7 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
       if (data.isType("string"))
          buf.arraybind = new DynamicArrayBindString(0);
       else if (data.isType("integer"))
-         buf.arraybind = new DynamicArrayBindString(0, NT_INT, "int");
+         buf.arraybind = new DynamicArrayBindString(0, NT_NUMBER, "number");
       else if (data.isType("number"))
          buf.arraybind = new DynamicArrayBindString(0, NT_NUMBER, "number");
       /** not yet implemented
