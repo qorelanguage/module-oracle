@@ -34,4 +34,9 @@ src/QC_*.cpp
 # ignore temp doc files
 docs/*.tag
 docs/OracleExtensions/
-			
+docs/doxyfile
+docs/mainpage.doxygen
+docs/oracle/
+docs/qlib/Doxyfile.OracleExtensions
+*.dox.h
+				
