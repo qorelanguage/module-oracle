@@ -564,7 +564,7 @@ find_qore() {
         inc=$a/include
     fi
     if test -f "$inc/qore/Qore.h"; then
-        AC_MSG_RESULT([found: $inc])
+        AC_MSG_RESULT([$inc])
         set_qore_cppflags $inc
     else
         AC_MSG_ERROR([not found])
@@ -629,9 +629,9 @@ else
 
    AC_MSG_RESULT([${qore_version} OK])
 
-   MODULE_API=`qore --latest-module-api`
-   mapi_major=`qore --latest-module-api|cut -f1 -d.`
-   mapi_minor=`qore --latest-module-api|cut -f2 -d.`
+   mapi_major=`grep QORE_MODULE_API_MAJOR $QORE_INC_DIR/qore/ModuleManager.h|cut -f3 -d\ `
+   mapi_minor=`grep QORE_MODULE_API_MINOR $QORE_INC_DIR/qore/ModuleManager.h|cut -f3 -d\ `
+   MODULE_API="${mapi_major}.${mapi_minor}"
 
    if test "$mapi_major" -ge 0 -o "$mapi_minor" -ge 7; then
       AC_DEFINE(QORE_HAS_DATASOURCE_PORT, 1, define if qore supports ports in the Datasource object)
