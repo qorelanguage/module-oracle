@@ -194,7 +194,7 @@ QoreListNode* QoreOracleStatement::fetchRows(OraResultSet& resultset, int rows, 
       // add row to list
       l->push(h);
 
-      if (rows > 0 && l->size() == rows)
+      if (rows > 0 && l->size() == static_cast<size_t>(rows))
 	 break;
    }
    //printd(2, "QoreOracleStatement::fetchRows(): %d column(s), %d row(s) retrieved as output\n", resultset.size(), l->size());
