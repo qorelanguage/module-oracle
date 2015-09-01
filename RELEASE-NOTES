@@ -35,6 +35,8 @@ version 3.2
   with SQLStatement::fetchRows() and SQLStatement::fetchColumns(); default
   prefetch row count: 1000
 * fixed a bug in driver option processing that could lead to a crash
+* fixed a bug where duplicated columns would result in corrupt lists when
+  selected in column mode
 
 
 ***********
@@ -78,7 +80,7 @@ version 2.2
   list; the second time the type is accessed, a crash results
 * fixed memory bugs in handling named type bind parameters created by hand
   where the value type is incorrect
-* throws an exception if SQLStatement::fetchRow() is called before 
+* throws an exception if SQLStatement::fetchRow() is called before
   SQLStatement::next()
 * supports the arbitrary-precision numeric type in qore 0.8.6+
 * supports DBI options with qore 0.8.6+; options supported:
@@ -88,7 +90,7 @@ version 2.2
                       compatibility)
   + "numeric-numbers": return NUMBER values as arbitrary-precision number
                        values
-  + "timezone": accepts a string argument that can be either a region name 
+  + "timezone": accepts a string argument that can be either a region name
                 (ex: "Europe/Prague") or a UTC offset (ex: "+01:00") to set
 		the server's time zone rules; this is useful if connecting to
 		a database server in a different time zone.  If this option is
@@ -166,7 +168,7 @@ fixed a bug setting the port number for direct connections witout TNS
 version 1.0.9
 *************
 
-fixed auto-reconnect to mark the datasource as closed when auto-reconnect 
+fixed auto-reconnect to mark the datasource as closed when auto-reconnect
 fails; otherwise a crash can occur when the datasource is reused
 
 
@@ -296,7 +298,7 @@ Qore 0.5.1
 **********
 
 Oracle driver fixed to not throw parse exceptions when the ":" character is
-not followed by an alphabetic character 
+not followed by an alphabetic character
 
 so ":=" is legal in SQL statements again :-)
 

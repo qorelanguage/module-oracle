@@ -128,7 +128,7 @@ int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
    else if (status && conn->checkerr(status, who, xsink))
       return -1;
 
-   return 0;      
+   return 0;
 }
 
 QoreHashNode* QoreOracleStatement::fetchRow(OraResultSet& resultset, ExceptionSink* xsink) {
@@ -170,7 +170,7 @@ QoreListNode* QoreOracleStatement::fetchRows(OraResultSet& resultset, int rows, 
       xsink->raiseException("ORACLE-SELECT-ROWS-ERROR", "SQLStatement::fetchRows() called after the end of data already received");
       return 0;
    }
-   
+
    ReferenceHolder<QoreListNode> l(new QoreListNode, xsink);
 
    if (fetch_complete) {
@@ -180,11 +180,11 @@ QoreListNode* QoreOracleStatement::fetchRows(OraResultSet& resultset, int rows, 
 
    if (setPrefetch(xsink, rows))
       return 0;
-   
+
    // setup temporary row to accept values
    if (resultset.define("QoreOracleStatement::fetchRows():define", xsink))
       return 0;
-   
+
    // now finally fetch the data
    while (next(xsink)) {
       QoreHashNode* h = fetchRow(resultset, xsink);
@@ -260,7 +260,7 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
       xsink->raiseException("ORACLE-SELECT-COLUMNS-ERROR", "SQLStatement::fetchColumns() called after the end of data already received");
       return 0;
    }
-   
+
    // allocate result hash for result value
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
 
@@ -277,13 +277,16 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
       //printd(5, "QoreOracleStatement::fetchColumns() allocating list for '%s' column\n", w->name);
       h->setKeyValue((*i)->name, new QoreListNode, xsink);
    }
-   
+
    // setup temporary row to accept values
    if (resultset.define("QoreOracleStatement::fetchColumns():define", xsink))
       return 0;
 
    int num_rows = 0;
-   
+
+   // tracks the column size for when columns are duplicated
+   unsigned csize = 0;
+
    // now finally fetch the data
    while (next(xsink)) {
       // copy data or perform per-value processing if needed
@@ -293,6 +296,31 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
 	 QoreListNode* l = reinterpret_cast<QoreListNode*>(h->getKeyValue(w->name, xsink));
 	 if (!l)
 	    break;
+
+         if (!i)
+            csize = l->size();
+         else {
+            // see if we have a duplicated column
+            if (l->size() > csize) {
+               // find a unique column name
+               unsigned num = 1;
+               QoreListNode* al;
+               while (true) {
+                  QoreStringMaker tmp("%s_%d", w->name.c_str(), num);
+                  al = reinterpret_cast<QoreListNode*>(h->getKeyValue(tmp.getBuffer(), xsink));
+                  if (!al) {
+                     al = new QoreListNode;
+                     h->setKeyValue(tmp.getBuffer(), al, xsink);
+                     break;
+                  }
+                  else if (al->size() == csize)
+                     break;
+                  ++num;
+               }
+               l = al;
+            }
+         }
+
          AbstractQoreNode* n = w->getValue(false, xsink);
          if (*xsink) {
             assert(!n);
