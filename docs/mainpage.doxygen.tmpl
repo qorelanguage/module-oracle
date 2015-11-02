@@ -491,6 +491,7 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - implemented support for bulk DML with selects by default and explicitly with SQLStatement::fetchRows() and SQLStatement::fetchColumns(); default prefetch row count: 1000
     - fixed a bug in driver option processing that could lead to a crash
     - fixed a bug where duplicated columns would result in corrupt lists when selected in column mode
+    - fixed a bug where very large numbers were being retrieved incorrectly and would result in an ORA-01406 error
 
     @subsection oracle31 oracle Driver Version 3.1
 
