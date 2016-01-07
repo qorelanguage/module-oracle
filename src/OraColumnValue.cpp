@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2015 David Nichols
+  Copyright (C) 2003 - 2016 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,7 @@
 static DateTimeNode* convert_date_time(unsigned char *str) {
    int year;
    if ((str[0] < 100) || (str[1] < 100))
-      year = 9999; 
+      year = 9999;
    else
       year = (str[0] - 100) * 100 + (str[1] - 100);
 
@@ -40,7 +40,7 @@ void OraColumnValue::del(ExceptionSink *xsink) {
    if (array) {
       delete buf.arraybind;
       array = false;
-      return;            
+      return;
    }
 
    switch (dtype) {
@@ -122,7 +122,7 @@ void OraColumnValue::del(ExceptionSink *xsink) {
             //printd(5, "freeing pointer with free(%p)\n", buf.ptr);
             free(buf.ptr);
          }
-         break;            
+         break;
    }
 }
 
@@ -153,7 +153,7 @@ AbstractQoreNode* OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
 #ifdef SQLT_IBDOUBLE
       case SQLT_IBDOUBLE:
 #endif
-	 return new QoreFloatNode(buf.f8);      
+	 return new QoreFloatNode(buf.f8);
 
       case SQLT_DAT:
 	 return convert_date_time(buf.date);
@@ -189,7 +189,7 @@ AbstractQoreNode* OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
 
       case SQLT_RSET: {
          QoreOracleStatement tstmt(stmt.getDatasource(), (OCIStmt*)buf.takePtr());
-         if (horizontal) 
+         if (horizontal)
             return tstmt.fetchRows(xsink);
          return tstmt.fetchColumns(xsink);
       }
@@ -267,7 +267,7 @@ AbstractQoreNode* OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
    //   subsection string_sizes CHAR and VARCHAR2 to Qore String
    if (/*dtype == SQLT_AFC ||*/ dtype == SQLT_AVC)
       remove_trailing_blanks((char *)buf.ptr);
-   return doReturnString(destructive);   
+   return doReturnString(destructive);
 }
 
 QoreStringNode* OraColumnValue::doReturnString(bool destructive) {
