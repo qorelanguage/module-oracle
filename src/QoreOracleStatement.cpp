@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2015 David Nichols
+  Copyright (C) 2003 - 2016 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -32,8 +32,7 @@ static inline bool wasInTransaction(Datasource* ds) {
 }
 
 int QoreOracleStatement::setupDateDescriptor(OCIDateTime*& odt, ExceptionSink* xsink) {
-   QoreOracleConnection* conn = (QoreOracleConnection*)getData();
-   if (conn->descriptorAlloc((dvoid**)&odt, QORE_DTYPE_TIMESTAMP, "QoreOracleStatement::setupDateDecriptor()", xsink))
+   if (conn.descriptorAlloc((dvoid**)&odt, QORE_DTYPE_TIMESTAMP, "QoreOracleStatement::setupDateDecriptor()", xsink))
       return -1;
    return 0;
 }
@@ -44,8 +43,6 @@ int QoreOracleStatement::setPrefetch(ExceptionSink* xsink, int rows) {
       prefetch = PREFETCH_MAX;
    if (prefetch == prefetch_rows)
       return 0;
-
-   QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
 
    // set the new prefetch row count
    int rc = conn.checkerr(OCIAttrSet(stmthp, OCI_HTYPE_STMT, &prefetch, 0, OCI_ATTR_PREFETCH_ROWS, conn.errhp), "QoreOracleStatement::setPrefetch()", xsink);
@@ -58,21 +55,30 @@ int QoreOracleStatement::setPrefetch(ExceptionSink* xsink, int rows) {
    return -1;
 }
 
-int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
-   QoreOracleConnection* conn = (QoreOracleConnection*)ds->getPrivateData();
+int QoreOracleSimpleStatement::exec(const char* sql, unsigned len, ExceptionSink* xsink) {
+   //printd(5, "QoreOracleSimpleStatement::exec: '%s' (%d)\n", sql, len);
+   if (!stmthp && allocate(xsink))
+      return -1;
 
-   assert(conn->svchp);
+   if (prepare(sql, len, xsink))
+      return -1;
+
+   return conn.checkerr(OCIStmtExecute(conn.svchp, stmthp, conn.errhp, 1, 0, 0, 0, OCI_DEFAULT), "QoreOracleSimpleStatement::exec", xsink);
+}
+
+int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
+   assert(conn.svchp);
    ub4 iters;
    if (is_select)
       iters = 0;
    else
       iters = !array_size ? 1 : array_size;
-   int status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, iters, 0, 0, 0, OCI_DEFAULT);
+   int status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT);
 
    //printd(0, "QoreOracleStatement::execute() stmthp: %p status: %d (OCI_ERROR: %d)\n", stmthp, status, OCI_ERROR);
    if (status == OCI_ERROR) {
       // see if server is connected
-      int ping = OCI_Ping(&conn->ocilib, conn->ocilib_cn, xsink);
+      int ping = OCI_Ping(&conn.ocilib, conn.ocilib_cn, xsink);
 
       if (!ping) {
 	 // check if a transaction was in progress
@@ -80,10 +86,10 @@ int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
 	    xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost while in a transaction; transaction has been lost", ds->getUsername(), ds->getDBName());
 
 	 // try to reconnect
-	 conn->logoff();
+	 conn.logoff();
 
 	 //printd(0, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect\n");
-	 if (conn->logon(xsink)) {
+	 if (conn.logon(xsink)) {
             //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", conn);
             // free current statement state while the driver-specific context data is still present
             clearAbortedConnection(xsink);
@@ -91,7 +97,7 @@ int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
 	    ds->connectionAborted();
 	    return -1;
 	 }
-         if (conn->checkWarnings(xsink)) {
+         if (conn.checkWarnings(xsink)) {
              //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", conn);
             // free current statement state while the driver-specific context data is still present
             clearAbortedConnection(xsink);
@@ -115,17 +121,17 @@ int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
          xsink->clear();
 
 	 //printd(0, "QoreOracleStatement::execute() returned from OCILogon() status: %d\n", status);
-	 status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, iters, 0, 0, 0, OCI_DEFAULT);
-	 if (status && conn->checkerr(status, who, xsink))
+	 status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT);
+	 if (status && conn.checkerr(status, who, xsink))
 	    return -1;
       }
       else {
 	 //printd(0, "QoreOracleStatement::execute() error, but it's connected; status: %d who: %s\n", status, who);
-	 conn->checkerr(status, who, xsink);
+	 conn.checkerr(status, who, xsink);
 	 return -1;
       }
    }
-   else if (status && conn->checkerr(status, who, xsink))
+   else if (status && conn.checkerr(status, who, xsink))
       return -1;
 
    return 0;
