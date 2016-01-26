@@ -41,6 +41,8 @@ version 3.2
   would result in an ORA-01406 error
 * fixed a bug where number values were being returned with decimal points
   truncated in locales where the decimal position is not marked with a dot
+* fixed a bug where collections with no columns (but based on a table for
+  example) could not be used
 
 
 ***********
