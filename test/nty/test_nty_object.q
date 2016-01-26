@@ -5,6 +5,7 @@ printf("\nQore named types test - objects\n\n");
 
 my string $connstr;
 switch (gethostname()) {
+    case /^quasar/: $connstr = "oracle:omquser/omquser@el7"; break;
     case /^qube/: $connstr = "oracle:omquser2/omquser2@qube"; break;
     case /^el6/:
     case /^quark/: $connstr = "oracle:omquser/omquser@el6"; break;

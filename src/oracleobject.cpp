@@ -47,7 +47,7 @@ void ocilib_err_handler(OCI_Error *err, ExceptionSink* xsink) {
              "  icode : %d\n"
              "  msg   : %s\n",
              //"  sql   : %s\n",
-             OCI_ErrorGetOCICode(err), 
+             OCI_ErrorGetOCICode(err),
              OCI_ErrorGetInternalCode2(err),
              OCI_ErrorGetString(err)
              //OCI_GetSql(OCI_ErrorGetStatement(err))
@@ -197,7 +197,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
 
     const QoreHashNode* th = reinterpret_cast<const QoreHashNode*>(h->getKeyValue("^values^"));
     const char* tname = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("^oratype^"))->getBuffer();
-    
+
     OCI_TypeInfo * info = OCI_TypeInfoGet2(&d->ocilib, d->ocilib_cn, tname, OCI_TIF_TYPE, xsink);
     if (!info) {
        if (!*xsink)
@@ -224,7 +224,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
           xsink->raiseException("BIND-NTY-ERROR", "failed to retrieve column information for column %d for object type '%s'", 1, tname);
           return 0;
        }
-        
+
        const char* cname = OCI_ColumnGetName2(&d->ocilib, col, xsink);
        if (*xsink)
           return 0;
@@ -255,7 +255,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
            }
 	   continue;
         }
-        
+
         switch (col->ocode) {
             case SQLT_LNG: // long
             case SQLT_AFC:
@@ -319,7 +319,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                          if (!*xsink)
                             xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign a string value to object attribute %s.%s", tname, cname);
                          return 0;
-                      }                      
+                      }
                       break;
                    }
 #endif
@@ -357,7 +357,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
 
             case SQLT_DAT:
             case SQLT_ODT:
-            case SQLT_DATE: 
+            case SQLT_DATE:
 #if OCI_VERSION_COMPILE >= OCI_9_0
             case SQLT_TIMESTAMP:
             case SQLT_TIMESTAMP_TZ:
@@ -368,7 +368,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
             {
                 // date
                 DateTimeValueHelper dn(val);
-                
+
                 if (col->type == OCI_CDT_TIMESTAMP) {
                    //printd(0, "bind %p: %s.%s: %d: binding timestamp\n", &obj, tname, cname, i);
                    OCI_Timestamp* dt = OCI_TimestampCreate2(&d->ocilib, d->ocilib_cn, col->subtype, xsink);
@@ -383,7 +383,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                                                 dn->getHour(), dn->getMinute(), dn->getSecond(),
                                                 (dn->getMicrosecond() * 1000),
                                                 0, xsink)) {
-                      if (!*xsink) 
+                      if (!*xsink)
                          xsink->raiseException("BIND-NTY-ERROR", "failed to create timestamp from date/time value for object attribute %s.%s", tname, cname);
                       return 0;
                    }
@@ -407,7 +407,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                    if (!OCI_DateSetDateTime(&d->ocilib, dt,
                                             dn->getYear(), dn->getMonth(), dn->getDay(),
                                             dn->getHour(), dn->getMinute(), dn->getSecond())) {
-                      if (!*xsink) 
+                      if (!*xsink)
                          xsink->raiseException("BIND-NTY-ERROR", "failed to create date/time value for object attribute %s.%s", tname, cname);
                       return 0;
                    }
@@ -431,12 +431,12 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                        }
                        ON_BLOCK_EXIT(OCI_IntervalFree2, &d->ocilib, dt);
                        if (!OCI_IntervalSetYearMonth2(&d->ocilib, dt, dn->getYear(), dn->getMonth(), xsink)) {
-                          if (!*xsink) 
+                          if (!*xsink)
                              xsink->raiseException("BIND-NTY-ERROR", "failed to set interval year/month value for object attribute %s.%s", tname, cname);
                           return 0;
                        }
                        if (!OCI_ObjectSetInterval2(&d->ocilib, *obj, cname, dt, xsink)) {
-                          if (!*xsink) 
+                          if (!*xsink)
                              xsink->raiseException("BIND-NTY-ERROR", "failed to set interval value for object attribute %s.%s", tname, cname);
                           return 0;
                        }
@@ -457,12 +457,12 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
                                                    dn->getDay(),
                                                    dn->getHour(), dn->getMinute(), dn->getSecond(),
                                                    (dn->getMicrosecond() * 1000), xsink)) {
-                       if (!*xsink) 
+                       if (!*xsink)
                           xsink->raiseException("BIND-NTY-ERROR", "failed to set interval day/second value for object attribute %s.%s", tname, cname);
                        return 0;
                     }
                     if (!OCI_ObjectSetInterval2(&d->ocilib, *obj, cname, dt, xsink)) {
-                       if (!*xsink) 
+                       if (!*xsink)
                           xsink->raiseException("BIND-NTY-ERROR", "failed to set interval value for object attribute %s.%s", tname, cname);
                        return 0;
                     }
@@ -565,7 +565,7 @@ OCI_Object* objBindQore(QoreOracleConnection * d, const QoreHashNode * h, Except
             case SQLT_NTY: {
                 const QoreHashNode* n = dynamic_cast<const QoreHashNode*>(val);
                 const char *t = ntyHashType(n);
-                if (t && !strcmp(t, ORACLE_OBJECT)) {                    
+                if (t && !strcmp(t, ORACLE_OBJECT)) {
                    ObjectHolder o(&d->ocilib, objBindQore(d, n, xsink), xsink);
                    if (!o) {
                       assert(*xsink);
@@ -641,10 +641,10 @@ AbstractQoreNode* objToQore(QoreOracleConnection* conn, OCI_Object* obj, Excepti
       xsink->raiseException("FETCH-NTY-ERROR", "unable to retrieve attribute info for object: %s.%s", get_typinf_schema(obj), get_typinf_name(obj));
       return 0;
    }
-   for (int i = 1; i <= n; ++i) {        
+   for (int i = 1; i <= n; ++i) {
       OCI_Column* col = OCI_TypeInfoGetColumn2(&conn->ocilib, obj->typinf, i, xsink);
       if (!col) {
-         if (!*xsink) 
+         if (!*xsink)
             xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s failed to retrieve column information for column %d", get_typinf_schema(obj), get_typinf_name(obj), i);
          return 0;
       }
@@ -655,7 +655,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection* conn, OCI_Object* obj, Excepti
             xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s failed to retrieve column name for column %d (%s)", get_typinf_schema(obj), get_typinf_name(obj), i, col->name);
          return 0;
       }
-        
+
       {
          bool b = OCI_ObjectIsNull2(&conn->ocilib, obj, cname, xsink);
          if (*xsink)
@@ -699,7 +699,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection* conn, OCI_Object* obj, Excepti
 
             char buf[ORA_NUM_BUFSIZE + 1];
             ub4 bs = ORA_NUM_BUFSIZE;
-            if (conn->checkerr(OCINumberToText(conn->errhp, num, (const OraText*)ORA_NUM_FORMAT, ORA_NUM_FORMAT_SIZE, 0, 0, &bs, (OraText*)buf), 
+            if (conn->checkerr(OCINumberToText(conn->errhp, num, (const OraText*)ORA_NUM_FORMAT, ORA_NUM_FORMAT_SIZE, 0, 0, &bs, (OraText*)buf),
                                "objToQore() converting NUMERIC value to text", xsink))
                return 0;
             buf[bs] = 0;
@@ -751,7 +751,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection* conn, OCI_Object* obj, Excepti
 
 	 case SQLT_DAT:
 	 case SQLT_ODT:
-	 case SQLT_DATE: 
+	 case SQLT_DATE:
 #if OCI_VERSION_COMPILE >= OCI_9_0
 	 case SQLT_TIMESTAMP:
 	 case SQLT_TIMESTAMP_TZ:
@@ -847,7 +847,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection* conn, OCI_Object* obj, Excepti
             ON_BLOCK_EXIT(OCI_LobFree, &conn->ocilib, l, xsink);
 
 	    // The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
-            
+
 	    int64 tl = (int64)OCI_LobGetLength(&conn->ocilib, l, xsink);
             if (!tl) {
                if (!*xsink)
@@ -865,18 +865,18 @@ AbstractQoreNode* objToQore(QoreOracleConnection* conn, OCI_Object* obj, Excepti
                xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s failed to allocate %d bytes for LOB attribute '%s'", get_typinf_schema(obj), get_typinf_name(obj), len, cname);
                return 0;
             }
-            
+
 	    if (!OCI_LobRead2(&conn->ocilib, l, (void*)b->getPtr(), &len, &len, xsink)) {
                if (!*xsink)
                   xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s failed to fetch %d bytes for LOB attribute '%s'", get_typinf_schema(obj), get_typinf_name(obj), len, cname);
                return 0;
             }
-            
+
             if (OCI_LobGetType(&conn->ocilib, l) == OCI_BLOB)
                rv->setKeyValue(cname, b.release(), xsink);
             else // clobs
                rv->setKeyValue(cname, new QoreStringNode((char*)b->giveBuffer(), len, len, conn->ds.getQoreEncoding()), xsink);
-	    
+
 	    break;
 	 }
 
@@ -929,7 +929,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection* conn, OCI_Object* obj, Excepti
 	    return 0;
       } // switch
    }
-    
+
    return rv.release();
 }
 
@@ -945,7 +945,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 
    const QoreListNode * th = reinterpret_cast<const QoreListNode*>(h->getKeyValue("^values^"));
    const char * tname = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("^oratype^"))->getBuffer();
-    
+
    OCI_TypeInfo * info = OCI_TypeInfoGet2(&d->ocilib, d->ocilib_cn, tname, OCI_TIF_TYPE, xsink);
    if (!info) {
       if (!*xsink)
@@ -967,17 +967,17 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
          xsink->raiseException("BIND-NTY-ERROR", "failed to retrieve column information for column %d while attempting to bind collection of type '%s'", 1, tname);
       return 0;
    }
-        
+
 //     const char * cname = OCI_GetColumnName(col);
 //     printf("Binding attribute: %s\n", cname);
    OCI_Elem * e = OCI_ElemCreate2(&d->ocilib, info, xsink);
    if (!e) {
       if (!*xsink)
-         xsink->raiseException("BIND-NTY-ERROR", "failed to create element for binding collection '%s'", tname);      
+         xsink->raiseException("BIND-NTY-ERROR", "failed to create element for binding collection '%s'", tname);
       return 0;
    }
    ON_BLOCK_EXIT(OCI_ElemFree2, &d->ocilib, e, xsink);
-    
+
    for (size_t i = 0; i < th->size(); ++i) {
       const AbstractQoreNode * val = th->retrieve_entry(i);
 
@@ -1058,7 +1058,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
                      if (!*xsink)
                         xsink->raiseException("BIND-NTY-ERROR", "NUMBER: unable to assign an arbitrary-precision number value to element for collection '%s'", tname);
                      return 0;
-                  }                      
+                  }
                   break;
                }
 #endif
@@ -1068,7 +1068,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
                   break;
             }
             break;
-               
+
 	 case SQLT_INT:
 	    if (!OCI_ElemSetBigInt(&d->ocilib, e, val->getAsBigInt(), xsink)) {
                if (!*xsink)
@@ -1095,7 +1095,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 
 	 case SQLT_DAT:
 	 case SQLT_ODT:
-	 case SQLT_DATE: 
+	 case SQLT_DATE:
 #if OCI_VERSION_COMPILE >= OCI_9_0
 	 case SQLT_TIMESTAMP:
 	 case SQLT_TIMESTAMP_TZ:
@@ -1119,7 +1119,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
                                             dn->getHour(), dn->getMinute(), dn->getSecond(),
                                             (dn->getMicrosecond() * 1000),
                                             0, xsink)) {
-                  if (!*xsink) 
+                  if (!*xsink)
                      xsink->raiseException("BIND-NTY-ERROR", "failed to create timestamp from date/time value for collection '%s'", tname);
                   return 0;
                }
@@ -1139,7 +1139,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	       if (!OCI_DateSetDateTime(&d->ocilib, dt,
                                         dn->getYear(), dn->getMonth(), dn->getDay(),
                                         dn->getHour(), dn->getMinute(), dn->getSecond())) {
-                  if (!*xsink) 
+                  if (!*xsink)
                      xsink->raiseException("BIND-NTY-ERROR", "failed to create date/time value for collection '%s'", tname);
                   return 0;
                }
@@ -1160,12 +1160,12 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
                   }
                   ON_BLOCK_EXIT(OCI_IntervalFree2, &d->ocilib, dt);
                   if (!OCI_IntervalSetYearMonth2(&d->ocilib, dt, dn->getYear(), dn->getMonth(), xsink)) {
-                     if (!*xsink) 
+                     if (!*xsink)
                         xsink->raiseException("BIND-NTY-ERROR", "failed to set interval year/month value for collection '%s'", tname);
                      return 0;
                   }
                   if (!OCI_ElemSetInterval2(&d->ocilib, e, dt, xsink)) {
-                     if (!*xsink) 
+                     if (!*xsink)
                         xsink->raiseException("BIND-NTY-ERROR", "failed to set interval value for collection '%s'", tname);
                      return 0;
                   }
@@ -1183,12 +1183,12 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
                                                  dn->getDay(),
                                                  dn->getHour(), dn->getMinute(), dn->getSecond(),
                                                  (dn->getMicrosecond() * 1000), xsink)) {
-                     if (!*xsink) 
+                     if (!*xsink)
                         xsink->raiseException("BIND-NTY-ERROR", "failed to set interval day/second value for collection '%s'", tname);
                      return 0;
                   }
                   if (!OCI_ElemSetInterval2(&d->ocilib, e, dt, xsink)) {
-                     if (!*xsink) 
+                     if (!*xsink)
                         xsink->raiseException("BIND-NTY-ERROR", "failed to set interval value for collection '%s'", tname);
                      return 0;
                   }
@@ -1200,7 +1200,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	    }
 	    break;
 	 }
-                
+
 
 //             case SQLT_RDD:
 //             case SQLT_RID:
@@ -1331,14 +1331,14 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
 	    xsink->raiseException("BIND-COLLECTION-ERROR", "unknown datatype to bind as an attribute (unsupported): %s", col->typinf->name);
 	    return 0;
       } // switch
-      
+
       if (!OCI_CollAppend2(&d->ocilib, *obj, e, xsink)) {
          if (!*xsink)
             xsink->raiseException("BIND-NTY-ERROR", "failed to append element to collection '%s'", tname);
          return 0;
       }
    }
-    
+
    return obj.release();
 }
 
@@ -1365,13 +1365,10 @@ const char* get_typinf_name(OCI_Coll* obj) {
 
 AbstractQoreNode* collToQore(QoreOracleConnection* conn, OCI_Coll* obj, ExceptionSink *xsink) {
    ReferenceHolder<QoreListNode> rv(new QoreListNode, xsink);
-    
+
    int count = OCI_CollGetSize2(&conn->ocilib, obj, xsink);
-   if (!count) {
-      if (!*xsink)
-         xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s failed to retrieve column count information", get_typinf_schema(obj), get_typinf_name(obj));
+   if (*xsink)
       return 0;
-   }
    OCI_Column *col = OCI_TypeInfoGetColumn2(&conn->ocilib, obj->typinf, 1, xsink);
    if (!col) {
       if (!*xsink)
@@ -1446,7 +1443,7 @@ AbstractQoreNode* collToQore(QoreOracleConnection* conn, OCI_Coll* obj, Exceptio
 
 	 case SQLT_DAT:
 	 case SQLT_ODT:
-	 case SQLT_DATE: 
+	 case SQLT_DATE:
 #if OCI_VERSION_COMPILE >= OCI_9_0
 	 case SQLT_TIMESTAMP:
 	 case SQLT_TIMESTAMP_TZ:
@@ -1457,7 +1454,7 @@ AbstractQoreNode* collToQore(QoreOracleConnection* conn, OCI_Coll* obj, Exceptio
 	 {
 	    // timestamps-like dates
 	    if (col->type == OCI_CDT_TIMESTAMP) {
-	       OCI_Timestamp* dt = OCI_ElemGetTimestamp2(&conn->ocilib, e); 
+	       OCI_Timestamp* dt = OCI_ElemGetTimestamp2(&conn->ocilib, e);
                if (!dt)
                   return xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s failed to retrieve TIMESTAMP element for collection", get_typinf_schema(obj), get_typinf_name(obj));
 
@@ -1509,7 +1506,7 @@ AbstractQoreNode* collToQore(QoreOracleConnection* conn, OCI_Coll* obj, Exceptio
 	    }
 	    break;
 	 }
-                
+
 
 //             case SQLT_RDD:
 //             case SQLT_RID:
@@ -1536,7 +1533,7 @@ AbstractQoreNode* collToQore(QoreOracleConnection* conn, OCI_Coll* obj, Exceptio
             ON_BLOCK_EXIT(OCI_LobFree, &conn->ocilib, l, xsink);
 
             // The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
-            
+
             int64 tl = (int64)OCI_LobGetLength(&conn->ocilib, l, xsink);
             if (!tl) {
                if (!*xsink)
@@ -1554,17 +1551,17 @@ AbstractQoreNode* collToQore(QoreOracleConnection* conn, OCI_Coll* obj, Exceptio
                xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s failed to allocate %d bytes for collection", get_typinf_schema(obj), get_typinf_name(obj));
                return 0;
             }
-            
+
             if (!OCI_LobRead2(&conn->ocilib, l, (void*)b->getPtr(), &len, &len, xsink)) {
                if (!*xsink)
                   xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s failed to fetch %d bytes for collection", get_typinf_schema(obj), get_typinf_name(obj));
                return 0;
             }
-            
+
             if (OCI_LobGetType(&conn->ocilib, l) == OCI_BLOB)
                rv->set_entry(rv->size(), b.release(), xsink);
             else
-               rv->set_entry(rv->size(), new QoreStringNode((char*)b->giveBuffer(), len, len, conn->ds.getQoreEncoding()), xsink);            
+               rv->set_entry(rv->size(), new QoreStringNode((char*)b->giveBuffer(), len, len, conn->ds.getQoreEncoding()), xsink);
 	    break;
          }
 
@@ -1616,7 +1613,7 @@ AbstractQoreNode* collToQore(QoreOracleConnection* conn, OCI_Coll* obj, Exceptio
 	    xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s unknown datatype to fetch as an attribute: %d (define SQLT_...)", get_typinf_schema(obj), get_typinf_name(obj), col->ocode);
 	    return 0;
       } // switch
-        
+
    }
 
    assert(!*xsink);

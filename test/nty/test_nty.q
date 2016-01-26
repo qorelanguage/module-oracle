@@ -91,12 +91,12 @@ start();
 sub start() {
 
 	parse_command_line();
-   
+
 	#my string $connstr = "oracle:omqtest/omqtest@xbox";
     our Datasource $db($connstr);
     $db.open();
 
-    my int $id = 0; 
+    my int $id = 0;
     my int $prev_id = 0;
     my int $prev_success = 0;
 
@@ -116,7 +116,7 @@ sub start() {
     test_objects_out($id++);
     test_timestamp_in($id++);
     test_timestamp_out($id++);
-    my list $row_data = "Qore named types test - collections", sprintf("(%d/%d)", $success_count, $id);
+    my list $row_data = ("Qore named types test - collections", sprintf("(%d/%d)", $success_count, $id));
     print_row($row_data);
     $prev_id = $id;
     $prev_success = $success_count;
@@ -124,16 +124,16 @@ sub start() {
     test_exception2($id++);
     test_exception3($id++);
     test_exception4($id++);
-    $row_data = "Qore named types test - various errors checking", sprintf("(%d/%d)", $success_count-$prev_success, $id-$prev_id);
+    $row_data = ("Qore named types test - various errors checking", sprintf("(%d/%d)", $success_count-$prev_success, $id-$prev_id));
     print_row($row_data);
     $prev_id = $id;
     $prev_success = $success_count;
 
     test_object_insert($id++);
-    $row_data = "Qore named types test - objects", sprintf("(%d/%d)", $success_count-$prev_success, $id-$prev_id);
+    $row_data = ("Qore named types test - objects", sprintf("(%d/%d)", $success_count-$prev_success, $id-$prev_id));
     print_row($row_data);
 
-    $row_data = "TESTING COMPLETED", sprintf("(%d/%d)", $success_count, $id);
+    $row_data = ("TESTING COMPLETED", sprintf("(%d/%d)", $success_count, $id));
 
     print_row($row_data);
     print_char("-", COL_WIDTH+15);
@@ -158,10 +158,10 @@ sub usage() {
 
 
 sub parse_command_line() {
-    
+
 	my GetOpt $g(opts);
     $o = $g.parse(\$ARGV);
-	
+
     if (exists $o."_ERRORS_") {
         printf("%s\n", $o."_ERRORS_"[0]);
         exit(1);
@@ -177,14 +177,16 @@ sub parse_command_line() {
 	if(!exists $o.iters)
 	{
 		switch (gethostname()) {
-			case /^qube/: $connstr = "oracle:omquser2/omquser2@qube"; break;
-			case /^el6/:
-			case /^quark/: $connstr = "oracle:omquser/omquser@el6"; break;
-			case /^el5/:
-			case /^manatee/:
-			case /^xbox/: $connstr = "oracle:omquser/omquser@xbox"; break;
-			case /^ren/: $connstr = "oracle:omqtest/omqtest@xbox"; break;
-			default: $connstr = "oracle:omquser/omquser@xbox"; break;
+		    case /^quasar/: $connstr = "oracle:omquser/omquser@el7"; break;
+		    case /^quark/: $connstr = "oracle:omquser/omquser@el6"; break;
+		    case /^qube/: $connstr = "oracle:omquser2/omquser2@qube"; break;
+		    case /^el6/:
+		    case /^quark/: $connstr = "oracle:omquser/omquser@el6"; break;
+		    case /^el5/:
+		    case /^manatee/:
+		    case /^xbox/: $connstr = "oracle:omquser/omquser@xbox"; break;
+		    case /^ren/: $connstr = "oracle:omqtest/omqtest@xbox"; break;
+		    default: $connstr = "oracle:omquser/omquser@xbox"; break;
 		}
 	} else {
 		$connstr = $o.iters;
@@ -247,8 +249,8 @@ sub test_date_out(int id) {
 }
 
 sub test_object_collection_in(int id) {
-    my hash $obj = OBJ_HASH_MAIN + ( "A_OBJECT" : bindOracleObject("TEST_OBJECT_2", OBJ_HASH_SUPP),); 
-    my list $colo = bindOracleObject("TEST_OBJECT", $obj), bindOracleObject("TEST_OBJECT", $obj), bindOracleObject("TEST_OBJECT", $obj);
+    my hash $obj = OBJ_HASH_MAIN + ( "A_OBJECT" : bindOracleObject("TEST_OBJECT_2", OBJ_HASH_SUPP),);
+    my list $colo = (bindOracleObject("TEST_OBJECT", $obj), bindOracleObject("TEST_OBJECT", $obj), bindOracleObject("TEST_OBJECT", $obj));
     my $d = $db.exec("begin qore_test.do_coll_obj(%v, :retval); end;", bindOracleCollection("COL_TEST_obj", $colo));
     print_result($id, "collection IN object", cmp_result(NOTHING, $d.retval, COLL_OBJECT_IN), $colo, $d.retval);
     $db.rollback();
@@ -292,7 +294,7 @@ sub test_objects_out(int id) {
 }
 
 sub test_timestamp_in(int id) {
-    my list $colt = $c_date, $c_date, NULL, NOTHING, $c_date;
+    my list $colt = ($c_date, $c_date, NULL, NOTHING, $c_date);
     my $d = $db.exec("begin qore_test.do_coll_timestamp_tz(%v, :retval); end;", bindOracleCollection("COL_TEST_timestamp_tz", $colt));
     #printf("collection: %N\n", $d);
     print_result($id, "collection IN timestamp", cmp_result(NOTHING, $d.retval, COLL_TIMESTAMP_IN), TIMESTAMP_LST_IN, $d.retval);
@@ -337,7 +339,7 @@ sub test_exception2(int id) {
 
 sub test_exception3(int id) {
     try {
-        my list $col = STR_FOO, STR_BAR,NULL, NOTHING, STR_END;
+        my list $col = (STR_FOO, STR_BAR,NULL, NOTHING, STR_END);
         my $r = $db.exec("begin qore_test.do_coll(%v, :retval); end;",
                 $col, # missing bindOracleObject
                 Type::String);
@@ -365,7 +367,7 @@ sub test_object_insert(int id) {
 
 	on_success $db.commit();
 	on_error $db.rollback();
-	
+
 	try {
 	    # ensure we can insert with lower-case object keys
 	    my hash $h;
@@ -376,7 +378,7 @@ sub test_object_insert(int id) {
 				bindOracleObject("TEST_tab_OBJECT", $h),
 				bindOracleCollection("TEST_tab_coll", (NUM_INT, NUM_INT, NULL, NOTHING, NUM_INT,))
 				);
-	    if($rins == 1) 
+	    if($rins == 1)
 		print_result($id, "object direct insert", Qore::True, "object insert to db succesfull", $rins);
 	    else
 		print_result($id, "object direct insert", Qore::False, "object insert to db unsuccesfull", $rins);
