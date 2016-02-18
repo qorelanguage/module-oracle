@@ -189,8 +189,7 @@ QoreOracleConnection::~QoreOracleConnection() {
       logoff();
 
    if (ocilib_cn) {
-      OCI_ListForEach(&ocilib, ocilib_cn->tinfs, (boolean (*)(void *)) OCI_TypeInfoClose);
-      OCI_ListFree(&ocilib, ocilib_cn->tinfs);
+      clearCache();
 
       OCI_FREE(ocilib_cn->fmt_num);
 
@@ -218,6 +217,11 @@ QoreOracleConnection::~QoreOracleConnection() {
        OCIHandleFree(usrhp, (ub4) OCI_HTYPE_SESSION);
    if (svchp)
        OCIHandleFree(svchp, OCI_HTYPE_SVCCTX);
+}
+
+void QoreOracleConnection::clearCache() {
+   OCI_ListForEach(&ocilib, ocilib_cn->tinfs, (boolean (*)(void *)) OCI_TypeInfoClose);
+   OCI_ListFree(&ocilib, ocilib_cn->tinfs);
 }
 
 int QoreOracleConnection::checkerr(sword status, const char *query_name, ExceptionSink *xsink) {

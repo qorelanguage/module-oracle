@@ -493,7 +493,8 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - fixed a bug where duplicated columns would result in corrupt lists when selected in column mode
     - fixed a bug where very large numbers were being retrieved incorrectly and would result in an ORA-01406 error
     - fixed a bug where number values were being returned with decimal points truncated in locales where the decimal position is not marked with a dot
-    - fixed a bug where collections with no columns (but based on a table for example) could not be used (<a href="https://github.com/qorelanguage/qore/issues/455">bug 455</a>)
+    - fixed a bug where collections with no columns (but based on a table for example) could not be used (<a href="https://github.com/qorelanguage/qore/issues/455">issue 455</a>)
+    - fixed a bug where cached NTY information was reused with stale pointers when connections were reestablished (<a href="https://github.com/qorelanguage/qore/issues/537">issue 537</a>)
 
     @subsection oracle31 oracle Driver Version 3.1
 

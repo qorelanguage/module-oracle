@@ -43,6 +43,8 @@ version 3.2
   truncated in locales where the decimal position is not marked with a dot
 * fixed a bug where collections with no columns (but based on a table for
   example) could not be used
+* fixed a bug where cached NTY information was reused with stale pointers
+  when connections were reestablished
 
 
 ***********

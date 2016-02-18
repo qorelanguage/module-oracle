@@ -210,6 +210,9 @@ public:
       return rc;
    }
 
+   // clear cached objects
+   DLLLOCAL void clearCache();
+
    DLLLOCAL int commit(ExceptionSink* xsink);
    DLLLOCAL int rollback(ExceptionSink* xsink);
 
