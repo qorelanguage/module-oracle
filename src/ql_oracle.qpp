@@ -6,7 +6,7 @@
 
   Qore Programming Language
 
-  Copyright 2003 - 2012 David Nichols
+  Copyright 2003 - 2016 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,6 @@
  */
 //@{
 namespace Qore::Oracle;
-
 
 //! returns a value to be used to bind a Qore value as an "IN OUT" variable for PL/SQL
 /** @param value any Qore variable
@@ -64,7 +63,7 @@ hash bindInOut(any value, *string type) [flags=CONSTANT] {
 //! returns a value to be used to bind a Qore value as an Oracle object
 /** @param tname the name of the Oracle type to bind
     @param values a hash where the keys are Oracle object attributes
-    
+
     @return a hash value which can be used to bind the given value as the given object in an SQL statement with the following keys:
     - \c "type": a constant string \c "OracleObject"
     - \c "^oratype^": the value of the \c tname argument
@@ -85,7 +84,7 @@ hash bindOracleObject(string tname, hash values) [flags=CONSTANT] {
 
 //! returns a value to be used to describe a placeholder buffer for retrieving an Oracle object as an output value
 /** @param tname the name of the Oracle object type to bind for the placeholder buffer
-    
+
     @return a hash value which can be used to describe an output placeholder buffer as an object buffer of the given type in an SQL statement with the following keys:
     - \c "type": a constant string \c "OracleObject"
     - \c "value": the value of the \c tname argument
@@ -105,7 +104,7 @@ hash placeholderOracleObject(string tname) [flags=CONSTANT] {
 //! returns a value to be used to bind a Qore value as an Oracle collection
 /** @param tname the name of the Oracle collection type to bind
     @param values a list of values for the collection
-    
+
     @return a hash value which can be used to bind the given value as the given collection in an SQL statement with the following keys:
     - \c "type": a constant string \c "OracleCollection"
     - \c "^oratype^": the value of the \c tname argument
@@ -126,7 +125,7 @@ hash bindOracleCollection(string tname, list values) [flags=CONSTANT] {
 
 //! returns a value to be used to describe a placeholder buffer for retrieving an Oracle collection as an output value
 /** @param tname the name of the Oracle collection type to bind for the placeholder buffer
-    
+
     @return a hash value which can be used to describe an output placeholder buffer as a collection buffer of the given type in an SQL statement with the following keys:
     - \c "type": a constant string \c "OracleCollection"
     - \c "value": the value of the \c tname argument
@@ -142,5 +141,4 @@ hash placeholderOracleCollection(string tname) [flags=CONSTANT] {
     h->setKeyValue("value", tname->refSelf(), xsink);
     return h;
 }
-
 //@}
