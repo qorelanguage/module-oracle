@@ -144,10 +144,10 @@ if test "$enable_64bit" = "auto"; then
    # turn on 64-bit by default if compiling on a 64-bit platform
    case "${host_cpu}" in
        *64*)
-                 enable_64bit=yes 
+                 enable_64bit=yes
                  ;;
        s390x)
-                 enable_64bit=yes 
+                 enable_64bit=yes
                  ;;
        *)        case "${host_os}" in
                      darwin*)   mv=`uname -r|cut -f1 -d.`
@@ -329,7 +329,7 @@ fi
 AC_ARG_WITH([oracle],
   [AS_HELP_STRING([--with-oracle@<:@=DIR@:>@],
                   [directory for Oracle support (defaults to $ORACLE_HOME)])],
-   , 
+   ,
    [with_oracle=auto])
 
 if test -z "$ORACLE_INSTANT_CLIENT" -a -n "INSTANT_CLIENT"; then
@@ -391,7 +391,7 @@ get_oracle_version() {
     test -z "$ORACLE_VERSION" && ORACLE_VERSION=7.3
   else
     if test "$windows" = "yes"; then
-      if test -f $1/oraociei11.dll; then
+      if test -f $1/oraociei11.dll -o -f $1/oraocci11.dll; then
         ORACLE_VERSION=11
       elif test -f $1/oraociei10.dll; then
         ORACLE_VERSION=10
@@ -401,9 +401,9 @@ get_oracle_version() {
       if test -z "$lf"; then
         AC_MSG_ERROR([Oracle libraries not found in $1, check oracle installation])
       fi
-  
+
       lf=`basename "$lf" | sed s/.*${SHLIB_SUFFIX}\.//`
-      case "$lf" in  
+      case "$lf" in
         12*) ORACLE_VERSION=12 ;;
         11*) ORACLE_VERSION=11 ;;
         10*) ORACLE_VERSION=10 ;;
@@ -443,7 +443,7 @@ AC_ARG_WITH([oracle-instant-client],
             [with_oracle_instant_client=$ORACLE_INSTANT_CLIENT])
 
 if test -n "$with_oracle_instant_client"; then
-      AC_MSG_CHECKING([for Oracle instant client SDK])      
+      AC_MSG_CHECKING([for Oracle instant client SDK])
       if test -f "$with_oracle_instant_client/sdk/include/oci.h"; then
 	 AC_MSG_RESULT([ok])
 	 ORACLE_INCLUDES="-I$with_oracle_instant_client/sdk/include"
@@ -497,8 +497,8 @@ case "$ORACLE_VERSION" in
    9*|10*|11*|12*) if test "$windows" = "yes"; then
                      ORACLE_LIBS="-L$oracle_lib_dir -loci"
 		   else
-		     ORACLE_LIBS="-L$oracle_lib_dir -lclntsh" 
-		   fi ;; 
+		     ORACLE_LIBS="-L$oracle_lib_dir -lclntsh"
+		   fi ;;
    *)      AC_MSG_ERROR(Unsupported Oracle version) ;;
 esac
 AC_SUBST(ORACLE_LIBS)
@@ -539,7 +539,7 @@ find_qore() {
     if test \( "$a" = "/" -o -z "$a" \) -a -h "$a/lib${LIBSUFFIX}"; then
         a=/usr
     fi
-    lib=$a/lib${LIBSUFFIX}    
+    lib=$a/lib${LIBSUFFIX}
 
     # if we only want the static qore libraries
     if test -n "$qore_static"; then
@@ -667,18 +667,14 @@ else
       if test "$libdir" != "$qlibdir"; then
          AC_MSG_WARN([warning, installed qore's module dir is $qlibdir, this module will be installed in $libdir])
       fi
-      if test "$windows" = yes; then
-         userlibdir="${qlibdir}"
+      if test -n "echo ${datarootdir}|grep \$"; then
+         userlibdir="`eval echo ${datarootdir}`/qore-modules"
       else
-         if test -n "echo ${datarootdir}|grep \$"; then
-            userlibdir="`eval echo ${datarootdir}`/qore-modules"
-         else
-            userlibdir="${datarootdir}/qore-modules"
-         fi
-         qlibdir=`qore --user-module-dir`
-         if test "$userlibdir" != "$qlibdir"; then
-            AC_MSG_WARN([warning, installed qore's user module dir is $qlibdir, this module will be installed in $userlibdir])
-         fi
+         userlibdir="${datarootdir}/qore-modules"
+      fi
+      qlibdir=`qore --user-module-dir`
+      if test "$userlibdir" != "$qlibdir"; then
+         AC_MSG_WARN([warning, installed qore's user module dir is $qlibdir, this module will be installed in $userlibdir])
       fi
    fi
 fi
@@ -768,7 +764,7 @@ if test "$enable_optimization" = "yes"; then
     elif test "$CXX" = "CC" -a "$solaris" = yes; then
         # remove -g with Solaris CC as it reduces optimization levels
 	CXXFLAGS="`echo $CXXFLAGS| sed s/-g//` -xO5" # Solaris CC
-    elif test -n "`echo $CXX|grep aCC`"; then 
+    elif test -n "`echo $CXX|grep aCC`"; then
         # remove -g with HP-UX aCC as it reduces optimization levels
 	CXXFLAGS="`echo $CXXFLAGS| sed s/-g//` +O4" # HP-UX aCC
     fi
