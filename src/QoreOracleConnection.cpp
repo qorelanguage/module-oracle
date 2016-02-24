@@ -189,8 +189,6 @@ QoreOracleConnection::~QoreOracleConnection() {
       logoff();
 
    if (ocilib_cn) {
-      clearCache();
-
       OCI_FREE(ocilib_cn->fmt_num);
 
       if (ocilib_cn->trace)

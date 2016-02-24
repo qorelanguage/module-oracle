@@ -88,9 +88,6 @@ int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
 	 // try to reconnect
 	 conn.logoff();
 
-         // free all cached typeinfo objects
-         conn.clearCache();
-
 	 //printd(0, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect\n");
 	 if (conn.logon(xsink)) {
             //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", conn);

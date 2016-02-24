@@ -202,9 +202,11 @@ public:
    // logoff but do not process error return values
    DLLLOCAL int logoff() {
       assert(svchp);
-//      int rc = OCILogoff(svchp, errhp);
-//      OCIHandleFree(svchp, OCI_HTYPE_SVCCTX);
-//      svchp = 0;
+
+      // free all cached typeinfo objects
+      if (ocilib_cn)
+         clearCache();
+
       int rc = OCISessionEnd(svchp, errhp, usrhp, 0);
       OCIServerDetach(srvhp, errhp, OCI_DEFAULT);
       return rc;
