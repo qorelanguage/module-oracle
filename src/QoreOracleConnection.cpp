@@ -219,7 +219,7 @@ QoreOracleConnection::~QoreOracleConnection() {
 
 void QoreOracleConnection::clearCache() {
    OCI_ListForEach(&ocilib, ocilib_cn->tinfs, (boolean (*)(void *)) OCI_TypeInfoClose);
-   OCI_ListFree(&ocilib, ocilib_cn->tinfs);
+   OCI_ListClear(&ocilib, ocilib_cn->tinfs);
 }
 
 int QoreOracleConnection::checkerr(sword status, const char *query_name, ExceptionSink *xsink) {
