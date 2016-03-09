@@ -45,6 +45,8 @@ version 3.2
   example) could not be used
 * fixed a bug where cached NTY information was reused with stale pointers
   when connections were reestablished
+* fixed a bug where SQLStatement::describe() was failing even though result
+  set information was available
 
 
 ***********

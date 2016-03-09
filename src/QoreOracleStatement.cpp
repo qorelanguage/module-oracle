@@ -355,11 +355,6 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
 
 #ifdef _QORE_HAS_DBI_DESCRIBE
 QoreHashNode* QoreOracleStatement::describe(OraResultSet& resultset, ExceptionSink* xsink) {
-   if (!fetch_done) {
-      xsink->raiseException("ORACLE-DESCRIBE-ERROR", "call SQLStatement::next() before calling SQLStatement::describe()");
-      return 0;
-   }
-
    // set up hash for row
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
    QoreString namestr("name");
