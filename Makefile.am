@@ -59,13 +59,11 @@ docs/qlib/OracleExtensions.qm.dox.h: qlib/OracleExtensions.qm
 
 docs/OracleExtensions/html: docs/qlib/OracleExtensions.qm.dox.h docs/qlib/Doxyfile.OracleExtensions
 	cd docs; $(DOXYGEN_CMD) qlib/Doxyfile.OracleExtensions
-	$(QDX) --post docs/OracleExtensions/html/*html
-	$(QDX) --post docs/OracleExtensions/html/search/*html
+	$(QDX) --post docs/OracleExtensions/html docs/OracleExtensions/html/search
 
 docs/oracle/html: $(DOXYFILES)
 	cd docs; $(DOXYGEN_CMD) doxyfile;
-	$(QDX) --post docs/oracle/html/*html
-	$(QDX) --post docs/oracle/html/search/*html
+	$(QDX) --post docs/oracle/html docs/oracle/html/search
 
 docs/mainpage.doxygen: docs/mainpage.doxygen.tmpl
 	$(QDX) -d $< $@
