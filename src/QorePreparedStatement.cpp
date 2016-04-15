@@ -340,7 +340,7 @@ public:
             l->push(null());
             continue;
          }
-         AbstractQoreNode* v;
+         AbstractQoreNode* v = 0;
          switch (expected_type) {
             case NT_INT: {
                const char* buf = strvec.get(i);
@@ -348,7 +348,20 @@ public:
                break;
             }
             case NT_NUMBER: {
-               v = new QoreNumberNode(strvec.get(i));
+               int nopt = bn.stmt.getData()->getNumberOption();
+               switch (nopt) {
+                  case OPT_NUM_OPTIMAL:
+                     v = bn.stmt.getData()->getNumberOptimal(strvec.get(i));
+                     break;
+                  case OPT_NUM_STRING:
+                     v = new QoreStringNode(strvec.get(i), bn.stmt.getEncoding());
+                     break;
+                  case OPT_NUM_NUMERIC:
+                     v = new QoreNumberNode(strvec.get(i));
+                     break;
+                  default:
+                     assert(false);
+               }
                break;
             }
             default: {
