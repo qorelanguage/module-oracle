@@ -1,0 +1,136 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+# requires at least this qore version to run
+%requires qore >= 0.8.12
+
+%new-style
+%strict-args
+%require-types
+%enable-all-warnings
+
+%requires QUnit
+%requires SqlUtil
+%requires Schema
+
+%exec-class OracleTest
+
+class OracleTestSchema inherits AbstractSchema {
+    public {
+        const SchemaName = "OracleTestSchema";
+        const SchemaVersion = "1.0";
+    }
+
+    private {
+        const GenericOptions = (
+            "replace": True,
+            );
+
+        const IndexOptions = {};
+
+        const ColumnOptions = {};
+
+        const OracleTypes = (
+            "qorus_test_obj" : "object (
+  objid number,
+  string varchar2(50),
+  created timestamp
+)",
+            "qorus_test_col" : "table of qorus_test_obj",
+            );
+
+        const OracleProcedures = (
+            "oom_proc": "procedure oom_proc(in_data in qorus_test_col)
+begin
+
+end;",
+            );
+    }
+
+    constructor(AbstractDatasource ds, *string dts, *string its) : AbstractSchema(ds, dts, its) {
+    }
+
+    private string getNameImpl() {
+        return SchemaName;
+    }
+
+    private string getVersionImpl() {
+        return SchemaVersion;
+    }
+
+    private *hash getProceduresImpl() {
+        return OracleProcedures;
+    }
+
+    private *hash getTypesImpl() {
+        return OracleTypes;
+    }
+
+    private *hash getIndexOptionsImpl() {
+        return IndexOptions;
+    }
+
+    private *hash getGenericOptionsImpl() {
+        return GenericOptions;
+    }
+
+    private *hash getColumnOptionsImpl() {
+        return ColumnOptions;
+    }
+}
+
+class OracleTest inherits QUnit::Test {
+    public {}
+
+    private {
+        AbstractSchema schema;
+        AbstractTable table;
+
+        const MyOpts = Opts + (
+            "connstr": "c,conn=s",
+            );
+
+        const OptionColumn = 22;
+    }
+
+    constructor() : Test("oracle", "1.0", \ARGV, MyOpts) {
+        Datasource ds;
+        try {
+            ds = getDatasource();
+        }
+        catch (hash ex) {
+            if (m_options.verbose)
+                printf("%s: %s\n", ex.err, ex.desc);
+            # skip tests if we can't create the datasource
+        }
+
+        if (ds) {
+            # create the test schema
+            schema = new OracleTestSchema(ds);
+            schema.align(False, m_options.verbose);
+
+            addTestCase("oomTest", \oomTest());
+        }
+
+        set_return_value(main());
+    }
+
+    globalTearDown() {
+        # drop the test schema
+        if (schema)
+            schema.drop(False, m_options.verbose);
+    }
+
+    oomTest() {
+    }
+
+    Datasource getDatasource() {
+        if (!m_options.connstr)
+            m_options.connstr = ENV.QORE_DB_CONNSTR_ORACLE;
+        Datasource ds(m_options.connstr);
+        if (ds.getDriverName() != "oracle")
+            throw "ORACLE-ERROR", sprintf("cannot execute the oracle tests on a connection using driver %y", ds.getDriverName());
+        ds.open();
+        return ds;
+    }
+}
