@@ -155,7 +155,23 @@ QoreHashNode* QoreOracleStatement::fetchRow(OraResultSet& resultset, ExceptionSi
          assert(!n);
          return 0;
       }
-      h->setKeyValue(w->name, n, xsink);
+      HashAssignmentHelper hah(**h, w->name.c_str());
+      // if we have a duplicate column
+      if (*hah) {
+         // find a unique column name
+         unsigned num = 1;
+         while (true) {
+            QoreStringMaker tmp("%s_%d", w->name.c_str(), num);
+            hah.reassign(tmp.c_str());
+            if (*hah) {
+               ++num;
+               continue;
+            }
+            break;
+         }
+      }
+
+      hah.assign(n, xsink);
       if (*xsink)
 	 return 0;
    }

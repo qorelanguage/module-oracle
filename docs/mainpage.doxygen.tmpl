@@ -496,6 +496,7 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - fixed a bug where collections with no columns (but based on a table for example) could not be used (<a href="https://github.com/qorelanguage/qore/issues/455">issue 455</a>)
     - fixed a bug where cached NTY information was reused with stale pointers when connections were reestablished (<a href="https://github.com/qorelanguage/qore/issues/537">issue 537</a>)
     - fixed a bug where SQLStatement::describe() was failing even though result set information was available
+    - fixed a bug rewriting column names when selecting with row formats (https://github.com/qorelanguage/qore/issues/828)
 
     @subsection oracle31 oracle Driver Version 3.1
 
