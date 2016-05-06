@@ -47,6 +47,8 @@ version 3.2
   when connections were reestablished
 * fixed a bug where SQLStatement::describe() was failing even though result
   set information was available
+* fixed a bug rewriting column names when selecting with row formats
+  (issue 828)
 
 
 ***********
