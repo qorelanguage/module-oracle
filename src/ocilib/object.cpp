@@ -618,7 +618,10 @@ boolean OCI_API OCI_ObjectAssign2(OCI_Library *pOCILib, OCI_Object *obj, OCI_Obj
     OCI_CHECK_PTR(pOCILib, OCI_IPC_OBJECT, obj,     FALSE);
     OCI_CHECK_PTR(pOCILib, OCI_IPC_OBJECT, obj_src, FALSE);
 
-    OCI_CHECK_COMPAT(pOCILib, obj->con, obj->typinf->tdo == obj_src->typinf->tdo, FALSE);
+    if (obj->typinf->tdo != obj_src->typinf->tdo) {
+        xsink->raiseException("ORACLE-OBJECT-ERROR", "Cannot assign object of type '%s' into '%s'", obj_src->typinf->name, obj->typinf->name);
+        return res;
+    }
 
     OCI_CALL2Q
     (

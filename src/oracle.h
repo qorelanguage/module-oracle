@@ -82,6 +82,6 @@
 #endif
 
 // maximum string size for an oracle number
-#define ORACLE_NUMBER_STR_LEN 50
+#define ORACLE_NUMBER_STR_LEN 127
 
 #endif

@@ -195,9 +195,10 @@ boolean OCI_API OCI_CollAssign(OCI_Library *pOCILib, OCI_Coll *coll, OCI_Coll *c
     OCI_CHECK_PTR(pOCILib, OCI_IPC_COLLECTION, coll,     FALSE);
     OCI_CHECK_PTR(pOCILib, OCI_IPC_COLLECTION, coll_src, FALSE);
 
-    OCI_CHECK_COMPATQ(pOCILib, coll->con,
-		      coll->typinf->cols[0].icode == coll_src->typinf->cols[0].icode,
-		      FALSE, xsink);
+    if (coll->typinf->cols[0].icode != coll_src->typinf->cols[0].icode) {
+        xsink->raiseException("ORACLE-COLLECTION-ERROR", "Cannot assign collection of type '%s' into '%s'", coll->typinf->cols[0].name, coll_src->typinf->cols[0].name);
+        return res;
+    }
 
     OCI_CALL2Q
     (
@@ -310,7 +311,10 @@ boolean OCI_API OCI_CollAppend2(OCI_Library *pOCILib, OCI_Coll *coll, OCI_Elem *
     OCI_CHECK_PTR(pOCILib, OCI_IPC_COLLECTION, coll, FALSE);
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
 
-    OCI_CHECK_COMPATQ(pOCILib, coll->con, elem->typinf->cols[0].type == coll->typinf->cols[0].type, FALSE, xsink);
+    if (elem->typinf->cols[0].type != coll->typinf->cols[0].type) {
+        xsink->raiseException("ORACLE-COLLECTION-ERROR", "Cannot assign collection of type '%s' into '%s'", elem->typinf->cols[0].name, coll->typinf->cols[0].name);
+        return res;
+    }
 
     OCI_CALL2Q
     (

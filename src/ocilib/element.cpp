@@ -35,6 +35,38 @@
 #include "ocilib.h"
 #include "ocilib_internal.h"
 
+const char* OCI_GetColumnTypeName(int cdt) {
+   switch (cdt) {
+      case OCI_CDT_NUMERIC:
+	 return "number";
+      case OCI_CDT_DATETIME:
+	 return "datetime";
+      case OCI_CDT_TEXT:
+	 return "text";
+      case OCI_CDT_LONG:
+	 return "long";
+      case OCI_CDT_CURSOR:
+	 return "cursor";
+      case OCI_CDT_LOB:
+	 return "LOB";
+      case OCI_CDT_FILE:
+	 return "file";
+      case OCI_CDT_TIMESTAMP:
+	 return "timestamp";
+      case OCI_CDT_INTERVAL:
+	 return "interval";
+      case OCI_CDT_RAW:
+	 return "raw";
+      case OCI_CDT_OBJECT:
+	 return "object";
+      case OCI_CDT_COLLECTION:
+	 return "collection";
+      case OCI_CDT_REF:
+	 return "ref";
+   }
+   return "unknown";
+}
+
 /* ************************************************************************ *
  *                             PRIVATE FUNCTIONS
  * ************************************************************************ */
@@ -149,7 +181,15 @@ boolean OCI_ElemSetNumberFromString(OCI_Library* pOCILib, OCI_Elem* elem, const 
     boolean res = FALSE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPATQ(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_NUMERIC, FALSE, xsink);
+    if (elem->typinf->cols[0].type != OCI_CDT_NUMERIC) {
+       QoreStringNode* desc = new QoreStringNode("cannot bind a numeric value to element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
 
     res = OCI_NumberConvertStr2(pOCILib, elem->con, (OCINumber*)elem->handle, str, size, NUM_FMT, NUM_FMT_LEN, xsink);
 
@@ -176,7 +216,15 @@ boolean OCI_ElemSetNumber2(OCI_Library *pOCILib, OCI_Elem  *elem, void *value, u
     boolean res = FALSE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPATQ(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_NUMERIC, FALSE, xsink);
+    if (elem->typinf->cols[0].type != OCI_CDT_NUMERIC) {
+       QoreStringNode* desc = new QoreStringNode("cannot bind a numeric value to element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
 
     res = OCI_NumberSet2(pOCILib, elem->con, (OCINumber *) elem->handle, value, size, flag, xsink);
 
@@ -450,8 +498,17 @@ const dtext * OCI_API OCI_ElemGetString2(OCI_Library *pOCILib, OCI_Elem *elem)
     boolean res       = FALSE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_TEXT, NULL);
 
+    if (elem->typinf->cols[0].type != OCI_CDT_TEXT) {
+       QoreStringNode* desc = new QoreStringNode("cannot retrieve a text value for element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
+    
     if (elem->handle != NULL)
     {
         res = TRUE;
@@ -517,8 +574,17 @@ OCI_Date * OCI_API  OCI_ElemGetDate2(OCI_Library *pOCILib, OCI_Elem *elem)
     OCI_Date *date = NULL;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_DATETIME, NULL);
 
+    if (elem->typinf->cols[0].type != OCI_CDT_DATETIME) {
+       QoreStringNode* desc = new QoreStringNode("cannot retrieve a datetime value for element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
+    
     if (elem->ind != OCI_IND_NULL)
     {
         if (elem->init == FALSE)
@@ -554,7 +620,16 @@ OCI_Timestamp * OCI_API  OCI_ElemGetTimestamp2(OCI_Library *pOCILib, OCI_Elem *e
     OCI_Timestamp *tmsp = NULL;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_TIMESTAMP, NULL);
+
+    if (elem->typinf->cols[0].type != OCI_CDT_TIMESTAMP) {
+       QoreStringNode* desc = new QoreStringNode("cannot retrieve a timestamp value for element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
 
     if (elem->ind != OCI_IND_NULL)
     {
@@ -593,7 +668,16 @@ OCI_Interval * OCI_API OCI_ElemGetInterval2(OCI_Library *pOCILib, OCI_Elem *elem
     OCI_Interval *itv = NULL;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_INTERVAL, NULL);
+
+    if (elem->typinf->cols[0].type != OCI_CDT_INTERVAL) {
+       QoreStringNode* desc = new QoreStringNode("cannot retrieve an interval value for element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
 
     if (elem->ind != OCI_IND_NULL)
     {
@@ -632,7 +716,15 @@ OCI_Lob * OCI_API OCI_ElemGetLob2(OCI_Library *pOCILib, OCI_Elem *elem, Exceptio
     OCI_Lob *lob = NULL;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPATQ(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_LOB, NULL, xsink);
+    if (elem->typinf->cols[0].type != OCI_CDT_LOB) {
+       QoreStringNode* desc = new QoreStringNode("cannot retrieve a LOB value from element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
 
     if (elem->ind != OCI_IND_NULL)
     {      
@@ -671,7 +763,16 @@ OCI_Object * OCI_API OCI_ElemGetObject2(OCI_Library * pOCILib, OCI_Elem *elem, E
     OCI_Object *obj = NULL;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPATQ(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_OBJECT, NULL, xsink);
+
+    if (elem->typinf->cols[0].type != OCI_CDT_OBJECT) {
+       QoreStringNode* desc = new QoreStringNode("cannot retrieve an object value from element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
 
     if (elem->ind != OCI_IND_NULL)
     {
@@ -711,7 +812,16 @@ OCI_Coll * OCI_API OCI_ElemGetColl2(OCI_Library *pOCILib, OCI_Elem *elem, Except
     OCI_Coll *coll = NULL;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, NULL);
-    OCI_CHECK_COMPATQ(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_COLLECTION, NULL, xsink);
+
+    if (elem->typinf->cols[0].type != OCI_CDT_COLLECTION) {
+       QoreStringNode* desc = new QoreStringNode("cannot retrieve a collection from element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
 
     if (elem->ind != OCI_IND_NULL)
     {
@@ -819,7 +929,15 @@ boolean OCI_API OCI_ElemSetString2(OCI_Library *pOCILib, OCI_Elem *elem, const d
     boolean res  = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPATQ(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_TEXT, FALSE, xsink);
+    if (elem->typinf->cols[0].type != OCI_CDT_TEXT) {
+       QoreStringNode* desc = new QoreStringNode("cannot bind a string value to element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
 
     if (value == NULL)
     {
@@ -855,7 +973,16 @@ boolean OCI_API OCI_ElemSetRaw2(OCI_Library *pOCILib, OCI_Elem *elem, void* valu
     boolean res  = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPATQ(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_RAW, FALSE, xsink);
+
+    if (elem->typinf->cols[0].type != OCI_CDT_RAW) {
+       QoreStringNode* desc = new QoreStringNode("cannot bind a raw value to element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
  
     if (value == NULL)
     {
@@ -899,7 +1026,16 @@ boolean OCI_API OCI_ElemSetDate2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Date 
     boolean res  = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_DATETIME, FALSE);
+
+    if (elem->typinf->cols[0].type != OCI_CDT_DATETIME) {
+       QoreStringNode* desc = new QoreStringNode("cannot bind a datetime value to element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
   
     if (value == NULL)
     {
@@ -946,7 +1082,16 @@ boolean OCI_API OCI_ElemSetTimestamp2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_
     boolean res  = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPATQ(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_TIMESTAMP, FALSE, xsink);
+
+    if (elem->typinf->cols[0].type != OCI_CDT_TIMESTAMP) {
+       QoreStringNode* desc = new QoreStringNode("cannot bind a timestamp value to element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
   
     if (value == NULL)
     {
@@ -994,8 +1139,17 @@ boolean OCI_API OCI_ElemSetInterval2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_I
     boolean res  = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPAT(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_INTERVAL, FALSE);
- 
+
+    if (elem->typinf->cols[0].type != OCI_CDT_INTERVAL) {
+       QoreStringNode* desc = new QoreStringNode("cannot bind an interval value to element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
+
     if (value == NULL)
     {
         res = OCI_ElemSetNull2(pOCILib, elem);
@@ -1042,8 +1196,17 @@ boolean OCI_API OCI_ElemSetColl2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Coll 
     boolean res  = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPATQ(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_COLLECTION, FALSE, xsink);
-  
+
+    if (elem->typinf->cols[0].type != OCI_CDT_COLLECTION) {
+       QoreStringNode* desc = new QoreStringNode("cannot bind a collection value to element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
+
     if (value == NULL)
     {
         res = OCI_ElemSetNull2(pOCILib, elem);
@@ -1090,7 +1253,16 @@ boolean OCI_API OCI_ElemSetObject2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Obj
     boolean res  = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPATQ(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_OBJECT, FALSE, xsink);
+
+    if (elem->typinf->cols[0].type != OCI_CDT_OBJECT) {
+       QoreStringNode* desc = new QoreStringNode("cannot bind an object value to element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
   
     if (value == NULL)
     {
@@ -1131,7 +1303,16 @@ boolean OCI_API OCI_ElemSetLob2(OCI_Library *pOCILib, OCI_Elem *elem, OCI_Lob *v
     boolean res  = TRUE;
 
     OCI_CHECK_PTR(pOCILib, OCI_IPC_ELEMENT, elem, FALSE);
-    OCI_CHECK_COMPATQ(pOCILib, elem->con, elem->typinf->cols[0].type == OCI_CDT_LOB, FALSE, xsink);
+
+    if (elem->typinf->cols[0].type != OCI_CDT_LOB) {
+       QoreStringNode* desc = new QoreStringNode("cannot bind a lob value to element '");
+       if (elem->typinf->schema) {
+	  desc->concat(elem->typinf->schema);
+	  desc->concat('.');
+       }
+       desc->sprintf("%s' of type '%s'", elem->typinf->name, OCI_GetColumnTypeName(elem->typinf->cols[0].type));
+       return FALSE;
+    }
   
     if (value == NULL)
     {

@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2014 David Nichols
+  Copyright (C) 2003 - 2015 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,8 @@
 #ifndef _ORACOLUMNVALUE_H
 
 #define _ORACOLUMNVALUE_H
+
+#include <vector>
 
 struct q_lng {
    const QoreEncoding* enc;
@@ -70,21 +72,24 @@ struct q_lngraw {
 };
 */
 
+class AbstractDynamicArrayBindData;
+
 // FIXME: do not hardcode byte widths - could be incorrect on some platforms
 union ora_value {
-   void *ptr;
+   void* ptr;
    unsigned char date[7];
    int i4;
    int64 i8;
    double f8;
-   OCIDateTime *odt;
-   OCIInterval *oi;
+   OCIDateTime* odt;
+   OCIInterval* oi;
    //! named type: object
-   OCI_Object *oraObj;
+   OCI_Object* oraObj;
    //! named type: collection
-   OCI_Coll *oraColl;
+   OCI_Coll* oraColl;
    q_lng* lng;
-
+   AbstractDynamicArrayBindData* arraybind;
+   
    DLLLOCAL void* takePtr() {
       void* rv = ptr;
       ptr = 0;
@@ -95,22 +100,21 @@ union ora_value {
 class QoreOracleStatement;
 
 struct OraColumnValue {
-   QoreOracleStatement &stmt;
+   QoreOracleStatement& stmt;
    union ora_value buf;  // union containing data for value
    ub2 dtype;            // Oracle datatype for value
    int subdtype;         // distinguish the SQLT_NTY subtype
    sb2 ind;              // indicator value
+   bool array;
 
-   DLLLOCAL OraColumnValue(QoreOracleStatement &n_stmt, ub2 n_dtype = 0, int n_subdtype = SQLT_NTY_NONE) : stmt(n_stmt), dtype(n_dtype), subdtype(n_subdtype), ind(0) {
+   DLLLOCAL OraColumnValue(QoreOracleStatement& n_stmt, ub2 n_dtype = 0, int n_subdtype = SQLT_NTY_NONE) : stmt(n_stmt), dtype(n_dtype), subdtype(n_subdtype), ind(0), array(false) {
+      //printd(5, "OraColumnValue::OraColumnValue() this: %p\n", this);
    }
 
-   DLLLOCAL void del(ExceptionSink *xsink);
-
+   DLLLOCAL void del(ExceptionSink* xsink);
    DLLLOCAL QoreStringNode* doReturnString(bool destructive);
-
    DLLLOCAL void freeObject(ExceptionSink* xsink);
-
-   DLLLOCAL AbstractQoreNode *getValue(ExceptionSink *xsink, bool horizontal, bool destructive = false);
+   DLLLOCAL AbstractQoreNode* getValue(ExceptionSink* xsink, bool horizontal, bool destructive = false);
 };
 
 #endif

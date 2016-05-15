@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2014 David Nichols
+  Copyright (C) 2003 - 2016 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -25,8 +25,12 @@
 
 #include "ocilib_internal.h"
 
-QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsink) 
-  : errhp(0), svchp(0), srvhp(0), usrhp(0), ocilib_cn(0), ds(n_ds), ocilib_init(false), 
+// ensure that numeric values are returned with no thousands separator and a dot decimal separator
+// despite the locale because we currently retrieve number values as strings
+static char session_sql[] = "alter session set nls_numeric_characters = \". \"";
+
+QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsink)
+  : errhp(0), svchp(0), srvhp(0), usrhp(0), ocilib_cn(0), ds(n_ds), ocilib_init(false),
 #ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
     server_tz(currentTZ()),
 #endif
@@ -54,7 +58,7 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
       // create temporary environment handle
       QoreOracleEnvironment tmpenv;
       tmpenv.init();
-      
+
       if (ds.getDBEncoding()) {
          set_charset = true;
 
@@ -133,7 +137,7 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
       return;
 
    //printd(5, "QoreOracleConnection::QoreOracleConnection() datasource %p for DB=%s open (envhp=%p)\n", &ds, cstr.getBuffer(), *env);
-   
+
    if (!OCI_Initialize2(&ocilib, *env, errhp, ocilib_err_handler, 0, QORE_OCI_FLAGS)) {
       xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "failed to allocate OCILIB support handlers");
       return;
@@ -142,7 +146,7 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
    ocilib_init = true;
 
    //printd(5, "ocilib=%p mode=%d\n", &ocilib, ocilib.env_mode);
-   
+
    ocilib_cn = new OCI_Connection;
    // fake the OCI_Connection
    ocilib_cn->err = errhp;
@@ -172,7 +176,7 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
    ocilib_cn->fmt_num = 0;                        // numeric string format for conversion
    ocilib_cn->ver_str = 0;                        // string  server version
    ocilib_cn->ver_num = ocilib.version_runtime;   // numeric server version
-   ocilib_cn->trace = 0;                          // trace information   
+   ocilib_cn->trace = 0;                          // trace information
 
    //printd(5, "QoreOracleConnection::QoreOracleConnection() this: %p ds: %p envhp: %p svchp: %p errhp: %p xsink: %d\n", this, &ds, *env, svchp, errhp, (bool)*xsink);
 }
@@ -185,9 +189,6 @@ QoreOracleConnection::~QoreOracleConnection() {
       logoff();
 
    if (ocilib_cn) {
-      OCI_ListForEach(&ocilib, ocilib_cn->tinfs, (boolean (*)(void *)) OCI_TypeInfoClose);
-      OCI_ListFree(&ocilib, ocilib_cn->tinfs);
-
       OCI_FREE(ocilib_cn->fmt_num);
 
       if (ocilib_cn->trace)
@@ -214,6 +215,11 @@ QoreOracleConnection::~QoreOracleConnection() {
        OCIHandleFree(usrhp, (ub4) OCI_HTYPE_SESSION);
    if (svchp)
        OCIHandleFree(svchp, OCI_HTYPE_SVCCTX);
+}
+
+void QoreOracleConnection::clearCache() {
+   OCI_ListForEach(&ocilib, ocilib_cn->tinfs, (boolean (*)(void *)) OCI_TypeInfoClose);
+   OCI_ListClear(&ocilib, ocilib_cn->tinfs);
 }
 
 int QoreOracleConnection::checkerr(sword status, const char *query_name, ExceptionSink *xsink) {
@@ -269,7 +275,7 @@ int QoreOracleConnection::checkerr(sword status, const char *query_name, Excepti
 int QoreOracleConnection::logon(ExceptionSink *xsink) {
    const std::string &user = ds.getUsernameStr();
    const std::string &pass = ds.getPasswordStr();
-   
+
    // format potential db link string: host[:port]/SID or SID only
    QoreString dblink;
    if (ds.getHostName() && strlen(ds.getHostName())) {
@@ -310,7 +316,10 @@ int QoreOracleConnection::logon(ExceptionSink *xsink) {
 //      return checkerr(OCILogon(*env, errhp, &svchp, (text *)user.c_str(), user.size(), (text *)pass.c_str(), pass.size(), (text *)cstr.getBuffer(), cstr.strlen()), "QoreOracleConnection::logon()", xsink);
 
    //printd(5, "QoreOracleConnection::logon() %s/%s@%s succeeded\n", user.c_str(), pass.c_str(), dblink.getBuffer());
-   return 0;
+
+   // make sure we can read number characters
+   QoreOracleSimpleStatement stmt(*this);
+   return stmt.exec(session_sql, sizeof(session_sql), xsink);
 }
 
 int QoreOracleConnection::descriptorAlloc(void **descpp, unsigned type, const char *who, ExceptionSink *xsink) {

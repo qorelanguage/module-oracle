@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2014 David Nichols
+  Copyright (C) 2003 - 2016 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -71,7 +71,7 @@ public:
 
       out.clear();
       out.reserve(OCI_NLS_MAXBUFSZ);
-      
+
       int rc = OCINlsNameMap(envhp, (oratext*)out.getBuffer(), OCI_NLS_MAXBUFSZ, (oratext*)name, dir) == OCI_SUCCESS ? 0 : -1;
       if (!rc)
          out.terminate(strlen(out.getBuffer()));
@@ -134,7 +134,7 @@ public:
 #ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
    const AbstractQoreZoneInfo* server_tz;
 #endif
-   
+
    OCI_Library ocilib;
 
    QoreString cstr; // connection string
@@ -184,7 +184,7 @@ public:
 #endif
          ++ix;
       }
-     
+
 #ifdef DARWIN
       // ORA-28002: the password will expire within 20 days and probably all other warnings
       // cause crashes (invalid handle) on macosx (client 10). I'm not sure if it's mac
@@ -202,19 +202,24 @@ public:
    // logoff but do not process error return values
    DLLLOCAL int logoff() {
       assert(svchp);
-//      int rc = OCILogoff(svchp, errhp);
-//      OCIHandleFree(svchp, OCI_HTYPE_SVCCTX);
-//      svchp = 0;
+
+      // free all cached typeinfo objects
+      if (ocilib_cn)
+         clearCache();
+
       int rc = OCISessionEnd(svchp, errhp, usrhp, 0);
       OCIServerDetach(srvhp, errhp, OCI_DEFAULT);
       return rc;
    }
 
+   // clear cached objects
+   DLLLOCAL void clearCache();
+
    DLLLOCAL int commit(ExceptionSink* xsink);
    DLLLOCAL int rollback(ExceptionSink* xsink);
 
    DLLLOCAL DateTimeNode* getTimestamp(bool get_tz, OCIDateTime *odt, ExceptionSink* xsink);
-   
+
    DLLLOCAL DateTimeNode* getDate(OCIDate* dt);
 
    DLLLOCAL DateTimeNode *getIntervalYearMonth(OCIInterval *oi, ExceptionSink* xsink) {
@@ -276,13 +281,13 @@ public:
          sprintf(&tz[1], "%02d:", hours);
 
          se %= 3600;
-         sprintf(&tz[4], "%02d", se / 60);   
+         sprintf(&tz[4], "%02d", se / 60);
          tz[6] = '\0';
 
          //printd(5, "QoreOracleConnection::dateTimeConstruct(year=%d, month=%d, day=%d, hour=%d, minute=%d, second=%d, us=%d, tz=%s) %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, tz, info.regionName());
          return checkerr(OCIDateTimeConstruct(*env, errhp, odt, info.year, info.month, info.day, info.hour, info.minute, info.second, (info.us * 1000), (oratext*)tz, 6), "QoreOracleConnection::dateTimeConstruct()", xsink);
       }
-      
+
       QoreString dstr;
       dstr.sprintf("%04d%02d%02d%02d%02d%06d", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us);
 
@@ -328,17 +333,18 @@ public:
          return 0;
       }
 #ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
-      assert(!strcasecmp(opt, DBI_OPT_TIMEZONE));
-      assert(get_node_type(val) == NT_STRING);
-      const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(val);
-      const AbstractQoreZoneInfo* tz = find_create_timezone(str->getBuffer(), xsink);
-      if (*xsink)
-         return -1;
-      server_tz = tz;
-#else
-      assert(false);
+      if (!strcasecmp(opt, DBI_OPT_TIMEZONE)) {
+         assert(get_node_type(val) == NT_STRING);
+         const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(val);
+         const AbstractQoreZoneInfo* tz = find_create_timezone(str->getBuffer(), xsink);
+         if (*xsink)
+            return -1;
+         server_tz = tz;
+         return 0;
+      }
 #endif
-      return 0;
+      xsink->raiseException("ORACLE-OPTION-ERROR", "invalid option '%s'; please try again with a valid option name (syntax: option=value)", opt);
+      return -1;
    }
 
    DLLLOCAL AbstractQoreNode* getOption(const char* opt) {
@@ -380,9 +386,9 @@ public:
       bool sign = str[0] == '-';
       if (sign)
          --len;
-      if (!strchr(str, '.') 
+      if (!strchr(str, '.')
           && (len < 19
-              || (len == 19 && 
+              || (len == 19 &&
                   ((!sign && strcmp(str, "9223372036854775807") <= 0)
                    ||(sign && strcmp(str, "-9223372036854775808") <= 0)))))
          return new QoreBigIntNode(strtoll(str, 0, 10));

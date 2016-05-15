@@ -1,3 +1,4 @@
+
 ***********
 version 3.2
 ***********
@@ -19,6 +20,35 @@ version 3.2
 * fixed a major bug where a crash generated internally in the OCI library
   would occur when NTYs were bound in a prepared statement and the statement
   was executed in a new logon session after transparent reconnection
+* fixed bugs binding values to number attributes of NTYs and collections
+* allow NTY keys to be given in lower case
+* a proper exception is raised (instead of an assertion in debug mode or a
+  crash) when there are multiple objects of different incompatible types added
+  to a collection
+* implemented binding number types by placeholder (including in/out vars)
+* implemented binding arrays of scalar values for input and output
+* implemented support for returning an empty list or hash after a short read
+  with SQLStatement::fetchRows() or SQLStatement::fetchColumns(); if one of
+  these methods is called a second time after returning an empty data
+  structure, then an exception is raised
+* implemented support for bulk DML with selects by default and explicitly
+  with SQLStatement::fetchRows() and SQLStatement::fetchColumns(); default
+  prefetch row count: 1000
+* fixed a bug in driver option processing that could lead to a crash
+* fixed a bug where duplicated columns would result in corrupt lists when
+  selected in column mode
+* fixed a bug where very large numbers were being retrieved incorrectly and
+  would result in an ORA-01406 error
+* fixed a bug where number values were being returned with decimal points
+  truncated in locales where the decimal position is not marked with a dot
+* fixed a bug where collections with no columns (but based on a table for
+  example) could not be used
+* fixed a bug where cached NTY information was reused with stale pointers
+  when connections were reestablished
+* fixed a bug where SQLStatement::describe() was failing even though result
+  set information was available
+* fixed a bug rewriting column names when selecting with row formats
+  (issue 828)
 
 
 ***********
@@ -62,7 +92,7 @@ version 2.2
   list; the second time the type is accessed, a crash results
 * fixed memory bugs in handling named type bind parameters created by hand
   where the value type is incorrect
-* throws an exception if SQLStatement::fetchRow() is called before 
+* throws an exception if SQLStatement::fetchRow() is called before
   SQLStatement::next()
 * supports the arbitrary-precision numeric type in qore 0.8.6+
 * supports DBI options with qore 0.8.6+; options supported:
@@ -72,7 +102,7 @@ version 2.2
                       compatibility)
   + "numeric-numbers": return NUMBER values as arbitrary-precision number
                        values
-  + "timezone": accepts a string argument that can be either a region name 
+  + "timezone": accepts a string argument that can be either a region name
                 (ex: "Europe/Prague") or a UTC offset (ex: "+01:00") to set
 		the server's time zone rules; this is useful if connecting to
 		a database server in a different time zone.  If this option is
@@ -150,7 +180,7 @@ fixed a bug setting the port number for direct connections witout TNS
 version 1.0.9
 *************
 
-fixed auto-reconnect to mark the datasource as closed when auto-reconnect 
+fixed auto-reconnect to mark the datasource as closed when auto-reconnect
 fails; otherwise a crash can occur when the datasource is reused
 
 
@@ -280,7 +310,7 @@ Qore 0.5.1
 **********
 
 Oracle driver fixed to not throw parse exceptions when the ":" character is
-not followed by an alphabetic character 
+not followed by an alphabetic character
 
 so ":=" is legal in SQL statements again :-)
 

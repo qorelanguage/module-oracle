@@ -107,7 +107,7 @@
     The default if no other option is explicitly set is \c "optimal-numbers".  Note that this represents a change from previous versions where Oracle <tt>NUMBER</tt> values were returned as strings in order to avoid the loss of information.  To set the old behavior, set the \c "string-numbers" option when creating the \c Datasource or \c DatasourcePool object.
 
     @section bindings_and_types Binding and types
-    
+
     When retrieving Oracle data, Oracle types are converted to Qore types as
     per @ref default_oracle_to_qore_mapping.
 
@@ -163,8 +163,20 @@
 
     Note that the above rules are applied when the current Program's time zone settings are different than the connection's time zone settings at the time when the write operation (bind) read operation (select) is performed.  This is meant to provide consistent support to connecting to a database server in a different time zone.
 
+    @section select_with_dup_col Selects With Duplicated Columns
+
+    When columns are duplicated in select statements, the duplicated columns are renamed by the driver with an underscore and a numerix suffix (<i>column</i><tt>_</tt><i>#</i>) as follows:
+    @code
+hash h = ds.select("select a.id, b.id, c.id from a, b, c where a.id = b.id = c.id");
+    @endcode
+
+    Would return a result as follows (assuming 1 row in each table with \a id = 1):
+    @verbatim
+{id: 1, id_1: 1, id_2: 1}
+    @endverbatim
+
     @section binding_by_value Binding by Value
-    
+
     |!Argument|!OCI Type|!Description|
     |\c Type::Binary|\c SQLT_BIN|For use with \c BLOB columns, for example.|
     |\c Type::String|\c SQLT_STR|For use with string data, \c VARCHAR, \c CHAR, \c CLOB columns, etc|
@@ -175,7 +187,7 @@
     |Wrapped \c Type::Hash and \c Type::List|\c SQLT_NTY|For use with @ref named_types|
 
     @section binding_by_placeholder Binding by Placeholder
-    
+
     |!Argument|!OCI Type|!Description|
     |\c Type::Binary|\c SQLT_BIN|For retrieving \c RAW data up to 65531 bytes in size.|
     |\c SQL::BLOB|\c SQLT_BLOB|For retrieving \c BLOB data. The \c LOB handle is used to read the entire \c BLOB content into a binary object.|
@@ -187,7 +199,6 @@
     |\c Type::Hash|\c SQLT_RSET|For retrieving result sets from a stored procedure that returns a cursor.|
     |Wrapped \c Type::Hash and \c Type::List|\c SQLT_NTY|For use with @ref named_types|
 
-    
     @section default_oracle_to_qore_mapping Default Oracle to Qore Mappings
 
     |!Oracle Column Type|!Qore Type|!Notes|
@@ -238,7 +249,7 @@
     @endcode
 
     @subsubsection string_sizes_plsql PL/SQL Wrappers
-    
+
     Data returned from PL/SQL code use different approach.
     Strings returned from this call are right-trimmed because OCI does not
     provide exact value size in this case by PL/SQL nature. The trimming is
@@ -270,9 +281,8 @@
       str_vars : " foo"
     @endcode
 
-    
     @section named_types Named Types (Objects)
-    
+
     Qore Oracle driver supports Oracle objects and collections (NTY in the following text).
 
     Special initialization of the driver is mandatory to use NTY in Qore scripts:
@@ -295,12 +305,14 @@
     |Qore::Oracle::placeholderOracleCollection()|Allows fetching a Collection \c typename. The returned list is a plain Qore list of values with the collection's type
 
     Type names (strings) are case insensitive.
-    
+
     Key names in \c value hashes are case sensitive and should follow
-    Oracle uppercase naming convention. 
+    Oracle uppercase naming convention.
 
     Keys which are not found in the keys-attribute mappings are silently
     ignored. If there is a missing key for any attribute, an exception is thrown.
+
+    @note Strings/integers are converted to date in collections and objects when required - collection of datetimes, object datetime attributes, etc. So eg. 1970-01-01 is the value of "wrong" strings.
 
     Functions can be nested so there can be for example list (collection)
     of objects and vice versa:
@@ -333,14 +345,14 @@
     my $res = $db.exec("begin test_pkg.get_obj(:retval); end;",
                        placeholderOracleObject("TEST_OBJECT"));
     printf("%N\n", $res);
-    
+
     # will print out
     hash: (
         "ATTR_NUM" : 5,
         "ATTR_VARCHAR" : "foobar!"
     )
     @endcode
-    
+
     @warning Oracle Named Types (objects and collections) are custom data types
         stored directly in the Oracle system catalogue. They are real SQL
         types - created with \c CREATE \c [ \c OR \c REPLACE \c ] \c TYPE
@@ -350,28 +362,28 @@
         library, however you can use custom wrappers or any other workarounds, of course.
 
     @section aq Oracle Advanced Queueing (AQ)
-    
+
     Oracle Advanced Queueing (AQ) is the Oracle database's queue management
     feature. AQ provides a message queuing infrastructure as integral part
     of the Oracle server engine. It provides an API for enqueing messages
     to database queues. These messages can later be dequeued for asynchronous
     processing. Oracle AQ also provides functionality to preserve, track,
     document, correlate, and query messages in queues.
-    
+
     Features:
-    
+
     - synchronous message posting
     - synchronouns message fetching
     - asynchronous event-driven listening in the DB queue
-    
+
     Special initialization of the driver is mandatory to use AQ in Qore scripts:
 
     @code
     %requires oracle
     @endcode
-    
+
     Qore Oracle module contains these classes to handle AQ:
-    
+
     |!Class|!Description
     |Qore::Oracle::AQQueue|Main queue handler
     |Qore::Oracle::AQMessage|Enhanced features for message
@@ -383,7 +395,7 @@
     (OCI) library mostly.
 
     @subsection named_types_known_issues Named Types Known Issues
-    
+
     - Returning a collection of objects and Oracle client 10.x does not work correctly sometimes.
       There is only one instance of object (a first one) used for all items in the
       collection in some cases. Upgrade to Oracle client 11.x solves it.
@@ -405,7 +417,7 @@
 
     - A crash when is the \c placeholderOracleObject() used in the place
       where is the \c placeholderOracleCollection() expected by Oracle.
-    
+
     @code
     my any $res = $db.exec("begin test_pkg.get_collection(:retval); end;",
                            placeholderOracleObject("test_object"));
@@ -414,9 +426,9 @@
     OCI-21500: internal error code, arguments: [kgepop: no error frame to pop to], [], [], [], [], [], [], []
     OCI-21710: argument is expecting a valid memory address of an object
     @endcode
-    
+
     @subsection aq_known_issues Advaned Queueing Known Issues
-    
+
     - Some versions of 11.2 client software is unable to receive change notifications/OCI Callbacks or
       AQ notifications against some versions of 11.2 database.
 
@@ -442,15 +454,15 @@ kpcest_err_handler: Max errors exceeded..Closing connection
       The fix is primarily a client side fix, however there are some database side changes
       that may be required once the client side fix is applied, so the fix for Oracle Bug 10065474
       can actually CAUSE this behavior, if the change is not applied at both client and server.
-      
+
       <b>Solution:</b> Apply patches or upgrade versions as applicable to obtain a working combination.
-       
+
       <b>Workaround:</b> A workaround can be used in most cases to bypass the authentication phase, which is where the
       problem behavior occurs.  To do that, set the following event in the database:
       @code
       alter system set events '10867 trace name context forever, level 1';
       @endcode
-       
+
 <table>
    <tr><td rowspan="2">Server version</td><td colspan="4">Client version</td></tr>
    <tr><th>11.2.0.1.0</th><th>11.2.0.2.0</th><th>11.2.0.2.0+fix</th><th>11.2.0.3.0</th></tr>
@@ -471,9 +483,23 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - user modules moved to top-level qore module directory from version-specific module directory since they are valid for multiple versions of qore
     - fixed a major bug where a lost connection during an SQL operation using named types could cause a crash due to the database-specific private context becoming invalid and then used after deletion
     - fixed a major bug where a crash generated internally in the OCI library would occur when NTYs were bound in a prepared statement and the statement was executed in a new logon session after transparent reconnection
+    - fixed bugs binding values to number attributes of NTYs and collections
+    - fixed a crashing bug handling the case when there are multiple objects of different incompatible types added to a collection; now an exception is raised
+    - implemented binding number types by placeholder (including in/out vars)
+    - implemented binding arrays of scalar values for input and output
+    - implemented support for returning an empty list or hash after a short read with SQLStatement::fetchRows() or SQLStatement::fetchColumns(); if one of these methods is called a second time after returning an empty data structure, then an exception is raised
+    - implemented support for bulk DML with selects by default and explicitly with SQLStatement::fetchRows() and SQLStatement::fetchColumns(); default prefetch row count: 1000
+    - fixed a bug in driver option processing that could lead to a crash
+    - fixed a bug where duplicated columns would result in corrupt lists when selected in column mode
+    - fixed a bug where very large numbers were being retrieved incorrectly and would result in an ORA-01406 error
+    - fixed a bug where number values were being returned with decimal points truncated in locales where the decimal position is not marked with a dot
+    - fixed a bug where collections with no columns (but based on a table for example) could not be used (<a href="https://github.com/qorelanguage/qore/issues/455">issue 455</a>)
+    - fixed a bug where cached NTY information was reused with stale pointers when connections were reestablished (<a href="https://github.com/qorelanguage/qore/issues/537">issue 537</a>)
+    - fixed a bug where SQLStatement::describe() was failing even though result set information was available
+    - fixed a bug rewriting column names when selecting with row formats (https://github.com/qorelanguage/qore/issues/828)
 
     @subsection oracle31 oracle Driver Version 3.1
-    
+
     <b>New Features and Bug Fixes</b>
     - fixed retrieving NUMBER types from objects/NTYs
     - added more Qore exception handling in ocilib object/NTY APIs
