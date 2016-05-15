@@ -60,9 +60,7 @@ case "${host_os}" in
 		SHLIB_SUFFIX=so
 		AC_DEFINE(LINUX, 1, if compiling on Linux)
 		;;
-     *solaris*) # set compile flags for Solaris
-		CPPFLAGS="${CPPFLAGS} -D_POSIX_C_SOURCE=199506L -D_XPG4_2 -D_XPG5 -D__EXTENSIONS__"
-		# for checking for some network functions on Solaris
+     *solaris*) # for checking for some network functions on Solaris
 		LDFLAGS="$LDFLAGS -lnsl"
 		# assume we are using CC if not using g++, add -norunpath to link flags in this case
 		if test "$GXX" != "yes"; then
@@ -249,7 +247,7 @@ else
 		;;
      *solaris*) if test "$GXX" = "yes"; then
 		    if test "$host_cpu" = "sparc"; then
-		        CXXFLAGS="$CXXFLAGS -mcpu=v8 -m32"
+		        CXXFLAGS="$CXXFLAGS -mv8plus -m32"
 		    else
 		        CXXFLAGS="$CXXFLAGS -m32"
 		    fi
@@ -313,7 +311,7 @@ fi
 AC_ARG_WITH([oracle],
   [AS_HELP_STRING([--with-oracle@<:@=DIR@:>@],
                   [directory for Oracle support (defaults to $ORACLE_HOME)])],
-   , 
+   ,
    [with_oracle=auto])
 
 if test -z "$ORACLE_INSTANT_CLIENT" -a -n "INSTANT_CLIENT"; then
@@ -385,9 +383,9 @@ get_oracle_version() {
       if test -z "$lf"; then
         AC_MSG_ERROR([Oracle libraries not found in $1, check oracle installation])
       fi
-  
+
       lf=`basename "$lf" | sed s/.*${SHLIB_SUFFIX}\.//`
-      case "$lf" in  
+      case "$lf" in
         12*) ORACLE_VERSION=12 ;;
         11*) ORACLE_VERSION=11 ;;
         10*) ORACLE_VERSION=10 ;;
@@ -427,7 +425,7 @@ AC_ARG_WITH([oracle-instant-client],
             [with_oracle_instant_client=$ORACLE_INSTANT_CLIENT])
 
 if test -n "$with_oracle_instant_client"; then
-      AC_MSG_CHECKING([for Oracle instant client SDK])      
+      AC_MSG_CHECKING([for Oracle instant client SDK])
       if test -f "$with_oracle_instant_client/sdk/include/oci.h"; then
 	 AC_MSG_RESULT([ok])
 	 ORACLE_INCLUDES="-I$with_oracle_instant_client/sdk/include"
@@ -481,8 +479,8 @@ case "$ORACLE_VERSION" in
    9*|10*|11*|12*) if test "$windows" = "yes"; then
                      ORACLE_LIBS="-L$oracle_lib_dir -loci"
 		   else
-		     ORACLE_LIBS="-L$oracle_lib_dir -lclntsh" 
-		   fi ;; 
+		     ORACLE_LIBS="-L$oracle_lib_dir -lclntsh"
+		   fi ;;
    *)      AC_MSG_ERROR(Unsupported Oracle version) ;;
 esac
 AC_SUBST(ORACLE_LIBS)
@@ -523,7 +521,7 @@ find_qore() {
     if test \( "$a" = "/" -o -z "$a" \) -a -h "$a/lib${LIBSUFFIX}"; then
         a=/usr
     fi
-    lib=$a/lib${LIBSUFFIX}    
+    lib=$a/lib${LIBSUFFIX}
 
     # if we only want the static qore libraries
     if test -n "$qore_static"; then
@@ -752,7 +750,7 @@ if test "$enable_optimization" = "yes"; then
     elif test "$CXX" = "CC" -a "$solaris" = yes; then
         # remove -g with Solaris CC as it reduces optimization levels
 	CXXFLAGS="`echo $CXXFLAGS| sed s/-g//` -xO5" # Solaris CC
-    elif test -n "`echo $CXX|grep aCC`"; then 
+    elif test -n "`echo $CXX|grep aCC`"; then
         # remove -g with HP-UX aCC as it reduces optimization levels
 	CXXFLAGS="`echo $CXXFLAGS| sed s/-g//` +O4" # HP-UX aCC
     fi
