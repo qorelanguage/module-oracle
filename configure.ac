@@ -94,7 +94,7 @@ case "${host_os}" in
 		AC_DEFINE(HPUX, 1, if compiling on HP-UX)
 		;;
      *cygwin*)  SHLIB_SUFFIX=dll
-     		CPPFLAGS="${CPPFLAGS} -mwin32"
+     		CPPFLAGS="$CPPFLAGS -mwin32"
 		windows=yes
      		;;
      *mingw32*) SHLIB_SUFFIX=dll
@@ -139,29 +139,41 @@ AC_ARG_ENABLE([64bit],
   [enable_64bit=auto])
 
 if test "$enable_64bit" = "auto"; then
-   # turn on 64-bit by default if compiling on itanium or x86_64
-   if test "$host_cpu" = "ia64" -o "$host_cpu" = "x86_64" -o "$host_cpu" = "amd64"; then
-      enable_64bit=yes
-   else
-      case "${host_os}" in
-          darwin*)   mv=`uname -r|cut -f1 -d.`
-     	   	     if test $mv -ge 10 -a "${host_cpu}" = "i386"; then
-		         enable_64bit=yes
-		     fi
+   # turn on 64-bit by default if compiling on a 64-bit platform
+   case "${host_cpu}" in
+       *64*)
+                 enable_64bit=yes
+                 ;;
+       s390x)
+                 enable_64bit=yes
+                 ;;
+       *)        case "${host_os}" in
+                     darwin*)   mv=`uname -r|cut -f1 -d.`
+ 		                if test $mv -ge 10 -a "${host_cpu}" = "i386"; then
+		         	    enable_64bit=yes
+		      		fi
 		     ;;
-	  solaris*)  if test "${host_cpu}" = "i386"; then
-			 # if we are running on a 64-bit machine, then enable a 64-bit build
-			 if test -n "`isainfo -v 2>/dev/null| grep 64-bit`"; then
-			     enable_64bit=yes
-			 fi
-		     fi
+		     solaris*)  if test "${host_cpu}" = "i386"; then
+		     	            # if we are running on a 64-bit machine, then enable a 64-bit build
+				    if test -n "`isainfo -v 2>/dev/null| grep 64-bit`"; then
+		         	        enable_64bit=yes
+		     		    fi
+		     	        fi
 		     ;;
-      esac
-      if test "$enable_64bit" = "auto"; then
-	  enable_64bit=no
-      fi
-   fi
+       		 esac
+		 if test "$enable_64bit" = "auto"; then
+		     enable_64bit=no
+		 fi
+                 ;;
+    esac
 fi
+
+# allow users to explicitly set libsuffix
+AC_ARG_WITH([libsuffix],
+  [AS_HELP_STRING([--with-libsuffix@<:@=LIBSUFFIX@:>@],
+                  [explitily set libsuffix])],
+  [LIBSUFFIX=$with_libsuffix; LIBSUFFIX_SET=yes;AC_SUBST(LIBSUFFIX)],
+  [])
 
 # see if we know how to set flags properly for different hosts and architectures
 # FIXME: add test on HP-UX if the compiler can generate the appropriate binaries
@@ -171,14 +183,16 @@ if test "$enable_64bit" = "yes"; then
 		   CXXFLAGS="$CXXFLAGS -m64"
 		fi
 		# only set LIBSUFFIX=64 if /usr/lib64 exists
-		if test -d /usr/lib64; then
-		   LIBSUFFIX=64
-                fi
-                target="${host_cpu}-${host_os}"
-                if test -d /usr/lib/$target; then
-                   LIBSUFFIX=/$target
-                fi
-		AC_SUBST(LIBSUFFIX)
+		if test "$LIBSUFFIX_SET" != "yes"; then
+		  if test -d /usr/lib64; then
+		     LIBSUFFIX=64
+                  fi
+		  target="${host_cpu}-${host_os}"
+		  if test -d /usr/lib/$target; then
+		     LIBSUFFIX=/$target
+                  fi
+		  AC_SUBST(LIBSUFFIX)
+		fi
 		;;
       *hpux*)	if test "$host_cpu" = "ia64"; then
                     if test -n "`echo $CXX|grep aCC`"; then
@@ -228,10 +242,12 @@ else
 		   CXXFLAGS="$CXXFLAGS -m32"
 		fi
                 # multiarch
-                if test -a "$host_cpu" = "x86_64" -a -d /usr/lib32; then
-                   LIBSUFFIX=32
-                fi
-                AC_SUBST(LIBSUFFIX)
+                if test "$LIBSUFFIX_SET" != "yes"; then
+		   if test -a "$host_cpu" = "x86_64" -a -d /usr/lib32; then
+		      LIBSUFFIX=32
+                   fi
+		   AC_SUBST(LIBSUFFIX)
+		fi
 		;;
      *darwin*)  if test "$GXX" = "yes"; then
                    CXXFLAGS="$CXXFLAGS -m32"
@@ -373,7 +389,9 @@ get_oracle_version() {
     test -z "$ORACLE_VERSION" && ORACLE_VERSION=7.3
   else
     if test "$windows" = "yes"; then
-      if test -f $1/oraociei11.dll; then
+      if test -f $1/oraocci12.dll; then
+        ORACLE_VERSION=12
+      elif test -f $1/oraociei11.dll -o -f $1/oraocci11.dll; then
         ORACLE_VERSION=11
       elif test -f $1/oraociei10.dll; then
         ORACLE_VERSION=10
@@ -562,7 +580,7 @@ find_qore() {
         inc=$a/include
     fi
     if test -f "$inc/qore/Qore.h"; then
-        AC_MSG_RESULT([$inc])
+        AC_MSG_RESULT([found: $inc])
         set_qore_cppflags $inc
     else
         AC_MSG_ERROR([not found])
@@ -627,9 +645,9 @@ else
 
    AC_MSG_RESULT([${qore_version} OK])
 
-   mapi_major=`grep QORE_MODULE_API_MAJOR $QORE_INC_DIR/qore/ModuleManager.h|cut -f3 -d\ `
-   mapi_minor=`grep QORE_MODULE_API_MINOR $QORE_INC_DIR/qore/ModuleManager.h|cut -f3 -d\ `
-   MODULE_API="${mapi_major}.${mapi_minor}"
+   MODULE_API=`qore --latest-module-api`
+   mapi_major=`qore --latest-module-api|cut -f1 -d.`
+   mapi_minor=`qore --latest-module-api|cut -f2 -d.`
 
    if test "$mapi_major" -ge 0 -o "$mapi_minor" -ge 7; then
       AC_DEFINE(QORE_HAS_DATASOURCE_PORT, 1, define if qore supports ports in the Datasource object)
@@ -649,18 +667,14 @@ else
       if test "$libdir" != "$qlibdir"; then
          AC_MSG_WARN([warning, installed qore's module dir is $qlibdir, this module will be installed in $libdir])
       fi
-      if test "$windows" = yes; then
-         userlibdir="${qlibdir}"
+      if test -n "echo ${datarootdir}|grep \$"; then
+         userlibdir="`eval echo ${datarootdir}`/qore-modules"
       else
-         if test -n "echo ${datarootdir}|grep \$"; then
-            userlibdir="`eval echo ${datarootdir}`/qore-modules"
-         else
-            userlibdir="${datarootdir}/qore-modules"
-         fi
-         qlibdir=`qore --user-module-dir`
-         if test "$userlibdir" != "$qlibdir"; then
-            AC_MSG_WARN([warning, installed qore's user module dir is $qlibdir, this module will be installed in $userlibdir])
-         fi
+         userlibdir="${datarootdir}/qore-modules"
+      fi
+      qlibdir=`qore --user-module-dir`
+      if test "$userlibdir" != "$qlibdir"; then
+         AC_MSG_WARN([warning, installed qore's user module dir is $qlibdir, this module will be installed in $userlibdir])
       fi
    fi
 fi

@@ -1023,7 +1023,7 @@ OCI_EXPORT unsigned int OCI_API OCI_ColumnGetFullSQLType2(OCI_Library *pOCILib, 
 OCI_EXPORT OCI_TypeInfo * OCI_API OCI_ColumnGetTypeInfo2(OCI_Library *pOCILib, OCI_Column *col);
 OCI_EXPORT unsigned int OCI_API OCI_ColumnGetSubType2(OCI_Library *pOCILib, OCI_Column *col);
 OCI_EXPORT OCI_Error * OCI_ErrorGet2(OCI_Library *pOCILib, boolean check, boolean warning);
-OCI_EXPORT int OCI_API OCI_ErrorGetInternalCode2(OCI_Library *pOCILib, OCI_Error *err);
+OCI_EXPORT int OCI_API OCI_ErrorGetInternalCode2(OCI_Error *err);
 OCI_EXPORT OCI_List * OCI_ListCreate2(OCI_Library *pOCILib, int type);
 void * OCI_MemAlloc2(OCI_Library *pOCILib, int ptr_type, size_t block_size, size_t block_count, boolean zero_fill);
 void * OCI_MemRealloc2(OCI_Library *pOCILib, void * ptr_mem, int ptr_type, size_t block_size, size_t block_count);

@@ -31,12 +31,12 @@ src/qc_*.cpp
 src/ql_*.cpp
 src/QC_*.cpp
 
-# ignore temp doc files
+# temporary doc files
 docs/*.tag
 docs/OracleExtensions/
 docs/doxyfile
 docs/mainpage.doxygen
 docs/oracle/
-docs/qlib/Doxyfile.OracleExtensions
-*.dox.h
-				
+docs/qlib/Doxyfile.*
+docs/qlib/*.dox.h
+							

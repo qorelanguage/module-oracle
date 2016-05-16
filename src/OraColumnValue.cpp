@@ -1,10 +1,10 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /*
-  OraColumnValue.h
+  OraColumnValue.cpp
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2013 David Nichols
+  Copyright (C) 2003 - 2016 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,10 +23,10 @@
 
 #include "oracle.h"
 
-static DateTimeNode *convert_date_time(unsigned char *str) {
+static DateTimeNode* convert_date_time(unsigned char *str) {
    int year;
    if ((str[0] < 100) || (str[1] < 100))
-      year = 9999; 
+      year = 9999;
    else
       year = (str[0] - 100) * 100 + (str[1] - 100);
 
@@ -35,7 +35,14 @@ static DateTimeNode *convert_date_time(unsigned char *str) {
 }
 
 void OraColumnValue::del(ExceptionSink *xsink) {
-   //printd(5, "OraColumnValue::del() this: %p dtype: %d buf.ptr: %p\n", this, dtype, buf.ptr);
+   //printd(5, "OraColumnValue::del() this: %p dtype: %d buf.ptr: %p array: %d\n", this, dtype, buf.ptr, array);
+
+   if (array) {
+      delete buf.arraybind;
+      array = false;
+      return;
+   }
+
    switch (dtype) {
       case 0:
       case SQLT_INT:
@@ -115,13 +122,14 @@ void OraColumnValue::del(ExceptionSink *xsink) {
             //printd(5, "freeing pointer with free(%p)\n", buf.ptr);
             free(buf.ptr);
          }
-         break;            
+         break;
    }
 }
 
 #define ORA_ROWID_LEN 25
 
-AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal, bool destructive) {
+AbstractQoreNode* OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal, bool destructive) {
+   assert(!array);
    // SQL NULL returned
    if (ind == -1)
       return null();
@@ -145,7 +153,7 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
 #ifdef SQLT_IBDOUBLE
       case SQLT_IBDOUBLE:
 #endif
-	 return new QoreFloatNode(buf.f8);      
+	 return new QoreFloatNode(buf.f8);
 
       case SQLT_DAT:
 	 return convert_date_time(buf.date);
@@ -181,7 +189,7 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
 
       case SQLT_RSET: {
          QoreOracleStatement tstmt(stmt.getDatasource(), (OCIStmt*)buf.takePtr());
-         if (horizontal) 
+         if (horizontal)
             return tstmt.fetchRows(xsink);
          return tstmt.fetchColumns(xsink);
       }
@@ -259,20 +267,22 @@ AbstractQoreNode *OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
    //   subsection string_sizes CHAR and VARCHAR2 to Qore String
    if (/*dtype == SQLT_AFC ||*/ dtype == SQLT_AVC)
       remove_trailing_blanks((char *)buf.ptr);
-   return doReturnString(destructive);   
+   return doReturnString(destructive);
 }
 
 QoreStringNode* OraColumnValue::doReturnString(bool destructive) {
+   assert(!array);
    if (!destructive)
       return new QoreStringNode((const char*)buf.ptr, stmt.getEncoding());
    int len = strlen((char*)buf.ptr);
-   QoreStringNode *str = new QoreStringNode((char*)buf.ptr, len, len + 1, stmt.getEncoding());
+   QoreStringNode* str = new QoreStringNode((char*)buf.ptr, len, len + 1, stmt.getEncoding());
    //printd(5, "OraColumnValue::doReturnString() this: %p buf.ptr: %p\n", this, buf.ptr);
    buf.ptr = 0;
    return str;
 }
 
 void OraColumnValue::freeObject(ExceptionSink* xsink) {
+   assert(!array);
    assert(dtype == SQLT_NTY);
    assert(subdtype == SQLT_NTY_OBJECT || subdtype == SQLT_NTY_COLLECTION);
 

@@ -5,20 +5,22 @@ printf("\nQore named types test - collections\n\n");
 
 my string $connstr;
 switch (gethostname()) {
+    case /^quasar/: $connstr = "oracle:omquser/omquser@el7"; break;
     case /^qube/: $connstr = "oracle:omquser2/omquser2@qube"; break;
     case /^el6/:
     case /^quark/: $connstr = "oracle:omquser/omquser@el6"; break;
     case /^el5/:
+    case /^manatee/:
     case /^xbox/: $connstr = "oracle:omquser/omquser@xbox"; break;
     case /^ren/: $connstr = "oracle:omquser/omquser@el6"; break;
-    default: $connstr = "oracle:omqtest/omqtest@stimpy"; break;
+    default: $connstr = "oracle:omquser/omquser@xbox"; break;
 }
 
 my Datasource $db($connstr);
 $db.open();
 
 printf("\nCOLLECTION IN varchar2\n");
-my list $col = 'foo', 'bar',NULL, NOTHING, "the end";
+my list $col = ('foo', 'bar',NULL, NOTHING, "the end");
 my hash $c = $db.exec("begin qore_test.do_coll(%v, :retval); end;",
                  bindOracleCollection("COL_TEST", $col));
 printf("collection: %N\n", $c);
@@ -31,7 +33,7 @@ $db.rollback();
 
 
 printf("\nCOLLECTION IN number\n");
-$col = 2, 213,NULL, NOTHING, 666;
+$col = (2, 213,NULL, NOTHING, "23932", 500n, 3.1415927);
 $c = $db.exec("begin qore_test.do_coll_num(%v, :retval); end;",
                  bindOracleCollection("COL_TEST_NUM", $col));
 printf("collection: %N\n", $c);
@@ -44,7 +46,7 @@ $db.rollback();
 
 
 printf("\nCOLLECTION IN clob\n");
-$col = 'foo', 'bar',NULL, NOTHING, "the end";
+$col = ('foo', 'bar',NULL, NOTHING, "the end");
 $c = $db.exec("begin qore_test.do_coll_clob(%v, :retval); end;",
                  bindOracleCollection("COL_TEST_CLOB", $col));
 printf("collection: %N\n", $c);
@@ -57,7 +59,7 @@ $db.rollback();
 
 
 printf("\nCOLLECTION IN date\n");
-$cold = now(), now_ms(), NULL, NOTHING, now()+10;
+$cold = (now(), now_ms(), NULL, NOTHING, now()+10);
 $d = $db.exec("begin qore_test.do_coll_date(%v, :retval); end;",
                  bindOracleCollection("COL_TEST_date", $cold));
 printf("collection: %N\n", $d);
@@ -80,9 +82,10 @@ my hash $obj = ("A_TEXT": "1",
                 "A_TSTAMP_TZ" : now_ms(),
                 "A_OBJECT" : bindOracleObject("TEST_OBJECT_2", ("TEXT2" : "foobar", "NUMBER2" : 666))
                 );
-my list $colo = bindOracleObject("TEST_OBJECT", $obj),
-                bindOracleObject("TEST_OBJECT", $obj),
-                bindOracleObject("TEST_OBJECT", $obj);
+my list $colo = (bindOracleObject("TEST_OBJECT", $obj),
+		 bindOracleObject("TEST_OBJECT", $obj),
+		 bindOracleObject("TEST_OBJECT", $obj),
+		 );
 $d = $db.exec("begin qore_test.do_coll_obj(%v, :retval); end;",
                  bindOracleCollection("COL_TEST_obj", $colo));
 printf("collection: %N\n", $d);
@@ -127,7 +130,7 @@ $db.rollback();
 
 
 printf("\nCOLLECTION IN timestamp\n");
-my list $colt = now(), now_ms(), NULL, NOTHING, now()+10;
+my list $colt = (now(), now_ms(), NULL, NOTHING, now()+10);
 my $d = $db.exec("begin qore_test.do_coll_timestamp_tz(%v, :retval); end;",
                  bindOracleCollection("COL_TEST_timestamp_tz", $colt));
 printf("collection: %N\n", $d);

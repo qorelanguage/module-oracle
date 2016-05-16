@@ -162,11 +162,11 @@ int OCI_API OCI_ErrorGetOCICode(OCI_Error *err)
  * OCI_ErrorGetInternalCode
  * ------------------------------------------------------------------------ */
 
-int OCI_API OCI_ErrorGetInternalCode2(OCI_Library *pOCILib, OCI_Error *err)
+int OCI_API OCI_ErrorGetInternalCode2(OCI_Error *err)
 {
-   OCI_CHECK_PTR(pOCILib, OCI_IPC_ERROR, err, 0);
+   OCI_CHECK(!err, 0);
 
-    return err->icode;
+   return err->icode;
 }
 
 /* ------------------------------------------------------------------------ *
