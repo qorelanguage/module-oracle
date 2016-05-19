@@ -59,11 +59,11 @@
    others will fail - basically VARCHAR2 columns cannot hold values > 4000 bytes and anything
    else should be a CLOB in order to make everything work best
 */
-#define CLOB_THRESHOLD 4000
+#define LOB_THRESHOLD 4000
 
-// with 10g on Linux the streaming *lob callback function would 
+// with 10g on Linux the streaming *lob callback function would
 // never get more than 1024 bytes of data at a time, however with a 9i
-// server and client on Solaris, it would not work unless my 
+// server and client on Solaris, it would not work unless my
 // buffer size was at least twice as big as my CLOB!
 #ifdef NEED_ORACLE_LOB_WORKAROUND
 #define LOB_BLOCK_SIZE 128*1024
