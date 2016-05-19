@@ -607,6 +607,7 @@ public:
    }
 };
 
+/*
 typedef PtrVec<void> BinVec;
 
 class DynamicArrayBindBinary : public AbstractDynamicArrayBindData {
@@ -699,26 +700,38 @@ public:
       return 0;
    }
 };
+*/
 
 class DynamicArrayBindBinaryBlob : public AbstractDynamicArrayBindData {
 protected:
    typedef std::vector<ub4> ub4_list_t;
-   //ub4_list_t alen_list;
 
    // type of a vector of LOB handles
    typedef std::vector<OCILobLocator*> lhvec_t;
    lhvec_t lhvec;
 
+   // a vector of bools
+   typedef std::vector<char> boolvec_t;
+   // "lob allocated" vector
+   boolvec_t lavec;
+
+   QoreOracleConnection* conn;
+
    DLLLOCAL void clear() {
-      for (lhvec_t::iterator i = lhvec.begin(), e = lhvec.end(); i != e; ++i) {
-         if (*i)
-            OCIDescriptorFree(*i, OCI_DTYPE_LOB);
+      for (size_t i = 0; i < lhvec.size(); ++i) {
+         if (lhvec[i]) {
+            if (lavec[i])
+               OCILobFreeTemporary(conn->svchp, conn->errhp, lhvec[i]);
+            OCIDescriptorFree(lhvec[i], OCI_DTYPE_LOB);
+         }
       }
       lhvec.clear();
+      lavec.clear();
+      conn = 0;
    }
 
 public:
-   DLLLOCAL DynamicArrayBindBinaryBlob(const QoreListNode* n_l) : AbstractDynamicArrayBindData(n_l) {
+   DLLLOCAL DynamicArrayBindBinaryBlob(const QoreListNode* n_l) : AbstractDynamicArrayBindData(n_l), conn(0) {
       clear();
    }
 
@@ -726,41 +739,51 @@ public:
    }
 
    DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {
-      //alen_list.resize(l->size());
       lhvec.resize(l->size());
+      lavec.resize(l->size());
+
+      assert(!conn);
+      conn = bn.stmt.getData();
 
       ConstListIterator li(l);
       while (li.next()) {
+         size_t ind = li.index();
+
          const AbstractQoreNode* n = li.getValue();
          qore_type_t t = get_node_type(n);
 
          if (t == NT_NOTHING || t == NT_NULL) {
-            ind_list[li.index()] = -1;
-            lhvec[li.index()] = 0;
+            ind_list[ind] = -1;
+            lhvec[ind] = 0;
             continue;
          }
 
          if (t != NT_BINARY) {
-            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"binary\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"binary\"; all list elements must be of the same type to effect an array bind", get_type_name(n), ind);
             return -1;
          }
 
-         QoreOracleConnection* conn = bn.stmt.getData();
-
          // allocate LOB descriptor
-         if (conn->descriptorAlloc((dvoid**)&lhvec[li.index()], OCI_DTYPE_LOB, "DynamicArrayBindBinaryBlob::setupBindImpl() alloc LOB descriptor", xsink))
+         if (conn->descriptorAlloc((dvoid**)&lhvec[ind], OCI_DTYPE_LOB, "DynamicArrayBindBinaryBlob::setupBindImpl() alloc LOB descriptor", xsink))
             return -1;
 
-         assert(!ind_list[li.index()]);
+         assert(lhvec[ind]);
+         assert(!ind_list[ind]);
+
+         // create temporary BLOB
+         if (conn->checkerr(OCILobCreateTemporary(conn->svchp, conn->errhp, lhvec[ind], OCI_DEFAULT, OCI_DEFAULT, OCI_TEMP_BLOB, FALSE, OCI_DURATION_SESSION),
+                            "DynamicArrayBindBinaryBlob::setupBindImpl() create temporary BLOB", xsink))
+            return -1;
+
+         lavec[ind] = true;
 
          const BinaryNode* b = reinterpret_cast<const BinaryNode*>(n);
-         printf("%d/%lld: descr: %p p: %p len: %lld\n", li.index(), l->size(), lhvec[li.index()], b->getPtr(), b->size());
+         //printd(5, "%lu/%lu: descr: %p p: %p len: %lu\n", ind, l->size(), lhvec[ind], b->getPtr(), b->size());
 
          // write the buffer data into the CLOB
-         if (conn->writeLob(lhvec[li.index()], (void*)b->getPtr(), b->size(), true, "DynamicArrayBindBinaryBlob::setupBindImpl() write LOB", xsink))
+         if (conn->writeLob(lhvec[ind], (void*)b->getPtr(), b->size(), true, "DynamicArrayBindBinaryBlob::setupBindImpl() write LOB", xsink))
             return -1;
 
-         //alen_list[li.index()] = b->size();
       }
 
       bn.dtype = SQLT_BLOB;
@@ -772,9 +795,8 @@ public:
 
    DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
       *bufpp = (void*)lhvec[iter];
-      //*bufpp = (void*)binvec.get(iter);
-      *alenp = 0;//alen_list[iter];
-      //printd(5, "DynamicArrayBindBinaryBlob::bindCallbackImpl() ix: %d bufpp: %p (%s) len: %d\n", iter, bufpp, binvec.get(iter), alen_list[iter]);
+      *alenp = 0;
+      //printd(5, "DynamicArrayBindBinaryBlob::bindCallbackImpl() ix: %d bufpp: %p (%p)\n", iter, bufpp, lhvec[iter]);
    }
 
    DLLLOCAL virtual int setupOutputBindImpl(OraBindNode& bn, int pos, ExceptionSink* xsink) {
@@ -976,26 +998,66 @@ public:
 class DynamicSingleValueBinary : public AbstractDynamicSingleValue {
 protected:
    const BinaryNode* b;
+   bool lob_allocated;
+   OCILobLocator* loc;
+   QoreOracleConnection* conn;
 
 public:
-   DLLLOCAL DynamicSingleValueBinary(const BinaryNode* n_b) : b(n_b) {
+   DLLLOCAL DynamicSingleValueBinary(const BinaryNode* n_b) : b(n_b), lob_allocated(false), loc(0), conn(0) {
    }
 
    DLLLOCAL virtual ~DynamicSingleValueBinary() {
+      if (loc) {
+         if (lob_allocated) {
+            assert(conn);
+            OCILobFreeTemporary(conn->svchp, conn->errhp, loc);
+         }
+         OCIDescriptorFree(loc, OCI_DTYPE_LOB);
+      }
    }
 
    DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {
       ind_list[0] = 0;
 
-      bn.dtype = SQLT_BIN;
-      bn.stmt.bindByPos(bn.bndp, pos, 0, b->size(), SQLT_BIN, xsink, 0, OCI_DATA_AT_EXEC);
+      if (b->size() > LOB_THRESHOLD) {
+         assert(!conn);
+         conn = bn.stmt.getData();
+
+         // allocate LOB descriptor
+         if (conn->descriptorAlloc((dvoid**)&loc, OCI_DTYPE_LOB, "DynamicSingleValueBinary::setupBindImpl() alloc LOB descriptor", xsink))
+            return -1;
+
+         // create temporary BLOB
+         if (conn->checkerr(OCILobCreateTemporary(conn->svchp, conn->errhp, loc, OCI_DEFAULT, OCI_DEFAULT, OCI_TEMP_BLOB, FALSE, OCI_DURATION_SESSION),
+                            "DynamicSingleValueBinary::setupBindImpl() create temporary BLOB", xsink))
+            return -1;
+
+         lob_allocated = true;
+
+         // write the buffer data into the CLOB
+         if (conn->writeLob(loc, (void*)b->getPtr(), b->size(), true, "DynamicSingleValueBinary::setupBindImpl() write LOB", xsink))
+            return -1;
+
+         bn.dtype = SQLT_BLOB;
+         bn.stmt.bindByPos(bn.bndp, pos, 0, sizeof(OCILobLocator*), SQLT_BLOB, xsink, 0, OCI_DATA_AT_EXEC);
+      }
+      else {
+         bn.dtype = SQLT_BIN;
+         bn.stmt.bindByPos(bn.bndp, pos, 0, b->size(), SQLT_BIN, xsink, 0, OCI_DATA_AT_EXEC);
+      }
 
       return 0;
    }
 
    DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
-      *bufpp = (void*)b->getPtr();
-      *alenp = (ub4)b->size();
+      if (loc) {
+         *bufpp = (void*)loc;
+         *alenp = 0;
+      }
+      else {
+         *bufpp = (void*)b->getPtr();
+         *alenp = (ub4)b->size();
+      }
    }
 };
 
@@ -1138,15 +1200,16 @@ void OraBindNode::bindListValue(ExceptionSink* xsink, int pos, const AbstractQor
    }
 
    assert(buf.arraybind);
-   buf.arraybind->setupBind(*this, pos, in_only, xsink);
+   if (buf.arraybind->setupBind(*this, pos, in_only, xsink))
+      return;
    // execute OCIBindDynamic()
-   QoreOracleConnection* conn = (QoreOracleConnection*)stmt.getData();
+   QoreOracleConnection* conn = stmt.getData();
    conn->checkerr(OCIBindDynamic(bndp, conn->errhp, (void*)buf.arraybind, ora_dynamic_bind_callback, 0, 0), "OraBindNode::bindListValue()", xsink);
    //printd(5, "OraBindNode::bindListValue() OCIBindDynamic t: %d\n", t);
 }
 
 void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool& is_nty, bool in_only) {
-   QoreOracleConnection* conn = (QoreOracleConnection*)stmt.getData();
+   QoreOracleConnection* conn = stmt.getData();
 
    ind = 0;
 
@@ -1276,8 +1339,8 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
       else {
          dtype = SQLT_BIN;
 
-         printf("OraBindNode::bindValue() BLOB ptr: %p size: %d\n", b->getPtr(), b->size());
-         //printd(5, "OraBindNode::bindValue() BLOB ptr: %p size: %d\n", b->getPtr(), b->size());
+         printf("OraBindNode::bindValue() BLOB ptr: %p size: %lu\n", b->getPtr(), b->size());
+         //printd(5, "OraBindNode::bindValue() BLOB ptr: %p size: "QLLD"\n", b->getPtr(), b->size());
 
          if (!in_only) {
             // bind a copy of the value in case of in/out variables
@@ -1408,7 +1471,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
 }
 
 void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
-   QoreOracleConnection* conn = (QoreOracleConnection*)stmt.getData();
+   QoreOracleConnection* conn = stmt.getData();
 
    //printd(5, "OraBindNode::bindPlaceholder() this: %p, conn: %p, pos: %d type: %s, size: %d buf.ptr: %p\n", this, conn, pos, data.ph_type, data.ph_maxsize, buf.ptr);
 
@@ -1441,7 +1504,7 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
       if (buf.arraybind->setupOutputBind(*this, pos, xsink))
          return;
 
-      QoreOracleConnection* conn = (QoreOracleConnection*)stmt.getData();
+      QoreOracleConnection* conn = stmt.getData();
       conn->checkerr(OCIBindDynamic(bndp, conn->errhp, (void*)buf.arraybind, ora_dynamic_bind_nodata_callback, (void*)buf.arraybind, ora_dynamic_bind_placeholder_callback), "OraBindNode::bindPlaceholder()", xsink);
 
       return;
