@@ -700,6 +700,103 @@ public:
    }
 };
 
+class DynamicArrayBindBinaryBlob : public AbstractDynamicArrayBindData {
+protected:
+   typedef std::vector<ub4> ub4_list_t;
+   //ub4_list_t alen_list;
+
+   // type of a vector of LOB handles
+   typedef std::vector<OCILobLocator*> lhvec_t;
+   lhvec_t lhvec;
+
+   DLLLOCAL void clear() {
+      for (lhvec_t::iterator i = lhvec.begin(), e = lhvec.end(); i != e; ++i) {
+         if (*i)
+            OCIDescriptorFree(*i, OCI_DTYPE_LOB);
+      }
+      lhvec.clear();
+   }
+
+public:
+   DLLLOCAL DynamicArrayBindBinaryBlob(const QoreListNode* n_l) : AbstractDynamicArrayBindData(n_l) {
+      clear();
+   }
+
+   DLLLOCAL virtual ~DynamicArrayBindBinaryBlob() {
+   }
+
+   DLLLOCAL virtual int setupBindImpl(OraBindNode& bn, int pos, bool in_only, ExceptionSink* xsink) {
+      //alen_list.resize(l->size());
+      lhvec.resize(l->size());
+
+      ConstListIterator li(l);
+      while (li.next()) {
+         const AbstractQoreNode* n = li.getValue();
+         qore_type_t t = get_node_type(n);
+
+         if (t == NT_NOTHING || t == NT_NULL) {
+            ind_list[li.index()] = -1;
+            lhvec[li.index()] = 0;
+            continue;
+         }
+
+         if (t != NT_BINARY) {
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"binary\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            return -1;
+         }
+
+         QoreOracleConnection* conn = bn.stmt.getData();
+
+         // allocate LOB descriptor
+         if (conn->descriptorAlloc((dvoid**)&lhvec[li.index()], OCI_DTYPE_LOB, "DynamicArrayBindBinaryBlob::setupBindImpl() alloc LOB descriptor", xsink))
+            return -1;
+
+         assert(!ind_list[li.index()]);
+
+         const BinaryNode* b = reinterpret_cast<const BinaryNode*>(n);
+         printf("%d/%lld: descr: %p p: %p len: %lld\n", li.index(), l->size(), lhvec[li.index()], b->getPtr(), b->size());
+
+         // write the buffer data into the CLOB
+         if (conn->writeLob(lhvec[li.index()], (void*)b->getPtr(), b->size(), true, "DynamicArrayBindBinaryBlob::setupBindImpl() write LOB", xsink))
+            return -1;
+
+         //alen_list[li.index()] = b->size();
+      }
+
+      bn.dtype = SQLT_BLOB;
+      bn.stmt.bindByPos(bn.bndp, pos, 0, sizeof(OCILobLocator*), SQLT_BLOB, xsink, 0, OCI_DATA_AT_EXEC);
+
+      //printd(5, "DynamicArrayBindBinaryBlob::setupBind() this: %p size: %d\n", this, (int)l->size());
+      return 0;
+   }
+
+   DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) {
+      *bufpp = (void*)lhvec[iter];
+      //*bufpp = (void*)binvec.get(iter);
+      *alenp = 0;//alen_list[iter];
+      //printd(5, "DynamicArrayBindBinaryBlob::bindCallbackImpl() ix: %d bufpp: %p (%s) len: %d\n", iter, bufpp, binvec.get(iter), alen_list[iter]);
+   }
+
+   DLLLOCAL virtual int setupOutputBindImpl(OraBindNode& bn, int pos, ExceptionSink* xsink) {
+      assert(false);
+      return 0;
+   }
+
+   DLLLOCAL virtual void bindPlaceholderCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4** alenp) {
+      assert(false);
+   }
+
+   DLLLOCAL virtual AbstractQoreNode* getOutputValueImpl(ExceptionSink* xsink, OraBindNode& bn, bool destructive) {
+      assert(false);
+      return 0;
+   }
+
+   DLLLOCAL virtual int resetImpl(ExceptionSink* xsink) {
+      clear();
+      return 0;
+   }
+};
+
 class AbstractDynamicSingleValue : public AbstractDynamicArrayBindData {
 public:
    DLLLOCAL AbstractDynamicSingleValue() : AbstractDynamicArrayBindData(0) {
@@ -1022,7 +1119,7 @@ void OraBindNode::bindListValue(ExceptionSink* xsink, int pos, const AbstractQor
             }
 
             case NT_BINARY: {
-               buf.arraybind = new DynamicArrayBindBinary(l);
+               buf.arraybind = new DynamicArrayBindBinaryBlob(l);
                break;
             }
 
@@ -1062,18 +1159,6 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
    }
 
    qore_type_t ntype = get_node_type(v);
-
-   /*
-   if (ntype == NT_LIST) {
-      const QoreListNode* l = reinterpret_cast<const QoreListNode*>(v);
-      // ensure all bound arrays are of the same size
-      if (stmt.setArraySize(pos, l->size(), xsink))
-         return;
-
-      bindListValue(xsink, pos, l, in_only);
-      return;
-   }
-   */
 
    // bind a NULL
    if (ntype == NT_NOTHING || ntype == NT_NULL) {
@@ -1338,7 +1423,8 @@ void OraBindNode::bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink) {
          buf.arraybind = new DynamicArrayBindString(0, NT_NUMBER, "number");
       else if (data.isType("number"))
          buf.arraybind = new DynamicArrayBindString(0, NT_NUMBER, "number");
-      /** not yet implemented
+      // not yet implemented
+      /*
       else if (data.isType("date"))
          buf.arraybind = new DynamicArrayBindDate(0);
       else if (data.isType("binary"))
