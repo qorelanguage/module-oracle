@@ -4,8 +4,8 @@
 
   Qore Programming Language
 
-  Copyright (C) 2006 - 2015 Qore Technologies, sro
-  
+  Copyright (C) 2006 - 2016 Qore Technologies, sro
+
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -74,8 +74,8 @@ public:
    DLLLOCAL ora_bind() : type(OB_BIND), ph_name(0), ph_maxsize(0), ph_type(0), tmp_type(OBT_NONE) {
    }
 
-   DLLLOCAL ora_bind(char* name, int size, const char* typ, unsigned char t = OB_PH) 
-      : type(t), ph_name(name), 
+   DLLLOCAL ora_bind(char* name, int size, const char* typ, unsigned char t = OB_PH)
+      : type(t), ph_name(name),
         ph_maxsize(size), ph_type(typ ? strdup(typ) : 0), tmp_type(OBT_NONE) {
       assert(name);
    }
@@ -128,13 +128,13 @@ public:
       tmp_type = OBT_STR;
       tmp.tstr = nstr;
    }
-   
+
    DLLLOCAL void save(BinaryNode* tb) {
       assert(tmp_type == OBT_NONE);
       tmp_type = OBT_BIN;
       tmp.bin = tb;
    }
-   
+
    DLLLOCAL bool isType(const char* t) const {
       assert(type == OB_PH);
       return !strcmp(ph_type, t);
@@ -186,7 +186,7 @@ protected:
          const AbstractQoreNode* t = h->getKeyValue("value");
          if (t) {
             assert(!value);
-            value = t->refSelf();            
+            value = t->refSelf();
          }
          else {
             // get and check size
@@ -234,7 +234,7 @@ protected:
    */
 
    DLLLOCAL void bindListValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool in_only);
-   
+
    DLLLOCAL void bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool& is_nty, bool in_only = true);
    DLLLOCAL void bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink);
    DLLLOCAL int bindDate(int pos, ExceptionSink* xsink);
@@ -246,7 +246,7 @@ public:
    OCILobLocator* strlob;
    OCIBind* bndp;
 
-   bool clob_allocated;
+   bool lob_allocated;
 
    // Variable indicator is used as a holder for QoreOracleStatement::bindByPos() indp argument
    // which holds information about NULLs in the bound/placeholder-ed value. See:
@@ -260,19 +260,19 @@ public:
    // See: OraBindNode::getValue() code.
    sb2 indicator;
    dvoid* pIndicator;
-   
+
    // for value nodes
-   DLLLOCAL OraBindNode(QoreOracleStatement& stmt, const AbstractQoreNode* v) : 
-      OraColumnValue(stmt), 
-      value(v ? v->refSelf() : 0), strlob(0), bndp(0), clob_allocated(false) {
+   DLLLOCAL OraBindNode(QoreOracleStatement& stmt, const AbstractQoreNode* v) :
+      OraColumnValue(stmt),
+      value(v ? v->refSelf() : 0), strlob(0), bndp(0), lob_allocated(false) {
       indicator = 0;
       pIndicator = (dvoid*)&indicator;
    }
 
    // for placeholder nodes
-   DLLLOCAL OraBindNode(QoreOracleStatement& stmt, char* name, int size, const char* typ, const AbstractQoreNode* v = 0) : 
+   DLLLOCAL OraBindNode(QoreOracleStatement& stmt, char* name, int size, const char* typ, const AbstractQoreNode* v = 0) :
       OraColumnValue(stmt),
-      value(v ? v->refSelf() : 0), data(name, size, typ), strlob(0), bndp(0), clob_allocated(false) {
+      value(v ? v->refSelf() : 0), data(name, size, typ), strlob(0), bndp(0), lob_allocated(false) {
       indicator = 0;
       pIndicator = (dvoid*)&indicator;
    }
@@ -318,7 +318,7 @@ protected:
    }
 
    DLLLOCAL int bindOracle(ExceptionSink* xsink);
-   
+
 public:
    //DLLLOCAL QorePreparedStatement(Datasource* ods, const QoreString* ostr, const QoreListNode* args, ExceptionSink* n_xsink, bool doBinding = true);
 
@@ -349,7 +349,7 @@ public:
    }
 
    DLLLOCAL void reset(ExceptionSink* xsink);
-   
+
    DLLLOCAL int prepare(const QoreString& sql, const QoreListNode* args, bool parse, ExceptionSink* xsink);
 
    DLLLOCAL OraBindNode* add(const AbstractQoreNode* v) {
@@ -410,7 +410,7 @@ protected:
 public:
    DLLLOCAL QorePreparedStatementHelper(Datasource* ds, ExceptionSink* n_xsink) : QorePreparedStatement(ds), xsink(n_xsink) {
    }
-   
+
    DLLLOCAL ~QorePreparedStatementHelper() {
       reset(xsink);
    }
@@ -420,9 +420,9 @@ class AbstractDynamicArrayBindData {
 protected:
    typedef std::vector<sb2> sb2_list_t;
    sb2_list_t ind_list;
-   
+
    const QoreListNode* l;
-   
+
 public:
    DLLLOCAL AbstractDynamicArrayBindData(const QoreListNode* n_l) : l(n_l) {
    }
@@ -448,17 +448,17 @@ public:
       *indp = (void*)&ind_list[iter];
       //printd(5, "AbstractDynamicArrayBindData::bindNoDataCallback() iter: %d alen: %d ind: %d\n", iter, alen_list[iter], ind_list[iter]);
    }
-   
+
    DLLLOCAL void bindCallback(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp, ub1* piecep, void** indp) {
       assert(!ind_list.empty());
       assert(!l || (ind_list.size() + 1) >= iter);
       *piecep = OCI_ONE_PIECE;
       *indp = (void*)&ind_list[l ? iter : 0];
       //printd(5, "AbstractDynamicArrayBindData::bindCallback() iter: %d alen: %d ind: %d\n", iter, alen_list[iter], ind_list[iter]);
-      
+
       bindCallbackImpl(bindp, iter, bufpp, alenp);
    }
-   
+
    DLLLOCAL virtual void bindCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4* alenp) = 0;
 
    DLLLOCAL int setupOutputBind(OraBindNode& bn, int pos, ExceptionSink* xsink) {
@@ -473,10 +473,10 @@ public:
       *indp = (void*)&ind_list[iter];
       *rcodepp = 0;
       //printd(5, "AbstractDynamicArrayBindData::bindCallback() iter: %d alen: %d ind: %d\n", iter, alen_list[iter], ind_list[iter]);
-      
+
       bindPlaceholderCallbackImpl(bindp, iter, bufpp, alenp);
    }
-   
+
    DLLLOCAL virtual void bindPlaceholderCallbackImpl(OCIBind* bindp, ub4 iter, void** bufpp, ub4** alenp) = 0;
 
    DLLLOCAL AbstractQoreNode* getOutputValue(ExceptionSink* xsink, OraBindNode& bn, bool destructive) {

@@ -49,6 +49,8 @@ version 3.2
   set information was available
 * fixed a bug rewriting column names when selecting with row formats
   (issue 828)
+* fixed a bug where binary values were bound directly which caused ORA-01461
+  errors when more than one binary value > 4000 bytes was bound (issue 875)
 
 
 ***********

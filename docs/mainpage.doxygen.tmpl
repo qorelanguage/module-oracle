@@ -491,12 +491,13 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - implemented support for bulk DML with selects by default and explicitly with SQLStatement::fetchRows() and SQLStatement::fetchColumns(); default prefetch row count: 1000
     - fixed a bug in driver option processing that could lead to a crash
     - fixed a bug where duplicated columns would result in corrupt lists when selected in column mode
-    - fixed a bug where very large numbers were being retrieved incorrectly and would result in an ORA-01406 error
+    - fixed a bug where very large numbers were being retrieved incorrectly and would result in an \c ORA-01406 error
     - fixed a bug where number values were being returned with decimal points truncated in locales where the decimal position is not marked with a dot
     - fixed a bug where collections with no columns (but based on a table for example) could not be used (<a href="https://github.com/qorelanguage/qore/issues/455">issue 455</a>)
     - fixed a bug where cached NTY information was reused with stale pointers when connections were reestablished (<a href="https://github.com/qorelanguage/qore/issues/537">issue 537</a>)
     - fixed a bug where SQLStatement::describe() was failing even though result set information was available
     - fixed a bug rewriting column names when selecting with row formats (https://github.com/qorelanguage/qore/issues/828)
+    - fixed a bug where binary values were bound directly which caused \c ORA-01461 errors when more than one binary value > 4000 bytes was bound (<a href="https://github.com/qorelanguage/qore/issues/875">issue 875</a>)
 
     @subsection oracle31 oracle Driver Version 3.1
 
