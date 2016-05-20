@@ -1339,7 +1339,6 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
       else {
          dtype = SQLT_BIN;
 
-         printf("OraBindNode::bindValue() BLOB ptr: %p size: %lu\n", b->getPtr(), b->size());
          //printd(5, "OraBindNode::bindValue() BLOB ptr: %p size: "QLLD"\n", b->getPtr(), b->size());
 
          if (!in_only) {
