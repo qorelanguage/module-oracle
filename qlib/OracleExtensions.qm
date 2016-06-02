@@ -55,7 +55,7 @@ To use this module, use \c "%requires OracleExtensions" in your code.
 
 All the public symbols in the module are defined in the OracleExtensions namespace.
 
-@note Standard Qore oracle module is required to be installed. 
+@note Standard Qore oracle module is required to be installed.
 
 OracleExtensions scope is:
 
@@ -97,7 +97,7 @@ logical depencency:
 - @ref OracleExtensions::OracleDatasourcePool
 - @ref OracleExtensions::OracleSQLStatement
 
-OracleDatasource and OracleDatasourcePool includes 
+OracleDatasource and OracleDatasourcePool includes
 Qore::Datasource and Qore::DatasourcePool inside and all overriden methods keep
 their original properties: transaction handling, return data, optional arguments...
 
@@ -121,7 +121,7 @@ Application Info for method calls where there is no explicit info used.
       NOTHING or OracleExtensions::OracleApplicationInfo instance. A type
       cast exception is raised otherwise.
 
-  
+
 @subsubsection instrumentation_info_examples Examples
 
 @code
@@ -252,16 +252,16 @@ public class OracleInstrumentationBase
         #! Internally used datasource/pool
         object m_ds;
     }
-    
+
     constructor(*code userAutoInfo) {
         autoCode = userAutoInfo;
         userInfo = NOTHING;
     }
-    
+
     *code autoCode() { return autoCode; }
-    
+
     #! Obtain info about transaction capturing and try to get available Application Info
-    /** 
+    /**
         @param item optional OracleApplicationInfo with value or NOTHING
         @param checkTransaction default=True. True = check if there is a transaction. False = do not check.
         @retval bool True if the \c ds will be rollbacked explicitly
@@ -325,7 +325,7 @@ public class OracleInstrumentationBase
         else if (!fromSystem) {
             userInfo = audit;
         }
-        else if (exists userInfo &&  exists audit 
+        else if (exists userInfo &&  exists audit
                  && userInfo.client == audit.client
                  && userInfo.module == audit.module
                  && userInfo.action == audit.action) {
@@ -342,7 +342,7 @@ public class OracleInstrumentationBase
             stderr.printf("OracleExtensions WARNING: setAppInfo: %s - %s\n", ex.err, ex.desc);
         }
     }
-    
+
     #! An overloaded method with the same functionality as the OracleExtensions::OracleApplicationInfo variant
     setAppInfo(*string client, *string module, *string action, bool fromSystem=True) {
         OracleExtensions::OracleApplicationInfo item(client, module, action);
@@ -355,7 +355,7 @@ public class OracleInstrumentationBase
 
 #! A base class for OracleDatasource and OracleDatasourcePool. Not intended to be used directly.
 public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, OracleInstrumentationBase
-{    
+{
     #! AbstractDatasource implementation for Datasource and DatasourcePool
     *string getDBName() { return m_ds.getDBName(); }
     #! AbstractDatasource implementation for Datasource and DatasourcePool
@@ -383,7 +383,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     #! AbstractDatasource implementation for Datasource and DatasourcePool
     bool inTransaction() { return m_ds.inTransaction(); }
 
-    #! Set app info by wrapped Datasource/Pool object    
+    #! Set app info by wrapped Datasource/Pool object
     setAppInfoCallback(*string oraclient, *string oramodule, *string oraaction) {
         m_ds.exec("begin
                 dbms_application_info.set_client_info(%v);
@@ -398,17 +398,46 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
 
     #! Start new transaction with Aplication info set as strings
     /**
-    @param client optional string, application info \c Client
-    @param module optional string, application info \c Module
-    @param action optional string, application info \c Action
+        @param client optional string, application info \c Client
+        @param module optional string, application info \c Module
+        @param action optional string, application info \c Action
 
-    Currently used application info will be used in any following
-    method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
+        Currently used application info will be used in any following
+        method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
     */
-    nothing beginTransaction(*string client, *string module, *string action) {
+    nothing beginTransaction(string client, *string module, *string action) {
         m_ds.beginTransaction();
         setAppInfo(client, module, action, False);
     }
+
+    #! Start new transaction with Aplication info set as strings
+    /**
+        @param client optional string, application info \c Client
+        @param module optional string, application info \c Module
+        @param action optional string, application info \c Action
+
+        Currently used application info will be used in any following
+        method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
+    */
+    nothing beginTransaction(*string client, string module, *string action) {
+        m_ds.beginTransaction();
+        setAppInfo(client, module, action, False);
+    }
+
+        #! Start new transaction with Aplication info set as strings
+    /**
+        @param client optional string, application info \c Client
+        @param module optional string, application info \c Module
+        @param action optional string, application info \c Action
+
+        Currently used application info will be used in any following
+        method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
+    */
+    nothing beginTransaction(*string client, *string module, string action) {
+        m_ds.beginTransaction();
+        setAppInfo(client, module, action, False);
+    }
+
     #! Start new transaction with Aplication info set as object
     /**
     @param info mandatory. Application info object instance
@@ -432,7 +461,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
 
     #! exec with automatic approach of getting application info
     /**
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -441,18 +470,18 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is used in Qorus Integration Engine.
      */
     any exec(string sql) {
-        bool doRollback = setAutomaticDBInfo(); 
+        bool doRollback = setAutomaticDBInfo();
         on_error {
             if (doRollback)
                 rollback();
         }
-        #setAutomaticDBInfo(NOTHING, False); 
+        #setAutomaticDBInfo(NOTHING, False);
         return m_ds.vexec(sql, argv);
     }
 
     #! execRaw with automatic approach of getting application info
     /**
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @retval any a result as in parent class method
 
     This method tries to find application infautomatically. The previously set
@@ -460,18 +489,18 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is used in Qorus Integration Engine.
      */
     any execRaw(string sql) {
-        bool doRollback = setAutomaticDBInfo(); 
+        bool doRollback = setAutomaticDBInfo();
         on_error {
             if (doRollback)
                 rollback();
         }
-        #setAutomaticDBInfo(NOTHING, False); 
+        #setAutomaticDBInfo(NOTHING, False);
         return m_ds.execRaw(sql);
     }
 
     #! select with automatic approach of getting application info
     /**
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -480,7 +509,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is used in Qorus Integration Engine.
      */
     any select(string sql) {
-        bool doRollback = setAutomaticDBInfo(); 
+        bool doRollback = setAutomaticDBInfo();
         on_exit {
             if (doRollback)
                 rollback();
@@ -490,7 +519,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
 
     #! selectRow with automatic approach of getting application info
     /**
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -499,7 +528,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is used in Qorus Integration Engine.
      */
     any selectRow(string sql) {
-        bool doRollback = setAutomaticDBInfo(); 
+        bool doRollback = setAutomaticDBInfo();
         on_exit {
             if (doRollback)
                 rollback();
@@ -509,7 +538,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
 
     #! selectRows with automatic approach of getting application info
     /**
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -518,7 +547,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is used in Qorus Integration Engine.
      */
     any selectRows(string sql) {
-        bool doRollback = setAutomaticDBInfo(); 
+        bool doRollback = setAutomaticDBInfo();
         on_exit {
             if (doRollback)
                 rollback();
@@ -528,7 +557,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
 
     #! vexec with automatic approach of getting application info
     /**
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -537,18 +566,18 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is used in Qorus Integration Engine.
      */
     any vexec(string sql, softlist vargs) {
-        bool doRollback = setAutomaticDBInfo(); 
+        bool doRollback = setAutomaticDBInfo();
         on_error {
             if (doRollback)
                 rollback();
         }
-        #setAutomaticDBInfo(NOTHING, False); 
+        #setAutomaticDBInfo(NOTHING, False);
         return m_ds.vexec(sql, vargs);
     }
 
     #! vselect with automatic approach of getting application info
     /**
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -557,7 +586,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is used in Qorus Integration Engine.
      */
     any vselect(string sql, softlist vargs) {
-        bool doRollback = setAutomaticDBInfo(); 
+        bool doRollback = setAutomaticDBInfo();
         on_exit {
             if (doRollback)
                 rollback();
@@ -567,7 +596,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
 
     #! vselectRow with automatic approach of getting application info
     /**
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -576,7 +605,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is used in Qorus Integration Engine.
      */
     any vselectRow(string sql, softlist vargs) {
-        bool doRollback = setAutomaticDBInfo(); 
+        bool doRollback = setAutomaticDBInfo();
         on_exit {
             if (doRollback)
                 rollback();
@@ -586,7 +615,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
 
     #! vselectRows with automatic approach of getting application info
     /**
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -595,7 +624,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is used in Qorus Integration Engine.
      */
     any vselectRows(string sql, softlist vargs) {
-        bool doRollback = setAutomaticDBInfo(); 
+        bool doRollback = setAutomaticDBInfo();
         on_exit {
             if (doRollback)
                 rollback();
@@ -606,7 +635,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     #! exec with user defined application info
     /**
         @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -615,19 +644,19 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is skipped.
      */
     any exec(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(info); 
+        bool doRollback = setAutomaticDBInfo(info);
         on_error {
             if (doRollback)
                 rollback();
         }
-        #setAutomaticDBInfo(info, False); 
+        #setAutomaticDBInfo(info, False);
         return m_ds.vexec(sql, argv);
     }
 
     #! execRaw with user defined application info
     /**
         @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @retval any a result as in parent class method
 
     This method sets given application info. The previously set
@@ -635,19 +664,19 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is skipped.
      */
     any execRaw(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(info); 
+        bool doRollback = setAutomaticDBInfo(info);
         on_error {
             if (doRollback)
                 rollback();
         }
-        #setAutomaticDBInfo(info, False); 
+        #setAutomaticDBInfo(info, False);
         return m_ds.execRaw(sql);
     }
 
     #! select with user defined application info
     /**
         @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -656,7 +685,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is skipped.
      */
     any select(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(info); 
+        bool doRollback = setAutomaticDBInfo(info);
         on_exit {
             if (doRollback)
                 rollback();
@@ -667,7 +696,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     #! selectRow with user defined application info
     /**
         @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -676,7 +705,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is skipped.
      */
     any selectRow(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(info); 
+        bool doRollback = setAutomaticDBInfo(info);
         on_exit {
             if (doRollback)
                 rollback();
@@ -687,7 +716,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     #! selectRows with user defined application info
     /**
         @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -696,7 +725,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is skipped.
      */
     any selectRows(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(info); 
+        bool doRollback = setAutomaticDBInfo(info);
         on_exit {
             if (doRollback)
                 rollback();
@@ -707,7 +736,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     #! vexec with user defined application info
     /**
         @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -716,19 +745,19 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is skipped.
      */
     any vexec(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(info); 
+        bool doRollback = setAutomaticDBInfo(info);
         on_error {
             if (doRollback)
                 rollback();
         }
-        #setAutomaticDBInfo(info, False); 
+        #setAutomaticDBInfo(info, False);
         return m_ds.vexec(sql, elements argv ? argv[0] : NOTHING);
     }
 
     #! vselect with user defined application info
     /**
         @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -737,7 +766,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is skipped.
      */
     any vselect(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(info); 
+        bool doRollback = setAutomaticDBInfo(info);
         on_exit {
             if (doRollback)
                 rollback();
@@ -748,7 +777,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     #! vselectRow with user defined application info
     /**
         @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -757,7 +786,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is skipped.
      */
     any vselectRow(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(info); 
+        bool doRollback = setAutomaticDBInfo(info);
         on_exit {
             if (doRollback)
                 rollback();
@@ -768,7 +797,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     #! vselectRows with user defined application info
     /**
         @param info a OracleExtensions::OracleApplicationInfo instance
-        @param sql a SQL statement 
+        @param sql a SQL statement
         @param ... binding arguments as in parent class method
         @retval any a result as in parent class method
 
@@ -777,7 +806,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     is skipped.
      */
     any vselectRows(OracleExtensions::OracleApplicationInfo info, string sql) {
-        bool doRollback = setAutomaticDBInfo(info); 
+        bool doRollback = setAutomaticDBInfo(info);
         on_exit {
             if (doRollback)
                 rollback();
@@ -822,14 +851,14 @@ OracleDatasourceBase::setLongOpsProgress(OracleLongOps lo) {
             v_rindex := DBMS_APPLICATION_INFO.set_session_longops_nohint;
         end if;
         --
-        DBMS_APPLICATION_INFO.set_session_longops(rindex  => v_rindex, 
+        DBMS_APPLICATION_INFO.set_session_longops(rindex  => v_rindex,
                                           slno        => v_slno,
-                                          op_name     => %v, 
-                                          target      => v_obj, 
-                                          context     => %v, 
-                                          sofar       => %v, 
-                                          totalwork   => %v, 
-                                          target_desc => %v, 
+                                          op_name     => %v,
+                                          target      => v_obj,
+                                          context     => %v,
+                                          sofar       => %v,
+                                          totalwork   => %v,
+                                          target_desc => %v,
                                           units       => %v);
         --
         :out_rindex := v_rindex;
@@ -877,14 +906,14 @@ OracleDatasourceBase::outputPutLine(softstring text) {
 *string OracleDatasourceBase::outputGet() {
     int valid = 0;
     string result;
-    
+
     while (valid == 0) {
         hash res = m_ds.exec("begin dbms_output.get_line(:line, :valid); end;", Type::String, Type::Int);
         valid = res.valid;
         if (valid == 0)
             result += res.line + "\n";
     }
-    
+
     return result;
 }
 
@@ -993,7 +1022,7 @@ public class OracleLongOps
         throw "ORACLE-LONGOPS-ERROR",
               sprintf("Constructor argument 'units' must have length 32 bytes max. Got: %d", target_desc.strlen());
     self.units = units;
-    
+
     if (totalwork < 1)
         throw "ORACLE-LONGOPS-ERROR",
               sprintf("Constructor argument 'totalwork' must have greater than 0. Got: %d", totalwork);
@@ -1048,7 +1077,7 @@ OracleLongOps::setRindex(int i) {
 
 #! Do not use if you don't know what it is.
 /** @retval *int rindex value
-    
+
     Slno saves information across calls to set_session_longops: It is
     for internal use and should not be modified by the caller.
  */
@@ -1116,7 +1145,7 @@ public class OracleDatasourcePool inherits OracleExtensions::OracleDatasourceBas
     any methodGate(string meth) {
         return call_object_method_args(m_ds, meth, argv);
     }
-    
+
     DatasourcePool getDS() { return m_ds; }
 
 } # class OracleDatasourcePool
@@ -1157,7 +1186,7 @@ public class OracleDatasource inherits OracleExtensions::OracleDatasourceBase {
     }
     #! New constructor: use  already existing Datasource
     /** The original Datasource is embedded into this instance.
-    
+
         @param userAutoInfo see @ref instrumentation_info_auto
      */
     constructor(Datasource ds, *code userAutoInfo)
@@ -1165,7 +1194,7 @@ public class OracleDatasource inherits OracleExtensions::OracleDatasourceBase {
     {
         m_ds = ds;
     }
-    
+
     nothing setAutoCommit(bool auto) {
         m_ds.setAutoCommit(auto);
     }
@@ -1207,7 +1236,7 @@ while (stmt.next())
 # remember the SQLStatement transaction handling
 stmt.commit();
     @endcode
-    
+
     <b>Example where the Auto Info goes from user code</b>
     @code
 Datasource dd(...);
@@ -1222,7 +1251,7 @@ stmt.commit();
     @endcode
  */
 public class OracleSQLStatement inherits Qore::SQL::SQLStatement, OracleExtensions::OracleInstrumentationBase {
-    
+
     #! Constructor taking standard Datasource
     /**
     @param ds the Qore::SQL::Datasource instance
@@ -1285,19 +1314,19 @@ public class OracleSQLStatement inherits Qore::SQL::SQLStatement, OracleExtensio
     bool currentThreadInTransaction() {
         return m_ds.currentThreadInTransaction();
     }
-    
+
     #! SQLStatement::exec with @ref instrumentation_info_auto
     nothing exec() {
         setAutomaticDBInfo();
         SQLStatement::execArgs(argv);
     }
-    
+
     #! SQLStatement::execArgs with @ref instrumentation_info_auto
     nothing execArgs(softlist vargs) {
         setAutomaticDBInfo();
         SQLStatement::execArgs(vargs);
     }
-    
+
     #! SQLStatement::next with @ref instrumentation_info_auto
     bool next() {
         setAutomaticDBInfo();
@@ -1309,13 +1338,13 @@ public class OracleSQLStatement inherits Qore::SQL::SQLStatement, OracleExtensio
         setAppInfo(NOTHING, False);
         m_ds.commit();
     }
-    
+
     #! SQLStatement::rollback with clearing of @ref instrumentation_info_auto if required
     nothing rollback() {
         setAppInfo(NOTHING, False);
         m_ds.rollback();
     }
-    
+
 } # class OracleSQLStatement
 
 
@@ -1325,13 +1354,13 @@ public class OracleSQLStatement inherits Qore::SQL::SQLStatement, OracleExtensio
 
 
 %ifdef OracleExtensionsTest
-# qore -DOracleExtensionsTest=1 OracleExtensions.qm 
+# qore -DOracleExtensionsTest=1 OracleExtensions.qm
 our string connstr = "oracle:pvanek_omq/omq@xbox";
 
 
 any sub stmtTest(object o) {
     OracleExtensions::OracleSQLStatement stmt(o);
-    
+
     stmt.prepare("select workflow_instanceid from workflow_instance where workflowid = %v and rownum < 4 order by rowid");
     stmt.bind(201);
 
@@ -1340,7 +1369,7 @@ any sub stmtTest(object o) {
         printf("row: %n\n", r);
         sleep(1);
     }
-    
+
     stmt.commit();
     printf("connection free'd\n");
     sleep(5);
@@ -1356,7 +1385,7 @@ sub testData(object o1, object o2, string m) {
     #printf("test: %s\n", m);
     any d1 = call_object_method_args(o1, m, argv);
     any d2 = call_object_method_args(o2, m, argv);
-    
+
     if (d1 != d2)
         throw "TEST-DATA-ERROR", sprintf("call: %s; data mismatch: %N \n\n%N", m, d1, d2);
 }
@@ -1428,7 +1457,7 @@ our Counter autoCnt();
 sub baseTest(object dd) {
     printf("\nBase Test for: %n\n\n", dd);
     on_exit dd.rollback();
-    
+
     testDBMSOut(dd);
     testLongOps(dd);
 
@@ -1486,7 +1515,7 @@ sub testDataDiffs() {
         d1.rollback();
         d2.rollback();
     }
-    
+
     string sql = "select * from all_tables where owner = %v and table_name = %v order by table_name";
 
     testData(d1, d2, "exec", sql, d1.getUserName().upr(), "WORKFLOWS");
@@ -1518,10 +1547,10 @@ sub testPoolConnectionCount() {
     OracleExtensions::OracleDatasource dd(connstr, \getAutoInfo());
     dd.setAutoCommit(False);
     baseTest(dd);
-    
+
     OracleExtensions::OracleDatasourcePool dp(connstr, \getAutoInfo());
     baseTest(dp);
-    
+
     testDataDiffs();
 
     testPoolConnectionCount();

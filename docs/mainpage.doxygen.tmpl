@@ -530,6 +530,7 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - fixed a bug where SQLStatement::describe() was failing even though result set information was available
     - fixed a bug rewriting column names when selecting with row formats (https://github.com/qorelanguage/qore/issues/828)
     - fixed a bug where binary values were bound directly which caused \c ORA-01461 errors when more than one binary value > 4000 bytes was bound (<a href="https://github.com/qorelanguage/qore/issues/875">issue 875</a>)
+    - fixed some potentially ambiguous method declarations in \c OracleDatasourceBase in <a href="../../OracleExtensions/html/index.html">OracleExtensions</a> for forward-compatibility with future versions of Qore
 
     @subsection oracle31 oracle Driver Version 3.1
 
