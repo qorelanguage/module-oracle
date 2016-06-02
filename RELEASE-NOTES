@@ -51,7 +51,9 @@ version 3.2
   (issue 828)
 * fixed a bug where binary values were bound directly which caused ORA-01461
   errors when more than one binary value > 4000 bytes was bound (issue 875)
-
+* fixed some potentially ambiguous method declarations in OracleDatasourceBase
+  in the OracleExtensions module for forward-compatibility with future
+  versions of Qore
 
 ***********
 version 3.1
