@@ -396,7 +396,7 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
         return m_ds.currentThreadInTransaction();
     }
 
-    #! Start new transaction with Aplication info set as strings
+    #! Start new transaction with Application info set as strings or with potential automatic Application info set
     /**
         @param client optional string, application info \c Client
         @param module optional string, application info \c Module
@@ -404,41 +404,18 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
 
         Currently used application info will be used in any following
         method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
+        If there is no user info provided, OracleDatasource tries to find
+        the appropriate Application info automatically if possible.
     */
-    nothing beginTransaction(string client, *string module, *string action) {
+    nothing beginTransaction(*string client, *string module, *string action) {
         m_ds.beginTransaction();
-        setAppInfo(client, module, action, False);
+        if (client || module || action)
+            setAppInfo(client, module, action, False);
+        else
+            setAutomaticDBInfo(NOTHING, False);
     }
 
-    #! Start new transaction with Aplication info set as strings
-    /**
-        @param client optional string, application info \c Client
-        @param module optional string, application info \c Module
-        @param action optional string, application info \c Action
-
-        Currently used application info will be used in any following
-        method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
-    */
-    nothing beginTransaction(*string client, string module, *string action) {
-        m_ds.beginTransaction();
-        setAppInfo(client, module, action, False);
-    }
-
-        #! Start new transaction with Aplication info set as strings
-    /**
-        @param client optional string, application info \c Client
-        @param module optional string, application info \c Module
-        @param action optional string, application info \c Action
-
-        Currently used application info will be used in any following
-        method calls if there is no OracleExtensions::OracleApplicationInfo instance used.
-    */
-    nothing beginTransaction(*string client, *string module, string action) {
-        m_ds.beginTransaction();
-        setAppInfo(client, module, action, False);
-    }
-
-    #! Start new transaction with Aplication info set as object
+    #! Start new transaction with Application info set as object
     /**
     @param info mandatory. Application info object instance
 
@@ -448,15 +425,6 @@ public class OracleDatasourceBase inherits Qore::SQL::AbstractDatasource, Oracle
     nothing beginTransaction(OracleExtensions::OracleApplicationInfo info) {
         m_ds.beginTransaction();
         setAppInfo(info, False);
-    }
-    #! Start new transaction with potential automatic Aplication info set
-    /**
-        There is no user info provided. OracleDatasource tries to find
-        the appropriate Application info automatically if possible.
-     */
-    nothing beginTransaction() {
-        m_ds.beginTransaction();
-        setAutomaticDBInfo(NOTHING, False);
     }
 
     #! exec with automatic approach of getting application info
