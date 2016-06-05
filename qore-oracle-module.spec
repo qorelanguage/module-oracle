@@ -87,7 +87,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{module_dir}
 %{user_module_dir}
-%doc COPYING.MIT COPYING.LGPL README RELEASE-NOTES ChangeLog AUTHORS
+%doc COPYING.MIT COPYING.LGPL README RELEASE-NOTES AUTHORS
 
 %package doc
 Summary: oracle module for Qore
@@ -100,10 +100,11 @@ This RPM provides API documentation, test and example programs
 
 %files doc
 %defattr(-,root,root,-)
-%doc docs/oracle/html test/db-test.q test/sql-stmt.q
+%doc docs/oracle/html test/db-test.q test/sql-stmt.q test/aq-test.q test/db-test.q test/sql-stmt-describe.q
 
 %changelog
-* Thu Jan 30 2013 David Nichols <david@qore.org> - 3.2
+* Sun Jun 5 2016 David Nichols <david@qore.org> - 3.2
+- added test scripts
 - updated to version 3.2
 
 * Fri Aug 2 2013 David Nichols <david@qore.org> - 3.1
