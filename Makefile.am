@@ -28,13 +28,15 @@ noinst_HEADERS = src/oracle-config.h \
 
 USER_MODULES = qlib/OracleExtensions.qm
 
-EXTRA_DIST = COPYING.MIT COPYING.LGPL ChangeLog AUTHORS README \
+EXTRA_DIST = COPYING.MIT COPYING.LGPL AUTHORS README \
 	RELEASE-NOTES \
 	src/ql_oracle.qpp \
 	src/QC_AQMessage.qpp \
 	src/QC_AQQueue.qpp \
 	test/db-test.q \
 	test/sql-stmt.q \
+	test/aq-test.q \
+	test/sql-stmt-describe.q \
 	$(USER_MODULES) \
 	qore-oracle-module.spec
 
