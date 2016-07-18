@@ -24,6 +24,7 @@
 #include "oracle.h"
 
 #include <stdlib.h>
+#include <memory>
 
 // OCI callback function for dynamic binds
 static sb4 ora_dynamic_bind_callback(void* ictxp, OCIBind* bindp, ub4 iter, ub4 index, void** bufpp, ub4* alenp, ub1* piecep, void** indp) {
