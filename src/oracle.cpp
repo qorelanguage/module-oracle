@@ -183,7 +183,7 @@ static int oracle_open(Datasource* ds, ExceptionSink* xsink) {
       return -1;
    }   
 
-   std::auto_ptr<QoreOracleConnection> conn(new QoreOracleConnection(*ds, xsink));
+   std::unique_ptr<QoreOracleConnection> conn(new QoreOracleConnection(*ds, xsink));
    if (*xsink)
       return -1;
 

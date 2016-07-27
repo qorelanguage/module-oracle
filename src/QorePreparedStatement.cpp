@@ -289,7 +289,7 @@ public:
                max = nstr->size() + 1;
             alen_list[li.index()] = nstr->size() + 1;
 
-            std::auto_ptr<QoreString> tstr(nstr.giveString());
+            std::unique_ptr<QoreString> tstr(nstr.giveString());
             strvec.setDynamic(tstr->giveBuffer());
          }
       }
@@ -408,7 +408,7 @@ public:
          }
 
          if (t != NT_FLOAT) {
-            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"float\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element " QLLD " (starting from 0) expecting type \"float\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
             return -1;
          }
 
@@ -492,7 +492,7 @@ public:
          }
 
          if (t != NT_DATE) {
-            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"date\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element " QLLD " (starting from 0) expecting type \"date\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
             return -1;
          }
 
@@ -566,7 +566,7 @@ public:
          }
 
          if (t != NT_BOOLEAN) {
-            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"boolean\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element " QLLD " (starting from 0) expecting type \"boolean\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
             return -1;
          }
 
@@ -642,7 +642,7 @@ public:
          }
 
          if (t != NT_BINARY) {
-            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"binary\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element " QLLD " (starting from 0) expecting type \"binary\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
             return -1;
          }
 
@@ -760,7 +760,7 @@ public:
          }
 
          if (t != NT_BINARY) {
-            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"binary\"; all list elements must be of the same type to effect an array bind", get_type_name(n), ind);
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element " QLLD " (starting from 0) expecting type \"binary\"; all list elements must be of the same type to effect an array bind", get_type_name(n), ind);
             return -1;
          }
 
