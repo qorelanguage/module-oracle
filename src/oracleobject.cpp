@@ -855,7 +855,7 @@ AbstractQoreNode* objToQore(QoreOracleConnection* conn, OCI_Object* obj, Excepti
                return 0;
             }
             if (tl >= (1ll << 32)) {
-               xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s cannot use OCILib LOB APIs to read a LOB of size "QLLD, get_typinf_schema(obj), get_typinf_name(obj), tl);
+               xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s cannot use OCILib LOB APIs to read a LOB of size " QLLD, get_typinf_schema(obj), get_typinf_name(obj), tl);
                return 0;
             }
             unsigned int len = (unsigned int)tl;
@@ -1541,7 +1541,7 @@ AbstractQoreNode* collToQore(QoreOracleConnection* conn, OCI_Coll* obj, Exceptio
                return 0;
             }
             if (tl >= (1ll << 32)) {
-               xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s cannot use OCILib LOB APIs to read a LOB of size "QLLD, get_typinf_schema(obj), get_typinf_name(obj), tl);
+               xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s cannot use OCILib LOB APIs to read a LOB of size " QLLD, get_typinf_schema(obj), get_typinf_name(obj), tl);
                return 0;
             }
             unsigned int len = (unsigned int)tl;
