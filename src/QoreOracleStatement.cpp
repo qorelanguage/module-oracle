@@ -22,6 +22,7 @@
 */
 
 #include "oracle.h"
+#include "ocilib/ocilib_internal.h"
 
 static inline bool wasInTransaction(Datasource* ds) {
 #ifdef _QORE_HAS_DATASOURCE_ACTIVETRANSACTION
