@@ -506,6 +506,9 @@ kpcest_err_handler: Max errors exceeded..Closing connection
 
     @section ora_releasenotes Release Notes
 
+    @subsection oracle321 oracle Driver Version 3.2.1
+    - updated SQLStatement::fetchColumns() to return an empty hash when no data is available in all cases (<a href="https://github.com/qorelanguage/qore/issues/1241">issue 1241</a>)
+
     @subsection oracle32 oracle Driver Version 3.2
     - added more Qore exception handling in ocilib object/NTY APIs
     - ensure all strings written to the DB are converted to the target character encoding before writing

@@ -294,12 +294,6 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
    if (setPrefetch(xsink, rows))
       return 0;
 
-   // create hash elements for each column, assign empty list
-   for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
-      //printd(5, "QoreOracleStatement::fetchColumns() allocating list for '%s' column\n", w->name);
-      h->setKeyValue((*i)->name, new QoreListNode, xsink);
-   }
-
    // setup temporary row to accept values
    if (resultset.define("QoreOracleStatement::fetchColumns():define", xsink))
       return 0;
@@ -311,6 +305,14 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
 
    // now finally fetch the data
    while (next(xsink)) {
+      if (h->empty()) {
+         // create hash elements for each column, assign empty list
+         for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
+            //printd(5, "QoreOracleStatement::fetchColumns() allocating list for '%s' column\n", w->name);
+            h->setKeyValue((*i)->name, new QoreListNode, xsink);
+         }
+      }
+
       // copy data or perform per-value processing if needed
       for (unsigned i = 0; i < resultset.clist.size(); ++i) {
 	 OraColumnBuffer *w = resultset.clist[i];

@@ -1,4 +1,4 @@
-%define mod_ver 3.2
+%define mod_ver 3.2.1
 
 %{?_datarootdir: %global mydatarootdir %_datarootdir}
 %{!?_datarootdir: %global mydatarootdir /usr/share}
@@ -103,6 +103,9 @@ This RPM provides API documentation, test and example programs
 %doc docs/oracle/html test/db-test.q test/sql-stmt.q test/aq-test.q test/db-test.q test/sql-stmt-describe.q
 
 %changelog
+* Tue Sep 13 2016 David Nichols <david@qore.org> - 3.2.1
+- updated to version 3.2.1
+
 * Sun Jun 5 2016 David Nichols <david@qore.org> - 3.2
 - added test scripts
 - updated to version 3.2
