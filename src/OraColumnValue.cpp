@@ -191,7 +191,7 @@ AbstractQoreNode* OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
          QoreOracleStatement tstmt(stmt.getDatasource(), (OCIStmt*)buf.takePtr());
          if (horizontal)
             return tstmt.fetchRows(xsink);
-         return tstmt.fetchColumns(xsink);
+         return tstmt.fetchColumns(false, xsink);
       }
 
       case SQLT_NTY: {

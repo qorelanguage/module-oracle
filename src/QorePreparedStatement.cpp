@@ -2141,7 +2141,7 @@ QoreHashNode* QorePreparedStatement::selectRow(ExceptionSink* xsink) {
 }
 #endif
 
-AbstractQoreNode* QorePreparedStatement::execWithPrologue(bool rows, ExceptionSink* xsink) {
+AbstractQoreNode* QorePreparedStatement::execWithPrologue(ExceptionSink* xsink, bool rows, bool cols) {
    if (exec(xsink))
       return 0;
 
@@ -2152,7 +2152,7 @@ AbstractQoreNode* QorePreparedStatement::execWithPrologue(bool rows, ExceptionSi
       if (rows)
          rv = QoreOracleStatement::fetchRows(xsink);
       else
-         rv = QoreOracleStatement::fetchColumns(xsink);
+         rv = QoreOracleStatement::fetchColumns(cols, xsink);
 
       if (*xsink)
          return 0;
@@ -2189,7 +2189,7 @@ QoreListNode* QorePreparedStatement::fetchRows(int rows, ExceptionSink* xsink) {
 
 QoreHashNode* QorePreparedStatement::fetchColumns(int rows, ExceptionSink* xsink) {
    assert(columns);
-   return QoreOracleStatement::fetchColumns(*columns, rows, xsink);
+   return QoreOracleStatement::fetchColumns(*columns, rows, false, xsink);
 }
 
 #ifdef _QORE_HAS_DBI_DESCRIBE

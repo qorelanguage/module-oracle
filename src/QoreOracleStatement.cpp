@@ -267,17 +267,25 @@ QoreHashNode* QoreOracleStatement::fetchSingleRow(ExceptionSink* xsink) {
 }
 #endif
 
+QoreHashNode* QoreOracleStatement::doColumns(OraResultSet& resultset, QoreHashNode& h) {
+   // create hash elements for each column, assign empty list
+   for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
+      //printd(5, "QoreOracleStatement::fetchColumns() allocating list for '%s' column\n", w->name);
+      h.setKeyValue((*i)->name, new QoreListNode, 0);
+   }
+}
+
 // retrieve results from statement and return hash
-QoreHashNode* QoreOracleStatement::fetchColumns(ExceptionSink* xsink) {
+QoreHashNode* QoreOracleStatement::fetchColumns(bool cols, ExceptionSink* xsink) {
    OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchColumns():params", xsink);
    if (*xsink)
       return 0;
 
-   return fetchColumns(**resultset, -1, xsink);
+   return fetchColumns(**resultset, -1, cols, xsink);
 }
 
 // retrieve results from statement and return hash
-QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int rows, ExceptionSink* xsink) {
+QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int rows, bool cols, ExceptionSink* xsink) {
    if (fetch_warned) {
       xsink->raiseException("ORACLE-SELECT-COLUMNS-ERROR", "SQLStatement::fetchColumns() called after the end of data already received");
       return 0;
@@ -287,6 +295,7 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
 
    if (fetch_complete) {
+      assert(!cols);
       fetch_warned = true;
       return h.release();
    }
@@ -303,15 +312,13 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
    // tracks the column size for when columns are duplicated
    unsigned csize = 0;
 
+   if (cols)
+      doColumns(resultset, **h);
+
    // now finally fetch the data
    while (next(xsink)) {
-      if (h->empty()) {
-         // create hash elements for each column, assign empty list
-         for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
-            //printd(5, "QoreOracleStatement::fetchColumns() allocating list for '%s' column\n", w->name);
-            h->setKeyValue((*i)->name, new QoreListNode, xsink);
-         }
-      }
+      if (h->empty())
+         doColumns(resultset, **h);
 
       // copy data or perform per-value processing if needed
       for (unsigned i = 0; i < resultset.clist.size(); ++i) {

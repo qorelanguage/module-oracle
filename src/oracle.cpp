@@ -106,7 +106,16 @@ static AbstractQoreNode* oracle_exec(Datasource* ds, const QoreString* qstr, con
    if (bg.prepare(qstr, args, true, xsink))
       return 0;
 
-   return bg.execWithPrologue(false, xsink);
+   return bg.execWithPrologue(xsink, false);
+}
+
+static AbstractQoreNode* oracle_select(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
+   QorePreparedStatementHelper bg(ds, xsink);
+
+   if (bg.prepare(qstr, args, true, xsink))
+      return 0;
+
+   return bg.execWithPrologue(xsink, false, true);
 }
 
 #ifdef _QORE_HAS_DBI_EXECRAW
@@ -116,7 +125,7 @@ static AbstractQoreNode* oracle_exec_raw(Datasource* ds, const QoreString* qstr,
    if (bg.prepare(qstr, 0, false, xsink))
       return 0;
 
-   return bg.execWithPrologue(false, xsink);
+   return bg.execWithPrologue(xsink, false);
 }
 #endif
 
@@ -127,7 +136,7 @@ static AbstractQoreNode* oracle_exec_raw_rows(Datasource* ds, const QoreString* 
    if (bg.prepare(qstr, 0, false, xsink))
       return 0;
 
-   return bg.execWithPrologue(true, xsink);
+   return bg.execWithPrologue(xsink, true);
 }
 #endif
 
@@ -148,7 +157,7 @@ static AbstractQoreNode* oracle_exec_rows(Datasource* ds, const QoreString* qstr
    if (bg.prepare(qstr, args, true, xsink))
       return 0;
 
-   return bg.execWithPrologue(true, xsink);
+   return bg.execWithPrologue(xsink, true);
 }
 
 static int oracle_open(Datasource* ds, ExceptionSink* xsink) {
@@ -181,7 +190,7 @@ static int oracle_open(Datasource* ds, ExceptionSink* xsink) {
    if (!port && ds->getHostName()) {
       xsink->raiseException("DATASOURCE-MISSING-PORT", "hostname is set to '%s', but no port is set; both hostname and port must be set to make a direct connection without TNS", ds->getHostName());
       return -1;
-   }   
+   }
 
    std::auto_ptr<QoreOracleConnection> conn(new QoreOracleConnection(*ds, xsink));
    if (*xsink)
@@ -323,8 +332,8 @@ static QoreHashNode* oracle_stmt_fetch_columns(SQLStatement* stmt, int rows, Exc
 #ifdef _QORE_HAS_DBI_DESCRIBE
 static QoreHashNode* oracle_stmt_describe(SQLStatement* stmt, ExceptionSink* xsink) {
    QorePreparedStatement* bg = (QorePreparedStatement*)stmt->getPrivateData();
-   assert(bg);      
-                    
+   assert(bg);
+
    return bg->describe(xsink);
 }
 #endif
@@ -365,7 +374,7 @@ QoreNamespace OraNS("Oracle");
 
 QoreStringNode* oracle_module_init() {
    QORE_TRACE("oracle_module_init()");
-   
+
    init_oracle_functions(OraNS);
    OraNS.addSystemClass(initAQMessageClass(OraNS));
    OraNS.addSystemClass(initAQQueueClass(OraNS));
@@ -374,7 +383,7 @@ QoreStringNode* oracle_module_init() {
    qore_dbi_method_list methods;
    methods.add(QDBI_METHOD_OPEN, oracle_open);
    methods.add(QDBI_METHOD_CLOSE, oracle_close);
-   methods.add(QDBI_METHOD_SELECT, oracle_exec);
+   methods.add(QDBI_METHOD_SELECT, oracle_select);
    methods.add(QDBI_METHOD_SELECT_ROWS, oracle_exec_rows);
 #ifdef _QORE_HAS_DBI_SELECT_ROW
    methods.add(QDBI_METHOD_SELECT_ROW, oracle_select_row);
@@ -382,10 +391,10 @@ QoreStringNode* oracle_module_init() {
    methods.add(QDBI_METHOD_EXEC, oracle_exec);
 #ifdef _QORE_HAS_DBI_EXECRAW
    methods.add(QDBI_METHOD_EXECRAW, oracle_exec_raw);
-#endif   
+#endif
 #ifdef _QORE_HAS_DBI_EXECRAWROWS
    methods.add(QDBI_METHOD_EXECRAW, oracle_exec_raw_rows);
-#endif   
+#endif
    methods.add(QDBI_METHOD_COMMIT, oracle_commit);
    methods.add(QDBI_METHOD_ROLLBACK, oracle_rollback);
    methods.add(QDBI_METHOD_GET_SERVER_VERSION, oracle_get_server_version);
