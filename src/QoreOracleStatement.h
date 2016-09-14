@@ -226,7 +226,7 @@ public:
    DLLLOCAL QoreListNode* fetchRows(OraResultSet& columns, int rows, ExceptionSink* xsink);
    DLLLOCAL QoreListNode* fetchRows(ExceptionSink* xsink);
 
-   DLLLOCAL QoreHashNode* doColumns(OraResultSet& columns, QoreHashNode& h);
+   DLLLOCAL void doColumns(OraResultSet& columns, QoreHashNode& h);
 
    DLLLOCAL QoreHashNode* fetchColumns(OraResultSet& columns, int rows, bool cols, ExceptionSink* xsink);
    DLLLOCAL QoreHashNode* fetchColumns(bool cols, ExceptionSink* xsink);
