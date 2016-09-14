@@ -267,7 +267,7 @@ QoreHashNode* QoreOracleStatement::fetchSingleRow(ExceptionSink* xsink) {
 }
 #endif
 
-QoreHashNode* QoreOracleStatement::doColumns(OraResultSet& resultset, QoreHashNode& h) {
+void QoreOracleStatement::doColumns(OraResultSet& resultset, QoreHashNode& h) {
    // create hash elements for each column, assign empty list
    for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
       //printd(5, "QoreOracleStatement::fetchColumns() allocating list for '%s' column\n", w->name);
