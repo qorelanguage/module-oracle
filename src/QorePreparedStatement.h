@@ -393,7 +393,7 @@ public:
    DLLLOCAL QoreHashNode* describe(ExceptionSink* xsink);
 #endif
 
-   DLLLOCAL AbstractQoreNode* execWithPrologue(bool rows, ExceptionSink* xsink);
+   DLLLOCAL AbstractQoreNode* execWithPrologue(ExceptionSink* xsink, bool rows, bool cols = false);
 
 #ifdef _QORE_HAS_DBI_SELECT_ROW
    DLLLOCAL QoreHashNode* selectRow(ExceptionSink* xsink);
