@@ -226,8 +226,10 @@ public:
    DLLLOCAL QoreListNode* fetchRows(OraResultSet& columns, int rows, ExceptionSink* xsink);
    DLLLOCAL QoreListNode* fetchRows(ExceptionSink* xsink);
 
-   DLLLOCAL QoreHashNode* fetchColumns(OraResultSet& columns, int rows, ExceptionSink* xsink);
-   DLLLOCAL QoreHashNode* fetchColumns(ExceptionSink* xsink);
+   DLLLOCAL QoreHashNode* doColumns(OraResultSet& columns, QoreHashNode& h);
+
+   DLLLOCAL QoreHashNode* fetchColumns(OraResultSet& columns, int rows, bool cols, ExceptionSink* xsink);
+   DLLLOCAL QoreHashNode* fetchColumns(bool cols, ExceptionSink* xsink);
 
 #ifdef _QORE_HAS_DBI_DESCRIBE
    DLLLOCAL QoreHashNode* describe(OraResultSet& columns, ExceptionSink* xsink);
