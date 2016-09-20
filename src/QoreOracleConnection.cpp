@@ -189,6 +189,9 @@ QoreOracleConnection::~QoreOracleConnection() {
       logoff();
 
    if (ocilib_cn) {
+      if (ocilib_cn->tinfs)
+         OCI_ListFree(&ocilib, ocilib_cn->tinfs);
+
       OCI_FREE(ocilib_cn->fmt_num);
 
       if (ocilib_cn->trace)
