@@ -704,7 +704,7 @@ static void aqqueue_constructor_hash(const QoreStringNode* queueName, const Qore
    // driver must be laoded because it's being executed now :)
    assert(db_driver);
 
-   std::auto_ptr<Datasource> ds(new Datasource(db_driver));
+   std::unique_ptr<Datasource> ds(new Datasource(db_driver));
 
    str = check_hash_key(opts, "user", DSC_ERR, xsink);
    if (*xsink) return;
