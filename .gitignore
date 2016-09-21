@@ -26,8 +26,6 @@ src/.libs/
 src/Makefile
 src/Makefile.in
 src/ocilib/.deps/
-src/ocilib/.libs/
-src/ocilib/.dirstamp
 src/*.dox.h
 src/qc_*.cpp
 src/ql_*.cpp
@@ -41,8 +39,4 @@ docs/mainpage.doxygen
 docs/oracle/
 docs/qlib/Doxyfile.*
 docs/qlib/*.dox.h
-
-# Eclipse
-.cproject
-.project
-.settings/
+							
