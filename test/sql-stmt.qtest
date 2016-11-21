@@ -1,0 +1,228 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+%new-style
+%enable-all-warnings
+%require-types
+%strict-args
+
+%disable-warning unreferenced-variable
+
+%requires QUnit
+
+%exec-class SqlStmtTest
+
+const OracleTableName = "oracle_sqlstmt_test_table";
+
+public class SqlStmtTest inherits QUnit::Test {
+    private {
+        *string connStr;
+        DatasourcePool ds;
+    }
+
+    constructor() : Test("SqlStmtTest", "1.1", \ARGV) {
+        addTestCase("Test 1", \test1(), NOTHING);
+        addTestCase("Test 2", \test2(), NOTHING);
+        addTestCase("Test 3", \test3(), NOTHING);
+        addTestCase("Test 4", \test4(), NOTHING);
+        addTestCase("Test 5", \test5(), NOTHING);
+
+        # Return for compatibility with test harness that checks return value.
+        set_return_value(main());
+    }
+
+    globalSetUp() {
+        try {
+            initDatasource();
+        }
+        catch (hash ex) {
+            printf("Exception happened during datasource pool initialization:\n%s: %s\n", ex.err, ex.desc);
+            exit(1);
+        }
+
+        try {
+            createTable();
+        }
+        catch (hash ex) {
+            printf("Exception happened when creating test table:\n%s: %s\n", ex.err, ex.desc);
+            exit(1);
+        }
+    }
+
+    globalTearDown() {
+    }
+
+    initDatasource() {
+        connStr = ENV.QORE_DB_CONNSTR_ORACLE ? ENV.QORE_DB_CONNSTR_ORACLE : ENV.QORE_DB_CONNSTR;
+        if (!connStr) {
+            printf("No connection string set (QORE_DB_CONNSTR_ORACLE or QORE_DB_CONNSTR). Cannot run the tests.\n");
+            exit(1);
+        }
+
+        ds = new DatasourcePool(connStr);
+    }
+
+    createTable() {
+        SQLStatement dropStmt(ds);
+        dropStmt.prepare("drop table " + OracleTableName);
+
+        on_exit dropStmt.commit();
+
+        try {
+            dropStmt.exec();
+        }
+        catch () { # ignore error
+        }
+
+        string createStr = "create table " + OracleTableName;
+        createStr += " (ts timestamp, tstz timestamp with time zone, tsltz timestamp with local time zone, d date, r raw(64))";
+        dropStmt.prepare(createStr);
+        dropStmt.exec();
+    }
+
+    test1() {
+        SQLStatement insertStmt(ds);
+        insertStmt.prepare("insert into " + OracleTableName + " values (%v, %v, %v, %v, %v)");
+
+        SQLStatement selectStmt(ds);
+        selectStmt.prepare("select * from " + OracleTableName);
+
+        date now = now_us();
+        binary bin = binary("hello");
+        {
+            code insert = sub () {
+                insertStmt.bind(now, now, now, now, bin);
+
+                insertStmt.beginTransaction();
+                on_success insertStmt.commit();
+                insertStmt.exec();
+                assertEq(1, insertStmt.affectedRows());
+            };
+
+            insert();
+
+            now = now_us();
+            insert();
+
+            now = now_us();
+            insert();
+
+            now = now_us();
+            insert();
+        }
+
+        on_exit selectStmt.commit();
+
+        selectStmt.exec();
+        int rows;
+        while (selectStmt.next()) {
+            ++rows;
+            hash rv = selectStmt.fetchRow();
+        }
+        assertEq(4, rows);
+        selectStmt.close();
+
+        selectStmt.exec();
+        any v = selectStmt.fetchRows(-1);
+        assertEq(4, elements v);
+        selectStmt.close();
+
+        selectStmt.exec();
+        v = selectStmt.fetchColumns(-1);
+        assertEq(5, elements v);
+
+        selectStmt.exec();
+        v = selectStmt.fetchColumns(-1);
+        assertEq(5, elements v);
+
+        selectStmt.exec();
+        *list l = selectStmt.fetchRows(3);
+        assertEq(3, l.size());
+        l = selectStmt.fetchRows(3);
+        assertEq(1, l.size());
+        l = selectStmt.fetchRows(3);
+        assertEq(0, l.size());
+        assertThrows("ORACLE-SELECT-ROWS-ERROR", sub() { l = selectStmt.fetchRows(3); });
+    }
+
+    test2() {
+        SQLStatement stmt(ds);
+        stmt.prepare("begin select sysdate into :dt from dual; end;");
+
+        on_exit stmt.commit();
+
+        stmt.bindPlaceholders(Type::Date);
+        any v = stmt.getOutput();
+        assertEq(1, elements v);
+
+        stmt.close();
+
+        stmt.bindPlaceholders(Type::Date);
+        v = stmt.getOutput();
+        assertEq(1, elements v);
+    }
+
+    test3() {
+        SQLStatement stmt(ds);
+        stmt.prepare("select * from blahdf24g1df54g1df51sf5dg1dfsg5fd");
+        try {
+            stmt.beginTransaction();
+            stmt.exec();
+            fail();
+        }
+        catch (ex) {
+            assertTrue(True);
+        }
+
+        try {
+            on_success stmt.commit();
+            on_error stmt.rollback();
+            any rv = stmt.fetchColumns(-1);
+            fail();
+        }
+        catch (ex) {
+            assertTrue(True);
+        }
+    }
+
+    test4() {
+        SQLStatement deleteStmt(ds);
+        deleteStmt.prepare("delete from " + OracleTableName);
+
+        SQLStatement selectStmt(ds);
+        selectStmt.prepare("select * from " + OracleTableName);
+
+        {
+            deleteStmt.beginTransaction();
+            on_success deleteStmt.commit();
+            deleteStmt.exec();
+            assertEq(4, deleteStmt.affectedRows());
+            deleteStmt.close();
+        }
+
+        selectStmt.exec();
+        on_exit selectStmt.commit();
+        any rv = selectStmt.fetchRows();
+        assertEq((), rv);
+    }
+
+    test5() {
+        SQLStatement plsql(ds);
+        plsql.prepare("
+declare
+    var number;
+begin
+    select count(1) into var from user_objects where status = %v;
+    :an_output := var;
+end;");
+
+        {
+            plsql.beginTransaction();
+            on_success plsql.commit();
+            plsql.execArgs( ('VALID', Type::String) );
+            hash ret = plsql.getOutput();
+            plsql.close();
+        }
+    }
+}
+

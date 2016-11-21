@@ -23,36 +23,36 @@ class MyAQQueue inherits AQQueue {
     }
 
     log(string fmt) {
-	printf("%s T%d async msg: %s\n", format_date("YYYY-MM-DD HH:mm:SS.xx", now_us()), gettid(), vsprintf(fmt, argv));
+        printf("%s T%d async msg: %s\n", format_date("YYYY-MM-DD HH:mm:SS.xx", now_us()), gettid(), vsprintf(fmt, argv));
     }
 
     nothing onAsyncMessage() {
-	*AQMessage m1;
-	{
-	    on_success commit();
-	    on_error rollback();
-	    do {
-		m1 = getMessage(1);
-		log("%y", m1 ? m1.getObject() : NOTHING);
-		if (m1) {
-		    hash msg = m1.getObject();
-		    delete h.(msg.CODE);
-		    c.dec();
-		    if (msg.CODE == 3003)
-			break;
-		}
-	    } while (m1);
-	}
+        *AQMessage m1;
+        {
+            on_success commit();
+            on_error rollback();
+            do {
+                m1 = getMessage(1);
+                log("%y", m1 ? m1.getObject() : NOTHING);
+                if (m1) {
+                    hash msg = m1.getObject();
+                    delete h.(msg.CODE);
+                    c.dec();
+                    if (msg.CODE == 3003)
+                        break;
+                }
+            } while (m1);
+        }
 
-	# do reconnect
-	if (m1 && m1.getObject().CODE == 3003) {
-	    TerminalInputHelper tih();
-	    stdout.printf("push any key to continue the listening thread: ");
-	    stdout.sync();
-	    tih.getChar();
-	    stdout.printf("\n");
-	    stdout.sync();
-	}
+        # do reconnect
+        if (m1 && m1.getObject().CODE == 3003) {
+            TerminalInputHelper tih();
+            stdout.printf("push any key to continue the listening thread: ");
+            stdout.sync();
+            tih.getChar();
+            stdout.printf("\n");
+            stdout.sync();
+        }
     }
 }
 
@@ -66,21 +66,21 @@ sub main() {
     # first purge queue
     MyAQQueue q1 = get_queue();
     {
-	on_success q1.commit();
-	on_error q1.rollback();
+        on_success q1.commit();
+        on_error q1.rollback();
 
-	printf("purging queue...\n");
-	while ((*AQMessage dm = q1.getMessage())) {
-	    printf("purging: msg: %y (%y)\n", dm, dm.getObject());
-	}
+        printf("purging queue...\n");
+        while ((*AQMessage dm = q1.getMessage())) {
+            printf("purging: msg: %y (%y)\n", dm, dm.getObject());
+        }
     }
 
     q1.startSubscription();
 
     Counter sc();
     for (int i = 0; i < THREAD_COUNT; ++i) {
-	sc.inc();
-	background test(i, sc);
+        sc.inc();
+        background test(i, sc);
     }
     # wait until all msgs have been posted to start waiting until the queue is empty
     sc.waitForZero();
@@ -103,12 +103,12 @@ sub test(int i, Counter sc) {
     hash objin = ("MESSAGE" : "from qorus", "CODE" : i * 1000);
 
     for (int i = 0; i < MSG_COUNT; ++i) {
-	h.(objin.CODE) = True;
-	m1.setObject(bindOracleObject("test_aq_msg_obj", objin));
-	c.inc();
-	q1.post(m1);
-	q1.commit();
-	++objin.CODE;
+        h.(objin.CODE) = True;
+        m1.setObject(bindOracleObject("test_aq_msg_obj", objin));
+        c.inc();
+        q1.post(m1);
+        q1.commit();
+        ++objin.CODE;
     }
 }
 

@@ -31,26 +31,26 @@ sub process_command_line() {
 
 sub main() {
     process_command_line();
-    
+
     *string connstr = shift ARGV;
 
     if (!connstr) {
-	connstr = ENV.QORE_DB_CONNSTR;
-	if (!connstr) {
-	    string hn = gethostname();
-	    switch (hn) {
-		case /^star/: connstr = "oracle:omquser/omquser@star"; break;
-		case /^quasar/: connstr = "oracle:omquser/omquser@el7"; break;
-		case /^el6/:
-		case /^el5/:
-		case /^manatee/:
-		case /^xbox/: connstr = "oracle:omquser/omquser@xbox"; break;
-		default: {
-		    stderr.printf("cannot detect DB connect string from hostname and QORE_DB_CONNSTR environment variable not set; cannot run SqlUtil tests\n");
-		    return;
-		}
-	    }
-	}
+        connstr = ENV.QORE_DB_CONNSTR;
+        if (!connstr) {
+            string hn = gethostname();
+            switch (hn) {
+                case /^star/: connstr = "oracle:omquser/omquser@star"; break;
+                case /^quasar/: connstr = "oracle:omquser/omquser@el7"; break;
+                case /^el6/:
+                case /^el5/:
+                case /^manatee/:
+                case /^xbox/: connstr = "oracle:omquser/omquser@xbox"; break;
+                default: {
+                    stderr.printf("cannot detect DB connect string from hostname and QORE_DB_CONNSTR environment variable not set; cannot run SqlUtil tests\n");
+                    return;
+                }
+            }
+        }
     }
 
     if (connstr !~ /^[a-z0-9_]+:/)
@@ -91,13 +91,13 @@ end;");
 
 sub info(string msg) {
     if (o.info)
-	vprintf(msg + "\n", argv);
+        vprintf(msg + "\n", argv);
 }
 
 sub test_value(any v1, any v2, string msg) {
     if (v1 === v2) {
-	if (o.verbose)
-	    printf("OK: %s test\n", msg);
+        if (o.verbose)
+            printf("OK: %s test\n", msg);
     }
     else {
         printf("ERROR: %s test failed! (%N != %N)\n", msg, v1, v2);
@@ -114,10 +114,10 @@ sub create_table(DatasourcePool dsp) {
     on_exit drop_stmt.commit();
 
     try {
-	drop_stmt.exec();
+        drop_stmt.exec();
     }
     catch () {
-	info("ignoring drop table error");
+        info("ignoring drop table error");
     }
 
     drop_stmt.prepare("create table test (ts timestamp, tstz timestamp with time zone, tsltz timestamp with local time zone, d date, r raw(64))");
@@ -134,28 +134,28 @@ sub test1(SQLStatement insert_stmt, SQLStatement select_stmt) {
     binary bin = binary("hello");
 
     {
-	info("starting insert");
+        info("starting insert");
 
-	code insert = sub () {
-	    insert_stmt.bind(now, now, now, now, bin);
-	    info("bind done: %y", now);
+        code insert = sub () {
+            insert_stmt.bind(now, now, now, now, bin);
+            info("bind done: %y", now);
 
-	    insert_stmt.beginTransaction();
-	    on_success insert_stmt.commit();
-	    insert_stmt.exec();
-	    test_value(insert_stmt.affectedRows(), 1, "affected rows after insert");
-	};
+            insert_stmt.beginTransaction();
+            on_success insert_stmt.commit();
+            insert_stmt.exec();
+            test_value(insert_stmt.affectedRows(), 1, "affected rows after insert");
+        };
 
-	insert();
+        insert();
 
-	now = now_us();
-	insert();
+        now = now_us();
+        insert();
 
-	now = now_us();
-	insert();
+        now = now_us();
+        insert();
 
-	now = now_us();
-	insert();
+        now = now_us();
+        insert();
     }
     info("commit done");
 
@@ -164,9 +164,9 @@ sub test1(SQLStatement insert_stmt, SQLStatement select_stmt) {
     select_stmt.exec();
     int rows;
     while (select_stmt.next()) {
-	++rows;
-	hash rv = select_stmt.fetchRow();
-	info("row=%n", rv);
+        ++rows;
+        hash rv = select_stmt.fetchRow();
+        info("row=%n", rv);
     }
 
     test_value(rows, 4, "next and fetch");
@@ -193,7 +193,7 @@ sub test1(SQLStatement insert_stmt, SQLStatement select_stmt) {
     info("columns: %N", v);
 
     select_stmt.exec();
-    
+
     *list l = select_stmt.fetchRows(3);
     test_value(l.size(), 3, "fetch rows 1");
     l = select_stmt.fetchRows(3);
@@ -201,11 +201,11 @@ sub test1(SQLStatement insert_stmt, SQLStatement select_stmt) {
     l = select_stmt.fetchRows(3);
     test_value(l.size(), 0, "fetch rows 3");
     try {
-	l = select_stmt.fetchRows(3);
-	test_value(True, False, "fetch rows 4");
+        l = select_stmt.fetchRows(3);
+        test_value(True, False, "fetch rows 4");
     }
     catch (hash ex) {
-	test_value(ex.err, "ORACLE-SELECT-ROWS-ERROR", "fetch rows 4");
+        test_value(ex.err, "ORACLE-SELECT-ROWS-ERROR", "fetch rows 4");
     }
 }
 
@@ -232,25 +232,25 @@ sub test2(SQLStatement stmt) {
 sub test3(SQLStatement stmt) {
     info("test3");
     try {
-	stmt.beginTransaction();
-	info("begin transaction");
-	stmt.exec();
-	test_value(True, False, "first negative select");
+        stmt.beginTransaction();
+        info("begin transaction");
+        stmt.exec();
+        test_value(True, False, "first negative select");
     }
     catch (ex) {
-	info("%s: %s", ex.err, ex.desc);
-	test_value(True, True, "first negative select");
+        info("%s: %s", ex.err, ex.desc);
+        test_value(True, True, "first negative select");
     }
     try {
-	on_success stmt.commit();
-	on_error stmt.rollback();
-	any rv = stmt.fetchColumns(-1);
-	info("ERR rows=%N", rv);
-	test_value(True, False, "second negative select");
+        on_success stmt.commit();
+        on_error stmt.rollback();
+        any rv = stmt.fetchColumns(-1);
+        info("ERR rows=%N", rv);
+        test_value(True, False, "second negative select");
     }
     catch (ex) {
-	info("%s: %s", ex.err, ex.desc);
-	test_value(True, True, "second negative select");
+        info("%s: %s", ex.err, ex.desc);
+        test_value(True, True, "second negative select");
     }
     info("rollback done");
 }
@@ -258,11 +258,11 @@ sub test3(SQLStatement stmt) {
 sub test4(SQLStatement delete_stmt, SQLStatement select_stmt) {
     info("test4");
     {
-	delete_stmt.beginTransaction();
-	on_success delete_stmt.commit();
-	delete_stmt.exec();
-	test_value(4, delete_stmt.affectedRows(), "affected rows");
-	delete_stmt.close();
+        delete_stmt.beginTransaction();
+        on_success delete_stmt.commit();
+        delete_stmt.exec();
+        test_value(4, delete_stmt.affectedRows(), "affected rows");
+        delete_stmt.close();
     }
     info("commit done");
 
