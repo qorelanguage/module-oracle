@@ -1,0 +1,369 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+%new-style
+%enable-all-warnings
+%require-types
+%strict-args
+
+%requires QUnit
+%requires oracle
+
+%exec-class OracleTest
+
+# Originally ODBC module test.
+class OracleTest inherits QUnit::Test {
+    public {
+        TimeZone utcTz = new TimeZone(0);
+        *string connStr;
+
+        # Generally compatible types will be here.
+        hash Columns = {
+            "c": {
+                "type": "CHAR(60)",
+                "values": ("text", "lorem", "Příliš žluťoučký kůň úpěl ďábelské ódy", "ipsum dolor"),
+                "expected": (
+                    "text                                                        ",
+                    "lorem                                                       ",
+                    "Příliš žluťoučký kůň úpěl ďábelské ódy       ",
+                    "ipsum dolor                                                 "
+                ),
+            },
+            "vc": {
+                "type": "VARCHAR(128)",
+                "values": ("text", "lorem", "Příliš žluťoučký kůň úpěl ďábelské ódy", "ipsum dolor"),
+            },
+            "sint": {
+                "type": "SMALLINT",
+                "values": (1, 0, 32767, -32768),
+                "expected": (1n, 0n, 32767n, -32768n),
+            },
+            "i": {
+                "type": "INTEGER",
+                "values": (2147483647, 0, -1, -2147483648),
+                "expected": (2147483647n, 0n, -1n, -2147483648n),
+            },
+            "decim": {
+                "type": "DECIMAL(5,2)",
+                "values": (123.45n, 0.0n, 999.99n, -999.99n),
+            },
+            "num": {
+                "type": "NUMERIC(5,2)",
+                "values": (-123.45n, 0.0n, 999.99n, -999.99n),
+            },
+            "fltp": {
+                "type": "FLOAT(53)",
+                "values": (1.72, 3.1456789765432, 0.0, -2.7218281828),
+                "expected": (1.72n, 3.1456789765432n, 0.0n, -2.7218281828n),
+            },
+            "r": {
+                "type": "REAL",
+                "values": (0.00390625, 0.0078125, -0.0078125, 0.0),
+                "expected": (0.00390625n, 0.0078125n, -0.0078125n, 0.0n),
+            },
+            "flt": {
+                "type": "FLOAT",
+                "values": (0.00390625, 0.0078125, -0.0078125, 0.0),
+                "expected": (0.00390625n, 0.0078125n, -0.0078125n, 0.0n),
+            },
+            "dbl": {
+                "type": "DOUBLE PRECISION",
+                "values": (1.72, 3.1456789765432, 0.0, -2.7218281828),
+                "expected": (1.72n, 3.1456789765432n, 0.0n, -2.7218281828n),
+            },
+            "dt": {
+                "type": "DATE",
+                "values": (2016-01-11, 1970-01-01, 2020-05-20, 1987-01-30),
+                "expected": (2016-01-11, 1970-01-01, 2020-05-20, 1987-01-30),
+            },
+            "tstamp": {
+                "type": "TIMESTAMP",
+                "values": (2016-01-11T00:00:00, 2016-01-11T05:23:17, 2016-01-11T03:00:20, 2016-01-11T14:15:16),
+                "expected": (),
+            },
+        };
+        list ColumnNamesAndTypes;
+
+        # Oracle-specific types.
+        hash OracleColumns = {
+            "orablob": {
+                "type": "BLOB",
+                "values": (<bead>, <feed>, <beadaabbccdd>, <1122aabb3344ccdd55667788>),
+            },
+            "oraraw": {
+                "type": "RAW(64)",
+                "values": (<bead>, <feed>, <beadaabbccdd>, <1122aabb3344ccdd55667788>),
+            },
+            "vc2": {
+                "type": "VARCHAR2(128)",
+                "values": ("text", "lorem", "Příliš žluťoučký kůň úpěl ďábelské ódy", "ipsum dolor"),
+            },
+            # commented out because of encoding problem
+            /*"nc": {
+                "type": "NCHAR(128)",
+                "values": (
+                    convert_encoding("text", "UTF16"),
+                    convert_encoding("lorem", "UTF16"),
+                    convert_encoding("Příliš žluťoučký kůň úpěl ďábelské ódy", "UTF16"),
+                    convert_encoding("ipsum dolor", "UTF16")
+                ),
+            },*/
+            # commented out because of encoding problem
+            /*"nvc2": {
+                "type": "NVARCHAR2(128)",
+                "values": (
+                    convert_encoding("text", "UTF16"),
+                    convert_encoding("lorem", "UTF16"),
+                    convert_encoding("Příliš žluťoučký kůň úpěl ďábelské ódy", "UTF16"),
+                    convert_encoding("ipsum dolor", "UTF16")
+                ),
+            },*/
+            "oraclob": {
+                "type": "CLOB",
+                "values": ("text", "lorem", "Příliš žluťoučký kůň úpěl ďábelské ódy", "ipsum dolor"),
+            },
+            /*"oranclob": {
+                "type": "NCLOB",
+                "values": (
+                    convert_encoding("text", "UTF16"),
+                    convert_encoding("lorem", "UTF16"),
+                    convert_encoding("Příliš žluťoučký kůň úpěl ďábelské ódy", "UTF16"),
+                    convert_encoding("ipsum dolor", "UTF16")
+                ),
+            },*/
+            "numbr": {
+                "type": "NUMBER(38,10)",
+                "values": (-12300000.4567891234n, 0.0n, 999888777666.5554443332n, -999888777666.5554443332n),
+            },
+            "binflt": {
+                "type": "BINARY_FLOAT",
+                "values": (0.00390625, 0.0078125, -0.0078125, 0.0),
+            },
+            "bindbl": {
+                "type": "BINARY_DOUBLE",
+                "values": (1.72, 3.1456789765432, 0.0, -2.7218281828),
+            },
+        };
+    }
+
+    private {
+        *Datasource ds;
+        const tableName = "oracle_test_table";
+    }
+
+    constructor() : QUnit::Test("OracleTest", "1.0", \ARGV) {
+        addTestCase("Basic test", \basicTest());
+        addTestCase("Types test", \typesTest());
+        addTestCase("Timezone test", \timezoneTest());
+        addTestCase("Array bind test", \arrayBindTest());
+        set_return_value(main());
+    }
+
+    destructor() {}
+
+    globalSetUp() {
+        try {
+            initDatasource();
+        }
+        catch (hash ex) {
+            printf("Exception happened during datasource initialization:\n%s: %s\n", ex.err, ex.desc);
+            exit(1);
+        }
+    }
+
+    globalTearDown() {
+        if (ds) {
+            try {
+                ds.exec("DROP TABLE " + tableName);
+            }
+            catch (hash ex) {
+                if (ex.err != "DBI:ORACLE:OCI-ERROR")
+                    rethrow;
+            }
+            ds.commit();
+            ds.close();
+        }
+    }
+
+    initDatasource() {
+        connStr = ENV.QORE_DB_CONNSTR_ORACLE ? ENV.QORE_DB_CONNSTR_ORACLE : ENV.QORE_DB_CONNSTR;
+        if (!connStr) {
+            printf("No connection string set. Cannot run the tests.\n");
+            exit(1);
+        }
+
+        ds = new Datasource(connStr);
+        ds.open();
+        printf("serverVersion: %y\n", ds.getServerVersion());
+        printf("clientVersion: %y\n", ds.getClientVersion());
+    }
+
+    basicTest() {
+        try {
+            ds.exec("DROP TABLE " + tableName);
+        }
+        catch (hash ex) {
+            if (ex.err != "DBI:ORACLE:OCI-ERROR")
+                rethrow;
+        }
+        ds.commit();
+        assertEq(0, ds.exec("CREATE TABLE " + tableName + " (id int PRIMARY KEY, text varchar(128))"));
+        ds.commit();
+
+        assertEq(1, ds.exec("INSERT INTO " + tableName + " (id, text) VALUES (1, 'abcdef123456')"));
+        ds.commit();
+
+        assertEq(1, ds.exec("INSERT INTO " + tableName + " (id, text) VALUES (%v, %v)", 2, "test 789 abc lorem ipsum"));
+        ds.commit();
+
+        assertThrows("ORACLE-BIND-VALUE-ERROR", "Plain hash/list cannot be bound",
+            sub() { ds.exec("INSERT INTO " + tableName + " (id, text) VALUES (%v, %v)", 3, {}); });
+
+        assertThrows("DBI:ORACLE:OCI-ERROR", "invalid SQL statement", sub() { ds.exec("bla bla bla"); });
+
+        hash results1 = {"id": (1, 2), "text": ("abcdef123456", "test 789 abc lorem ipsum")};
+        list results2 = ({"id": 1, "text": "abcdef123456"}, {"id": 2, "text": "test 789 abc lorem ipsum"});
+
+        assertEq(results1, ds.exec("SELECT * FROM " + tableName));
+        assertEq(results1, ds.select("SELECT * FROM " + tableName));
+        assertEq(results2, ds.selectRows("SELECT * FROM " + tableName));
+        ds.exec("DROP TABLE " + tableName);
+        ds.commit();
+    }
+
+    prepareTypesTest() {
+        for (int i = 0; i < Columns.tstamp.values.size(); i++) {
+            push Columns.tstamp.expected, utcTz.date(Columns.tstamp.values[i]);
+        }
+
+        # Try additional Oracle types.
+        string oracleTable = "oracle_types_test";
+        try { ds.exec("DROP TABLE " + oracleTable); } catch (e) {}
+        HashIterator oracle(OracleColumns);
+        while (oracle.next()) {
+            try {
+                ds.exec("CREATE TABLE " + oracleTable + " (" + oracle.getKey() + " " + oracle.getValue().type + ")");
+            }
+            catch (hash ex) { printf("type: %y fail, exception: %y\n", oracle.getValue().type, ex);continue; }
+            try { ds.exec("DROP TABLE " + oracleTable); } catch (e) {}
+
+            # Add the type to the typesTest Columns.
+            Columns{oracle.getKey()} = oracle.getValue();
+        }
+
+        # Prepare final list of columns and their types.
+        foreach hash col in (Columns.pairIterator()) {
+            ColumnNamesAndTypes += col.key + " " + col.value.type;
+        }
+    }
+
+    typesTest() {
+        prepareTypesTest();
+        printf("\n**************************\n");
+        printf("The following columns and their types are tested in the 'types test':\n");
+        foreach string col in (ColumnNamesAndTypes.iterator()) {
+            printf("%s\n", col);
+        }
+        printf("**************************\n\n");
+
+        ds.setOption("numeric-numbers", True);
+        try {
+            ds.exec("DROP TABLE " + tableName);
+        }
+        catch (hash ex) {
+            if (ex.err != "DBI:ORACLE:OCI-ERROR")
+                rethrow;
+        }
+        ds.commit();
+
+        string def = sprintf(" (%s)", foldl $1 + ", " + $2, ColumnNamesAndTypes);
+        assertEq(0, ds.exec("CREATE TABLE " + tableName + def));
+        ds.commit();
+
+        list arguments = ();
+        foreach hash col in (Columns.pairIterator()) {
+            push arguments, col.value.values;
+        }
+
+        string valdef = "";
+        for (int i = 0; i < ColumnNamesAndTypes.size(); i++)
+            valdef += "%v,";
+        valdef = valdef.substr(0, valdef.size()-1);
+
+        SQLStatement stmt = new SQLStatement(ds);
+        stmt.prepare("INSERT INTO " + tableName + sprintf(" (%s) VALUES (", foldl $1 + ", " + $2, Columns.keys()) + valdef + ")");
+        stmt.bindArgs(arguments);
+        stmt.exec();
+        stmt.commit();
+
+        hash results = Columns;
+        foreach string key in (results.keys()) {
+            if (exists results{key}.expected)
+                results{key} = results{key}.expected;
+            else
+                results{key} = results{key}.values;
+        }
+
+        assertEq(results, ds.exec("SELECT * FROM " + tableName));
+        ds.exec("DROP TABLE " + tableName);
+        ds.commit();
+    }
+
+    timezoneTest() {
+        Datasource tzDs = new Datasource(connStr);
+        tzDs.setOption("timezone", "Asia/Tokyo");
+        tzDs.open();
+
+        try {
+            tzDs.exec("DROP TABLE " + tableName);
+        }
+        catch (hash ex) {
+            if (ex.err != "DBI:ORACLE:OCI-ERROR")
+                rethrow;
+        }
+        tzDs.commit();
+
+        assertEq(0, tzDs.exec("CREATE TABLE " + tableName + " (id int, t timestamp)"));
+        tzDs.commit();
+
+        assertEq(1, tzDs.exec("INSERT INTO " + tableName + " (id, t) VALUES (%v, %v)", 1, 2016-01-11T00:00:00Z));
+        tzDs.commit();
+        assertEq(1, tzDs.exec("INSERT INTO " + tableName + " (id, t) VALUES (%v, %v)", 2, 2016-01-11T09:00:00+09:00));
+        tzDs.commit();
+
+        hash h = {"id": (1, 2), "t": (2016-01-11T09:00:00+09:00, 2016-01-11T09:00:00+09:00)};
+        assertEq(h, tzDs.select("SELECT * FROM " + tableName));
+
+        tzDs.close();
+    }
+
+    arrayBindTest() {
+        try {
+            ds.exec("DROP TABLE " + tableName);
+        }
+        catch (hash ex) {
+            if (ex.err != "DBI:ORACLE:OCI-ERROR")
+                rethrow;
+        }
+        ds.commit();
+        assertEq(0, ds.exec("CREATE TABLE " + tableName + " (id int, txt varchar(48))"));
+        ds.commit();
+
+        SQLStatement stmt = new SQLStatement(ds);
+        stmt.prepare("INSERT INTO " + tableName + " (id, txt) VALUES (%v, %v)");
+
+        stmt.bindArgs((2, ("text", "abc", "lorem")));
+        stmt.exec();
+        stmt.commit();
+
+        stmt.bindArgs(((4, 5), ("ipsum", "dolor")));
+        stmt.exec();
+        stmt.commit();
+
+        stmt.execArgs( ((6,), "sit") );
+        stmt.commit();
+
+        hash h = {"id": (2n, 2n, 2n, 4n, 5n, 6n), "txt": ("text", "abc", "lorem", "ipsum", "dolor", "sit")};
+        assertEq(h, ds.select("SELECT * FROM " + tableName));
+    }
+}
