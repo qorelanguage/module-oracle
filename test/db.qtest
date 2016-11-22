@@ -1,0 +1,332 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+%new-style
+%enable-all-warnings
+%require-types
+%strict-args
+
+%requires QUnit
+
+%exec-class DbTest
+
+const object_map = (
+    "oracle" : 
+    ( "tables" : ora_tables ),
+    );
+
+const ora_tables = ( 
+    "family" : "create table family (
+   family_id int not null,
+   name varchar2(80) not null
+)",
+    "people" : "create table people (
+   person_id int not null,
+   family_id int not null,
+   name varchar2(250) not null,
+   dob date not null,
+   info clob not null
+)",
+    "attributes" : "create table attributes (
+   person_id int not null,
+   attribute varchar2(80) not null,
+   value varchar2(160) not null
+)" );
+
+const family_hash = (
+    "Jones" : (
+        "people" : (
+            "John" : (
+                "info": "x",
+                "dob" : 1995-03-23,
+                "eyes" : "brown",
+                "hair" : "brown" ),
+            "Alan" : (
+                "info": "x",
+                "dob" : 1992-06-04,
+                "eyes" : "blue",
+                "hair" : "black" ) ) ),
+    "Smith" : (
+        "people" : (
+            "Arnie" : (
+                "info": "x",
+                "dob" : 1983-05-13,
+                "eyes" : "hazel",
+                "hair" : "blond" ),
+            "Carol" : (
+                "info": "x",
+                "dob" : 2003-07-23,
+                "eyes" : "grey",
+                "hair" : "brown" ),
+            "Isaac" : (
+                "info": "x",
+                "dob" : 2000-04-04,
+                "eyes" : "green",
+                "hair" : "red" ),
+            "Bernard" : (
+                "info": "x",
+                "dob" : 1979-02-27,
+                "eyes" : "brown",
+                "hair" : "brown" ),
+            "Sylvia" : (
+                "info": "x",
+                "dob" : 1994-11-10,
+                "eyes" : "blue",
+                "hair" : "blond" ) ) ) );
+
+const family_q = ( "family_id" : 1,
+                   "name" : "Smith" );
+const person_q = ( "person_id" : 1,
+                   "family_id" : 1,
+                   "name" : "Arnie",
+                   "dob" : 1983-05-13 );
+const params = ( "string" : "hello there",
+                 "int" : 150 );
+
+const OracleTableName = "oracle_sqlstmt_test_table";
+
+public class DbTest inherits QUnit::Test {
+    private {
+        *string connStr;
+        Datasource ds;
+    }
+
+    constructor() : Test("DbTest", "1.1", \ARGV) {
+        addTestCase("Context test", \contextTest(), NOTHING);
+        addTestCase("Transaction test", \transactionTest(), NOTHING);
+
+        # Return for compatibility with test harness that checks return value.
+        set_return_value(main());
+    }
+
+    globalSetUp() {
+        try {
+            ds = getNewDatasource();
+            ds.open();
+        }
+        catch (hash ex) {
+            printf("Exception happened during datasource pool initialization:\n%s: %s\n", ex.err, ex.desc);
+            exit(1);
+        }
+
+        printf("serverVersion: %y\nclientVersion: %y\n", ds.getServerVersion(), ds.getClientVersion());
+
+        try {
+            createDatamodel();
+        }
+        catch (hash ex) {
+            printf("Exception happened when creating datamodel:\n%s: %s\n", ex.err, ex.desc);
+            exit(1);
+        }
+    }
+
+    globalTearDown() {
+        try {
+            dropTestDatamodel();
+        }
+        catch (hash ex) {} # ignore
+    }
+
+    Datasource getNewDatasource() {
+        connStr = ENV.QORE_DB_CONNSTR_ORACLE ? ENV.QORE_DB_CONNSTR_ORACLE : ENV.QORE_DB_CONNSTR;
+        if (!connStr) {
+            printf("No connection string set (QORE_DB_CONNSTR_ORACLE or QORE_DB_CONNSTR). Cannot run the tests.\n");
+            exit(1);
+        }
+        return new Datasource(connStr);
+    }
+
+    createDatamodel() {
+        dropTestDatamodel();
+
+        string driver = ds.getDriverName();
+        # create tables
+        hash tables = object_map{driver}.tables;
+
+        foreach string table in (tables.keyIterator()) {
+            ds.exec(tables{table});
+        }
+
+        # create procedures if any
+        foreach string proc in (object_map{driver}.procs.keyIterator()) {
+            ds.exec(object_map{driver}.procs{proc});
+        }
+
+        # create functions if any
+        foreach string func in (object_map{driver}.funcs.keyIterator()) {
+            ds.exec(object_map{driver}.funcs{func});
+        }
+
+        ds.exec("insert into family values ( 1, 'Smith' )");
+        ds.exec("insert into family values ( 2, 'Jones' )");
+
+        # we insert the dates here using binding by value so we don't have
+        # to worry about each database's specific date format
+        ds.exec("insert into people values ( 1, 1, 'Arnie', %v, 'x')", 1983-05-13);
+        ds.exec("insert into people values ( 2, 1, 'Sylvia', %v, 'x')", 1994-11-10);
+        ds.exec("insert into people values ( 3, 1, 'Carol', %v, 'x')", 2003-07-23);
+        ds.exec("insert into people values ( 4, 1, 'Bernard', %v, 'x')", 1979-02-27);
+        ds.exec("insert into people values ( 5, 1, 'Isaac', %v, 'x')", 2000-04-04);
+        ds.exec("insert into people values ( 6, 2, 'Alan', %v, 'x')", 1992-06-04);
+        ds.exec("insert into people values ( 7, 2, 'John', %v, 'x')", 1995-03-23);
+
+        ds.exec("insert into attributes values ( 1, 'hair', 'blond' )");
+        ds.exec("insert into attributes values ( 1, 'eyes', 'hazel' )");
+        ds.exec("insert into attributes values ( 2, 'hair', 'blond' )");
+        ds.exec("insert into attributes values ( 2, 'eyes', 'blue' )");
+        ds.exec("insert into attributes values ( 3, 'hair', 'brown' )");
+        ds.exec("insert into attributes values ( 3, 'eyes', 'grey')");
+        ds.exec("insert into attributes values ( 4, 'hair', 'brown' )");
+        ds.exec("insert into attributes values ( 4, 'eyes', 'brown' )");
+        ds.exec("insert into attributes values ( 5, 'hair', 'red' )");
+        ds.exec("insert into attributes values ( 5, 'eyes', 'green' )");
+        ds.exec("insert into attributes values ( 6, 'hair', 'black' )");
+        ds.exec("insert into attributes values ( 6, 'eyes', 'blue' )");
+        ds.exec("insert into attributes values ( 7, 'hair', 'brown' )");
+        ds.exec("insert into attributes values ( 7, 'eyes', 'brown' )");
+        ds.commit();
+    }
+
+    dropTestDatamodel() {
+        string driver = ds.getDriverName();
+        # drop the tables and ignore exceptions
+        # the commits are needed for databases like postgresql, where errors will prohibit and further
+        # actions from being taken on the Datasource
+        foreach string table in (object_map{driver}.tables.keyIterator())
+            try {
+                ds.exec("drop table " + table);
+                ds.commit();
+            }
+            catch () {
+                ds.commit();
+            }
+
+        # drop procedures and ignore exceptions
+        foreach string proc in (object_map{driver}.procs.keyIterator()) {
+            *string cmd = object_map{driver}.drop_proc_cmd;
+            if (!cmd)
+                cmd = "drop procedure";
+            try {
+                ds.exec(cmd + " " + proc);
+                ds.commit();
+            }
+            catch () {
+                ds.commit();
+            }
+        }
+
+        # drop functions and ignore exceptions
+        foreach string func in (object_map{driver}.funcs.keyIterator()) {
+            *string cmd = object_map{driver}.drop_func_cmd;
+            if (!cmd)
+                cmd = "drop function";
+            try {
+                ds.exec(cmd + " " + func);
+                ds.commit();
+            }
+            catch () {
+                ds.commit();
+            }
+        }
+    }
+
+    contextTest() {
+        # first we select all the data from the tables and then use 
+        # context statements to order the output hierarchically
+
+        # context statements are most useful when a set of queries can be executed once
+        # and the results processed many times by creating "views" with context statements
+
+        *hash people = ds.select("select * from people");
+        *hash attributes = ds.select("select * from attributes");
+
+        # in this test, we create a big hash structure out of the queries executed above
+        # and compare it at the end to the expected result
+
+        # display each family sorted by family name
+        hash fl;
+        context family (ds.select("select * from family")) sortBy (%name) {
+            hash pl;
+
+            # display people, sorted by eye color, descending
+            context people (people)
+                sortDescendingBy (find %value in attributes
+                                  where (%attribute == "eyes"
+                                         && %person_id == %people:person_id))
+                where (%family_id == %family:family_id) {
+                hash al;
+                context (attributes) sortBy (%attribute) where (%person_id == %people:person_id) {
+                    al.%attribute = %value;
+                }
+                # leave out the ID fields and name from hash under name; subtracting a
+                # string from a hash removes that key from the result
+                # this is "doing it the hard way", there is only one key left,
+                # "dob", then attributes are added directly into the person hash
+                pl.%name = %% - "family_id" - "person_id" - "name" + al;
+            }
+            # leave out family_id and name fields (leaving an empty hash)
+            fl.%name = %% - "family_id" - "name" + ( "people" : pl );
+        }
+
+        # test context ordering
+        assertEq(("Jones", "Smith"), fl.keys());
+        assertEq(("Arnie", "Carol", "Isaac", "Bernard", "Sylvia"), fl.Smith.people.keys());
+        # test entire context value
+        assertEq(family_hash, fl);
+    }
+
+    timeoutTestIntern(Counter c) {
+        ds.setTransactionLockTimeout(1ms);
+        try {
+            # this should cause a TRANSACTION-LOCK-TIMEOUT exception to be thrown
+            ds.exec("insert into family values (3, 'Test')\n");
+            fail();
+            ds.exec("delete from family where name = 'Test'");
+        }
+        catch (ex) {
+            assertTrue(True);
+        }
+        # signal parent thread to continue
+        c.dec();
+    }
+
+    transactionTest() {
+        Datasource ndb = getNewDatasource();
+        any r;
+
+        # first, we insert a new row into "family" but do not commit it
+        int rows = ds.exec("insert into family values (3, 'Test')\n");
+        if (rows !== 1)
+            printf("FAILED INSERT, rows=%N\n", rows);
+
+        # now we verify that the new row is not visible to the other datasource
+        r = ndb.selectRow("select name from family where family_id = 3").name;
+        assertEq(NOTHING, r);
+
+        # now we verify that the new row is visible to the inserting datasource
+        r = ds.selectRow("select name from family where family_id = 3").name;
+        assertEq("Test", r);
+
+        # test datasource timeout
+        # this Counter variable will allow the parent thread to sleep
+        # until the child thread times out
+        Counter c(1);
+        background timeoutTestIntern(c);
+
+        # wait for child thread to time out
+        c.waitForZero();
+
+        # now, we commit the transaction
+        ds.commit();
+
+        # now we verify that the new row is visible in the other datasource
+        r = ndb.selectRow("select name from family where family_id = 3").name;
+        assertEq("Test", r);
+
+        # now we delete the row we inserted (so we can repeat the test)
+        r = ndb.exec("delete from family where family_id = 3");
+        assertEq(1, r);
+        ndb.commit();
+    }
+}
+
