@@ -19,11 +19,16 @@ class OracleTest inherits QUnit::Test {
 
         # Generally compatible types will be here.
         hash Columns = {
-            # commented out because of encoding problem
-            /*"c": {
-                "type": "CHAR(128)",
+            "c": {
+                "type": "CHAR(60)",
                 "values": ("text", "lorem", "Příliš žluťoučký kůň úpěl ďábelské ódy", "ipsum dolor"),
-            },*/
+                "expected": (
+                    "text                                                        ",
+                    "lorem                                                       ",
+                    "Příliš žluťoučký kůň úpěl ďábelské ódy       ",
+                    "ipsum dolor                                                 "
+                ),
+            },
             "vc": {
                 "type": "VARCHAR(128)",
                 "values": ("text", "lorem", "Příliš žluťoučký kůň úpěl ďábelské ódy", "ipsum dolor"),
