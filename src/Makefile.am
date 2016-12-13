@@ -2,8 +2,14 @@ MNAME=oracle
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 
+if COND_MINGW
+QPP=qpp_native
+else
+QPP=qpp
+endif
+
 .qpp.cpp:
-	qpp $<
+    $(QPP) $<
 
 GENERATED_SRC = ql_oracle.cpp QC_AQQueue.cpp QC_AQMessage.cpp
 CLEANFILES = $(GENERATED_SRC)
