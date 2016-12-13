@@ -9,7 +9,7 @@ QPP=qpp
 endif
 
 .qpp.cpp:
-    $(QPP) $<
+	$(QPP) $<
 
 GENERATED_SRC = ql_oracle.cpp QC_AQQueue.cpp QC_AQMessage.cpp
 CLEANFILES = $(GENERATED_SRC)
