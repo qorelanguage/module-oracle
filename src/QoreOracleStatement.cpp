@@ -76,39 +76,33 @@ int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
       iters = !array_size ? 1 : array_size;
    int status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT);
 
-   //printd(0, "QoreOracleStatement::execute() stmthp: %p status: %d (OCI_ERROR: %d)\n", stmthp, status, OCI_ERROR);
+   //printd(5, "QoreOracleStatement::execute() stmthp: %p status: %d (OCI_ERROR: %d)\n", stmthp, status, OCI_ERROR);
    if (status == OCI_ERROR) {
       // see if server is connected
       int ping = OCI_Ping(&conn.ocilib, conn.ocilib_cn, xsink);
 
       if (!ping) {
-	 // check if a transaction was in progress
          if (wasInTransaction(ds))
 	    xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost while in a transaction; transaction has been lost", ds->getUsername(), ds->getDBName());
 
 	 // try to reconnect
 	 conn.logoff();
 
-	 //printd(0, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect\n");
+	 //printd(5, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect (trans: %d)\n", wasInTransaction(ds));
 	 if (conn.logon(xsink)) {
-            //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", conn);
+            //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", &conn);
             // free current statement state while the driver-specific context data is still present
             clearAbortedConnection(xsink);
 	    // close datasource and remove private data
 	    ds->connectionAborted();
 	    return -1;
 	 }
-         if (conn.checkWarnings(xsink)) {
-             //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", conn);
-            // free current statement state while the driver-specific context data is still present
-            clearAbortedConnection(xsink);
-            // close datasource and remove private data
-            ds->connectionAborted();
-            return -1;
-         }
+
+         // clear warnings
+         conn.clearWarnings();
 
          // don't execute again if the connection was aborted while in a transaction
-         if (wasInTransaction(ds))
+         if (err)
 	    return -1;
 
          if (resetAbortedConnection(xsink))
@@ -116,18 +110,18 @@ int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
 
 #ifdef DEBUG
          // otherwise show the exception on stdout in debug mode
-         xsink->handleExceptions();
+         //xsink->handleExceptions();
 #endif
          // clear any exceptions that have been ignored
          xsink->clear();
 
-	 //printd(0, "QoreOracleStatement::execute() returned from OCILogon() status: %d\n", status);
+	 //printd(5, "QoreOracleStatement::execute() returned from OCILogon() status: %d\n", status);
 	 status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT);
 	 if (status && conn.checkerr(status, who, xsink))
 	    return -1;
       }
       else {
-	 //printd(0, "QoreOracleStatement::execute() error, but it's connected; status: %d who: %s\n", status, who);
+	 //printd(5, "QoreOracleStatement::execute() error, but it's connected; status: %d who: %s\n", status, who);
 	 conn.checkerr(status, who, xsink);
 	 return -1;
       }
