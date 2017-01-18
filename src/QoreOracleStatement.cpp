@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2016 David Nichols
+  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,14 +23,6 @@
 
 #include "oracle.h"
 #include "ocilib/ocilib_internal.h"
-
-static inline bool wasInTransaction(Datasource* ds) {
-#ifdef _QORE_HAS_DATASOURCE_ACTIVETRANSACTION
-   return ds->activeTransaction();
-#else
-   return ds->isInTransaction();
-#endif
-}
 
 int QoreOracleStatement::setupDateDescriptor(OCIDateTime*& odt, ExceptionSink* xsink) {
    if (conn.descriptorAlloc((dvoid**)&odt, QORE_DTYPE_TIMESTAMP, "QoreOracleStatement::setupDateDecriptor()", xsink))
@@ -82,17 +74,17 @@ int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
       int ping = OCI_Ping(&conn.ocilib, conn.ocilib_cn, xsink);
 
       if (!ping) {
-         if (wasInTransaction(ds))
+         if (ds->activeTransaction())
 	    xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost while in a transaction; transaction has been lost", ds->getUsername(), ds->getDBName());
 
 	 // try to reconnect
 	 conn.logoff();
 
-	 //printd(5, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect (trans: %d)\n", wasInTransaction(ds));
+	 //printd(5, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect (trans: %d)\n", ds->activeTransaction());
 	 if (conn.logon(xsink)) {
             //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", &conn);
             // free current statement state while the driver-specific context data is still present
-            clearAbortedConnection(xsink);
+            //clearAbortedConnection(xsink);
 	    // close datasource and remove private data
 	    ds->connectionAborted();
 	    return -1;
@@ -102,7 +94,7 @@ int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
          conn.clearWarnings();
 
          // don't execute again if the connection was aborted while in a transaction
-         if (err)
+         if (ds->activeTransaction())
 	    return -1;
 
          if (resetAbortedConnection(xsink))
