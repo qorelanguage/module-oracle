@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2016 David Nichols
+  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -133,8 +133,8 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
    //printd(5, "QoreOracleConnection::QoreOracleConnection() about to call OCILogon()\n");
    if (logon(xsink))
       return;
-   if (checkWarnings(xsink))
-      return;
+   // check and clear warnings again
+   clearWarnings();
 
    //printd(5, "QoreOracleConnection::QoreOracleConnection() datasource %p for DB=%s open (envhp=%p)\n", &ds, cstr.getBuffer(), *env);
 
