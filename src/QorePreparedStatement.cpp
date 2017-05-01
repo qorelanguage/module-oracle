@@ -1918,13 +1918,14 @@ int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who) {
       }
 
       if (!ping) {
-         if (ds->activeTransaction()) {
+         // if there is at least one SQLStatement active on the connection, there will be a transaction in place
+         // therefore in all cases all statements will be invalidated and closed when we lose a connection
+         // we can only recover a plain "exec" or "select" call
+         if (ds->activeTransaction())
 	    xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost while in a transaction; transaction has been lost", ds->getUsername(), ds->getDBName());
-            // reset current statement state while the driver-specific context data is still present
-            resetAbortedConnection(xsink);
-         }
-         else
-            clearAbortedConnection(xsink);
+
+         // reset current statement state while the driver-specific context data is still present
+         clear(xsink);
          // free and reset statement states for all active statements while the driver-specific context data is still present
          ds->connectionLost(xsink);
 
@@ -1935,7 +1936,7 @@ int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who) {
 	 if (conn.logon(xsink)) {
             //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", &conn);
             // free state completely
-            resetAbortedConnection(xsink);
+            reset(xsink);
 	    // close datasource and remove private data
 	    ds->connectionAborted(xsink);
 	    return -1;
@@ -1945,8 +1946,11 @@ int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who) {
          conn.clearWarnings();
 
          // don't execute again if any exceptions have occured, including if the connection was aborted while in a transaction
-         if (*xsink)
+         if (*xsink) {
+	    // close all statements and remove private data but leave datasource open
+	    ds->connectionRecovered(xsink);
 	    return -1;
+         }
 
          // try to recreate the statement context
          if (rebindAbortedConnection(xsink))

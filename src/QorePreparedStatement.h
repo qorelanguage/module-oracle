@@ -284,8 +284,6 @@ protected:
 
    DLLLOCAL void resetIntern(ExceptionSink* xsink);
 
-   DLLLOCAL void clear(ExceptionSink* xsink);
-
 public:
    //DLLLOCAL QorePreparedStatement(Datasource* ods, const QoreString* ostr, const QoreListNode* args, ExceptionSink* n_xsink, bool doBinding = true);
 
@@ -308,19 +306,10 @@ public:
    }
 #endif
 
-   // this function is called when the DB connection has been lost to free all the statement's data
-   DLLLOCAL void resetAbortedConnection(ExceptionSink* xsink) {
-      //printd(5, "QorePreparedStatement::resetAbortedConnection() xsink: %d\n", (bool)*xsink);
-      reset(xsink);
-   }
-
    // this function is called when the DB connection is lost while executing SQL so that
    // the current state can be freed while the driver-specific context data is still present
    // reset the query but does not clear the SQL string or saved args
-   DLLLOCAL void clearAbortedConnection(ExceptionSink* xsink) {
-      //printd(5, "QorePreparedStatement::clearAbortedConnection() xsink: %d\n", (bool)*xsink);
-      clear(xsink);
-   }
+   DLLLOCAL void clear(ExceptionSink* xsink);
 
    // this function is called after the connection has been lost and reconnected to recreate the statement
    DLLLOCAL int rebindAbortedConnection(ExceptionSink* xsink) {
@@ -334,6 +323,7 @@ public:
       return 0;
    }
 
+   // this function is called when the DB connection has been lost to free all the statement's data
    DLLLOCAL void reset(ExceptionSink* xsink);
 
    DLLLOCAL int prepare(const QoreString& sql, const QoreListNode* args, bool parse, ExceptionSink* xsink);

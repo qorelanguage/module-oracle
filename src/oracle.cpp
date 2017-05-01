@@ -345,6 +345,15 @@ static bool oracle_stmt_next(SQLStatement* stmt, ExceptionSink* xsink) {
    return bg->next(xsink);
 }
 
+static int oracle_stmt_free(SQLStatement* stmt, ExceptionSink* xsink) {
+   QorePreparedStatement* bg = (QorePreparedStatement*)stmt->getPrivateData();
+   assert(bg);
+
+   // free all handles without closing the statement or freeing private data
+   bg->clear(xsink);
+   return *xsink ? -1 : 0;
+}
+
 static int oracle_stmt_close(SQLStatement* stmt, ExceptionSink* xsink) {
    QorePreparedStatement* bg = (QorePreparedStatement*)stmt->getPrivateData();
    assert(bg);
@@ -418,6 +427,7 @@ QoreStringNode* oracle_module_init() {
 #endif
    methods.add(QDBI_METHOD_STMT_NEXT, oracle_stmt_next);
    methods.add(QDBI_METHOD_STMT_CLOSE, oracle_stmt_close);
+   methods.add(QDBI_METHOD_STMT_FREE, oracle_stmt_free);
    methods.add(QDBI_METHOD_STMT_AFFECTED_ROWS, oracle_stmt_affected_rows);
    methods.add(QDBI_METHOD_STMT_GET_OUTPUT, oracle_stmt_get_output);
    methods.add(QDBI_METHOD_STMT_GET_OUTPUT_ROWS, oracle_stmt_get_output_rows);
