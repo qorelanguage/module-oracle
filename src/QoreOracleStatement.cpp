@@ -152,7 +152,6 @@ QoreListNode* QoreOracleStatement::fetchRows(OraResultSet& resultset, int rows, 
    return 0;
 }
 
-#ifdef _QORE_HAS_DBI_SELECT_ROW
 QoreHashNode* QoreOracleStatement::fetchSingleRow(ExceptionSink* xsink) {
    OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchRow():params", xsink);
    if (*xsink)
@@ -187,7 +186,6 @@ QoreHashNode* QoreOracleStatement::fetchSingleRow(ExceptionSink* xsink) {
 
    return rv.release();
 }
-#endif
 
 void QoreOracleStatement::doColumns(OraResultSet& resultset, QoreHashNode& h) {
    // create hash elements for each column, assign empty list
@@ -300,7 +298,6 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
    return 0;
 }
 
-#ifdef _QORE_HAS_DBI_DESCRIBE
 QoreHashNode* QoreOracleStatement::describe(OraResultSet& resultset, ExceptionSink* xsink) {
    // set up hash for row
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
@@ -410,4 +407,3 @@ QoreHashNode* QoreOracleStatement::describe(OraResultSet& resultset, ExceptionSi
 
    return h.release();
 }
-#endif

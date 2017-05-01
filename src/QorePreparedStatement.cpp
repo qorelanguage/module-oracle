@@ -1468,7 +1468,6 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
       return;
    }
 
-#ifdef _QORE_HAS_NUMBER_TYPE
    if (ntype == NT_NUMBER) {
       const QoreNumberNode* n = reinterpret_cast<const QoreNumberNode*>(v);
       // bind as a string value
@@ -1482,7 +1481,6 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
       stmt.bindByPos(bndp, pos, (char* )tstr->getBuffer(), tstr->strlen() + 1, SQLT_STR, xsink, pIndicator);
       return;
    }
-#endif
 
    if (ntype == NT_FLOAT) {
 #if defined(SQLT_BDOUBLE) && defined(USE_NEW_NUMERIC_TYPES)
@@ -1955,14 +1953,8 @@ int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who) {
          // try to recreate the statement context
          if (rebindAbortedConnection(xsink))
             return -1;
-         //dbg();
 
-#ifdef DEBUG
-         // otherwise show the exception on stdout in debug mode
-         //xsink->handleExceptions();
-#endif
-         // clear any exceptions that have been ignored
-         xsink->clear();
+         assert(!*xsink);
 
 	 //printd(5, "QoreOracleStatement::execute() returned from OCILogon() status: %d\n", status);
 	 status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT);
@@ -2321,7 +2313,6 @@ QoreHashNode* QorePreparedStatement::getOutputHash(bool rows, ExceptionSink* xsi
    return *xsink ? 0 : h.release();
 }
 
-#ifdef _QORE_HAS_DBI_SELECT_ROW
 QoreHashNode* QorePreparedStatement::selectRow(ExceptionSink* xsink) {
    if (!is_select) {
       xsink->raiseException("ORACLE-SELECT-ROW-ERROR", "the SQL passed to the selectRow() method is not a select statement");
@@ -2333,7 +2324,6 @@ QoreHashNode* QorePreparedStatement::selectRow(ExceptionSink* xsink) {
 
    return fetchSingleRow(xsink);
 }
-#endif
 
 AbstractQoreNode* QorePreparedStatement::execWithPrologue(ExceptionSink* xsink, bool rows, bool cols) {
    if (exec(xsink))
@@ -2386,9 +2376,7 @@ QoreHashNode* QorePreparedStatement::fetchColumns(int rows, ExceptionSink* xsink
    return QoreOracleStatement::fetchColumns(*columns, rows, false, xsink);
 }
 
-#ifdef _QORE_HAS_DBI_DESCRIBE
 QoreHashNode* QorePreparedStatement::describe(ExceptionSink* xsink) {
    assert(columns);
    return QoreOracleStatement::describe(*columns, xsink);
 }
-#endif

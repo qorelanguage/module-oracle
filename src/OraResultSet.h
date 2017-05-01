@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2015 David Nichols
+  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -48,7 +48,7 @@ public:
          OraColumnValue::del(xsink);
 	 OCIHandleFree(defp, OCI_HTYPE_DEFINE);
          defp = 0;
-      }	 
+      }
    }
 
    DLLLOCAL AbstractQoreNode *getValue(bool horizontal, ExceptionSink *xsink) {

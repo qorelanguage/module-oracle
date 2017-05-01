@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2016 David Nichols
+  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -208,9 +208,7 @@ public:
    }
 
    DLLLOCAL QoreHashNode* fetchRow(OraResultSet& columns, ExceptionSink* xsink);
-#ifdef _QORE_HAS_DBI_SELECT_ROW
    DLLLOCAL QoreHashNode* fetchSingleRow(ExceptionSink* xsink);
-#endif
    DLLLOCAL QoreListNode* fetchRows(OraResultSet& columns, int rows, ExceptionSink* xsink);
    DLLLOCAL QoreListNode* fetchRows(ExceptionSink* xsink);
 
@@ -219,9 +217,7 @@ public:
    DLLLOCAL QoreHashNode* fetchColumns(OraResultSet& columns, int rows, bool cols, ExceptionSink* xsink);
    DLLLOCAL QoreHashNode* fetchColumns(bool cols, ExceptionSink* xsink);
 
-#ifdef _QORE_HAS_DBI_DESCRIBE
    DLLLOCAL QoreHashNode* describe(OraResultSet& columns, ExceptionSink* xsink);
-#endif
 
    DLLLOCAL Datasource* getDatasource() const {
       return ds;
