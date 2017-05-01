@@ -1920,34 +1920,34 @@ int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who) {
          // therefore in all cases all statements will be invalidated and closed when we lose a connection
          // we can only recover a plain "exec" or "select" call
          if (ds->activeTransaction())
-	    xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost while in a transaction; transaction has been lost", ds->getUsername(), ds->getDBName());
+            xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost while in a transaction; transaction has been lost", ds->getUsername(), ds->getDBName());
 
          // reset current statement state while the driver-specific context data is still present
          clear(xsink);
          // free and reset statement states for all active statements while the driver-specific context data is still present
          ds->connectionLost(xsink);
 
-	 // try to reconnect
-	 conn.logoff();
+         // try to reconnect
+         conn.logoff();
 
-	 //printd(5, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect (trans: %d)\n", ds->activeTransaction());
-	 if (conn.logon(xsink)) {
+         //printd(5, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect (trans: %d)\n", ds->activeTransaction());
+         if (conn.logon(xsink)) {
             //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", &conn);
             // free state completely
             reset(xsink);
-	    // close datasource and remove private data
-	    ds->connectionAborted(xsink);
-	    return -1;
-	 }
+            // close datasource and remove private data
+            ds->connectionAborted(xsink);
+            return -1;
+         }
 
          // clear warnings
          conn.clearWarnings();
 
          // don't execute again if any exceptions have occured, including if the connection was aborted while in a transaction
          if (*xsink) {
-	    // close all statements and remove private data but leave datasource open
-	    ds->connectionRecovered(xsink);
-	    return -1;
+            // close all statements and remove private data but leave datasource open
+            ds->connectionRecovered(xsink);
+            return -1;
          }
 
          // try to recreate the statement context
@@ -1956,15 +1956,15 @@ int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who) {
 
          assert(!*xsink);
 
-	 //printd(5, "QoreOracleStatement::execute() returned from OCILogon() status: %d\n", status);
-	 status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT);
-	 if (status && conn.checkerr(status, who, xsink))
-	    return -1;
+         //printd(5, "QoreOracleStatement::execute() returned from OCILogon() status: %d\n", status);
+         status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT);
+         if (status && conn.checkerr(status, who, xsink))
+            return -1;
       }
       else {
-	 //printd(5, "QoreOracleStatement::execute() error, but it's connected; status: %d who: %s\n", status, who);
-	 conn.checkerr(status, who, xsink);
-	 return -1;
+         //printd(5, "QoreOracleStatement::execute() error, but it's connected; status: %d who: %s\n", status, who);
+         conn.checkerr(status, who, xsink);
+         return -1;
       }
    }
    else if (status && conn.checkerr(status, who, xsink))
