@@ -166,39 +166,6 @@ public:
       }
    }
 
-   DLLLOCAL int checkWarnings(ExceptionSink* xsink) {
-      ub4 ix = 1;
-      int errcode;
-      text errbuf[512];
-#ifdef DARWIN
-      bool hasError = false;
-#endif
-      while (OCIErrorGet(errhp, ix, (text*) NULL, &errcode, errbuf, (ub4)sizeof(errbuf), OCI_HTYPE_ERROR) != OCI_NO_DATA) {
-#ifdef _QORE_HAS_DBI_EVENTS
-         doWarning(errcode, "ORACLE-WARNING", remove_trailing_newlines((char*)errbuf));
-#else
-         fprintf(stderr, "%s@%s: Oracle OCI Warning: %.*s\n", ds.getUsername(), ds.getDBName(), 512, remove_trailing_newlines((char*)errbuf));
-#endif
-#ifdef DARWIN
-         hasError = true;
-#endif
-         ++ix;
-      }
-
-#ifdef DARWIN
-      // ORA-28002: the password will expire within 20 days and probably all other warnings
-      // cause crashes (invalid handle) on macosx (client 10). I'm not sure if it's mac
-      // issue or client issue (all linux versions are running on 11 here)
-      if (hasError) {
-         char output[512];
-         sprintf(output, "Oracle OCI Warning: %.*s", 512, errbuf);
-         xsink->raiseException("OCI-WARNING-ERROR", output);
-         return -1;
-      }
-#endif
-      return 0;
-   }
-
    // logoff but do not process error return values
    DLLLOCAL int logoff() {
       assert(svchp);

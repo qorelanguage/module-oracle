@@ -95,7 +95,7 @@ QoreHashNode* QoreOracleStatement::fetchRow(OraResultSet& resultset, ExceptionSi
 
       hah.assign(n, xsink);
       if (*xsink)
-	 return 0;
+         return 0;
    }
 
    return h.release();
@@ -133,13 +133,13 @@ QoreListNode* QoreOracleStatement::fetchRows(OraResultSet& resultset, int rows, 
    while (next(xsink)) {
       QoreHashNode* h = fetchRow(resultset, xsink);
       if (!h)
-	 return 0;
+         return 0;
 
       // add row to list
       l->push(h);
 
       if (rows > 0 && l->size() == static_cast<size_t>(rows))
-	 break;
+         break;
    }
    //printd(2, "QoreOracleStatement::fetchRows(): %d column(s), %d row(s) retrieved as output\n", resultset.size(), l->size());
    if (!*xsink) {
@@ -242,11 +242,11 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
 
       // copy data or perform per-value processing if needed
       for (unsigned i = 0; i < resultset.clist.size(); ++i) {
-	 OraColumnBuffer *w = resultset.clist[i];
-	 // get pointer to value of target node
-	 QoreListNode* l = reinterpret_cast<QoreListNode*>(h->getKeyValue(w->name, xsink));
-	 if (!l)
-	    break;
+         OraColumnBuffer *w = resultset.clist[i];
+         // get pointer to value of target node
+         QoreListNode* l = reinterpret_cast<QoreListNode*>(h->getKeyValue(w->name, xsink));
+         if (!l)
+            break;
 
          if (!i)
             csize = l->size();
@@ -278,14 +278,14 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
             break;
          }
 
-	 l->push(n);
-	 if (*xsink)
-	    break;
+         l->push(n);
+         if (*xsink)
+            break;
       }
 
       ++num_rows;
       if (rows > 0 && num_rows == rows)
-	 break;
+         break;
    }
    //printd(2, "QoreOracleStatement::fetchColumns(rows: %d): %d column(s), %d row(s) retrieved as output\n", rows, resultset.size(), num_rows);
    if (!*xsink) {
