@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2016 David Nichols
+  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -241,7 +241,6 @@ AbstractQoreNode* OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
       }
 #endif
 
-#ifdef _QORE_HAS_NUMBER_TYPE
       case SQLT_VNU:
       case SQLT_NUM: {
          int nopt = stmt.getData()->getNumberOption();
@@ -254,7 +253,6 @@ AbstractQoreNode* OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal
          assert(nopt == OPT_NUM_NUMERIC);
          return new QoreNumberNode((const char*)buf.ptr);
       }
-#endif
    }
 
    // default: treat as string

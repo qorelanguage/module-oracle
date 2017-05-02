@@ -1,0 +1,173 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+%new-style
+%strict-args
+%require-types
+
+%exec-class Script
+
+/*
+    SQL objects required:
+
+    create sequence s_test;
+    create table test1 (id number(14) not null, str varchar2(50) not null, str2 varchar2(50) not null);
+    create table test2 (val number(14) not null);
+*/
+
+class Script {
+    public {
+        const ConnStr = "oracle:omquser/omquser@el7";
+
+        string connstr;
+    }
+
+    constructor() {
+        connstr = ARGV[0] ?? ConnStr;
+
+        Datasource ds(connstr);
+
+        on_success ds.commit();
+        on_error ds.rollback();
+
+        TerminalInputHelper term();
+
+        ds.exec("delete from test1");
+        ds.exec("delete from test2");
+
+        any i;
+
+        i = ds.exec("insert into test2 (val) values (%v) returning val into :val", 1, Type::Int);
+        printf("0: i: %y\n", i);
+
+        ds.commit();
+        term.waitKey();
+        i = ds.exec("insert into test2 (val) values (%v) returning val into :val", 1, Type::Int);
+        printf("1: i: %y\n", i);
+
+        i = ds.exec("insert into test1 (id, str, str2) values (s_test.nextval, %v, %v) returning id into :id", "const", ("one", "two", "three"));
+        printf("0: i: %y\n", i);
+        ds.commit();
+        term.waitKey();
+        i = ds.exec("insert into test1 (id, str, str2) values (s_test.nextval, %v, %v) returning id into :id", "const", ("one", "two", "three"));
+        printf("1: i: %y\n", i);
+
+        SQLStatement stmt(ds);
+        stmt.prepare("select * from test1 where str = %v", "const");
+
+        SQLStatement stmt2(ds);
+	stmt2.prepare("select * from test1 where str = %v", "const");
+
+        stmt.exec();
+        printf("%y\n", stmt.fetchRows());
+
+        stmt.exec();
+	stmt2.exec();
+        term.waitKey();
+
+        # execute other statements on the connection
+        doSql();
+
+        try {
+	    printf("%y\n", stmt.fetchRows());
+	}
+	catch (hash ex) {
+	    printf("%s: %s: %s\n", get_ex_pos(ex), ex.err, ex.desc);
+	}
+	try {
+	    ds.rollback();
+	}
+	catch () {}
+
+	printf("%y\n", stmt2.fetchRows());
+	printf("%y\n", stmt.fetchRows());
+    }
+
+    doSql() {
+        int size = 3;
+        foreach int i in (xrange(size - 1)) {
+            Datasource ds1(connstr);
+            doQueries(ds1);
+        }
+    }
+
+    doQueries(Datasource ds) {
+        list l = ();
+
+        int size = 3;
+
+        foreach int i in (xrange(size - 1)) {
+            l += ds.selectRows("select * from test1 where str = %v", "const");
+        }
+        printf("got %d rows in %d stmts\n", l.size(), size);
+    }
+}
+
+class TerminalInputHelper {
+    private {
+        # saved original terminal attributes
+        TermIOS orig = stdin.getTerminalAttributes();
+
+        # input terminal attributes
+        TermIOS input;
+
+        # restore flag
+        bool rest = False;
+    }
+
+    public {}
+
+    constructor() {
+        input = orig.copy();
+
+        # get local flags
+        int lflag = input.getLFlag();
+
+        # turn on "raw" mode: disable canonical input mode
+        lflag &= ~ICANON;
+
+        # turn off echo mode
+        lflag &= ~ECHO;
+        # set the new local flags
+        input.setLFlag(lflag);
+
+        # turn off input buffering: set minimum characters to return on a read
+        input.setCC(VMIN, 1);
+
+        # disable input timer: set character input timer to 0.1 second increments
+        input.setCC(VTIME, 0);
+    }
+
+    destructor() {
+        if (rest)
+            restore();
+    }
+
+    waitKey() {
+        stdout.print("press any key to continue (x to exit): ");
+        stdout.sync();
+        *string str = getKey();
+        stdout.print("\n");
+        if (str == "x")
+            thread_exit;
+    }
+
+    *string getKey() {
+        # set input attributes
+        stdin.setTerminalAttributes(TCSADRAIN, input);
+        rest = True;
+
+        # restore attributes on exit
+        on_exit {
+            stdin.setTerminalAttributes(TCSADRAIN, orig);
+            rest = False;
+        }
+
+        return stdin.read(1);
+    }
+
+    restore() {
+        # restore terminal attributes
+        stdin.setTerminalAttributes(TCSADRAIN, orig);
+    }
+}

@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2016 David Nichols
+  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,14 +22,7 @@
 */
 
 #include "oracle.h"
-
-static inline bool wasInTransaction(Datasource* ds) {
-#ifdef _QORE_HAS_DATASOURCE_ACTIVETRANSACTION
-   return ds->activeTransaction();
-#else
-   return ds->isInTransaction();
-#endif
-}
+#include "ocilib/ocilib_internal.h"
 
 int QoreOracleStatement::setupDateDescriptor(OCIDateTime*& odt, ExceptionSink* xsink) {
    if (conn.descriptorAlloc((dvoid**)&odt, QORE_DTYPE_TIMESTAMP, "QoreOracleStatement::setupDateDecriptor()", xsink))
@@ -64,77 +57,6 @@ int QoreOracleSimpleStatement::exec(const char* sql, unsigned len, ExceptionSink
       return -1;
 
    return conn.checkerr(OCIStmtExecute(conn.svchp, stmthp, conn.errhp, 1, 0, 0, 0, OCI_DEFAULT), "QoreOracleSimpleStatement::exec", xsink);
-}
-
-int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
-   assert(conn.svchp);
-   ub4 iters;
-   if (is_select)
-      iters = 0;
-   else
-      iters = !array_size ? 1 : array_size;
-   int status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT);
-
-   //printd(0, "QoreOracleStatement::execute() stmthp: %p status: %d (OCI_ERROR: %d)\n", stmthp, status, OCI_ERROR);
-   if (status == OCI_ERROR) {
-      // see if server is connected
-      int ping = OCI_Ping(&conn.ocilib, conn.ocilib_cn, xsink);
-
-      if (!ping) {
-	 // check if a transaction was in progress
-         if (wasInTransaction(ds))
-	    xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost while in a transaction; transaction has been lost", ds->getUsername(), ds->getDBName());
-
-	 // try to reconnect
-	 conn.logoff();
-
-	 //printd(0, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect\n");
-	 if (conn.logon(xsink)) {
-            //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", conn);
-            // free current statement state while the driver-specific context data is still present
-            clearAbortedConnection(xsink);
-	    // close datasource and remove private data
-	    ds->connectionAborted();
-	    return -1;
-	 }
-         if (conn.checkWarnings(xsink)) {
-             //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", conn);
-            // free current statement state while the driver-specific context data is still present
-            clearAbortedConnection(xsink);
-            // close datasource and remove private data
-            ds->connectionAborted();
-            return -1;
-         }
-
-         // don't execute again if the connection was aborted while in a transaction
-         if (wasInTransaction(ds))
-	    return -1;
-
-         if (resetAbortedConnection(xsink))
-            return -1;
-
-#ifdef DEBUG
-         // otherwise show the exception on stdout in debug mode
-         xsink->handleExceptions();
-#endif
-         // clear any exceptions that have been ignored
-         xsink->clear();
-
-	 //printd(0, "QoreOracleStatement::execute() returned from OCILogon() status: %d\n", status);
-	 status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT);
-	 if (status && conn.checkerr(status, who, xsink))
-	    return -1;
-      }
-      else {
-	 //printd(0, "QoreOracleStatement::execute() error, but it's connected; status: %d who: %s\n", status, who);
-	 conn.checkerr(status, who, xsink);
-	 return -1;
-      }
-   }
-   else if (status && conn.checkerr(status, who, xsink))
-      return -1;
-
-   return 0;
 }
 
 QoreHashNode* QoreOracleStatement::fetchRow(OraResultSet& resultset, ExceptionSink* xsink) {
@@ -230,7 +152,6 @@ QoreListNode* QoreOracleStatement::fetchRows(OraResultSet& resultset, int rows, 
    return 0;
 }
 
-#ifdef _QORE_HAS_DBI_SELECT_ROW
 QoreHashNode* QoreOracleStatement::fetchSingleRow(ExceptionSink* xsink) {
    OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchRow():params", xsink);
    if (*xsink)
@@ -265,7 +186,6 @@ QoreHashNode* QoreOracleStatement::fetchSingleRow(ExceptionSink* xsink) {
 
    return rv.release();
 }
-#endif
 
 void QoreOracleStatement::doColumns(OraResultSet& resultset, QoreHashNode& h) {
    // create hash elements for each column, assign empty list
@@ -378,7 +298,6 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
    return 0;
 }
 
-#ifdef _QORE_HAS_DBI_DESCRIBE
 QoreHashNode* QoreOracleStatement::describe(OraResultSet& resultset, ExceptionSink* xsink) {
    // set up hash for row
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
@@ -488,4 +407,3 @@ QoreHashNode* QoreOracleStatement::describe(OraResultSet& resultset, ExceptionSi
 
    return h.release();
 }
-#endif
