@@ -111,8 +111,6 @@ int OraBindNode::setPlaceholder(const AbstractQoreNode* v, ExceptionSink* xsink)
 }
 
 void OraBindNode::clearPlaceholder(ExceptionSink* xsink) {
-   //data.clearPlaceholder();
-
    if (array) {
       delete buf.arraybind;
       array = false;

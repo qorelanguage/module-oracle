@@ -113,12 +113,6 @@ public:
       ph_type = strdup(typ);
    }
 
-   /*
-   DLLLOCAL void clearPlaceholder() {
-      resetTmp();
-   }
-   */
-
    DLLLOCAL void resetPlaceholder(bool free_name = true) {
       assert(type == OB_PH);
 
