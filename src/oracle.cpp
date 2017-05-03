@@ -46,11 +46,7 @@ DLLEXPORT int qore_module_api_minor = QORE_MODULE_API_MINOR;
 DLLEXPORT qore_module_init_t qore_module_init = oracle_module_init;
 DLLEXPORT qore_module_ns_init_t qore_module_ns_init = oracle_module_ns_init;
 DLLEXPORT qore_module_delete_t qore_module_delete = oracle_module_delete;
-#ifdef _QORE_HAS_QL_MIT
 DLLEXPORT qore_license_t qore_module_license = QL_MIT;
-#else
-DLLEXPORT qore_license_t qore_module_license = QL_LGPL;
-#endif
 DLLEXPORT char qore_module_license_str[] = "MIT";
 
 void init_oracle_functions(QoreNamespace& ns);
@@ -67,27 +63,13 @@ static int dbi_oracle_caps = (
    |DBI_CAP_LOB_SUPPORT
    |DBI_CAP_BIND_BY_VALUE
    |DBI_CAP_BIND_BY_PLACEHOLDER
-#ifdef _QORE_HAS_DBI_EXECRAW
    |DBI_CAP_HAS_EXECRAW
-#endif
-#ifdef _QORE_HAS_TIME_ZONES
    |DBI_CAP_TIME_ZONE_SUPPORT
-#endif
-#ifdef _QORE_HAS_NUMBER_TYPE
    |DBI_CAP_HAS_NUMBER_SUPPORT
-#endif
-#ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
    |DBI_CAP_SERVER_TIME_ZONE
-#endif
-#ifdef DBI_CAP_AUTORECONNECT
    |DBI_CAP_AUTORECONNECT
-#endif
-#ifdef _QORE_HAS_DBI_EVENTS
    |DBI_CAP_EVENTS
-#endif
-#ifdef DBI_CAP_HAS_ARRAY_BIND
    |DBI_CAP_HAS_ARRAY_BIND
-#endif
    );
 
 static int oracle_commit(Datasource* ds, ExceptionSink* xsink) {
@@ -118,7 +100,6 @@ static AbstractQoreNode* oracle_select(Datasource* ds, const QoreString* qstr, c
    return bg.execWithPrologue(xsink, false, true);
 }
 
-#ifdef _QORE_HAS_DBI_EXECRAW
 static AbstractQoreNode* oracle_exec_raw(Datasource* ds, const QoreString* qstr, ExceptionSink* xsink) {
    QorePreparedStatementHelper bg(ds, xsink);
 
@@ -127,20 +108,7 @@ static AbstractQoreNode* oracle_exec_raw(Datasource* ds, const QoreString* qstr,
 
    return bg.execWithPrologue(xsink, false);
 }
-#endif
 
-#ifdef _QORE_HAS_DBI_EXECRAWROWS
-static AbstractQoreNode* oracle_exec_raw_rows(Datasource* ds, const QoreString* qstr, ExceptionSink* xsink) {
-   QorePreparedStatementHelper bg(ds, xsink);
-
-   if (bg.prepare(qstr, 0, false, xsink))
-      return 0;
-
-   return bg.execWithPrologue(xsink, true);
-}
-#endif
-
-#ifdef _QORE_HAS_DBI_SELECT_ROW
 static QoreHashNode* oracle_select_row(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
    QorePreparedStatementHelper bg(ds, xsink);
 
@@ -149,7 +117,6 @@ static QoreHashNode* oracle_select_row(Datasource* ds, const QoreString* qstr, c
 
    return bg.selectRow(xsink);
 }
-#endif
 
 static AbstractQoreNode* oracle_exec_rows(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
    QorePreparedStatementHelper bg(ds, xsink);
@@ -176,11 +143,7 @@ static int oracle_open(Datasource* ds, ExceptionSink* xsink) {
       return -1;
    }
 
-#ifdef QORE_HAS_DATASOURCE_PORT
    int port = ds->getPort();
-#else
-   int port = 0;
-#endif
 
    if (port && !ds->getHostName()) {
       xsink->raiseException("DATASOURCE-MISSING-HOSTNAME", "port is set to %d, but no hostname is set; both hostname and port must be set to make a direct connection without TNS", port);
@@ -233,7 +196,6 @@ static AbstractQoreNode* oracle_get_client_version(const Datasource* ds, Excepti
 }
 #endif
 
-#ifdef _QORE_HAS_PREPARED_STATMENT_API
 static int oracle_stmt_prepare(SQLStatement* stmt, const QoreString &str, const QoreListNode* args, ExceptionSink* xsink) {
    assert(!stmt->getPrivateData());
 
@@ -329,20 +291,27 @@ static QoreHashNode* oracle_stmt_fetch_columns(SQLStatement* stmt, int rows, Exc
    return bg->fetchColumns(rows, xsink);
 }
 
-#ifdef _QORE_HAS_DBI_DESCRIBE
 static QoreHashNode* oracle_stmt_describe(SQLStatement* stmt, ExceptionSink* xsink) {
    QorePreparedStatement* bg = (QorePreparedStatement*)stmt->getPrivateData();
    assert(bg);
 
    return bg->describe(xsink);
 }
-#endif
 
 static bool oracle_stmt_next(SQLStatement* stmt, ExceptionSink* xsink) {
    QorePreparedStatement* bg = (QorePreparedStatement*)stmt->getPrivateData();
    assert(bg);
 
    return bg->next(xsink);
+}
+
+static int oracle_stmt_free(SQLStatement* stmt, ExceptionSink* xsink) {
+   QorePreparedStatement* bg = (QorePreparedStatement*)stmt->getPrivateData();
+   assert(bg);
+
+   // free all handles without closing the statement or freeing private data
+   bg->clear(xsink);
+   return *xsink ? -1 : 0;
 }
 
 static int oracle_stmt_close(SQLStatement* stmt, ExceptionSink* xsink) {
@@ -354,9 +323,7 @@ static int oracle_stmt_close(SQLStatement* stmt, ExceptionSink* xsink) {
    stmt->setPrivateData(0);
    return *xsink ? -1 : 0;
 }
-#endif // _QORE_HAS_PREPARED_STATMENT_API
 
-#ifdef _QORE_HAS_DBI_OPTIONS
 static int oracle_opt_set(Datasource* ds, const char* opt, const AbstractQoreNode* val, ExceptionSink* xsink) {
    // get private data structure for connection
    QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
@@ -368,7 +335,6 @@ static AbstractQoreNode* oracle_opt_get(const Datasource* ds, const char* opt) {
    QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
    return conn.getOption(opt);
 }
-#endif
 
 QoreNamespace OraNS("Oracle");
 
@@ -385,16 +351,9 @@ QoreStringNode* oracle_module_init() {
    methods.add(QDBI_METHOD_CLOSE, oracle_close);
    methods.add(QDBI_METHOD_SELECT, oracle_select);
    methods.add(QDBI_METHOD_SELECT_ROWS, oracle_exec_rows);
-#ifdef _QORE_HAS_DBI_SELECT_ROW
    methods.add(QDBI_METHOD_SELECT_ROW, oracle_select_row);
-#endif
    methods.add(QDBI_METHOD_EXEC, oracle_exec);
-#ifdef _QORE_HAS_DBI_EXECRAW
    methods.add(QDBI_METHOD_EXECRAW, oracle_exec_raw);
-#endif
-#ifdef _QORE_HAS_DBI_EXECRAWROWS
-   methods.add(QDBI_METHOD_EXECRAW, oracle_exec_raw_rows);
-#endif
    methods.add(QDBI_METHOD_COMMIT, oracle_commit);
    methods.add(QDBI_METHOD_ROLLBACK, oracle_rollback);
    methods.add(QDBI_METHOD_GET_SERVER_VERSION, oracle_get_server_version);
@@ -402,7 +361,6 @@ QoreStringNode* oracle_module_init() {
    methods.add(QDBI_METHOD_GET_CLIENT_VERSION, oracle_get_client_version);
 #endif
 
-#ifdef _QORE_HAS_PREPARED_STATMENT_API
    methods.add(QDBI_METHOD_STMT_PREPARE, oracle_stmt_prepare);
    methods.add(QDBI_METHOD_STMT_PREPARE_RAW, oracle_stmt_prepare_raw);
    methods.add(QDBI_METHOD_STMT_BIND, oracle_stmt_bind);
@@ -413,24 +371,20 @@ QoreStringNode* oracle_module_init() {
    methods.add(QDBI_METHOD_STMT_FETCH_ROW, oracle_stmt_fetch_row);
    methods.add(QDBI_METHOD_STMT_FETCH_ROWS, oracle_stmt_fetch_rows);
    methods.add(QDBI_METHOD_STMT_FETCH_COLUMNS, oracle_stmt_fetch_columns);
-#ifdef _QORE_HAS_DBI_DESCRIBE
    methods.add(QDBI_METHOD_STMT_DESCRIBE, oracle_stmt_describe);
-#endif
    methods.add(QDBI_METHOD_STMT_NEXT, oracle_stmt_next);
    methods.add(QDBI_METHOD_STMT_CLOSE, oracle_stmt_close);
+   methods.add(QDBI_METHOD_STMT_FREE, oracle_stmt_free);
    methods.add(QDBI_METHOD_STMT_AFFECTED_ROWS, oracle_stmt_affected_rows);
    methods.add(QDBI_METHOD_STMT_GET_OUTPUT, oracle_stmt_get_output);
    methods.add(QDBI_METHOD_STMT_GET_OUTPUT_ROWS, oracle_stmt_get_output_rows);
-#endif // _QORE_HAS_PREPARED_STATMENT_API
 
-#ifdef _QORE_HAS_DBI_OPTIONS
    methods.add(QDBI_METHOD_OPT_SET, oracle_opt_set);
    methods.add(QDBI_METHOD_OPT_GET, oracle_opt_get);
 
    methods.registerOption(DBI_OPT_NUMBER_OPT, "when set, number values are returned as integers if possible, otherwise as arbitrary-precision number values; the argument is ignored; setting this option turns it on and turns off 'string-numbers' and 'numeric-numbers'");
    methods.registerOption(DBI_OPT_NUMBER_STRING, "when set, number values are returned as strings for backwards-compatibility; the argument is ignored; setting this option turns it on and turns off 'optimal-numbers' and 'numeric-numbers'");
    methods.registerOption(DBI_OPT_NUMBER_NUMERIC, "when set, number values are returned as arbitrary-precision number values; the argument is ignored; setting this option turns it on and turns off 'string-numbers' and 'optimal-numbers'");
-#endif
    methods.registerOption(DBI_OPT_TIMEZONE, "set the server-side timezone, value must be a string in the format accepted by Timezone::constructor() on the client (ie either a region name or a UTC offset like \"+01:00\"), if not set the server's time zone will be assumed to be the same as the client's", stringTypeInfo);
 
    DBID_ORACLE = DBI.registerDriver("oracle", methods, dbi_oracle_caps);

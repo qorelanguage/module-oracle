@@ -59,69 +59,6 @@ int QoreOracleSimpleStatement::exec(const char* sql, unsigned len, ExceptionSink
    return conn.checkerr(OCIStmtExecute(conn.svchp, stmthp, conn.errhp, 1, 0, 0, 0, OCI_DEFAULT), "QoreOracleSimpleStatement::exec", xsink);
 }
 
-int QoreOracleStatement::execute(ExceptionSink* xsink, const char* who) {
-   assert(conn.svchp);
-   ub4 iters;
-   if (is_select)
-      iters = 0;
-   else
-      iters = !array_size ? 1 : array_size;
-   int status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT);
-
-   //printd(5, "QoreOracleStatement::execute() stmthp: %p status: %d (OCI_ERROR: %d)\n", stmthp, status, OCI_ERROR);
-   if (status == OCI_ERROR) {
-      // see if server is connected
-      int ping = OCI_Ping(&conn.ocilib, conn.ocilib_cn, xsink);
-
-      if (!ping) {
-         if (ds->activeTransaction())
-            xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost while in a transaction; transaction has been lost", ds->getUsername(), ds->getDBName());
-
-         // try to reconnect
-         conn.logoff();
-
-         //printd(5, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect (trans: %d)\n", ds->activeTransaction());
-         if (conn.logon(xsink)) {
-            //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", &conn);
-            // the following call will close any open statements and then the datasource
-            ds->connectionAborted();
-            return -1;
-         }
-
-         // clear warnings
-         conn.clearWarnings();
-
-         // don't execute again if the connection was aborted while in a transaction
-         if (ds->activeTransaction())
-            return -1;
-
-         if (resetAbortedConnection(xsink))
-            return -1;
-
-#ifdef DEBUG
-         // otherwise show the exception on stdout in debug mode
-         //xsink->handleExceptions();
-#endif
-         // clear any exceptions that have been ignored
-         xsink->clear();
-
-         //printd(5, "QoreOracleStatement::execute() returned from OCILogon() status: %d\n", status);
-         status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT);
-         if (status && conn.checkerr(status, who, xsink))
-            return -1;
-      }
-      else {
-         //printd(5, "QoreOracleStatement::execute() error, but it's connected; status: %d who: %s\n", status, who);
-         conn.checkerr(status, who, xsink);
-         return -1;
-      }
-   }
-   else if (status && conn.checkerr(status, who, xsink))
-      return -1;
-
-   return 0;
-}
-
 QoreHashNode* QoreOracleStatement::fetchRow(OraResultSet& resultset, ExceptionSink* xsink) {
    if (!fetch_done) {
       xsink->raiseException("ORACLE-FETCH-ROW-ERROR", "call SQLStatement::next() before calling SQLStatement::fetchRow()");
@@ -215,7 +152,6 @@ QoreListNode* QoreOracleStatement::fetchRows(OraResultSet& resultset, int rows, 
    return 0;
 }
 
-#ifdef _QORE_HAS_DBI_SELECT_ROW
 QoreHashNode* QoreOracleStatement::fetchSingleRow(ExceptionSink* xsink) {
    OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchRow():params", xsink);
    if (*xsink)
@@ -250,7 +186,6 @@ QoreHashNode* QoreOracleStatement::fetchSingleRow(ExceptionSink* xsink) {
 
    return rv.release();
 }
-#endif
 
 void QoreOracleStatement::doColumns(OraResultSet& resultset, QoreHashNode& h) {
    // create hash elements for each column, assign empty list
@@ -363,7 +298,6 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
    return 0;
 }
 
-#ifdef _QORE_HAS_DBI_DESCRIBE
 QoreHashNode* QoreOracleStatement::describe(OraResultSet& resultset, ExceptionSink* xsink) {
    // set up hash for row
    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
@@ -473,4 +407,3 @@ QoreHashNode* QoreOracleStatement::describe(OraResultSet& resultset, ExceptionSi
 
    return h.release();
 }
-#endif

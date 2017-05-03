@@ -99,17 +99,7 @@ public:
    DLLLOCAL QoreOracleStatement(Datasource* n_ds, OCIStmt* n_stmthp = 0) : QoreOracleSimpleStatement(n_ds->getPrivateDataRef<QoreOracleConnection>(), n_stmthp), ds(n_ds), array_size(0), prefetch_rows(1), is_select(false), fetch_done(false), fetch_complete(false), fetch_warned(false) {
    }
 
-   DLLLOCAL virtual ~QoreOracleStatement() {
-   }
-
-   // this virtual function is called when the connection is closed while executing SQL so that
-   // the current state can be freed while the driver-specific context data is still present
-   DLLLOCAL virtual void clearAbortedConnection(ExceptionSink* xsink) {
-   }
-
-   // this virtual function is called after the connection has been closed and reopened while executing SQL
-   DLLLOCAL virtual int resetAbortedConnection(ExceptionSink* xsink) {
-      return 0;
+   DLLLOCAL ~QoreOracleStatement() {
    }
 
    DLLLOCAL void reset(ExceptionSink* xsink) {
@@ -193,8 +183,6 @@ public:
       return rc;
    }
 
-   DLLLOCAL int execute(ExceptionSink* xsink, const char* who);
-
    DLLLOCAL bool next(ExceptionSink* xsink) {
       return fetch(xsink) ? false : true;
    }
@@ -220,9 +208,7 @@ public:
    }
 
    DLLLOCAL QoreHashNode* fetchRow(OraResultSet& columns, ExceptionSink* xsink);
-#ifdef _QORE_HAS_DBI_SELECT_ROW
    DLLLOCAL QoreHashNode* fetchSingleRow(ExceptionSink* xsink);
-#endif
    DLLLOCAL QoreListNode* fetchRows(OraResultSet& columns, int rows, ExceptionSink* xsink);
    DLLLOCAL QoreListNode* fetchRows(ExceptionSink* xsink);
 
@@ -231,9 +217,7 @@ public:
    DLLLOCAL QoreHashNode* fetchColumns(OraResultSet& columns, int rows, bool cols, ExceptionSink* xsink);
    DLLLOCAL QoreHashNode* fetchColumns(bool cols, ExceptionSink* xsink);
 
-#ifdef _QORE_HAS_DBI_DESCRIBE
    DLLLOCAL QoreHashNode* describe(OraResultSet& columns, ExceptionSink* xsink);
-#endif
 
    DLLLOCAL Datasource* getDatasource() const {
       return ds;

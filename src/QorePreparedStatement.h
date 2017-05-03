@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2006 - 2016 Qore Technologies, sro
+  Copyright (C) 2006 - 2017 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -86,6 +86,12 @@ public:
       assert(tmp_type == OBT_NONE);
    }
 
+#ifdef DEBUG
+   DLLLOCAL void dbg() {
+      printd(5, "ob: type: %d ph_name: %p (%s) ph_maxsize: %d ph_type: %p (%s) tmp_type: %d\n", (int)type, ph_name, ph_name ? ph_name : "n/a", ph_maxsize, ph_type, ph_type ? ph_type : "n/a", (int)tmp_type);
+   }
+#endif
+
    DLLLOCAL const char* getName() const {
       assert(ph_name);
       return ph_name;
@@ -152,8 +158,9 @@ public:
 class OraBindNode : public OraColumnValue {
 protected:
    DLLLOCAL void resetPlaceholder(ExceptionSink* xsink, bool free_name = true);
-
    DLLLOCAL void resetValue(ExceptionSink* xsink);
+
+   DLLLOCAL void clearPlaceholder(ExceptionSink* xsink);
 
    DLLLOCAL void setValue(const AbstractQoreNode* v, ExceptionSink* xsink) {
       if (value)
@@ -167,66 +174,6 @@ protected:
       data.setType(typ);
    }
 
-   DLLLOCAL int setPlaceholder(const AbstractQoreNode* v, ExceptionSink* xsink) {
-      resetPlaceholder(xsink, false);
-
-      assert(!array);
-
-      // assume string if no argument passed
-      if (is_nothing(v)) {
-         setPlaceholderIntern(-1, "string", xsink);
-         return 0;
-      }
-
-      qore_type_t vtype = v->getType();
-      if (vtype == NT_HASH) {
-         const QoreHashNode* h = reinterpret_cast<const QoreHashNode*>(v);
-
-         int size = -1;
-         const AbstractQoreNode* t = h->getKeyValue("value");
-         if (t) {
-            assert(!value);
-            value = t->refSelf();
-         }
-         else {
-            // get and check size
-            const AbstractQoreNode* sz = h->getKeyValue("size");
-            size = sz ? sz->getAsInt() : -1;
-         }
-
-         // get and check data type
-         t = h->getKeyValue("type");
-         if (!t) {
-            if (value) {
-               setPlaceholderIntern(size, value->getTypeName(), xsink);
-               return 0;
-            }
-            xsink->raiseException("DBI-EXEC-EXCEPTION", "missing 'type' key in placeholder hash");
-            return -1;
-         }
-
-         if (t->getType() != NT_STRING) {
-            xsink->raiseException("DBI-EXEC-EXCEPTION", "expecting type name as value of 'type' key, got '%s'", t->getTypeName());
-            return -1;
-         }
-         const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(t);
-
-         //QoreStringValueHelper strdebug(v);
-         //printd(5, "OraBindNode::setPlaceholder() adding placeholder name=%s, size=%d, type=%s, value=%s\n", tstr.getBuffer(), size, str->getBuffer(), strdebug->getBuffer());
-         setPlaceholderIntern(size, str->getBuffer(), xsink);
-      }
-      else if (vtype == NT_STRING)
-         setPlaceholderIntern(-1, (reinterpret_cast<const QoreStringNode*>(v))->getBuffer(), xsink);
-      else if (vtype == NT_INT)
-         setPlaceholderIntern((reinterpret_cast<const QoreBigIntNode*>(v))->val, "string", xsink);
-      else {
-         xsink->raiseException("DBI-BIND-EXCEPTION", "expecting string or hash for placeholder description, got '%s'", v->getTypeName());
-         return -1;
-      }
-
-      return 0;
-   }
-
    /*
    DLLLOCAL void setType(const char* typ) {
       data.setType(typ);
@@ -235,8 +182,8 @@ protected:
 
    DLLLOCAL void bindListValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool in_only);
 
-   DLLLOCAL void bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool& is_nty, bool in_only = true);
-   DLLLOCAL void bindPlaceholder(int pos, bool& is_nty, ExceptionSink* xsink);
+   DLLLOCAL void bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool in_only = true);
+   DLLLOCAL void bindPlaceholder(int pos, ExceptionSink* xsink);
    DLLLOCAL int bindDate(int pos, ExceptionSink* xsink);
 
 public:
@@ -281,6 +228,13 @@ public:
       assert(!value);
    }
 
+#ifdef DEBUG
+   DLLLOCAL void dbg() {
+      printd(5, "OBN: val: %p strlob: %p bndp: %p lob_allocated: %d indicator: %d\n", value, strlob, bndp, lob_allocated, indicator);
+      data.dbg();
+   }
+#endif
+
    DLLLOCAL bool isValue() const {
       return data.isValue();
    }
@@ -292,12 +246,15 @@ public:
    // returns -1 = ERROR, 0 = OK
    DLLLOCAL int set(const AbstractQoreNode* v, ExceptionSink* xsink);
    DLLLOCAL void reset(ExceptionSink* xsink, bool free_name = true);
+   DLLLOCAL void clear(ExceptionSink* xsink, bool free_name = true);
 
-   DLLLOCAL void bind(int pos, bool& is_nty, ExceptionSink* xsink);
+   DLLLOCAL void bind(int pos, ExceptionSink* xsink);
 
    DLLLOCAL AbstractQoreNode* getValue(bool horizontal, ExceptionSink* xsink);
 
    DLLLOCAL int setupDateDescriptor(ExceptionSink* xsink);
+
+   DLLLOCAL int setPlaceholder(const AbstractQoreNode* v, ExceptionSink* xsink);
 };
 
 typedef std::vector<OraBindNode*> node_list_t;
@@ -307,9 +264,9 @@ protected:
    node_list_t node_list;
    QoreString* str;
    OraResultSet* columns;
+   QoreListNode* args_copy;
    bool hasOutput;
    bool defined;
-   bool has_nty;
 
    DLLLOCAL void parseQuery(const QoreListNode* args, ExceptionSink* xsink);
 
@@ -319,35 +276,48 @@ protected:
 
    DLLLOCAL int bindOracle(ExceptionSink* xsink);
 
+   DLLLOCAL void resetIntern(ExceptionSink* xsink);
+
 public:
    //DLLLOCAL QorePreparedStatement(Datasource* ods, const QoreString* ostr, const QoreListNode* args, ExceptionSink* n_xsink, bool doBinding = true);
 
-   DLLLOCAL QorePreparedStatement(Datasource* ods) : QoreOracleStatement(ods), str(0), columns(0), hasOutput(false), defined(false), has_nty(false) {
+   DLLLOCAL QorePreparedStatement(Datasource* ods) : QoreOracleStatement(ods), str(0), columns(0), args_copy(0), hasOutput(false), defined(false) {
    }
 
-   DLLLOCAL virtual ~QorePreparedStatement() {
+   DLLLOCAL ~QorePreparedStatement() {
+      assert(!str);
       assert(!stmthp);
       assert(!columns);
+      assert(!args_copy);
       assert(node_list.empty());
    }
 
-   // this virtual function is called when the connection is closed while executing SQL so that
-   // the current state can be freed while the driver-specific context data is still present
-   DLLLOCAL virtual void clearAbortedConnection(ExceptionSink* xsink) {
-      reset(xsink);
-   }
-
-   // this virtual function is called after the connection has been closed and reopened while executing SQL
-   DLLLOCAL virtual int resetAbortedConnection(ExceptionSink* xsink) {
-      // if we have NTYs then we have to reset the statement and cannot recover it in a new logon session
-      if (has_nty) {
-         reset(xsink);
-         return -1;
+#ifdef DEBUG
+   DLLLOCAL void dbg() {
+      for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
+         node_list[i]->dbg();
       }
+   }
+#endif
+
+   // this function is called when the DB connection is lost while executing SQL so that
+   // the current state can be freed while the driver-specific context data is still present
+   // reset the query but does not clear the SQL string or saved args
+   DLLLOCAL void clear(ExceptionSink* xsink);
+
+   // this function is called after the connection has been lost and reconnected to recreate the statement
+   DLLLOCAL int rebindAbortedConnection(ExceptionSink* xsink) {
+      assert(str);
+      QoreString* ns = str;
+      str = 0;
+
+      if (prepare(*ns, 0, false, xsink))
+         return -1;
 
       return 0;
    }
 
+   // this function is called when the DB connection has been lost to free all the statement's data
    DLLLOCAL void reset(ExceptionSink* xsink);
 
    DLLLOCAL int prepare(const QoreString& sql, const QoreListNode* args, bool parse, ExceptionSink* xsink);
@@ -366,6 +336,8 @@ public:
       hasOutput = true;
       return c;
    }
+
+   DLLLOCAL int execute(ExceptionSink* xsink, const char* who);
 
    DLLLOCAL int bind(const QoreListNode* args, ExceptionSink* xsink);
    DLLLOCAL int bindPlaceholders(const QoreListNode* args, ExceptionSink* xsink);
@@ -389,15 +361,11 @@ public:
    DLLLOCAL QoreListNode* fetchRows(int rows, ExceptionSink* xsink);
    DLLLOCAL QoreHashNode* fetchColumns(int rows, ExceptionSink* xsink);
 
-#ifdef _QORE_HAS_DBI_DESCRIBE
    DLLLOCAL QoreHashNode* describe(ExceptionSink* xsink);
-#endif
 
    DLLLOCAL AbstractQoreNode* execWithPrologue(ExceptionSink* xsink, bool rows, bool cols = false);
 
-#ifdef _QORE_HAS_DBI_SELECT_ROW
    DLLLOCAL QoreHashNode* selectRow(ExceptionSink* xsink);
-#endif
 
    // rows = true means get a list of hashes, otherwise the default is a hash of lists
    DLLLOCAL QoreHashNode* getOutputHash(bool rows, ExceptionSink* xsink);
