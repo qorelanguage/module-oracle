@@ -866,7 +866,9 @@ AbstractQoreNode* objToQore(QoreOracleConnection* conn, OCI_Object* obj, Excepti
                return 0;
             }
 
-	    if (!OCI_LobRead2(&conn->ocilib, l, (void*)b->getPtr(), &len, &len, xsink)) {
+        unsigned int char_len = col->ocode == SQLT_CLOB ? len : 0;
+        unsigned int byte_len = col->ocode == SQLT_BLOB ? len : 0;
+        if (!OCI_LobRead2(&conn->ocilib, l, (void*)b->getPtr(), &char_len, &byte_len, xsink)) {
                if (!*xsink)
                   xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s failed to fetch %d bytes for LOB attribute '%s'", get_typinf_schema(obj), get_typinf_name(obj), len, cname);
                return 0;
@@ -1552,7 +1554,9 @@ AbstractQoreNode* collToQore(QoreOracleConnection* conn, OCI_Coll* obj, Exceptio
                return 0;
             }
 
-            if (!OCI_LobRead2(&conn->ocilib, l, (void*)b->getPtr(), &len, &len, xsink)) {
+        unsigned int char_len = col->ocode == SQLT_CLOB ? len : 0;
+        unsigned int byte_len = col->ocode == SQLT_BLOB ? len : 0;
+        if (!OCI_LobRead2(&conn->ocilib, l, (void*)b->getPtr(), &char_len, &byte_len, xsink)) {
                if (!*xsink)
                   xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s failed to fetch %d bytes for collection", get_typinf_schema(obj), get_typinf_name(obj));
                return 0;

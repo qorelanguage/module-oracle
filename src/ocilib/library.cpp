@@ -495,7 +495,8 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, OCIErr
 
     //printf("mode=%d\n", pOCILib->env_mode);
 
-#ifdef OCI_CHARSET_ANSI
+// #ifdef OCI_CHARSET_ANSI
+#if 0
    
     /* test for UTF8 environment */
 
@@ -516,6 +517,7 @@ boolean OCI_API OCI_Initialize2(OCI_Library *pOCILib, OCIEnv * d_ora_env, OCIErr
     }
 
 #endif 
+    pOCILib->nls_utf8 = TRUE;
 
 #ifdef OCI_IMPORT_LINKAGE
 
