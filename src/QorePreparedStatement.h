@@ -155,6 +155,8 @@ public:
    }
 };
 
+class QorePreparedStatement;
+
 class OraBindNode : public OraColumnValue {
 protected:
    DLLLOCAL void resetPlaceholder(ExceptionSink* xsink, bool free_name = true);

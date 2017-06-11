@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2015 David Nichols
+  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -86,7 +86,7 @@ OraResultSet::OraResultSet(QoreOracleStatement &n_stmt, const char *str, Excepti
       text *col_name;
       ub4 col_name_len;
       ub2 col_max_size;
-      
+
       // get column type
       if (stmt.attrGet(parmp, &dtype, OCI_ATTR_DATA_TYPE, xsink))
          return;
@@ -291,7 +291,7 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
             }
             break;
          } // SQLT_NTY
-            
+
 #ifdef SQLT_RDD
          case SQLT_RDD:
 	    w->buf.ptr = 0;
@@ -310,7 +310,7 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
 
          default: // treated as a string
 	    if (w->charlen)
-               w->maxsize = get_char_width(stmt.getEncoding(), w->charlen); 
+               w->maxsize = get_char_width(stmt.getEncoding(), w->charlen);
 	    w->buf.ptr = malloc(sizeof(char) * (w->maxsize + 1));
             //printd(0, "OraResultSet::define() i=%d, buf=%p, maxsize=%d\n", i + 1, w->buf.ptr, w->maxsize);
 	    stmt.defineByPos(w->defp, i + 1, w->buf.ptr, w->maxsize + 1, SQLT_STR, &w->ind, xsink);
