@@ -122,6 +122,8 @@ void OraBindNode::clearPlaceholder(ExceptionSink* xsink) {
    del(xsink);
 
    dtype = 0;
+   if (alt_output)
+      alt_output = false;
 }
 
 void OraBindNode::resetPlaceholder(ExceptionSink* xsink, bool free_name) {
@@ -137,6 +139,8 @@ void OraBindNode::resetPlaceholder(ExceptionSink* xsink, bool free_name) {
    del(xsink);
 
    dtype = 0;
+   if (alt_output)
+      alt_output = false;
 }
 
 int OraBindNode::set(const AbstractQoreNode* v, ExceptionSink* xsink) {
@@ -159,7 +163,7 @@ void OraBindNode::clear(ExceptionSink* xsink, bool free_name) {
 void OraBindNode::reset(ExceptionSink* xsink, bool free_name) {
    if (value) {
       value->deref(xsink);
-      value = 0;
+      value = nullptr;
    }
 
    if (isValue())
@@ -1345,7 +1349,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
 
       // bind it
       if ((len + 1) > LOB_THRESHOLD && in_only) {
-         //printd(5, "binding string %p len: %lld as CLOB\n", buf.ptr, len);
+         //printd(5, "binding string %p len: " QLLD " as CLOB\n", buf.ptr, len);
          // bind as a CLOB
          dtype = SQLT_CLOB;
 
@@ -1396,7 +1400,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
       qore_size_t len = b->size();
 
       if (len > LOB_THRESHOLD && in_only) {
-         //printd(5, "binding binary %p len: %lld as BLOB\n", buf.ptr, len);
+         //printd(5, "binding binary %p len: " QLLD " as BLOB\n", buf.ptr, len);
          // bind as a BLOB
          dtype = SQLT_BLOB;
 
@@ -1458,7 +1462,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
          dtype = SQLT_STR;
 
          QoreString* tstr = new QoreString(stmt.getEncoding());
-         tstr->sprintf("%lld", b->val);
+         tstr->sprintf(QLLD, b->val);
          data.save(tstr);
 
          //printd(5, "binding number '%s'\n", buf.ptr);
@@ -1643,7 +1647,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
             const BinaryNode* bin = reinterpret_cast<const BinaryNode*>(value);
             // if too big, raise an exception (not likely to happen)
             if (bin->size() > 0x7fffffff) {
-               xsink->raiseException("BIND-ERROR", "value passed for binding is %lld bytes long, which is too big to bind as a long binary value, maximum size is %d bytes", bin->size(), 0x7fffffff);
+               xsink->raiseException("BIND-ERROR", "value passed for binding is " QLLD " bytes long, which is too big to bind as a long binary value, maximum size is %d bytes", bin->size(), 0x7fffffff);
                return;
             }
             size_t size = bin->size() + sizeof(int);
@@ -1662,7 +1666,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
                return;
             // if too big, raise an exception (not likely to happen)
             if (str->strlen() > 0x7fffffff) {
-               xsink->raiseException("BIND-ERROR", "value passed for binding is %lld bytes long, which is too big to bind as a long binary value, maximum size is %d bytes", str->strlen(), 0x7fffffff);
+               xsink->raiseException("BIND-ERROR", "value passed for binding is " QLLD " bytes long, which is too big to bind as a long binary value, maximum size is %d bytes", str->strlen(), 0x7fffffff);
                return;
             }
             size_t size = str->strlen() + sizeof(int);
@@ -1738,12 +1742,12 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
          if (size < 100)
             size = 100;
          buf.ptr = malloc(sizeof(char) * (size + 1));
-         strcpy((char* )buf.ptr, str->getBuffer());
+         strcpy((char*)buf.ptr, str->getBuffer());
       }
       else {
          size = 100;
          buf.ptr = malloc(sizeof(char) * (size + 1));
-         ((char* )buf.ptr)[0] = '\0';
+         ((char*)buf.ptr)[0] = '\0';
       }
 
       // we actually bind as a string
@@ -1754,9 +1758,20 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
 
       // allocate statement handle for result list
       if (conn->handleAlloc(&buf.ptr, OCI_HTYPE_STMT, "OraBindNode::bindPlaceHolder() allocate statement handle", xsink))
-         buf.ptr = 0;
+         buf.ptr = nullptr;
       else
          stmt.bindByPos(bndp, pos, &buf.ptr, 0, SQLT_RSET, xsink, &ind);
+   }
+   else if (data.isType("resultset")) {
+      dtype = SQLT_RSET;
+
+      // allocate statement handle for result list
+      if (conn->handleAlloc(&buf.ptr, OCI_HTYPE_STMT, "OraBindNode::bindPlaceHolder() allocate statement handle", xsink))
+         buf.ptr = nullptr;
+      else {
+         stmt.bindByPos(bndp, pos, &buf.ptr, 0, SQLT_RSET, xsink, &ind);
+         alt_output = true;
+      }
    }
    else if (data.isType(ORACLE_OBJECT)) {
       subdtype = SQLT_NTY_OBJECT;
@@ -1989,7 +2004,7 @@ void QorePreparedStatement::clear(ExceptionSink* xsink) {
    if (columns) {
       columns->del(xsink);
       delete columns;
-      columns = 0;
+      columns = nullptr;
       array_size = 0;
    }
 

@@ -190,10 +190,10 @@ public:
    // value to be bound, if any
    AbstractQoreNode* value;
    ora_bind data;
-   OCILobLocator* strlob;
-   OCIBind* bndp;
+   OCILobLocator* strlob = nullptr;
+   OCIBind* bndp = nullptr;
 
-   bool lob_allocated;
+   bool lob_allocated = false;
 
    // Variable indicator is used as a holder for QoreOracleStatement::bindByPos() indp argument
    // which holds information about NULLs in the bound/placeholder-ed value. See:
@@ -205,22 +205,20 @@ public:
    // It prevents (for example) ORA-01405: fetched column value is NULL errors
    // when is the Type::Date bound to OUT argument of PL/SQL procedure.
    // See: OraBindNode::getValue() code.
-   sb2 indicator;
+   sb2 indicator = 0;
    dvoid* pIndicator;
 
    // for value nodes
    DLLLOCAL OraBindNode(QoreOracleStatement& stmt, const AbstractQoreNode* v) :
       OraColumnValue(stmt),
-      value(v ? v->refSelf() : 0), strlob(0), bndp(0), lob_allocated(false) {
-      indicator = 0;
+      value(v ? v->refSelf() : nullptr) {
       pIndicator = (dvoid*)&indicator;
    }
 
    // for placeholder nodes
    DLLLOCAL OraBindNode(QoreOracleStatement& stmt, char* name, int size, const char* typ, const AbstractQoreNode* v = 0) :
       OraColumnValue(stmt),
-      value(v ? v->refSelf() : 0), data(name, size, typ), strlob(0), bndp(0), lob_allocated(false) {
-      indicator = 0;
+      value(v ? v->refSelf() : nullptr), data(name, size, typ) {
       pIndicator = (dvoid*)&indicator;
    }
 
@@ -262,11 +260,11 @@ typedef std::vector<OraBindNode*> node_list_t;
 class QorePreparedStatement : public QoreOracleStatement {
 protected:
    node_list_t node_list;
-   QoreString* str;
-   OraResultSet* columns;
-   QoreListNode* args_copy;
-   bool hasOutput;
-   bool defined;
+   QoreString* str = nullptr;
+   OraResultSet* columns = nullptr;
+   QoreListNode* args_copy = nullptr;
+   bool hasOutput = false;
+   bool defined = false;
 
    DLLLOCAL void parseQuery(const QoreListNode* args, ExceptionSink* xsink);
 
@@ -281,7 +279,7 @@ protected:
 public:
    //DLLLOCAL QorePreparedStatement(Datasource* ods, const QoreString* ostr, const QoreListNode* args, ExceptionSink* n_xsink, bool doBinding = true);
 
-   DLLLOCAL QorePreparedStatement(Datasource* ods) : QoreOracleStatement(ods), str(0), columns(0), args_copy(0), hasOutput(false), defined(false) {
+   DLLLOCAL QorePreparedStatement(Datasource* ods, OCIStmt* stmthp = nullptr) : QoreOracleStatement(ods, stmthp) {
    }
 
    DLLLOCAL ~QorePreparedStatement() {

@@ -44,7 +44,7 @@ struct QoreOracleSimpleStatement {
    QoreOracleConnection& conn;
    OCIStmt* stmthp;
 
-   DLLLOCAL QoreOracleSimpleStatement(QoreOracleConnection& n_conn, OCIStmt* n_stmthp = 0) : conn(n_conn), stmthp(n_stmthp) {
+   DLLLOCAL QoreOracleSimpleStatement(QoreOracleConnection& n_conn, OCIStmt* n_stmthp = nullptr) : conn(n_conn), stmthp(n_stmthp) {
    }
 
    DLLLOCAL ~QoreOracleSimpleStatement() {
