@@ -509,7 +509,9 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     @section ora_releasenotes Release Notes
 
     @subsection oracle33 oracle Driver Version 3.3
-    - added support for the \c RESULTSET placeholder specification that returns result sets as @ref Qore::SQL::SQLStatement "SQLStatement" objects (<a href="https://github.com/qorelanguage/qore/issues/1300">issue 1300</a>)
+    - added support for the \c RESULTSET placeholder specification and the \c DBI_CAP_HAS_RESULTSET_OUTPUT driver capability
+      that allow result set output variables to be returned as @ref Qore::SQL::SQLStatement "SQLStatement" objects
+      (<a href="https://github.com/qorelanguage/qore/issues/1300">issue 1300</a>)
 
     @subsection oracle321 oracle Driver Version 3.2.1
     - updated SQLStatement::fetchColumns() to return an empty hash when no data is available in all cases (<a href="https://github.com/qorelanguage/qore/issues/1241">issue 1241</a>)
