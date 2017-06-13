@@ -56,6 +56,7 @@
     - \c DBI_CAP_SERVER_TIME_ZONE
     - \c DBI_CAP_AUTORECONNECT
     - \c DBI_CAP_HAS_ARRAY_BIND
+    - \c DBI_CAP_HAS_RESULTSET_OUTPUT
 
     The \c Datasource::getServerVersion() and \c Datasource::getClientVersion()
     methods are implemented for this driver. \c Datasource::getServerVersion()
@@ -193,6 +194,7 @@ hash h = ds.select("select a.id, b.id, c.id from a, b, c where a.id = b.id = c.i
     |\c Type::Binary|\c SQLT_BIN|For retrieving \c RAW data up to 65531 bytes in size.|
     |\c SQL::BLOB|\c SQLT_BLOB|For retrieving \c BLOB data. The \c LOB handle is used to read the entire \c BLOB content into a binary object.|
     |\c SQL::CLOB|\c SQLT_CLOB|For retrieving \c CLOB data. The \c LOB handle is used to read the entire \c CLOB content into a Qore string.|
+    |\c SQL::RESULTSET|\c SQLT_RSET|For retrieving a result set as a @ref Qore::SQL::SQLStatement "SQLStatement" object|
     |\c SQL::VARCHAR|\c SQLT_STR|For retrieving character data (\c VARCHAR2, etc). To specify a buffer size larger than 512 bytes, simply use the size in bytes as the argument. See @ref string_sizes|
     |\c Type::Int|\c SQLT_INT|For retrieving integer numeric data up to 32 bits (for larger numbers or for non-integer numbers use \c SQL::VARCHAR or \c Type::Float.|
     |\c Type::Float|\c SQLT_BDOUBLE|For retrieving data in 64-bit floating point format.|
@@ -505,6 +507,11 @@ kpcest_err_handler: Max errors exceeded..Closing connection
 </table>
 
     @section ora_releasenotes Release Notes
+
+    @subsection oracle33 oracle Driver Version 3.3
+    - added support for the \c RESULTSET placeholder specification and the \c DBI_CAP_HAS_RESULTSET_OUTPUT driver capability
+      that allow result set output variables to be returned as @ref Qore::SQL::SQLStatement "SQLStatement" objects
+      (<a href="https://github.com/qorelanguage/qore/issues/1300">issue 1300</a>)
 
     @subsection oracle321 oracle Driver Version 3.2.1
     - updated SQLStatement::fetchColumns() to return an empty hash when no data is available in all cases (<a href="https://github.com/qorelanguage/qore/issues/1241">issue 1241</a>)
