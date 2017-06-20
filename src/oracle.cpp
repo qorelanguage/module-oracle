@@ -6,7 +6,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2015 David Nichols
+  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -53,7 +53,7 @@ void init_oracle_functions(QoreNamespace& ns);
 QoreClass* initAQMessageClass(QoreNamespace& ns);
 QoreClass* initAQQueueClass(QoreNamespace& ns);
 
-DBIDriver *DBID_ORACLE = 0;
+DBIDriver* DBID_ORACLE = nullptr;
 
 // capabilities of this driver
 static int dbi_oracle_caps = (
@@ -70,6 +70,7 @@ static int dbi_oracle_caps = (
    |DBI_CAP_AUTORECONNECT
    |DBI_CAP_EVENTS
    |DBI_CAP_HAS_ARRAY_BIND
+   |DBI_CAP_HAS_RESULTSET_OUTPUT
    );
 
 static int oracle_commit(Datasource* ds, ExceptionSink* xsink) {
