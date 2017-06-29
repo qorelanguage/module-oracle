@@ -1,0 +1,29 @@
+#! /usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+%new-style
+%enable-all-warnings
+%require-types
+%strict-args
+
+%requires QUnit
+
+public class NtyTest inherits QUnit::Test {
+    private {
+        Datasource db;
+    }
+
+    constructor() : Test("NtyObjectTest", "1.1") {
+        string connstr;
+        switch (gethostname()) {
+            case /^quasar/: connstr = "oracle:omquser/omquser@el7"; break;
+            case /^qube/: connstr = "oracle:omquser2/omquser2@qube"; break;
+            case /^el6/:
+            case /^quark/: connstr = "oracle:omquser/omquser@el6"; break;
+            case /^stimpy/: connstr = "oracle:omqtest/omqtest@stimpy"; break;
+            default: connstr = "oracle:omquser/omquser@xbox";
+        }
+        db = new Datasource(connstr);
+        db.open();
+    }
+}

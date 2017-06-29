@@ -836,51 +836,53 @@ AbstractQoreNode* objToQore(QoreOracleConnection* conn, OCI_Object* obj, Excepti
 //             case SQLT_CUR:
 	 // cusror
 
-	 case SQLT_CLOB:
-	 case SQLT_BLOB: {
-	    OCI_Lob * l = OCI_ObjectGetLob2(&conn->ocilib, obj, cname, xsink);
+        case SQLT_CLOB:
+        case SQLT_BLOB: {
+            OCI_Lob * l = OCI_ObjectGetLob2(&conn->ocilib, obj, cname, xsink);
             if (!l) {
-               if (!*xsink)
-                  xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s failed to retrieve LOB attribute '%s'", get_typinf_schema(obj), get_typinf_name(obj), cname);
-               return 0;
+                if (!*xsink)
+                    xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s failed to retrieve LOB attribute '%s'", get_typinf_schema(obj), get_typinf_name(obj), cname);
+                return 0;
             }
             ON_BLOCK_EXIT(OCI_LobFree, &conn->ocilib, l, xsink);
 
-	    // The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
+            // The returned value is in bytes for BLOBS and characters for CLOBS/NCLOBs
 
-	    int64 tl = (int64)OCI_LobGetLength(&conn->ocilib, l, xsink);
+            int64 tl = (int64)OCI_LobGetLength(&conn->ocilib, l, xsink);
             if (!tl) {
-               if (!*xsink)
-                  xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s failed to retrieve length for LOB attribute '%s'", get_typinf_schema(obj), get_typinf_name(obj), cname);
-               return 0;
+                if (!*xsink)
+                    xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s failed to retrieve length for LOB attribute '%s'", get_typinf_schema(obj), get_typinf_name(obj), cname);
+                return 0;
             }
             if (tl >= (1ll << 32)) {
-               xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s cannot use OCILib LOB APIs to read a LOB of size " QLLD, get_typinf_schema(obj), get_typinf_name(obj), tl);
-               return 0;
+                xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s cannot use OCILib LOB APIs to read a LOB of size " QLLD, get_typinf_schema(obj), get_typinf_name(obj), tl);
+                return 0;
             }
-            unsigned int len = (unsigned int)tl;
+
+            const QoreEncoding* enc = conn->ds.getQoreEncoding();
+            bool is_clob = col->ocode == SQLT_CLOB;
+            unsigned int char_len = (unsigned int)tl;
+            unsigned int byte_len = is_clob ? char_len * enc->getMaxCharWidth() : char_len;
 
             SimpleRefHolder<BinaryNode> b(new BinaryNode);
-            if (b->preallocate(len)) {
-               xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s failed to allocate %d bytes for LOB attribute '%s'", get_typinf_schema(obj), get_typinf_name(obj), len, cname);
-               return 0;
+            if (b->preallocate(byte_len)) {
+                xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s failed to allocate %d bytes for LOB attribute '%s'", get_typinf_schema(obj), get_typinf_name(obj), byte_len, cname);
+                return 0;
             }
 
-        unsigned int char_len = col->ocode == SQLT_CLOB ? len : 0;
-        unsigned int byte_len = col->ocode == SQLT_BLOB ? len : 0;
-        if (!OCI_LobRead2(&conn->ocilib, l, (void*)b->getPtr(), &char_len, &byte_len, xsink)) {
-               if (!*xsink)
-                  xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s failed to fetch %d bytes for LOB attribute '%s'", get_typinf_schema(obj), get_typinf_name(obj), len, cname);
-               return 0;
+            if (!OCI_LobRead2(&conn->ocilib, l, (void*)b->getPtr(), &char_len, &byte_len, xsink)) {
+                if (!*xsink)
+                    xsink->raiseException("FETCH-NTY-ERROR", "Object of type %s.%s failed to fetch %d bytes for LOB attribute '%s'", get_typinf_schema(obj), get_typinf_name(obj), byte_len, cname);
+                return 0;
             }
 
-            if (OCI_LobGetType(&conn->ocilib, l) == OCI_BLOB)
-               rv->setKeyValue(cname, b.release(), xsink);
-            else // clobs
-               rv->setKeyValue(cname, new QoreStringNode((char*)b->giveBuffer(), len, len, conn->ds.getQoreEncoding()), xsink);
+            if (is_clob)
+                rv->setKeyValue(cname, new QoreStringNode((char*)b->giveBuffer(), byte_len, byte_len, enc), xsink);
+            else
+                rv->setKeyValue(cname, b.release(), xsink);
 
-	    break;
-	 }
+            break;
+        }
 
 //             case SQLT_BFILE:
 	    // bfile
@@ -1267,7 +1269,7 @@ OCI_Coll* collBindQore(QoreOracleConnection * d, const QoreHashNode * h, Excepti
                   }
                   if (!OCI_ElemSetLob2(&d->ocilib, e, l, xsink)) {
                      if (!*xsink)
-                        xsink->raiseException("BIND-NTY-ERROR", "failed to set BLOB attribute for collection '%s'", tname);
+                        xsink->raiseException("BIND-NTY-ERROR", "failed to set CLOB attribute for collection '%s'", tname);
                      return 0;
                   }
                   break;
@@ -1524,13 +1526,13 @@ AbstractQoreNode* collToQore(QoreOracleConnection* conn, OCI_Coll* obj, Exceptio
 //             case SQLT_CUR:
 	 // cusror
 
-	 case SQLT_CLOB:
-	 case SQLT_BLOB: {
-	    OCI_Lob* l = OCI_ElemGetLob2(&conn->ocilib, e, xsink);
+        case SQLT_CLOB:
+        case SQLT_BLOB: {
+            OCI_Lob* l = OCI_ElemGetLob2(&conn->ocilib, e, xsink);
             if (!l) {
-               if (!*xsink)
-                  xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s failed to retrieve LOB attribute for collection", get_typinf_schema(obj), get_typinf_name(obj));
-               return 0;
+                if (!*xsink)
+                    xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s failed to retrieve LOB attribute for collection", get_typinf_schema(obj), get_typinf_name(obj));
+                return 0;
             }
             ON_BLOCK_EXIT(OCI_LobFree, &conn->ocilib, l, xsink);
 
@@ -1538,36 +1540,39 @@ AbstractQoreNode* collToQore(QoreOracleConnection* conn, OCI_Coll* obj, Exceptio
 
             int64 tl = (int64)OCI_LobGetLength(&conn->ocilib, l, xsink);
             if (!tl) {
-               if (!*xsink)
-                  xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s failed to retrieve LOB length for collection", get_typinf_schema(obj), get_typinf_name(obj));
-               return 0;
+                if (!*xsink)
+                    xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s failed to retrieve LOB length for collection", get_typinf_schema(obj), get_typinf_name(obj));
+                return 0;
             }
             if (tl >= (1ll << 32)) {
-               xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s cannot use OCILib LOB APIs to read a LOB of size " QLLD, get_typinf_schema(obj), get_typinf_name(obj), tl);
-               return 0;
+                xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s cannot use OCILib LOB APIs to read a LOB of size " QLLD, get_typinf_schema(obj), get_typinf_name(obj), tl);
+                return 0;
             }
-            unsigned int len = (unsigned int)tl;
+
+            const QoreEncoding* enc = conn->ds.getQoreEncoding();
+            bool is_clob = col->ocode == SQLT_CLOB;
+            unsigned int char_len = (unsigned int)tl;
+            unsigned int byte_len = is_clob ? char_len * enc->getMaxCharWidth() : char_len;
 
             SimpleRefHolder<BinaryNode> b(new BinaryNode);
-            if (b->preallocate(len)) {
-               xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s failed to allocate %d bytes for collection", get_typinf_schema(obj), get_typinf_name(obj));
-               return 0;
+            if (b->preallocate(byte_len)) {
+                xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s failed to allocate %d bytes for collection", get_typinf_schema(obj), get_typinf_name(obj), byte_len);
+                return 0;
             }
 
-        unsigned int char_len = col->ocode == SQLT_CLOB ? len : 0;
-        unsigned int byte_len = col->ocode == SQLT_BLOB ? len : 0;
-        if (!OCI_LobRead2(&conn->ocilib, l, (void*)b->getPtr(), &char_len, &byte_len, xsink)) {
-               if (!*xsink)
-                  xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s failed to fetch %d bytes for collection", get_typinf_schema(obj), get_typinf_name(obj));
-               return 0;
+            if (!OCI_LobRead2(&conn->ocilib, l, (void*)b->getPtr(), &char_len, &byte_len, xsink)) {
+                if (!*xsink)
+                    xsink->raiseException("FETCH-NTY-ERROR", "Collection %s.%s failed to fetch %d bytes for collection", get_typinf_schema(obj), get_typinf_name(obj), byte_len);
+                return 0;
             }
 
-            if (OCI_LobGetType(&conn->ocilib, l) == OCI_BLOB)
-               rv->set_entry(rv->size(), b.release(), xsink);
+            if (is_clob)
+                rv->set_entry(rv->size(), new QoreStringNode((char*)b->giveBuffer(), byte_len, byte_len, enc), xsink);
             else
-               rv->set_entry(rv->size(), new QoreStringNode((char*)b->giveBuffer(), len, len, conn->ds.getQoreEncoding()), xsink);
-	    break;
-         }
+                rv->set_entry(rv->size(), b.release(), xsink);
+
+            break;
+        }
 
 //             case SQLT_BFILE:
 	    // bfile

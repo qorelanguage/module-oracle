@@ -17,6 +17,7 @@ ltmain.sh
 missing
 stamp-h1
 *~
+*.swp
 *.lo
 *.la
 autom4te.cache/

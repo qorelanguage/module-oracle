@@ -1,0 +1,46 @@
+#! /usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+%new-style
+%enable-all-warnings
+%require-types
+%strict-args
+
+%requires oracle
+%include test_nty.qclass
+
+%exec-class NtyClobTest
+
+public class NtyClobTest inherits NtyTest {
+    private {
+        string str;
+    }
+
+    constructor() : NtyTest() {
+        for (int i = 0; i < 100; i++)
+            str += "krhpwecghpwerhgpehgewgwoeweioh";
+
+        addTestCase("Get clob object test", \testGetClobObject(), NOTHING);
+        addTestCase("Get clob collection test", \testGetClobCollection(), NOTHING);
+
+        set_return_value(main());
+    }
+
+    testGetClobObject() {
+        hash result = db.exec("begin clob_test.get_clob_object(%v, :o); end;",
+                              str,
+                              placeholderOracleObject("clob_test_object"));
+        db.rollback();
+
+        assertEq(str, result.o.A_CLOB);
+    }
+
+    testGetClobCollection() {
+        hash result = db.exec("begin clob_test.get_clob_collection(%v, :o); end;",
+                              str,
+                              placeholderOracleCollection("clob_test_collection"));
+        db.rollback();
+
+        assertEq((str, str, NULL, str), result.o);
+    }
+}
