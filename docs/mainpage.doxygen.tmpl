@@ -512,6 +512,7 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - added support for the \c RESULTSET placeholder specification and the \c DBI_CAP_HAS_RESULTSET_OUTPUT driver capability
       that allow result set output variables to be returned as @ref Qore::SQL::SQLStatement "SQLStatement" objects
       (<a href="https://github.com/qorelanguage/qore/issues/1300">issue 1300</a>)
+    - fixed a bug where NTY truncated CLOBs to a quarter of their lengths (<a href="https://github.com/qorelanguage/qore/issues/1802">issue 1802</a>)
 
     @subsection oracle321 oracle Driver Version 3.2.1
     - updated SQLStatement::fetchColumns() to return an empty hash when no data is available in all cases (<a href="https://github.com/qorelanguage/qore/issues/1241">issue 1241</a>)
