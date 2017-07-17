@@ -13,20 +13,7 @@ public class NtyTest inherits QUnit::Test {
         Datasource ds;
     }
 
-    constructor(string testName, any args) : Test(testName, "1.1", \args, ("connstr": "c,conn=s")) {
-/*
-        string connstr;
-        switch (gethostname()) {
-            case /^quasar/: connstr = "oracle:omquser/omquser@el7"; break;
-            case /^qube/: connstr = "oracle:omquser2/omquser2@qube"; break;
-            case /^el6/:
-            case /^quark/: connstr = "oracle:omquser/omquser@el6"; break;
-            case /^stimpy/: connstr = "oracle:omqtest/omqtest@stimpy"; break;
-            default: connstr = "oracle:omquser/omquser@xbox";
-        }
-        ds = new Datasource(connstr);
-        ds.open();
-*/
+    constructor(string testName, any args) : Test(testName, "1.1", \args, Opts + ("connstr": "c,conn=s")) {
         if (!m_options.connstr)
             m_options.connstr = ENV.QORE_DB_CONNSTR_ORACLE;
         ds = new Datasource(m_options.connstr);
