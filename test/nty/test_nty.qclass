@@ -10,10 +10,11 @@
 
 public class NtyTest inherits QUnit::Test {
     private {
-        Datasource db;
+        Datasource ds;
     }
 
-    constructor() : Test("NtyObjectTest", "1.1") {
+    constructor(string testName, any args) : Test(testName, "1.1", \args, ("connstr": "c,conn=s")) {
+/*
         string connstr;
         switch (gethostname()) {
             case /^quasar/: connstr = "oracle:omquser/omquser@el7"; break;
@@ -23,7 +24,14 @@ public class NtyTest inherits QUnit::Test {
             case /^stimpy/: connstr = "oracle:omqtest/omqtest@stimpy"; break;
             default: connstr = "oracle:omquser/omquser@xbox";
         }
-        db = new Datasource(connstr);
-        db.open();
+        ds = new Datasource(connstr);
+        ds.open();
+*/
+        if (!m_options.connstr)
+            m_options.connstr = ENV.QORE_DB_CONNSTR_ORACLE;
+        ds = new Datasource(m_options.connstr);
+        if (ds.getDriverName() != "oracle")
+            throw "ORACLE-ERROR", sprintf("cannot execute oracle test on a connection using driver %y", ds.getDriverName());
+        ds.open();
     }
 }

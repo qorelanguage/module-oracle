@@ -16,7 +16,7 @@ public class NtyClobTest inherits NtyTest {
         string str;
     }
 
-    constructor() : NtyTest() {
+    constructor() : NtyTest("NtyClobTest") {
         for (int i = 0; i < 100; i++)
             str += "krhpwecghpwerhgpehgewgwoeweioh";
 
@@ -27,19 +27,19 @@ public class NtyClobTest inherits NtyTest {
     }
 
     testGetClobObject() {
-        hash result = db.exec("begin clob_test.get_clob_object(%v, :o); end;",
+        hash result = ds.exec("begin clob_test.get_clob_object(%v, :o); end;",
                               str,
                               placeholderOracleObject("clob_test_object"));
-        db.rollback();
+        ds.rollback();
 
         assertEq(str, result.o.A_CLOB);
     }
 
     testGetClobCollection() {
-        hash result = db.exec("begin clob_test.get_clob_collection(%v, :o); end;",
+        hash result = ds.exec("begin clob_test.get_clob_collection(%v, :o); end;",
                               str,
                               placeholderOracleCollection("clob_test_collection"));
-        db.rollback();
+        ds.rollback();
 
         assertEq((str, str, NULL, str), result.o);
     }
