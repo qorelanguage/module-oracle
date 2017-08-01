@@ -1,0 +1,24 @@
+#! /usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+%new-style
+%enable-all-warnings
+%require-types
+%strict-args
+
+%requires QUnit
+
+public class NtyTest inherits QUnit::Test {
+    private {
+        Datasource ds;
+    }
+
+    constructor(string testName, any args) : Test(testName, "1.1", \args, Opts + ("connstr": "c,conn=s")) {
+        if (!m_options.connstr)
+            m_options.connstr = ENV.QORE_DB_CONNSTR_ORACLE;
+        ds = new Datasource(m_options.connstr);
+        if (ds.getDriverName() != "oracle")
+            throw "ORACLE-ERROR", sprintf("cannot execute oracle test on a connection using driver %y", ds.getDriverName());
+        ds.open();
+    }
+}
