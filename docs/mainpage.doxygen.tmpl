@@ -471,6 +471,7 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - user modules moved to top-level qore module directory from version-specific module directory since they are valid for multiple versions of qore
     - fixed a major bug where a lost connection during an SQL operation using named types could cause a crash due to the database-specific private context becoming invalid and then used after deletion
     - fixed a major bug where a crash generated internally in the OCI library would occur when NTYs were bound in a prepared statement and the statement was executed in a new logon session after transparent reconnection
+    - fixed a bug where NTY truncated CLOBs to a quarter of their lengths (<a href="https://github.com/qorelanguage/qore/issues/1802">issue 1802</a>)
 
     @subsection oracle31 oracle Driver Version 3.1
     
