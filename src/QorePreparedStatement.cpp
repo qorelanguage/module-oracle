@@ -1919,10 +1919,20 @@ int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who) {
 
    //printd(5, "QoreOracleStatement::execute() stmthp: %p status: %d (OCI_ERROR: %d)\n", stmthp, status, OCI_ERROR);
    if (status == OCI_ERROR) {
+      // see if we have a lost connection from the error code
+      int ping = -1;
+
+      // get and save error information
+      sb4 errcode;
+      text errbuf[512];
+      OCIErrorGet((dvoid*)conn.errhp, (ub4)1, (text*)nullptr, &errcode, errbuf, (ub4)sizeof(errbuf), OCI_HTYPE_ERROR);
+      // ORA-03113 and ORA-03114 are lost connections
+      if (errcode == 3113 || errcode == 3114)
+         ping = 0;
+
       //dbg();
       // see if server is connected
-      int ping;
-      {
+      if (ping == -1) {
          ExceptionSink xsink2;
          ping = OCI_Ping(&conn.ocilib, conn.ocilib_cn, &xsink2);
          // do not allow ping exceptions to be propagated to the caller
@@ -1977,7 +1987,8 @@ int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who) {
       }
       else {
          //printd(5, "QoreOracleStatement::execute() error, but it's connected; status: %d who: %s\n", status, who);
-         conn.checkerr(status, who, xsink);
+         conn.doException(who, errbuf, errcode, xsink);
+         //conn.checkerr(status, who, xsink);
          return -1;
       }
    }
