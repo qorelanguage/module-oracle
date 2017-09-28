@@ -145,6 +145,8 @@ public:
 
    DLLLOCAL int checkerr(sword status, const char *query_name, ExceptionSink* xsink);
 
+   DLLLOCAL int doException(const char *query_name, text errbuf[], sb4 errcode, ExceptionSink *xsink);
+
    DLLLOCAL int descriptorAlloc(void **descpp, unsigned type, const char *who, ExceptionSink* xsink);
 
    DLLLOCAL int handleAlloc(void **descpp, unsigned type, const char *who, ExceptionSink* xsink);

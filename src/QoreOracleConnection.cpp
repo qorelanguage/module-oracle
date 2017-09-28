@@ -99,11 +99,11 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
       if (!env.nlsNameMapToQore(ds.getDBEncoding(), encoding)) {
          //printd(5, "QoreOracleConnection::QoreOracleConnection() Oracle character encoding '%s' mapped to '%s' character encoding\n", ds.getDBEncoding(), encoding.getBuffer());
          assert(encoding.strlen());
-	 ds.setQoreEncoding(encoding.getBuffer());
+         ds.setQoreEncoding(encoding.getBuffer());
       }
       else {
-	 xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "error mapping Oracle character encoding '%s' to a qore encoding: unknown encoding", ds.getDBEncoding());
-	 return;
+         xsink->raiseException("DBI:ORACLE:OPEN-ERROR", "error mapping Oracle character encoding '%s' to a qore encoding: unknown encoding", ds.getDBEncoding());
+         return;
       }
    }
 
@@ -231,48 +231,56 @@ int QoreOracleConnection::checkerr(sword status, const char *query_name, Excepti
    //printd(5, "QoreOracleConnection::checkerr(%p, %d, %s, isEvent=%d)\n", errhp, status, query_name ? query_name : "none", *xsink);
    switch (status) {
       case OCI_SUCCESS:
-	 return 0;
+         return 0;
       case OCI_SUCCESS_WITH_INFO: {
-	 text errbuf[512];
+         text errbuf[512];
 
-	 OCIErrorGet((dvoid *)errhp, (ub4) 1, (text *) NULL, &errcode, errbuf, (ub4) sizeof(errbuf), OCI_HTYPE_ERROR);
+         OCIErrorGet((dvoid *)errhp, (ub4) 1, (text *) NULL, &errcode, errbuf, (ub4) sizeof(errbuf), OCI_HTYPE_ERROR);
          //printd(5, "WARNING: %s returned OCI_SUCCESS_WITH_INFO: %s\n", query_name ? query_name : "<unknown>", remove_trailing_newlines((char *)errbuf));
-	 // ignore SUCCESS_WITH_INFO codes
-	 return 0;
+         // ignore SUCCESS_WITH_INFO codes
+         return 0;
       }
 
       case OCI_ERROR: {
-	 text errbuf[512];
-	 OCIErrorGet((dvoid *)errhp, (ub4) 1, (text *) NULL, &errcode, errbuf, (ub4) sizeof(errbuf), OCI_HTYPE_ERROR);
-	 if (query_name)
-	    xsink->raiseException("DBI:ORACLE:OCI-ERROR", "%s@%s: %s: %s", ds.getUsername(), ds.getDBName(), query_name, remove_trailing_newlines((char *)errbuf));
-	 else
-	    xsink->raiseException("DBI:ORACLE:OCI-ERROR", "%s@%s: %s", ds.getUsername(), ds.getDBName(), remove_trailing_newlines((char *)errbuf));
-	 break;
+         text errbuf[512];
+         OCIErrorGet((dvoid *)errhp, (ub4) 1, (text *) NULL, &errcode, errbuf, (ub4) sizeof(errbuf), OCI_HTYPE_ERROR);
+         doException(query_name, errbuf, errcode, xsink);
+         break;
       }
       case OCI_INVALID_HANDLE:
-	 if (query_name)
-	    xsink->raiseException("DBI:ORACLE:OCI-INVALID-HANDLE", "%s@%s: %s: an invalid OCI handle was used", ds.getUsername(), ds.getDBName(), query_name);
-	 else
-	    xsink->raiseException("DBI:ORACLE:OCI-INVALID-HANDLE", "%s@%s: an invalid OCI handle was used", ds.getUsername(), ds.getDBName());
-	 break;
+         if (query_name)
+            xsink->raiseException("DBI:ORACLE:OCI-INVALID-HANDLE", "%s@%s: %s: an invalid OCI handle was used", ds.getUsername(), ds.getDBName(), query_name);
+         else
+            xsink->raiseException("DBI:ORACLE:OCI-INVALID-HANDLE", "%s@%s: an invalid OCI handle was used", ds.getUsername(), ds.getDBName());
+         break;
       case OCI_NEED_DATA:
-	 xsink->raiseException("DBI:ORACLE:OCI-NEED-DATA", "Oracle OCI error");
-	 break;
+         xsink->raiseException("DBI:ORACLE:OCI-NEED-DATA", "Oracle OCI error");
+         break;
       case OCI_NO_DATA:
-	 xsink->raiseException("DBI:ORACLE:OCI-NODATA", "Oracle OCI error");
-	 break;
+         xsink->raiseException("DBI:ORACLE:OCI-NODATA", "Oracle OCI error");
+         break;
       case OCI_STILL_EXECUTING:
-	 xsink->raiseException("DBI:ORACLE:OCI-STILL-EXECUTING", "Oracle OCI error");
-	 break;
+         xsink->raiseException("DBI:ORACLE:OCI-STILL-EXECUTING", "Oracle OCI error");
+         break;
       case OCI_CONTINUE:
-	 xsink->raiseException("DBI:ORACLE:OCI-CONTINUE", "Oracle OCI error");
-	 break;
+         xsink->raiseException("DBI:ORACLE:OCI-CONTINUE", "Oracle OCI error");
+         break;
       default:
-	 xsink->raiseException("DBI:ORACLE:UNKNOWN-ERROR", "unknown OCI error code %d", status);
-	 break;
+         xsink->raiseException("DBI:ORACLE:UNKNOWN-ERROR", "unknown OCI error code %d", status);
+         break;
    }
    return -1;
+}
+
+int QoreOracleConnection::doException(const char *query_name, text errbuf[], sb4 errcode, ExceptionSink *xsink) {
+    // add ORA-xxxxx code to exception in arg hash in the "alterr" key
+    QoreHashNode* arg = new QoreHashNode;
+    arg->setKeyValue("alterr", new QoreStringNodeMaker("OCI-%05d", (int)errcode), xsink);
+    if (query_name)
+       xsink->raiseExceptionArg("DBI:ORACLE:OCI-ERROR", arg, "%s@%s: %s: %s", ds.getUsername(), ds.getDBName(), query_name, remove_trailing_newlines((char *)errbuf));
+    else
+       xsink->raiseExceptionArg("DBI:ORACLE:OCI-ERROR", arg, "%s@%s: %s", ds.getUsername(), ds.getDBName(), remove_trailing_newlines((char*)errbuf));
+    return -1;
 }
 
 int QoreOracleConnection::logon(ExceptionSink *xsink) {
@@ -378,13 +386,13 @@ DateTimeNode* QoreOracleConnection::getTimestamp(bool get_tz, OCIDateTime *odt, 
       sb1 oh = 0, om = 0;
       sword err = OCIDateTimeGetTimeZoneOffset(*env, errhp, odt, &oh, &om);
       if (err == OCI_SUCCESS) {
-	 //printd(5, "err=%d, oh=%d, om=%d, se=%d\n", err, (int)oh, (int)om, oh * 3600 + om * 60);
-	 zone = findCreateOffsetZone(oh * 3600 + om * 60);
+         //printd(5, "err=%d, oh=%d, om=%d, se=%d\n", err, (int)oh, (int)om, oh * 3600 + om * 60);
+         zone = findCreateOffsetZone(oh * 3600 + om * 60);
       }
       else {
-	 //printd(5, "QoreOracleConnection::getTimestamp() this=%p time zone retrieval failed (%04d-%02d-%02d %02d:%02d:%02d)\n", this, year, month, day, hour, minute, second);
- 	 // no time zone info, assume local time
-	 zone = getTZ();
+         //printd(5, "QoreOracleConnection::getTimestamp() this=%p time zone retrieval failed (%04d-%02d-%02d %02d:%02d:%02d)\n", this, year, month, day, hour, minute, second);
+         // no time zone info, assume local time
+         zone = getTZ();
       }
    }
    return DateTimeNode::makeAbsolute(zone, year, month, day, hour, minute, second, ns / 1000);
