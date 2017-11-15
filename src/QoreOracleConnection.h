@@ -265,6 +265,7 @@ public:
 
       // only use OCIDateTimeConstruct if the year > 0001
       if (info.year > 1) {
+         /*
          char tz[7];
 
          // setup time zone string
@@ -284,8 +285,11 @@ public:
          sprintf(&tz[4], "%02d", se / 60);
          tz[6] = '\0';
 
+         printf("QoreOracleConnection::dateTimeConstruct(year=%d, month=%d, day=%d, hour=%d, minute=%d, second=%d, us=%d, tz=%s) %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, tz, info.regionName());
+
          //printd(5, "QoreOracleConnection::dateTimeConstruct(year=%d, month=%d, day=%d, hour=%d, minute=%d, second=%d, us=%d, tz=%s) %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, tz, info.regionName());
-         return checkerr(OCIDateTimeConstruct(*env, errhp, odt, info.year, info.month, info.day, info.hour, info.minute, info.second, (info.us * 1000), (oratext*)tz, 6), "QoreOracleConnection::dateTimeConstruct()", xsink);
+         */
+        return checkerr(OCIDateTimeConstruct(*env, errhp, odt, info.year, info.month, info.day, info.hour, info.minute, info.second, (info.us * 1000), (oratext*)nullptr, 6), "QoreOracleConnection::dateTimeConstruct()", xsink);
       }
 
       QoreString dstr;
@@ -298,7 +302,7 @@ public:
                                           sizeof(ORA_BACKUP_DATE_FMT), 0, 0, odt), "QoreOracleConnection::dateTimeConstruct() fromText", xsink);
 #else
       return checkerr(OCIDateTimeConstruct(*env, errhp, odt, d.getYear(), d.getMonth(), d.getDay(), d.getHour(), d.getMinute(), d.getSecond(),
-                                           (d.getMillisecond() * 1000000), 0, 0), "QoreOracleConnection::dateTimeConstruct()", xsink))
+                                           (d.getMillisecond() * 1000000), 0, 0), "QoreOracleConnection::dateTimeConstruct()", xsink);
 #endif
    }
 
