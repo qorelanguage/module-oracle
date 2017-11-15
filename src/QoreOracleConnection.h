@@ -271,7 +271,7 @@ public:
          // timezone, we leave it off which also fixes the date issue
 
          //printd(5, "QoreOracleConnection::dateTimeConstruct(year: %d, month: %d, day: %d, hour: %d, minute: %d, second: %d, us: %d) server tz: %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, info.regionName());
-         return checkerr(OCIDateTimeConstruct(*env, errhp, odt, info.year, info.month, info.day, info.hour, info.minute, info.second, (info.us * 1000), (oratext*)nullptr, 6), "QoreOracleConnection::dateTimeConstruct()", xsink);
+         return checkerr(OCIDateTimeConstruct(*env, errhp, odt, info.year, info.month, info.day, info.hour, info.minute, info.second, (info.us * 1000), (oratext*)0, 6), "QoreOracleConnection::dateTimeConstruct()", xsink);
       }
 
       QoreString dstr;
