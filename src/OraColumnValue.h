@@ -104,10 +104,11 @@ struct OraColumnValue {
    union ora_value buf;  // union containing data for value
    ub2 dtype;            // Oracle datatype for value
    int subdtype;         // distinguish the SQLT_NTY subtype
-   sb2 ind;              // indicator value
-   bool array;
+   sb2 ind = 0;          // indicator value
+   bool array = false;
+   bool alt_output = false;
 
-   DLLLOCAL OraColumnValue(QoreOracleStatement& n_stmt, ub2 n_dtype = 0, int n_subdtype = SQLT_NTY_NONE) : stmt(n_stmt), dtype(n_dtype), subdtype(n_subdtype), ind(0), array(false) {
+   DLLLOCAL OraColumnValue(QoreOracleStatement& n_stmt, ub2 n_dtype = 0, int n_subdtype = SQLT_NTY_NONE) : stmt(n_stmt), dtype(n_dtype), subdtype(n_subdtype) {
       //printd(5, "OraColumnValue::OraColumnValue() this: %p\n", this);
    }
 

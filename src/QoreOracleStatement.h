@@ -44,7 +44,7 @@ struct QoreOracleSimpleStatement {
    QoreOracleConnection& conn;
    OCIStmt* stmthp;
 
-   DLLLOCAL QoreOracleSimpleStatement(QoreOracleConnection& n_conn, OCIStmt* n_stmthp = 0) : conn(n_conn), stmthp(n_stmthp) {
+   DLLLOCAL QoreOracleSimpleStatement(QoreOracleConnection& n_conn, OCIStmt* n_stmthp = nullptr) : conn(n_conn), stmthp(n_stmthp) {
    }
 
    DLLLOCAL ~QoreOracleSimpleStatement() {
@@ -75,7 +75,7 @@ struct QoreOracleSimpleStatement {
 
    DLLLOCAL int prepare(const char* sql, unsigned len, ExceptionSink* xsink) {
       return conn.checkerr(OCIStmtPrepare(stmthp, conn.errhp, (text*)sql, len, OCI_NTV_SYNTAX, OCI_DEFAULT),
-			     "QoreOracleSimpleStatement::prepare()", xsink);
+                             "QoreOracleSimpleStatement::prepare()", xsink);
    }
 
    DLLLOCAL int exec(const char* sql, unsigned len, ExceptionSink* xsink);
@@ -139,11 +139,11 @@ public:
       int status;
 
       if ((status = OCIStmtFetch2(stmthp, conn.errhp, rows, OCI_FETCH_NEXT, 0, OCI_DEFAULT))) {
-	 if (status == OCI_NO_DATA) {
+         if (status == OCI_NO_DATA) {
             //printd(5, "QoreOracleStatement::fetch() this=%p no more data\n", this);
-	    return 1;
+            return 1;
          }
-	 else if (conn.checkerr(status, "QoreOracleStatement::fetch()", xsink)) {
+         else if (conn.checkerr(status, "QoreOracleStatement::fetch()", xsink)) {
             //printd(5, "QoreOracleStatement::fetch() this=%p exception\n", this);
             return -1;
          }
@@ -160,24 +160,24 @@ public:
 
    DLLLOCAL int defineByPos(OCIDefine*& defp, unsigned pos, void* valuep, int value_sz, unsigned short dty, void* indp, ExceptionSink* xsink, ub4 mode = OCI_DEFAULT) {
       return conn.checkerr(OCIDefineByPos(stmthp, &defp, conn.errhp, pos, valuep, value_sz, dty, indp, 0, 0, mode),
-			     "QoreOracleStatement::defineByPos()", xsink);
+                             "QoreOracleStatement::defineByPos()", xsink);
    }
 
    DLLLOCAL int bindByPos(OCIBind*& bndp, unsigned pos, void* valuep, int value_sz, unsigned short dty, ExceptionSink* xsink, void* indp, ub4 mode = OCI_DEFAULT) {
       return conn.checkerr(OCIBindByPos(stmthp, &bndp, conn.errhp, pos, valuep, value_sz, dty, indp, 0, 0, 0, 0, mode),
-			     "QoreOracleStatement::bindByPos()", xsink);
+                             "QoreOracleStatement::bindByPos()", xsink);
    }
 
    DLLLOCAL int prepare(QoreString& str, ExceptionSink* xsink) {
       int rc = QoreOracleSimpleStatement::prepare(str.getBuffer(), str.strlen(), xsink);
       if (!rc) {
-	 // see what kind of statement was prepared and set the flag accordingly
-	 ub2 stype;
-	 if (attrGet(&stype, OCI_ATTR_STMT_TYPE, xsink))
-	    return -1;
+         // see what kind of statement was prepared and set the flag accordingly
+         ub2 stype;
+         if (attrGet(&stype, OCI_ATTR_STMT_TYPE, xsink))
+            return -1;
 
-	 if (stype == OCI_STMT_SELECT)
-	    is_select = true;
+         if (stype == OCI_STMT_SELECT)
+            is_select = true;
       }
 
       return rc;
