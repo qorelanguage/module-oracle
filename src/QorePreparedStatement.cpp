@@ -489,7 +489,7 @@ public:
          }
 
          if (t != NT_FLOAT) {
-            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"float\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element " QLLD " (starting from 0) expecting type \"float\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
             return -1;
          }
 
@@ -573,7 +573,7 @@ public:
          }
 
          if (t != NT_DATE) {
-            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"date\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element " QLLD " (starting from 0) expecting type \"date\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
             return -1;
          }
 
@@ -647,7 +647,7 @@ public:
          }
 
          if (t != NT_BOOLEAN) {
-            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"boolean\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element " QLLD " (starting from 0) expecting type \"boolean\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
             return -1;
          }
 
@@ -723,7 +723,7 @@ public:
          }
 
          if (t != NT_BINARY) {
-            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"binary\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element " QLLD " (starting from 0) expecting type \"binary\"; all list elements must be of the same type to effect an array bind", get_type_name(n), li.index());
             return -1;
          }
 
@@ -841,7 +841,7 @@ public:
          }
 
          if (t != NT_BINARY) {
-            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element "QLLD" (starting from 0) expecting type \"binary\"; all list elements must be of the same type to effect an array bind", get_type_name(n), ind);
+            xsink->raiseException("ARRAY-BIND-ERROR", "found type \"%s\" in list element " QLLD " (starting from 0) expecting type \"binary\"; all list elements must be of the same type to effect an array bind", get_type_name(n), ind);
             return -1;
          }
 
@@ -1421,7 +1421,7 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
       else {
          dtype = SQLT_BIN;
 
-         //printd(5, "OraBindNode::bindValue() BLOB ptr: %p size: "QLLD"\n", b->getPtr(), b->size());
+         //printd(5, "OraBindNode::bindValue() BLOB ptr: %p size: " QLLD "\n", b->getPtr(), b->size());
 
          if (!in_only) {
             // bind a copy of the value in case of in/out variables
