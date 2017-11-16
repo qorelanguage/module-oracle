@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2016 David Nichols
+  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -234,45 +234,31 @@ public:
 
       // only use OCIDateTimeConstruct if the year > 0001
       if (info.year > 1) {
-         char tz[7];
+         // issue #2448 Oracle does not handle time zone information correctly for DATE values in selects
+         // because we convert the date/time value to the server's expected timezone, and because Oracle
+         // always assumes that timestamp values without a timezone component have the current session
+         // timezone, we leave it off which also fixes the date issue
 
-         // setup time zone string
-         int se = info.utc_secs_east;
-
-         if (se < 0) {
-            tz[0] = '-';
-            se = -se;
-         }
-         else
-            tz[0] = '+';
-
-         int hours = se / 3600;
-         sprintf(&tz[1], "%02d:", hours);
-
-         se %= 3600;
-         sprintf(&tz[4], "%02d", se / 60);
-         tz[6] = '\0';
-
-         //printd(5, "QoreOracleConnection::dateTimeConstruct(year=%d, month=%d, day=%d, hour=%d, minute=%d, second=%d, us=%d, tz=%s) %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, tz, info.regionName());
-         return checkerr(OCIDateTimeConstruct(*env, errhp, odt, info.year, info.month, info.day, info.hour, info.minute, info.second, (info.us * 1000), (oratext*)tz, 6), "QoreOracleConnection::dateTimeConstruct()", xsink);
+         //printd(5, "QoreOracleConnection::dateTimeConstruct(year: %d, month: %d, day: %d, hour: %d, minute: %d, second: %d, us: %d) server tz: %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, info.regionName());
+         return checkerr(OCIDateTimeConstruct(*env, errhp, odt, info.year, info.month, info.day, info.hour, info.minute, info.second, (info.us * 1000), (oratext*)0, 6), "QoreOracleConnection::dateTimeConstruct()", xsink);
       }
 
       QoreString dstr;
       dstr.sprintf("%04d%02d%02d%02d%02d%06d", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us);
 
-      //printd(5, "QoreOracleConnection::dateTimeConstruct() d=%s (%s)\n", dstr.getBuffer(), ORA_BACKUP_DATE_FMT);
+      //printd(5, "QoreOracleConnection::dateTimeConstruct() d: %s (%s)\n", dstr.getBuffer(), ORA_BACKUP_DATE_FMT);
 
       return checkerr(OCIDateTimeFromText(*env, errhp, (OraText*)dstr.getBuffer(),
                                           dstr.strlen(), (OraText*)ORA_BACKUP_DATE_FMT,
                                           sizeof(ORA_BACKUP_DATE_FMT), 0, 0, odt), "QoreOracleConnection::dateTimeConstruct() fromText", xsink);
 #else
       return checkerr(OCIDateTimeConstruct(*env, errhp, odt, d.getYear(), d.getMonth(), d.getDay(), d.getHour(), d.getMinute(), d.getSecond(),
-                                           (d.getMillisecond() * 1000000), 0, 0), "QoreOracleConnection::dateTimeConstruct()", xsink))
+                                           (d.getMillisecond() * 1000000), 0, 0), "QoreOracleConnection::dateTimeConstruct()", xsink);
 #endif
    }
 
    DLLLOCAL QoreStringNode *getServerVersion(ExceptionSink* xsink) {
-      //printd(0, "QoreOracleConnection::getServerVersion() this=%p ds=%p envhp=%p svchp=%p errhp=%p\n", this, &ds, *env, svchp, errhp);
+      //printd(0, "QoreOracleConnection::getServerVersion() this: %p ds: %p envhp: %p svchp: %p errhp: %p\n", this, &ds, *env, svchp, errhp);
       // buffer for version information
       char version_buf[VERSION_BUF_SIZE + 1];
 

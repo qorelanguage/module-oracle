@@ -521,6 +521,8 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - fixed a memory leak in connection handling (<a href="https://github.com/qorelanguage/qore/issues/1272">issue 1272</a>)
     - fixed a memory leak in error handling (<a href="https://github.com/qorelanguage/qore/issues/1583">issue 1583</a>)
     - fixed a bug in connection handling where statement and bind handles acquired on the old connection context were freed on the new connection context after the old connection context had been freed itself (<a href="https://github.com/qorelanguage/qore/issues/1717">issue 1717</a>)
+    - fixed a bug where NTY truncated CLOBs to a quarter of their lengths (<a href="https://github.com/qorelanguage/qore/issues/1802">issue 1802</a>)
+    - worked around a bug in Oracle handling \c DATE values in selects with dates bound by value when the date is in the same time zone as the server's time zone but has a different DST offset (<a href="https://github.com/qorelanguage/qore/issues/2448">issue 2448</a>)
 
     @subsection oracle32 oracle Driver Version 3.2
     - added more Qore exception handling in ocilib object/NTY APIs
