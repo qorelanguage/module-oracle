@@ -156,6 +156,7 @@ class OracleTest inherits QUnit::Test {
         addTestCase("Types test", \typesTest());
         addTestCase("Timezone test", \timezoneTest());
         addTestCase("Array bind test", \arrayBindTest());
+        addTestCase("date test", \dateTest());
         set_return_value(main());
     }
 
@@ -194,8 +195,10 @@ class OracleTest inherits QUnit::Test {
 
         ds = new Datasource(connStr);
         ds.open();
-        printf("serverVersion: %y\n", ds.getServerVersion());
-        printf("clientVersion: %y\n", ds.getClientVersion());
+        if (m_options.verbose > 1) {
+            printf("serverVersion: %y\n", ds.getServerVersion());
+            printf("clientVersion: %y\n", ds.getClientVersion());
+        }
     }
 
     basicTest() {
@@ -259,12 +262,14 @@ class OracleTest inherits QUnit::Test {
 
     typesTest() {
         prepareTypesTest();
-        printf("\n**************************\n");
-        printf("The following columns and their types are tested in the 'types test':\n");
-        foreach string col in (ColumnNamesAndTypes.iterator()) {
-            printf("%s\n", col);
+        if (m_options.verbose > 1) {
+            printf("\n**************************\n");
+            printf("The following columns and their types are tested in the 'types test':\n");
+            foreach string col in (ColumnNamesAndTypes.iterator()) {
+                printf("%s\n", col);
+            }
+            printf("**************************\n\n");
         }
-        printf("**************************\n\n");
 
         ds.setOption("numeric-numbers", True);
         try {
@@ -365,5 +370,26 @@ class OracleTest inherits QUnit::Test {
 
         hash h = {"id": (2n, 2n, 2n, 4n, 5n, 6n), "txt": ("text", "abc", "lorem", "ipsum", "dolor", "sit")};
         assertEq(h, ds.select("SELECT * FROM " + tableName));
+    }
+
+    dateTest() {
+        try {
+            ds.exec("DROP TABLE " + tableName);
+        }
+        catch (hash ex) {
+            if (ex.err != "DBI:ORACLE:OCI-ERROR")
+                rethrow;
+        }
+
+        date dt1 = 2017-10-11T15:34:01;
+        date dt2 = 2017-11-11T20:09:54;
+
+        ds.commit();
+        assertEq(0, ds.exec("create table " + tableName + " (dt date)"));
+        ds.exec("insert into %s (dt) values (%v)", tableName, dt1);
+        ds.commit();
+
+        assertEq(("dt": dt1), ds.selectRow("select * from %s where dt = %v", tableName, dt1));
+        assertEq(1, ds.exec("update %s set dt = %v where dt = %v", tableName, dt2, dt1));
     }
 }
