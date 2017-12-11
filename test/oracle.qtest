@@ -157,6 +157,7 @@ class OracleTest inherits QUnit::Test {
         addTestCase("Timezone test", \timezoneTest());
         addTestCase("Array bind test", \arrayBindTest());
         addTestCase("date test", \dateTest());
+        addTestCase("select row test", \selectRowTest());
         set_return_value(main());
     }
 
@@ -391,5 +392,13 @@ class OracleTest inherits QUnit::Test {
 
         assertEq(("dt": dt1), ds.selectRow("select * from %s where dt = %v", tableName, dt1));
         assertEq(1, ds.exec("update %s set dt = %v where dt = %v", tableName, dt2, dt1));
+    }
+
+    selectRowTest() {
+        on_exit
+            ds.rollback();
+
+        ds.exec("insert into %s (dt) values (%v)", tableName, now());
+        assertThrows("DBI-SELECT-ROW-ERROR", \ds.selectRow(), ("select * from %s", tableName));
     }
 }
