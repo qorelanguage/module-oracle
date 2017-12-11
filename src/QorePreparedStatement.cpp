@@ -2340,7 +2340,7 @@ QoreHashNode* QorePreparedStatement::getOutputHash(bool rows, ExceptionSink* xsi
 
 QoreHashNode* QorePreparedStatement::selectRow(ExceptionSink* xsink) {
    if (!is_select) {
-      xsink->raiseException("ORACLE-SELECT-ROW-ERROR", "the SQL passed to the selectRow() method is not a select statement");
+      xsink->raiseException("DBI-SELECT-ROW-ERROR", "the SQL passed to the selectRow() method is not a select statement");
       return 0;
    }
 
