@@ -180,7 +180,7 @@ QoreHashNode* QoreOracleStatement::fetchSingleRow(ExceptionSink* xsink) {
       fetch_done = true;
 
    if (next(xsink)) {
-      xsink->raiseExceptionArg("ORACLE-SELECT-ROW-ERROR", rv.release(), "SQL passed to selectRow() returned more than 1 row");
+      xsink->raiseExceptionArg("DBI-SELECT-ROW-ERROR", rv.release(), "SQL passed to selectRow() returned more than 1 row");
       return 0;
    }
 
