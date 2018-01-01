@@ -501,13 +501,15 @@ AC_SUBST(ORACLE_INCLUDES)
 
 case "$ORACLE_VERSION" in
    9*|10*|11*|12*) if test "$windows" = "yes"; then
-                     ORACLE_LIBS="-L$oracle_lib_dir -loci"
-		   else
-		     ORACLE_LIBS="-L$oracle_lib_dir -lclntsh"
-		   fi ;;
+        ORACLE_LIBS="-L$oracle_lib_dir -loci"
+    else
+        ORACLE_LIBS="-L$oracle_lib_dir -lclntsh"
+    fi ;;
    *)      AC_MSG_ERROR(Unsupported Oracle version) ;;
 esac
 AC_SUBST(ORACLE_LIBS)
+ORACLE_LIB_DIR="$oracle_lib_dir"
+AC_SUBST(ORACLE_LIB_DIR)
 
 # check for 'oci.h'
 SAVE_CXXFLAGS="$CXXFLAGS"
@@ -824,6 +826,7 @@ AM_CONDITIONAL([COND_DEBUG],      [test "$enable_debug" = yes])
 AM_CONDITIONAL([COND_PROFILE],    [test "$enable_profile" = yes])
 AM_CONDITIONAL([COND_SINGLE_COMPILATION_UNIT], [test "$enable_single_compilation_unit" = yes])
 AM_CONDITIONAL([COND_MINGW],      [test "$mingw" = yes])
+AM_CONDITIONAL([COND_DARWIN],     [test "$darwin" = true])
 
 AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT

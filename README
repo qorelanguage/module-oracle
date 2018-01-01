@@ -1,5 +1,4 @@
 oracle module for Qore
-by David Nichols
 
 Requires qore 0.8.12.10+ and oracle 9i+ headers and libraries to build in order to
 support the maximum feature set (oracle instant client is also supporteed - see
@@ -65,6 +64,18 @@ make
 sudo make install
 
 The configure script will find out where your qore module directory is found and set this for the install directory.
+
+
+DARWIN / MACOS
+--------------
+
+If you have moved/upgraded your Oracle libraries or are using a binary module
+build on another system, execute the following command to update the module's
+internal rpath:
+    install_name_tool -add_rpath ${ORACLE_LIB_DIR} ${MODULE_NAME}
+
+for example:
+    sudo install_name_tool -add_rpath ${ORACLE_INSTANT_CLIENT} /usr/local/lib/qore-modules/oracle*.qmod
 
 
 BUILD FROM GIT
