@@ -1928,7 +1928,7 @@ int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who) {
       OCIErrorGet((dvoid*)conn.errhp, (ub4)1, (text*)nullptr, &errcode, errbuf, (ub4)sizeof(errbuf), OCI_HTYPE_ERROR);
       // ORA-03113 and ORA-03114 are lost connections
       // issue #802: ORA-01041 is only raised due to a bug in Oracle pre 12c
-      if (errcode == 3113 || errcode == 3114 || errcode = 1041)
+      if (errcode == 3113 || errcode == 3114 || errcode == 1041)
          ping = 0;
 
       //dbg();
