@@ -72,6 +72,11 @@ if COND_MINGW
 RM_OTHER=$(DESTDIR)$(libdir)/$(MNAME).dll.a
 endif
 
+# adding the oracle dir to the rpath on Darwin does not seem to work, so we use install_name_tool below
+
 install-exec-hook:
 	mv $(DESTDIR)$(libdir)/$(MNAME).$(MODULE_SUFFIX) $(DESTDIR)$(libdir)/$(MNAME)-api-$(MODULE_API).qmod
 	$(RM) $(DESTDIR)$(libdir)/$(MNAME).la $(RM_OTHER)
+if COND_DARWIN
+	install_name_tool -add_rpath ${ORACLE_LIB_DIR} $(DESTDIR)$(libdir)/$(MNAME)-api-$(MODULE_API).qmod
+endif

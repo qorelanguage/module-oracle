@@ -506,6 +506,24 @@ kpcest_err_handler: Max errors exceeded..Closing connection
    <tr><th>11.2.0.3.0</th><td>&nbsp;</td><td>fails</td><td>works</td><td>works</td></tr>
 </table>
 
+    @subsection darwin_issues Issues on Darwin/macOS
+
+    Due to the way that Apple has changed dynamic library path handling in recent releases of
+    Darwin/macOS, the Oracle module's rpath must be updated with the path to the Oracle
+    dynamic libraries.
+
+    Therefore if you have moved/upgraded your Oracle libraries or are using a binary module
+    build on another system, execute the following command to update the module's
+    internal rpath:
+
+    @verbatim install_name_tool -add_rpath ${ORACLE_LIB_DIR} ${MODULE_NAME}@endverbatim
+
+    for example:
+    @verbatim sudo install_name_tool -add_rpath ${ORACLE_INSTANT_CLIENT} /usr/local/lib/qore-modules/oracle*.qmod@endverbatim
+
+    Note that this should not be necessary when building and installing on the same system,
+    as the rpath used when linking is set automatically when the module is installed.
+
     @section ora_releasenotes Release Notes
 
     @subsection oracle33 oracle Driver Version 3.3
@@ -516,6 +534,7 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - fixed a bug where \c ORA-03113 and \c ORA-03114 were not treated as lost connections (<a href="https://github.com/qorelanguage/qore/issues/1963">issue 1963</a>)
     - fixed a bug where \c DBI-SELECT-ROW-ERROR exceptions were being raised as \c ORACLE-SELECT-ROW-ERROR exceptions (<a href="https://github.com/qorelanguage/qore/issues/2542">issue 2542</a>)
     - implemented a workaround for a bug in Oracle pre 12c related to \c ORA-01041 errors (<a href="https://github.com/qorelanguage/qore/issues/802">issue 802</a>)
+    - fixed issues related to rpath handling on Darwin/macOS (<a href="https://github.com/qorelanguage/qore/issues/475">issue 475</a>)
 
     @subsection oracle321 oracle Driver Version 3.2.1
     - updated SQLStatement::fetchColumns() to return an empty hash when no data is available in all cases (<a href="https://github.com/qorelanguage/qore/issues/1241">issue 1241</a>)
