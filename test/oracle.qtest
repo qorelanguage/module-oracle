@@ -405,7 +405,7 @@ class OracleTest inherits QUnit::Test {
 
     longTest() {
         *hash h = ds.selectRow("select * from all_views where view_name = %v", "ALL_CUBE_DEPENDENCIES");
-        if (!h)
+        if (!h.text)
             testSkip("view not accessible");
 
         assertEq(Type::String, h.view_name.type());

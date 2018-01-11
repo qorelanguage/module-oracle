@@ -43,9 +43,10 @@ static sb4 q_long_callback(q_lng* lng, OCIDefine *defnp, ub4 iter, void **bufpp,
 
    switch (*piecep) {
       case OCI_FIRST_PIECE:
-         assert(!lng->str);
-         lng->str = new QoreStringNode(lng->enc);
-         lng->str->reserve(Q_LONG_BLOCK_SIZE + 1);
+         if (!lng->str) {
+            lng->str = new QoreStringNode(lng->enc);
+            lng->str->reserve(Q_LONG_BLOCK_SIZE + 1);
+         }
          assert(lng->str->capacity());
          assert(lng->str->empty());
 
@@ -323,4 +324,3 @@ int OraResultSet::define(const char *str, ExceptionSink *xsink) {
 
    return 0;
 }
-
