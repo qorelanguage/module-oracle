@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
+  Copyright (C) 2003 - 2018 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -29,11 +29,12 @@
 
 struct q_lng {
    const QoreEncoding* enc;
-   sb2 ind;
-   ub4 size;
-   QoreStringNode* str;
+   sb2 ind = 0;
+   ub2 rcode = 0;
+   ub4 size = 0;
+   QoreStringNode* str = nullptr;
 
-   DLLLOCAL q_lng(const QoreEncoding* e) : enc(e), ind(0), size(0), str(0) {
+   DLLLOCAL q_lng(const QoreEncoding* e) : enc(e) {
    }
 
    DLLLOCAL ~q_lng() {
@@ -49,10 +50,10 @@ struct q_lng {
          assert(str);
 
          QoreStringNode* rvstr = str;
-         str = 0;
+         str = nullptr;
          rvstr->terminate(rvstr->size() + size);
          rv = rvstr;
-         //printd(5, "ora_value::takeLongString() returning str: %p\n", rvstr);
+         //printd(5, "ora_value::takeLongString() returning str: %p strlen: %d size: %d rcode: %d\n", rvstr, rvstr->size(), size, rcode);
       }
 
       ind = 0;
