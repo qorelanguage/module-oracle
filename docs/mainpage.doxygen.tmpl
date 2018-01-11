@@ -535,6 +535,7 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - fixed a bug where \c DBI-SELECT-ROW-ERROR exceptions were being raised as \c ORACLE-SELECT-ROW-ERROR exceptions (<a href="https://github.com/qorelanguage/qore/issues/2542">issue 2542</a>)
     - implemented a workaround for a bug in Oracle pre 12c related to \c ORA-01041 errors (<a href="https://github.com/qorelanguage/qore/issues/802">issue 802</a>)
     - fixed issues related to rpath handling on Darwin/macOS (<a href="https://github.com/qorelanguage/qore/issues/475">issue 475</a>)
+    - fixed an issue selecting large \c LONG column values (<a href="https://github.com/qorelanguage/qore/issues/2609">issue 2609</a>)
 
     @subsection oracle321 oracle Driver Version 3.2.1
     - updated SQLStatement::fetchColumns() to return an empty hash when no data is available in all cases (<a href="https://github.com/qorelanguage/qore/issues/1241">issue 1241</a>)

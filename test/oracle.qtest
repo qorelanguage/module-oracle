@@ -158,6 +158,7 @@ class OracleTest inherits QUnit::Test {
         addTestCase("Array bind test", \arrayBindTest());
         addTestCase("date test", \dateTest());
         addTestCase("select row test", \selectRowTest());
+        addTestCase("long test", \longTest());
         set_return_value(main());
     }
 
@@ -236,7 +237,7 @@ class OracleTest inherits QUnit::Test {
     }
 
     prepareTypesTest() {
-        for (int i = 0; i < Columns.tstamp.values.size(); i++) {
+        for (int i = 0; i < Columns.tstamp.values.size();  i++) {
             push Columns.tstamp.expected, utcTz.date(Columns.tstamp.values[i]);
         }
 
@@ -400,5 +401,14 @@ class OracleTest inherits QUnit::Test {
 
         ds.exec("insert into %s (dt) values (%v)", tableName, now());
         assertThrows("DBI-SELECT-ROW-ERROR", \ds.selectRow(), ("select * from %s", tableName));
+    }
+
+    longTest() {
+        *hash h = ds.selectRow("select * from all_views where view_name = %v", "ALL_CUBE_DEPENDENCIES");
+        if (!h.text)
+            testSkip("view not accessible");
+
+        assertEq(Type::String, h.view_name.type());
+        assertGt(16384, h.text.size());
     }
 }
