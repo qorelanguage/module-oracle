@@ -6,7 +6,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
+  Copyright (C) 2003 - 2018 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -243,6 +243,13 @@ static int oracle_stmt_exec(SQLStatement* stmt, ExceptionSink* xsink) {
    return bg->exec(xsink);
 }
 
+static int oracle_stmt_exec_describe(SQLStatement* stmt, ExceptionSink* xsink) {
+   QorePreparedStatement* bg = (QorePreparedStatement*)stmt->getPrivateData();
+   assert(bg);
+
+   return bg->execDescribe(xsink);
+}
+
 static int oracle_stmt_define(SQLStatement* stmt, ExceptionSink* xsink) {
    QorePreparedStatement* bg = (QorePreparedStatement*)stmt->getPrivateData();
    assert(bg);
@@ -368,6 +375,7 @@ QoreStringNode* oracle_module_init() {
    methods.add(QDBI_METHOD_STMT_BIND_PLACEHOLDERS, oracle_stmt_bind_placeholders);
    methods.add(QDBI_METHOD_STMT_BIND_VALUES, oracle_stmt_bind_values);
    methods.add(QDBI_METHOD_STMT_EXEC, oracle_stmt_exec);
+   methods.add(QDBI_METHOD_STMT_EXEC_DESCRIBE, oracle_stmt_exec_describe);
    methods.add(QDBI_METHOD_STMT_DEFINE, oracle_stmt_define);
    methods.add(QDBI_METHOD_STMT_FETCH_ROW, oracle_stmt_fetch_row);
    methods.add(QDBI_METHOD_STMT_FETCH_ROWS, oracle_stmt_fetch_rows);

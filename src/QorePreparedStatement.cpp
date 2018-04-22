@@ -1908,14 +1908,14 @@ AbstractQoreNode* OraBindNode::getValue(bool horizontal, ExceptionSink* xsink) {
    return OraColumnValue::getValue(xsink, horizontal, true);
 }
 
-int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who) {
+int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who, int oci_flags) {
    assert(conn.svchp);
    ub4 iters;
    if (is_select)
       iters = 0;
    else
       iters = !array_size ? 1 : array_size;
-   int status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT);
+   int status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT | oci_flags);
 
    //printd(5, "QoreOracleStatement::execute() stmthp: %p status: %d (OCI_ERROR: %d)\n", stmthp, status, OCI_ERROR);
    if (status == OCI_ERROR) {
@@ -1982,7 +1982,7 @@ int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who) {
          assert(!*xsink);
 
          //printd(5, "QoreOracleStatement::execute() returned from OCILogon() status: %d\n", status);
-         status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT);
+         status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT | oci_flags);
          if (status && conn.checkerr(status, who, xsink))
             return -1;
       }
@@ -2001,6 +2001,11 @@ int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who) {
 
 int QorePreparedStatement::exec(ExceptionSink* xsink) {
    return execute(xsink, "QorePreparedStatement::exec()");
+}
+
+int QorePreparedStatement::execDescribe(ExceptionSink* xsink) {
+    //printd(5, "QorePreparedStatement::execDescribe() this: %p\n", this);
+    return execute(xsink, "QorePreparedStatement::execDescribe()", OCI_DESCRIBE_ONLY);
 }
 
 void QorePreparedStatement::clear(ExceptionSink* xsink) {
