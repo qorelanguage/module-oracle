@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2006 - 2017 Qore Technologies, s.r.o.
+  Copyright (C) 2006 - 2018 Qore Technologies, s.r.o.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -337,13 +337,15 @@ public:
       return c;
    }
 
-   DLLLOCAL int execute(ExceptionSink* xsink, const char* who);
+   DLLLOCAL int execute(ExceptionSink* xsink, const char* who, int oci_flags = 0);
 
    DLLLOCAL int bind(const QoreListNode* args, ExceptionSink* xsink);
    DLLLOCAL int bindPlaceholders(const QoreListNode* args, ExceptionSink* xsink);
    DLLLOCAL int bindValues(const QoreListNode* args, ExceptionSink* xsink);
 
    DLLLOCAL int exec(ExceptionSink* xsink);
+
+   DLLLOCAL int execDescribe(ExceptionSink* xsink);
 
    DLLLOCAL int define(ExceptionSink* xsink);
 
