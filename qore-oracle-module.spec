@@ -49,7 +49,7 @@ Source: http://prdownloads.sourceforge.net/qore/%{name}-%{version}.tar.bz2
 #Source0: %{name}-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: gcc-c++
-BuildRequires: qore-devel >= 0.8.12.10
+BuildRequires: qore-devel >= 0.8.13
 BuildRequires: qore
 BuildRequires: oracle-instantclient
 BuildRequires: oracle-instantclient-devel
@@ -100,7 +100,7 @@ This RPM provides API documentation, test and example programs
 
 %files doc
 %defattr(-,root,root,-)
-%doc docs/oracle/html test/db-test.q test/sql-stmt.q test/aq-test.q test/db-test.q test/sql-stmt-describe.q
+%doc docs/oracle/html test/db.qtest test/sql-stmt.qtest test/aq-test.q test/sql-stmt-describe.q test/oracle.qtest
 
 %changelog
 * Sun Jun 11 2017 David Nichols <david@qore.org> - 3.3
