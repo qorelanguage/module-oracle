@@ -33,10 +33,11 @@ EXTRA_DIST = COPYING.MIT COPYING.LGPL AUTHORS README \
 	src/ql_oracle.qpp \
 	src/QC_AQMessage.qpp \
 	src/QC_AQQueue.qpp \
-	test/db-test.q \
-	test/sql-stmt.q \
+	test/db.qtest \
+	test/sql-stmt.qtest \
 	test/aq-test.q \
 	test/sql-stmt-describe.q \
+    test/oracle.qtest \
 	$(USER_MODULES) \
 	qore-oracle-module.spec
 
