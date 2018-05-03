@@ -54,7 +54,7 @@ BuildRequires: qore
 BuildRequires: oracle-instantclient
 BuildRequires: oracle-instantclient-devel
 Requires: /usr/bin/env
-Requires: qore-module-api-%{module_api}
+Requires: qore-module(abi)%{?_isa} = %{module_api}
 
 %description
 Oracle DBI driver module for the Qore Programming Language. The Oracle driver is
