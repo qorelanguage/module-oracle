@@ -1505,7 +1505,13 @@ void OraBindNode::bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNod
          return;
       }
 
-      const QoreStringNode*  t = reinterpret_cast<const QoreStringNode*>(h->getKeyValue("type"));
+      QoreValue qv = h->getValueKeyValue("type");
+      if (qv.getType() != NT_STRING) {
+          xsink->raiseException("ORACLE-BIND-VALUE-ERROR", "the 'type' key in a bind hash must be assigned to a string type name; got type '%s' instead", qv.getTypeName());
+          return;
+      }
+
+      const QoreStringNode* t = qv.get<const QoreStringNode>();
       if (t->compare(ORACLE_OBJECT) == 0) {
          //printd(5, "binding hash as an oracle object\n");
          subdtype = SQLT_NTY_OBJECT;

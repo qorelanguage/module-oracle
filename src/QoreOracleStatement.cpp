@@ -79,13 +79,13 @@ QoreHashNode* QoreOracleStatement::fetchRow(OraResultSet& resultset, ExceptionSi
       }
       HashAssignmentHelper hah(**h, w->name.c_str());
       // if we have a duplicate column
-      if (*hah) {
+      if (!hah.get().isNothing()) {
          // find a unique column name
          unsigned num = 1;
          while (true) {
             QoreStringMaker tmp("%s_%d", w->name.c_str(), num);
             hah.reassign(tmp.c_str());
-            if (*hah) {
+            if (!hah.get().isNothing()) {
                ++num;
                continue;
             }
@@ -242,9 +242,9 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
 
       // copy data or perform per-value processing if needed
       for (unsigned i = 0; i < resultset.clist.size(); ++i) {
-         OraColumnBuffer *w = resultset.clist[i];
+         OraColumnBuffer* w = resultset.clist[i];
          // get pointer to value of target node
-         QoreListNode* l = reinterpret_cast<QoreListNode*>(h->getKeyValue(w->name, xsink));
+         QoreListNode* l = h->getValueKeyValue(w->name, xsink).get<QoreListNode>();
          if (!l)
             break;
 
@@ -258,10 +258,10 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
                QoreListNode* al;
                while (true) {
                   QoreStringMaker tmp("%s_%d", w->name.c_str(), num);
-                  al = reinterpret_cast<QoreListNode*>(h->getKeyValue(tmp.getBuffer(), xsink));
+                  al = h->getValueKeyValue(tmp.c_str(), xsink).get<QoreListNode>();
                   if (!al) {
                      al = new QoreListNode;
-                     h->setKeyValue(tmp.getBuffer(), al, xsink);
+                     h->setValueKeyValue(tmp.c_str(), al, xsink);
                      break;
                   }
                   else if (al->size() == csize)
@@ -313,94 +313,94 @@ QoreHashNode* QoreOracleStatement::describe(OraResultSet& resultset, ExceptionSi
    for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
       OraColumnBuffer *w = *i;
       ReferenceHolder<QoreHashNode> col(new QoreHashNode, xsink);
-      col->setKeyValue(namestr, new QoreStringNode(w->name), xsink);
-      col->setKeyValue(internalstr, new QoreBigIntNode(w->dtype), xsink);
+      col->setValueKeyValue(namestr, new QoreStringNode(w->name), xsink);
+      col->setValueKeyValue(internalstr, w->dtype, xsink);
       switch (w->dtype) {
       case SQLT_CHR:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_STRING), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("VARCHAR2"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/charSize), xsink);
+         col->setValueKeyValue(typestr, NT_STRING, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("VARCHAR2"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize/charSize, xsink);
          break;
       case SQLT_NUM:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_NUMBER), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("NUMBER"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setValueKeyValue(typestr, NT_NUMBER, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("NUMBER"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_INT:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_INT), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("INTEGER"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setValueKeyValue(typestr, NT_INT, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("INTEGER"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_FLT:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_FLOAT), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("FLOAT"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setValueKeyValue(typestr, NT_FLOAT, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("FLOAT"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_AFC:
       case SQLT_AVC:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_STRING), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("CHAR"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/charSize), xsink);
+         col->setValueKeyValue(typestr, NT_STRING, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("CHAR"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize/charSize, xsink);
          break;
       case SQLT_CLOB:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_STRING), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("CLOB"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/charSize), xsink);
+         col->setValueKeyValue(typestr, NT_STRING, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("CLOB"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize/charSize, xsink);
          break;
       case SQLT_BLOB:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_BINARY), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("BLOB"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/charSize), xsink);
+         col->setValueKeyValue(typestr, NT_BINARY, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("BLOB"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize/charSize, xsink);
          break;
       case SQLT_NTY:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_HASH), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("NAMED DATATYPE"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setValueKeyValue(typestr, NT_HASH, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("NAMED DATATYPE"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_DATE:
       case SQLT_DAT:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_DATE), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("DATE"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setValueKeyValue(typestr, NT_DATE, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("DATE"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_TIMESTAMP:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_DATE), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("TIMESTAMP"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setValueKeyValue(typestr, NT_DATE, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("TIMESTAMP"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_TIMESTAMP_TZ:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_DATE), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("TIMESTAMP WITH ZONE"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setValueKeyValue(typestr, NT_DATE, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("TIMESTAMP WITH ZONE"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_TIMESTAMP_LTZ:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_DATE), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("TIMESTAMP WITH LOCAL TIME ZONE"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setValueKeyValue(typestr, NT_DATE, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("TIMESTAMP WITH LOCAL TIME ZONE"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_INTERVAL_YM:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_DATE), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("INTERVAL YEAR TO MONTH"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setValueKeyValue(typestr, NT_DATE, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("INTERVAL YEAR TO MONTH"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_INTERVAL_DS:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_DATE), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("INTERVAL DAY TO SECOND"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setValueKeyValue(typestr, NT_DATE, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("INTERVAL DAY TO SECOND"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_RDD:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_STRING), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("ROWID"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setValueKeyValue(typestr, NT_STRING, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("ROWID"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       default:
-         col->setKeyValue(typestr, new QoreBigIntNode(-1), xsink);
-         col->setKeyValue(dbtypestr, new QoreStringNode("n/a"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setValueKeyValue(typestr, -1, xsink);
+         col->setValueKeyValue(dbtypestr, new QoreStringNode("n/a"), xsink);
+         col->setValueKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       } // switch
 
-      h->setKeyValue(w->name, col.release(), xsink);
+      h->setValueKeyValue(w->name, col.release(), xsink);
       if (*xsink)
          return 0;
    }
