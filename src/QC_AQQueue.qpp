@@ -871,12 +871,12 @@ nothing AQQueue::post(hash msg) {
 nothing AQQueue::startSubscription(int port = 0, int timeout = 0) {
    if (port < 0) {
       xsink->raiseException("AQQUEUE-ERROR", "Port number has to be greater than or equal to 0");
-      return 0;
+      return QoreValue();
    }
 
    if (timeout < -1) {
       xsink->raiseException("AQQUEUE-ERROR", "Timeout value has to be greater than or equal to -1");
-      return 0;
+      return QoreValue();
    }
 
    priv->startSubscription(self, (unsigned)port, timeout, xsink);
