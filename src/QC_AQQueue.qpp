@@ -700,7 +700,7 @@ static int ds_set_options(Datasource& ds, const QoreHashNode* opts, ExceptionSin
       if (!strcmp(hi.getKey(), "min") || !strcmp(hi.getKey(), "max"))
          continue;
 
-      if (ds.setOption(hi.getKey(), hi.getValue(), xsink))
+      if (ds.setOption(hi.getKey(), hi.get(), xsink))
          return -1;
    }
    return 0;
