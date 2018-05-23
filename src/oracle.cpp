@@ -1,26 +1,26 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /*
-  oracle.cpp
+    oracle.cpp
 
-  Oracle OCI Interface to Qore DBI layer
+    Oracle OCI Interface to Qore DBI layer
 
-  Qore Programming Language
+    Qore Programming Language
 
-  Copyright (C) 2003 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2003 - 2018 Qore Technologies, s.r.o.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #include "oracle.h"
@@ -84,48 +84,48 @@ static int oracle_rollback(Datasource* ds, ExceptionSink* xsink) {
 }
 
 static AbstractQoreNode* oracle_exec(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
-   QorePreparedStatementHelper bg(ds, xsink);
+    QorePreparedStatementHelper bg(ds, xsink);
 
-   if (bg.prepare(qstr, args, true, xsink))
-      return 0;
+    if (bg.prepare(qstr, args, true, xsink))
+        return 0;
 
-   return bg.execWithPrologue(xsink, false);
+    return bg.execWithPrologue(xsink, false).takeNode();
 }
 
 static AbstractQoreNode* oracle_select(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
-   QorePreparedStatementHelper bg(ds, xsink);
+    QorePreparedStatementHelper bg(ds, xsink);
 
-   if (bg.prepare(qstr, args, true, xsink))
-      return 0;
+    if (bg.prepare(qstr, args, true, xsink))
+        return 0;
 
-   return bg.execWithPrologue(xsink, false, true);
+    return bg.execWithPrologue(xsink, false, true).takeNode();
 }
 
 static AbstractQoreNode* oracle_exec_raw(Datasource* ds, const QoreString* qstr, ExceptionSink* xsink) {
-   QorePreparedStatementHelper bg(ds, xsink);
+    QorePreparedStatementHelper bg(ds, xsink);
 
-   if (bg.prepare(qstr, 0, false, xsink))
-      return 0;
+    if (bg.prepare(qstr, 0, false, xsink))
+        return 0;
 
-   return bg.execWithPrologue(xsink, false);
+    return bg.execWithPrologue(xsink, false).takeNode();
 }
 
 static QoreHashNode* oracle_select_row(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
-   QorePreparedStatementHelper bg(ds, xsink);
+    QorePreparedStatementHelper bg(ds, xsink);
 
-   if (bg.prepare(qstr, args, true, xsink))
-      return 0;
+    if (bg.prepare(qstr, args, true, xsink))
+        return 0;
 
-   return bg.selectRow(xsink);
+    return bg.selectRow(xsink);
 }
 
 static AbstractQoreNode* oracle_exec_rows(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
-   QorePreparedStatementHelper bg(ds, xsink);
+    QorePreparedStatementHelper bg(ds, xsink);
 
-   if (bg.prepare(qstr, args, true, xsink))
-      return 0;
+    if (bg.prepare(qstr, args, true, xsink))
+        return 0;
 
-   return bg.execWithPrologue(xsink, true);
+    return bg.execWithPrologue(xsink, true).takeNode();
 }
 
 static int oracle_open(Datasource* ds, ExceptionSink* xsink) {
@@ -184,16 +184,16 @@ static AbstractQoreNode* oracle_get_server_version(Datasource* ds, ExceptionSink
 
 #ifdef HAVE_OCICLIENTVERSION
 static AbstractQoreNode* oracle_get_client_version(const Datasource* ds, ExceptionSink* xsink) {
-   sword major, minor, update, patch, port_update;
+    sword major, minor, update, patch, port_update;
 
-   OCIClientVersion(&major, &minor, &update, &patch, &port_update);
-   QoreHashNode* h = new QoreHashNode();
-   h->setKeyValue("major", new QoreBigIntNode(major), NULL);
-   h->setKeyValue("minor", new QoreBigIntNode(minor), NULL);
-   h->setKeyValue("update", new QoreBigIntNode(update), NULL);
-   h->setKeyValue("patch", new QoreBigIntNode(patch), NULL);
-   h->setKeyValue("port_update", new QoreBigIntNode(port_update), NULL);
-   return h;
+    OCIClientVersion(&major, &minor, &update, &patch, &port_update);
+    QoreHashNode* h = new QoreHashNode(autoTypeInfo);
+    h->setKeyValue("major", major, xsink);
+    h->setKeyValue("minor", minor, xsink);
+    h->setKeyValue("update", update, xsink);
+    h->setKeyValue("patch", patch, xsink);
+    h->setKeyValue("port_update", port_update, xsink);
+    return h;
 }
 #endif
 
@@ -341,7 +341,7 @@ static int oracle_opt_set(Datasource* ds, const char* opt, const AbstractQoreNod
 static AbstractQoreNode* oracle_opt_get(const Datasource* ds, const char* opt) {
    // get private data structure for connection
    QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
-   return conn.getOption(opt);
+   return conn.getOption(opt).takeNode();
 }
 
 QoreNamespace OraNS("Oracle");

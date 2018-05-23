@@ -1,24 +1,24 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /*
-  QoreOracleConnection.h
+    QoreOracleConnection.h
 
-  Qore Programming Language
+    Qore Programming Language
 
-  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
+    Copyright (C) 2003 - 2018 Qore Technologies, s.r.o.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #ifndef _QORE_ORACLEDATA_H
@@ -39,57 +39,57 @@
 
 class QoreOracleEnvironment {
 protected:
-   OCIEnv* envhp;
+    OCIEnv* envhp;
 
 public:
-   DLLLOCAL QoreOracleEnvironment() : envhp(0) {
-   }
+    DLLLOCAL QoreOracleEnvironment() : envhp(0) {
+    }
 
-   DLLLOCAL ~QoreOracleEnvironment() {
-      if (envhp)
-         OCIHandleFree(envhp, OCI_HTYPE_ENV);
-   }
+    DLLLOCAL ~QoreOracleEnvironment() {
+        if (envhp)
+            OCIHandleFree(envhp, OCI_HTYPE_ENV);
+    }
 
-   DLLLOCAL int init() {
-      return OCIEnvCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0) == OCI_SUCCESS ? 0 : -1;
-   }
+    DLLLOCAL int init() {
+        return OCIEnvCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0) == OCI_SUCCESS ? 0 : -1;
+    }
 
-   DLLLOCAL int init(unsigned short charset) {
-      return OCIEnvNlsCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0, charset, charset) == OCI_SUCCESS ? 0 : -1;
-   }
+    DLLLOCAL int init(unsigned short charset) {
+        return OCIEnvNlsCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0, charset, charset) == OCI_SUCCESS ? 0 : -1;
+    }
 
-   DLLLOCAL int nlsNameMapToOracle(const char *name, QoreString &out) {
-      return nlsNameMap(name, out, OCI_NLS_CS_IANA_TO_ORA);
-   }
+    DLLLOCAL int nlsNameMapToOracle(const char *name, QoreString &out) {
+        return nlsNameMap(name, out, OCI_NLS_CS_IANA_TO_ORA);
+    }
 
-   DLLLOCAL int nlsNameMapToQore(const char *name, QoreString &out) {
-      return nlsNameMap(name, out, OCI_NLS_CS_ORA_TO_IANA);
-   }
+    DLLLOCAL int nlsNameMapToQore(const char *name, QoreString &out) {
+        return nlsNameMap(name, out, OCI_NLS_CS_ORA_TO_IANA);
+    }
 
-   DLLLOCAL int nlsNameMap(const char *name, QoreString &out, int dir) {
-      assert(envhp);
+    DLLLOCAL int nlsNameMap(const char *name, QoreString &out, int dir) {
+        assert(envhp);
 
-      out.clear();
-      out.reserve(OCI_NLS_MAXBUFSZ);
+        out.clear();
+        out.reserve(OCI_NLS_MAXBUFSZ);
 
-      int rc = OCINlsNameMap(envhp, (oratext*)out.getBuffer(), OCI_NLS_MAXBUFSZ, (oratext*)name, dir) == OCI_SUCCESS ? 0 : -1;
-      if (!rc)
-         out.terminate(strlen(out.getBuffer()));
-      return rc;
-   }
+        int rc = OCINlsNameMap(envhp, (oratext*)out.getBuffer(), OCI_NLS_MAXBUFSZ, (oratext*)name, dir) == OCI_SUCCESS ? 0 : -1;
+        if (!rc)
+            out.terminate(strlen(out.getBuffer()));
+        return rc;
+    }
 
-   DLLLOCAL unsigned short nlsCharSetNameToId(const char *name) {
-      assert(envhp);
-      return OCINlsCharSetNameToId(envhp, (oratext*)name);
-   }
+    DLLLOCAL unsigned short nlsCharSetNameToId(const char *name) {
+        assert(envhp);
+        return OCINlsCharSetNameToId(envhp, (oratext*)name);
+    }
 
-   DLLLOCAL operator bool() const {
-      return envhp;
-   }
+    DLLLOCAL operator bool() const {
+        return envhp;
+    }
 
-   DLLLOCAL OCIEnv *operator*() const {
-      return envhp;
-   }
+    DLLLOCAL OCIEnv *operator*() const {
+        return envhp;
+    }
 };
 
 #define OPT_NUM_OPTIMAL 0  // return numbers as int64 if it fits or "number" if not
@@ -274,7 +274,7 @@ public:
 
    DLLLOCAL int writeLob(OCILobLocator* lobp, void* bufp, oraub8 buflen, bool clob, const char* desc, ExceptionSink* xsink);
 
-   DLLLOCAL int setOption(const char* opt, const AbstractQoreNode* val, ExceptionSink* xsink) {
+   DLLLOCAL int setOption(const char* opt, QoreValue val, ExceptionSink* xsink) {
       if (!strcasecmp(opt, DBI_OPT_NUMBER_OPT)) {
          number_support = OPT_NUM_OPTIMAL;
          return 0;
@@ -289,9 +289,9 @@ public:
       }
 #ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
       if (!strcasecmp(opt, DBI_OPT_TIMEZONE)) {
-         assert(get_node_type(val) == NT_STRING);
-         const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(val);
-         const AbstractQoreZoneInfo* tz = find_create_timezone(str->getBuffer(), xsink);
+         assert(val.getType() == NT_STRING);
+         const QoreStringNode* str = val.get<const QoreStringNode>();
+         const AbstractQoreZoneInfo* tz = find_create_timezone(str->c_str(), xsink);
          if (*xsink)
             return -1;
          server_tz = tz;
@@ -302,15 +302,15 @@ public:
       return -1;
    }
 
-   DLLLOCAL AbstractQoreNode* getOption(const char* opt) {
+   DLLLOCAL QoreValue getOption(const char* opt) {
       if (!strcasecmp(opt, DBI_OPT_NUMBER_OPT))
-         return get_bool_node(number_support == OPT_NUM_OPTIMAL);
+         return number_support == OPT_NUM_OPTIMAL;
 
       if (!strcasecmp(opt, DBI_OPT_NUMBER_STRING))
-         return get_bool_node(number_support == OPT_NUM_STRING);
+         return number_support == OPT_NUM_STRING;
 
       if (!strcasecmp(opt, DBI_OPT_NUMBER_NUMERIC))
-         return get_bool_node(number_support == OPT_NUM_NUMERIC);
+         return number_support == OPT_NUM_NUMERIC;
 
 #ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
       assert(!strcasecmp(opt, DBI_OPT_TIMEZONE));
@@ -318,7 +318,7 @@ public:
 #else
       assert(false);
 #endif
-      return 0;
+      return QoreValue();
    }
 
 #ifdef _QORE_HAS_TIME_ZONES
@@ -335,7 +335,7 @@ public:
       return number_support;
    }
 
-   DLLLOCAL AbstractQoreNode* getNumberOptimal(const char* str) const {
+   DLLLOCAL QoreValue getNumberOptimal(const char* str) const {
       // see if the value can fit in an int
       size_t len = strlen(str);
       bool sign = str[0] == '-';
@@ -346,7 +346,7 @@ public:
               || (len == 19 &&
                   ((!sign && strcmp(str, "9223372036854775807") <= 0)
                    ||(sign && strcmp(str, "-9223372036854775808") <= 0)))))
-         return new QoreBigIntNode(strtoll(str, 0, 10));
+         return strtoll(str, 0, 10);
 
       return new QoreNumberNode(str);
    }

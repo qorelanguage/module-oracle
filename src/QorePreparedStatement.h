@@ -364,7 +364,7 @@ public:
 
    DLLLOCAL QoreHashNode* describe(ExceptionSink* xsink);
 
-   DLLLOCAL AbstractQoreNode* execWithPrologue(ExceptionSink* xsink, bool rows, bool cols = false);
+   DLLLOCAL QoreValue execWithPrologue(ExceptionSink* xsink, bool rows, bool cols = false);
 
    DLLLOCAL QoreHashNode* selectRow(ExceptionSink* xsink);
 

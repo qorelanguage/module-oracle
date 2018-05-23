@@ -2360,58 +2360,64 @@ QoreHashNode* QorePreparedStatement::selectRow(ExceptionSink* xsink) {
    return fetchSingleRow(xsink);
 }
 
-AbstractQoreNode* QorePreparedStatement::execWithPrologue(ExceptionSink* xsink, bool rows, bool cols) {
-   if (exec(xsink))
-      return 0;
+QoreValue QorePreparedStatement::execWithPrologue(ExceptionSink* xsink, bool rows, bool cols) {
+    if (exec(xsink)) {
+        return QoreValue();
+    }
 
-   ReferenceHolder<AbstractQoreNode> rv(xsink);
+    ValueHolder rv(xsink);
 
-   // if there are output variables, then fix values if necessary and return
-   if (is_select) {
-      if (rows)
-         rv = QoreOracleStatement::fetchRows(xsink);
-      else
-         rv = QoreOracleStatement::fetchColumns(cols, xsink);
+    // if there are output variables, then fix values if necessary and return
+    if (is_select) {
+        if (rows) {
+            rv = QoreOracleStatement::fetchRows(xsink);
+        }
+        else {
+            rv = QoreOracleStatement::fetchColumns(cols, xsink);
+        }
 
-      if (*xsink)
-         return 0;
-   } else if (hasOutput)
-      rv = getOutputHash(rows, xsink);
-   else {
-      // get row count
-      int rc = affectedRows(xsink);
-      rv = *xsink ? 0 : new QoreBigIntNode(rc);
-   }
+        if (*xsink) {
+            return QoreValue();
+        }
+    } else if (hasOutput) {
+        rv = getOutputHash(rows, xsink);
+    }
+    else {
+        // get row count
+        int rc = affectedRows(xsink);
+        rv = *xsink ? QoreValue() : QoreValue(rc);
+    }
 
-   // commit transaction if autocommit set for datasource
-   if (ds->getAutoCommit())
-      getData()->commit(xsink);
+    // commit transaction if autocommit set for datasource
+    if (ds->getAutoCommit()) {
+        getData()->commit(xsink);
+    }
 
-   return *xsink ? 0 : rv.release();
+    return *xsink ? QoreValue() : rv.release();
 }
 
 int QorePreparedStatement::affectedRows(ExceptionSink* xsink) {
-   int rc = 0;
-   getData()->checkerr(OCIAttrGet(stmthp, OCI_HTYPE_STMT, &rc, 0, OCI_ATTR_ROW_COUNT, getData()->errhp), "QorePreparedStatement::affectedRows()", xsink);
-   return rc;
+    int rc = 0;
+    getData()->checkerr(OCIAttrGet(stmthp, OCI_HTYPE_STMT, &rc, 0, OCI_ATTR_ROW_COUNT, getData()->errhp), "QorePreparedStatement::affectedRows()", xsink);
+    return rc;
 }
 
 QoreHashNode* QorePreparedStatement::fetchRow(ExceptionSink* xsink) {
-   assert(columns);
-   return QoreOracleStatement::fetchRow(*columns, xsink);
+    assert(columns);
+    return QoreOracleStatement::fetchRow(*columns, xsink);
 }
 
 QoreListNode* QorePreparedStatement::fetchRows(int rows, ExceptionSink* xsink) {
-   assert(columns);
-   return QoreOracleStatement::fetchRows(*columns, rows, xsink);
+    assert(columns);
+    return QoreOracleStatement::fetchRows(*columns, rows, xsink);
 }
 
 QoreHashNode* QorePreparedStatement::fetchColumns(int rows, ExceptionSink* xsink) {
-   assert(columns);
-   return QoreOracleStatement::fetchColumns(*columns, rows, false, xsink);
+    assert(columns);
+    return QoreOracleStatement::fetchColumns(*columns, rows, false, xsink);
 }
 
 QoreHashNode* QorePreparedStatement::describe(ExceptionSink* xsink) {
-   assert(columns);
-   return QoreOracleStatement::describe(*columns, xsink);
+    assert(columns);
+    return QoreOracleStatement::describe(*columns, xsink);
 }

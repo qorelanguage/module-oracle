@@ -60,45 +60,45 @@ int QoreOracleSimpleStatement::exec(const char* sql, unsigned len, ExceptionSink
 }
 
 QoreHashNode* QoreOracleStatement::fetchRow(OraResultSet& resultset, ExceptionSink* xsink) {
-   if (!fetch_done) {
-      xsink->raiseException("ORACLE-FETCH-ROW-ERROR", "call SQLStatement::next() before calling SQLStatement::fetchRow()");
-      return 0;
-   }
+    if (!fetch_done) {
+        xsink->raiseException("ORACLE-FETCH-ROW-ERROR", "call SQLStatement::next() before calling SQLStatement::fetchRow()");
+        return 0;
+    }
 
-   // set up hash for row
-   ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
+    // set up hash for row
+    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
 
-   // copy data or perform per-value processing if needed
-   for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
-      OraColumnBuffer *w = *i;
-      // assign value to hash
-      AbstractQoreNode* n = w->getValue(true, xsink);
-      if (*xsink) {
-         assert(!n);
-         return 0;
-      }
-      HashAssignmentHelper hah(**h, w->name.c_str());
-      // if we have a duplicate column
-      if (!hah.get().isNothing()) {
-         // find a unique column name
-         unsigned num = 1;
-         while (true) {
-            QoreStringMaker tmp("%s_%d", w->name.c_str(), num);
-            hah.reassign(tmp.c_str());
-            if (!hah.get().isNothing()) {
-               ++num;
-               continue;
+    // copy data or perform per-value processing if needed
+    for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
+        OraColumnBuffer *w = *i;
+        // assign value to hash
+        QoreValue n = w->getValue(true, xsink);
+        if (*xsink) {
+            assert(!n);
+            return 0;
+        }
+        HashAssignmentHelper hah(**h, w->name.c_str());
+        // if we have a duplicate column
+        if (!hah.get().isNothing()) {
+            // find a unique column name
+            unsigned num = 1;
+            while (true) {
+                QoreStringMaker tmp("%s_%d", w->name.c_str(), num);
+                hah.reassign(tmp.c_str());
+                if (!hah.get().isNothing()) {
+                    ++num;
+                    continue;
+                }
+                break;
             }
-            break;
-         }
-      }
+        }
 
-      hah.assign(n, xsink);
-      if (*xsink)
-         return 0;
-   }
+        hah.assign(n, xsink);
+        if (*xsink)
+            return 0;
+    }
 
-   return h.release();
+    return h.release();
 }
 
 QoreListNode* QoreOracleStatement::fetchRows(ExceptionSink* xsink) {
@@ -272,7 +272,7 @@ QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int row
                 }
             }
 
-            AbstractQoreNode* n = w->getValue(false, xsink);
+            QoreValue n = w->getValue(false, xsink);
             if (*xsink) {
                 assert(!n);
                 break;
