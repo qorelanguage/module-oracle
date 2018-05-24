@@ -83,31 +83,31 @@ static int oracle_rollback(Datasource* ds, ExceptionSink* xsink) {
    return conn.rollback(xsink);
 }
 
-static AbstractQoreNode* oracle_exec(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
+static QoreValue oracle_exec(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
     QorePreparedStatementHelper bg(ds, xsink);
 
     if (bg.prepare(qstr, args, true, xsink))
         return 0;
 
-    return bg.execWithPrologue(xsink, false).takeNode();
+    return bg.execWithPrologue(xsink, false);
 }
 
-static AbstractQoreNode* oracle_select(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
+static QoreValue oracle_select(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
     QorePreparedStatementHelper bg(ds, xsink);
 
     if (bg.prepare(qstr, args, true, xsink))
         return 0;
 
-    return bg.execWithPrologue(xsink, false, true).takeNode();
+    return bg.execWithPrologue(xsink, false, true);
 }
 
-static AbstractQoreNode* oracle_exec_raw(Datasource* ds, const QoreString* qstr, ExceptionSink* xsink) {
+static QoreValue oracle_exec_raw(Datasource* ds, const QoreString* qstr, ExceptionSink* xsink) {
     QorePreparedStatementHelper bg(ds, xsink);
 
     if (bg.prepare(qstr, 0, false, xsink))
         return 0;
 
-    return bg.execWithPrologue(xsink, false).takeNode();
+    return bg.execWithPrologue(xsink, false);
 }
 
 static QoreHashNode* oracle_select_row(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
@@ -119,71 +119,71 @@ static QoreHashNode* oracle_select_row(Datasource* ds, const QoreString* qstr, c
     return bg.selectRow(xsink);
 }
 
-static AbstractQoreNode* oracle_exec_rows(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
+static QoreValue oracle_exec_rows(Datasource* ds, const QoreString* qstr, const QoreListNode* args, ExceptionSink* xsink) {
     QorePreparedStatementHelper bg(ds, xsink);
 
     if (bg.prepare(qstr, args, true, xsink))
         return 0;
 
-    return bg.execWithPrologue(xsink, true).takeNode();
+    return bg.execWithPrologue(xsink, true);
 }
 
 static int oracle_open(Datasource* ds, ExceptionSink* xsink) {
-   //printd(5, "oracle_open() datasource %p for DB=%s open\n", ds, ds->getDBName());
+    //printd(5, "oracle_open() datasource %p for DB=%s open\n", ds, ds->getDBName());
 
-   if (!ds->getUsername()) {
-      xsink->raiseException("DATASOURCE-MISSING-USERNAME", "Datasource has an empty username parameter");
-      return -1;
-   }
-   if (!ds->getPassword()) {
-      xsink->raiseException("DATASOURCE-MISSING-PASSWORD", "Datasource has an empty password parameter");
-      return -1;
-   }
-   if (!ds->getDBName()) {
-      xsink->raiseException("DATASOURCE-MISSING-DBNAME", "Datasource has an empty dbname parameter");
-      return -1;
-   }
+    if (!ds->getUsername()) {
+        xsink->raiseException("DATASOURCE-MISSING-USERNAME", "Datasource has an empty username parameter");
+        return -1;
+    }
+    if (!ds->getPassword()) {
+        xsink->raiseException("DATASOURCE-MISSING-PASSWORD", "Datasource has an empty password parameter");
+        return -1;
+    }
+    if (!ds->getDBName()) {
+        xsink->raiseException("DATASOURCE-MISSING-DBNAME", "Datasource has an empty dbname parameter");
+        return -1;
+    }
 
-   int port = ds->getPort();
+    int port = ds->getPort();
 
-   if (port && !ds->getHostName()) {
-      xsink->raiseException("DATASOURCE-MISSING-HOSTNAME", "port is set to %d, but no hostname is set; both hostname and port must be set to make a direct connection without TNS", port);
-      return -1;
-   }
+    if (port && !ds->getHostName()) {
+        xsink->raiseException("DATASOURCE-MISSING-HOSTNAME", "port is set to %d, but no hostname is set; both hostname and port must be set to make a direct connection without TNS", port);
+        return -1;
+    }
 
-   if (!port && ds->getHostName()) {
-      xsink->raiseException("DATASOURCE-MISSING-PORT", "hostname is set to '%s', but no port is set; both hostname and port must be set to make a direct connection without TNS", ds->getHostName());
-      return -1;
-   }
+    if (!port && ds->getHostName()) {
+        xsink->raiseException("DATASOURCE-MISSING-PORT", "hostname is set to '%s', but no port is set; both hostname and port must be set to make a direct connection without TNS", ds->getHostName());
+        return -1;
+    }
 
-   std::unique_ptr<QoreOracleConnection> conn(new QoreOracleConnection(*ds, xsink));
-   if (*xsink)
-      return -1;
+    std::unique_ptr<QoreOracleConnection> conn(new QoreOracleConnection(*ds, xsink));
+    if (*xsink)
+        return -1;
 
-   ds->setPrivateData((void *)conn.release());
-   return 0;
+    ds->setPrivateData((void *)conn.release());
+    return 0;
 }
 
 static int oracle_close(Datasource* ds) {
-   QORE_TRACE("oracle_close()");
+    QORE_TRACE("oracle_close()");
 
-   QoreOracleConnection *conn = (QoreOracleConnection *)ds->getPrivateData();
+    QoreOracleConnection *conn = (QoreOracleConnection *)ds->getPrivateData();
 
-   delete conn;
+    delete conn;
 
-   ds->setPrivateData(0);
+    ds->setPrivateData(0);
 
-   return 0;
+    return 0;
 }
 
-static AbstractQoreNode* oracle_get_server_version(Datasource* ds, ExceptionSink* xsink) {
+static QoreValue oracle_get_server_version(Datasource* ds, ExceptionSink* xsink) {
    // get private data structure for connection
    QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
    return conn.getServerVersion(xsink);
 }
 
 #ifdef HAVE_OCICLIENTVERSION
-static AbstractQoreNode* oracle_get_client_version(const Datasource* ds, ExceptionSink* xsink) {
+static QoreValue oracle_get_client_version(const Datasource* ds, ExceptionSink* xsink) {
     sword major, minor, update, patch, port_update;
 
     OCIClientVersion(&major, &minor, &update, &patch, &port_update);
@@ -332,13 +332,13 @@ static int oracle_stmt_close(SQLStatement* stmt, ExceptionSink* xsink) {
    return *xsink ? -1 : 0;
 }
 
-static int oracle_opt_set(Datasource* ds, const char* opt, const AbstractQoreNode* val, ExceptionSink* xsink) {
+static int oracle_opt_set(Datasource* ds, const char* opt, const QoreValue val, ExceptionSink* xsink) {
    // get private data structure for connection
    QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
    return conn.setOption(opt, val, xsink);
 }
 
-static AbstractQoreNode* oracle_opt_get(const Datasource* ds, const char* opt) {
+static QoreValue oracle_opt_get(const Datasource* ds, const char* opt) {
    // get private data structure for connection
    QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
    return conn.getOption(opt).takeNode();

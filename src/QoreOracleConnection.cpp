@@ -1,24 +1,24 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /*
-  QoreOracleConnection.cpp
+    QoreOracleConnection.cpp
 
-  Qore Programming Language
+    Qore Programming Language
 
-  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
+    Copyright (C) 2003 - 2018 Qore Technologies, s.r.o.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #include "oracle.h"
@@ -31,17 +31,11 @@ static char session_sql[] = "alter session set nls_numeric_characters = \". \"";
 
 QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsink)
   : errhp(0), svchp(0), srvhp(0), usrhp(0), ocilib_cn(0), ds(n_ds), ocilib_init(false),
-#ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
     server_tz(currentTZ()),
-#endif
     number_support(OPT_NUM_DEFAULT) {
    // locking is done on the level above with the Datasource class
 
-#ifdef QORE_HAS_DATASOURCE_PORT
    int port = ds.getPort();
-#else
-   int port = 0;
-#endif
 
    if (port)
       cstr.sprintf("//%s:%d/%s", ds.getHostName(), port, ds.getDBName());
@@ -350,167 +344,159 @@ int QoreOracleConnection::rollback(ExceptionSink *xsink) {
 }
 
 DateTimeNode* QoreOracleConnection::getDate(OCIDate* dt) {
-   sb2 year;
-   ub1 month, day;
-   OCIDateGetDate(dt, &year, &month, &day);
+    sb2 year;
+    ub1 month, day;
+    OCIDateGetDate(dt, &year, &month, &day);
 
-   ub1 hour, minute, second;
-   OCIDateGetTime(dt, &hour, &minute, &second);
+    ub1 hour, minute, second;
+    OCIDateGetTime(dt, &hour, &minute, &second);
 
-#ifdef _QORE_HAS_TIME_ZONES
-   return DateTimeNode::makeAbsolute(getTZ(), year, month, day, hour, minute, second, 0);
-#else
-   return new DateTimeNode(year, month, day, hour, minute, second, 0);
-#endif
+    return DateTimeNode::makeAbsolute(getTZ(), year, month, day, hour, minute, second, 0);
 }
 
 DateTimeNode* QoreOracleConnection::getTimestamp(bool get_tz, OCIDateTime *odt, ExceptionSink *xsink) {
-   //printd(5, "QoreOracleConnection::getTimestamp() using TIMESTAMP handle %p\n", odt);
-   sb2 year;
-   ub1 month, day;
-   if (checkerr(OCIDateTimeGetDate(*env, errhp, odt, &year, &month, &day), "OCIDateTimeGetDate()", xsink))
-      return 0;
+    //printd(5, "QoreOracleConnection::getTimestamp() using TIMESTAMP handle %p\n", odt);
+    sb2 year;
+    ub1 month, day;
+    if (checkerr(OCIDateTimeGetDate(*env, errhp, odt, &year, &month, &day), "OCIDateTimeGetDate()", xsink))
+        return nullptr;
 
-   ub1 hour, minute, second;
-   ub4 ns; // nanoseconds
-   if (checkerr(OCIDateTimeGetTime(*env, errhp, odt, &hour, &minute, &second, &ns), "OCIDateTimeGetTime()", xsink))
-      return 0;
+    ub1 hour, minute, second;
+    ub4 ns; // nanoseconds
+    if (checkerr(OCIDateTimeGetTime(*env, errhp, odt, &hour, &minute, &second, &ns), "OCIDateTimeGetTime()", xsink))
+        return nullptr;
 
-#ifdef _QORE_HAS_TIME_ZONES
-   const AbstractQoreZoneInfo *zone;
-   if (!get_tz)
-      zone = getTZ();
-   else {
-      // try to get time zone from date value
-      // time zone offset, hour and minute
-      sb1 oh = 0, om = 0;
-      sword err = OCIDateTimeGetTimeZoneOffset(*env, errhp, odt, &oh, &om);
-      if (err == OCI_SUCCESS) {
-         //printd(5, "err=%d, oh=%d, om=%d, se=%d\n", err, (int)oh, (int)om, oh * 3600 + om * 60);
-         zone = findCreateOffsetZone(oh * 3600 + om * 60);
-      }
-      else {
-         //printd(5, "QoreOracleConnection::getTimestamp() this=%p time zone retrieval failed (%04d-%02d-%02d %02d:%02d:%02d)\n", this, year, month, day, hour, minute, second);
-         // no time zone info, assume local time
-         zone = getTZ();
-      }
-   }
-   return DateTimeNode::makeAbsolute(zone, year, month, day, hour, minute, second, ns / 1000);
-#else
-   return new DateTimeNode(year, month, day, hour, minute, second, ns / 1000000);
-#endif
+    const AbstractQoreZoneInfo *zone;
+    if (!get_tz)
+        zone = getTZ();
+    else {
+        // try to get time zone from date value
+        // time zone offset, hour and minute
+        sb1 oh = 0, om = 0;
+        sword err = OCIDateTimeGetTimeZoneOffset(*env, errhp, odt, &oh, &om);
+        if (err == OCI_SUCCESS) {
+            //printd(5, "err=%d, oh=%d, om=%d, se=%d\n", err, (int)oh, (int)om, oh * 3600 + om * 60);
+            zone = findCreateOffsetZone(oh * 3600 + om * 60);
+        }
+        else {
+            //printd(5, "QoreOracleConnection::getTimestamp() this=%p time zone retrieval failed (%04d-%02d-%02d %02d:%02d:%02d)\n", this, year, month, day, hour, minute, second);
+            // no time zone info, assume local time
+            zone = getTZ();
+        }
+    }
+    return DateTimeNode::makeAbsolute(zone, year, month, day, hour, minute, second, ns / 1000);
 }
 
 BinaryNode *QoreOracleConnection::readBlob(OCILobLocator *lobp, ExceptionSink *xsink) {
-   // retrieve *LOB data
-   void *dbuf = malloc(LOB_BLOCK_SIZE);
-   ON_BLOCK_EXIT(free, dbuf);
-   ub4 amt = 0;
+    // retrieve *LOB data
+    void *dbuf = malloc(LOB_BLOCK_SIZE);
+    ON_BLOCK_EXIT(free, dbuf);
+    ub4 amt = 0;
 
-   SimpleRefHolder<BinaryNode> b(new BinaryNode);
-   // read LOB data in streaming callback mode
-   if (checkerr(OCILobRead(svchp, errhp, lobp, &amt, 1, dbuf, LOB_BLOCK_SIZE, *b, readBlobCallback, 0, 0), "QoreOracleConnection::readBlob()", xsink))
-      return 0;
-   return b.release();
+    SimpleRefHolder<BinaryNode> b(new BinaryNode);
+    // read LOB data in streaming callback mode
+    if (checkerr(OCILobRead(svchp, errhp, lobp, &amt, 1, dbuf, LOB_BLOCK_SIZE, *b, readBlobCallback, 0, 0), "QoreOracleConnection::readBlob()", xsink))
+        return nullptr;
+    return b.release();
 }
 
 QoreStringNode *QoreOracleConnection::readClob(OCILobLocator *lobp, const QoreEncoding *enc, ExceptionSink *xsink) {
-   void *dbuf = malloc(LOB_BLOCK_SIZE);
-   ON_BLOCK_EXIT(free, dbuf);
-   ub4 amt = 0;
+    void *dbuf = malloc(LOB_BLOCK_SIZE);
+    ON_BLOCK_EXIT(free, dbuf);
+    ub4 amt = 0;
 
-   QoreStringNodeHolder str(new QoreStringNode(enc));
-   // read LOB data in streaming callback mode
-   if (checkerr(OCILobRead(svchp, errhp, lobp, &amt, 1, dbuf, LOB_BLOCK_SIZE, *str, readClobCallback, (ub2)charsetid, 0), "QoreOracleConnection::readClob()", xsink))
-      return 0;
-   return str.release();
+    QoreStringNodeHolder str(new QoreStringNode(enc));
+    // read LOB data in streaming callback mode
+    if (checkerr(OCILobRead(svchp, errhp, lobp, &amt, 1, dbuf, LOB_BLOCK_SIZE, *str, readClobCallback, (ub2)charsetid, 0), "QoreOracleConnection::readClob()", xsink))
+        return nullptr;
+    return str.release();
 }
 
 int QoreOracleConnection::writeLob(OCILobLocator* lobp, void* bufp, oraub8 buflen, bool clob, const char* desc, ExceptionSink* xsink) {
 #ifdef HAVE_OCILOBWRITE2
-   oraub8 amtp = buflen;
-   if (buflen <= LOB_BLOCK_SIZE)
-      return checkerr(OCILobWrite2(svchp, errhp, lobp, &amtp, 0, 1, bufp, buflen, OCI_ONE_PIECE, 0, 0, charsetid, SQLCS_IMPLICIT), desc, xsink);
+    oraub8 amtp = buflen;
+    if (buflen <= LOB_BLOCK_SIZE)
+        return checkerr(OCILobWrite2(svchp, errhp, lobp, &amtp, 0, 1, bufp, buflen, OCI_ONE_PIECE, 0, 0, charsetid, SQLCS_IMPLICIT), desc, xsink);
 
-   // retrieve *LOB data
-   void* dbuf = malloc(LOB_BLOCK_SIZE);
-   ON_BLOCK_EXIT(free, dbuf);
+    // retrieve *LOB data
+    void* dbuf = malloc(LOB_BLOCK_SIZE);
+    ON_BLOCK_EXIT(free, dbuf);
 
-   oraub8 offset = 0;
-   while (true) {
-      ub1 piece;
-      oraub8 len = buflen - offset;
-      if (len > LOB_BLOCK_SIZE) {
-         len = LOB_BLOCK_SIZE;
-         piece = offset ? OCI_NEXT_PIECE : OCI_FIRST_PIECE;
-         //printd(5, "QoreOracleConnection::writeLob() piece = %s\n", offset ? "OCI_NEXT_PIECE" : "OCI_FIRST_PIECE");
-      }
-      else {
-         piece = OCI_LAST_PIECE;
-         //printd(5, "QoreOracleConnection::writeLob() piece = OCI_LAST_PIECE\n");
-      }
+    oraub8 offset = 0;
+    while (true) {
+        ub1 piece;
+        oraub8 len = buflen - offset;
+        if (len > LOB_BLOCK_SIZE) {
+            len = LOB_BLOCK_SIZE;
+            piece = offset ? OCI_NEXT_PIECE : OCI_FIRST_PIECE;
+            //printd(5, "QoreOracleConnection::writeLob() piece = %s\n", offset ? "OCI_NEXT_PIECE" : "OCI_FIRST_PIECE");
+        }
+        else {
+            piece = OCI_LAST_PIECE;
+            //printd(5, "QoreOracleConnection::writeLob() piece = OCI_LAST_PIECE\n");
+        }
 
-      // copy data to buffer
-      memcpy(dbuf, ((char*)bufp) + offset, len);
+        // copy data to buffer
+        memcpy(dbuf, ((char*)bufp) + offset, len);
 
-      sword rc = OCILobWrite2(svchp, errhp, lobp, &amtp, 0, 1, dbuf, len, piece, 0, 0, charsetid, SQLCS_IMPLICIT);
-      //printd(5, "QoreOracleConnection::writeLob() offset: "QLLD" len: "QLLD" amtp: "QLLD" total: "QLLD" rc: %d\n", offset, len, amtp, buflen, (int)rc);
-      if (piece == OCI_LAST_PIECE) {
-         if (rc != OCI_SUCCESS) {
+        sword rc = OCILobWrite2(svchp, errhp, lobp, &amtp, 0, 1, dbuf, len, piece, 0, 0, charsetid, SQLCS_IMPLICIT);
+        //printd(5, "QoreOracleConnection::writeLob() offset: "QLLD" len: "QLLD" amtp: "QLLD" total: "QLLD" rc: %d\n", offset, len, amtp, buflen, (int)rc);
+        if (piece == OCI_LAST_PIECE) {
+            if (rc != OCI_SUCCESS) {
+                checkerr(rc, desc, xsink);
+                return -1;
+            }
+            break;
+        }
+        if (rc != OCI_NEED_DATA) {
             checkerr(rc, desc, xsink);
+            assert(*xsink);
             return -1;
-         }
-         break;
-      }
-      if (rc != OCI_NEED_DATA) {
-         checkerr(rc, desc, xsink);
-         assert(*xsink);
-         return -1;
-      }
-      offset += len;
-   }
+        }
+        offset += len;
+    }
 #else
-   ub4 amtp = buflen;
-   if (buflen <= LOB_BLOCK_SIZE)
-      return checkerr(OCILobWrite(svchp, errhp, lobp, &amtp, 1, bufp, buflen, OCI_ONE_PIECE, 0, 0, charsetid, SQLCS_IMPLICIT), desc, xsink);
+    ub4 amtp = buflen;
+    if (buflen <= LOB_BLOCK_SIZE)
+        return checkerr(OCILobWrite(svchp, errhp, lobp, &amtp, 1, bufp, buflen, OCI_ONE_PIECE, 0, 0, charsetid, SQLCS_IMPLICIT), desc, xsink);
 
-   // retrieve *LOB data
-   void* dbuf = malloc(LOB_BLOCK_SIZE);
-   ON_BLOCK_EXIT(free, dbuf);
+    // retrieve *LOB data
+    void* dbuf = malloc(LOB_BLOCK_SIZE);
+    ON_BLOCK_EXIT(free, dbuf);
 
-   ub4 offset = 0;
-   while (true) {
-      ub1 piece;
-      ub4 len = buflen - offset;
-      if (len > LOB_BLOCK_SIZE) {
-         len = LOB_BLOCK_SIZE;
-         piece = offset ? OCI_NEXT_PIECE : OCI_FIRST_PIECE;
-         //printd(5, "QoreOracleConnection::writeLob() piece = %s\n", offset ? "OCI_NEXT_PIECE" : "OCI_FIRST_PIECE");
-      }
-      else {
-         piece = OCI_LAST_PIECE;
-         //printd(5, "QoreOracleConnection::writeLob() piece = OCI_LAST_PIECE\n");
-      }
+    ub4 offset = 0;
+    while (true) {
+        ub1 piece;
+        ub4 len = buflen - offset;
+        if (len > LOB_BLOCK_SIZE) {
+            len = LOB_BLOCK_SIZE;
+            piece = offset ? OCI_NEXT_PIECE : OCI_FIRST_PIECE;
+            //printd(5, "QoreOracleConnection::writeLob() piece = %s\n", offset ? "OCI_NEXT_PIECE" : "OCI_FIRST_PIECE");
+        }
+        else {
+            piece = OCI_LAST_PIECE;
+            //printd(5, "QoreOracleConnection::writeLob() piece = OCI_LAST_PIECE\n");
+        }
 
-      // copy data to buffer
-      memcpy(dbuf, ((char*)bufp) + offset, len);
+        // copy data to buffer
+        memcpy(dbuf, ((char*)bufp) + offset, len);
 
-      sword rc = OCILobWrite(svchp, errhp, lobp, &amtp, 1, dbuf, len, piece, 0, 0, charsetid, SQLCS_IMPLICIT);
-      //printd(5, "QoreOracleConnection::writeLob() offset: "QLLD" len: "QLLD" amtp: "QLLD" total: "QLLD" rc: %d\n", offset, len, amtp, buflen, (int)rc);
-      if (piece == OCI_LAST_PIECE) {
-         if (rc != OCI_SUCCESS) {
+        sword rc = OCILobWrite(svchp, errhp, lobp, &amtp, 1, dbuf, len, piece, 0, 0, charsetid, SQLCS_IMPLICIT);
+        //printd(5, "QoreOracleConnection::writeLob() offset: "QLLD" len: "QLLD" amtp: "QLLD" total: "QLLD" rc: %d\n", offset, len, amtp, buflen, (int)rc);
+        if (piece == OCI_LAST_PIECE) {
+            if (rc != OCI_SUCCESS) {
+                checkerr(rc, desc, xsink);
+                return -1;
+            }
+            break;
+        }
+        if (rc != OCI_NEED_DATA) {
             checkerr(rc, desc, xsink);
+            assert(*xsink);
             return -1;
-         }
-         break;
-      }
-      if (rc != OCI_NEED_DATA) {
-         checkerr(rc, desc, xsink);
-         assert(*xsink);
-         return -1;
-      }
-      offset += len;
-   }
+        }
+        offset += len;
+    }
 #endif
-   return 0;
+    return 0;
 }

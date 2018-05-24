@@ -23,7 +23,7 @@ void ocilib_err_handler(OCI_Error* err, ExceptionSink* xsink);
  */
 boolean OCI_CollGetStruct
 (
-   OCI_Library *pOCILib, 
+   OCI_Library *pOCILib,
    OCI_Coll *obj,
    void **pp_struct,
    void** pp_ind,
@@ -72,7 +72,7 @@ OCI_Object* objPlaceholderQore(QoreOracleConnection * conn,
     \param xsink exception hanlder
     \retval AbstractQoreNode* Plain Qore hash node
  */
-AbstractQoreNode* objToQore(QoreOracleConnection * conn,
+QoreHashNode* objToQore(QoreOracleConnection * conn,
                             OCI_Object * obj,
                             ExceptionSink *xsink);
 
@@ -110,9 +110,9 @@ OCI_Coll* collPlaceholderQore(QoreOracleConnection * conn,
     \param xsink exception hanlder
     \retval AbstractQoreNode* Plain Qore list node
  */
-AbstractQoreNode* collToQore(QoreOracleConnection *conn,
-                             OCI_Coll * obj,
-                             ExceptionSink *xsink);
+QoreListNode* collToQore(QoreOracleConnection *conn,
+                         OCI_Coll * obj,
+                         ExceptionSink *xsink);
 
 
 #endif
