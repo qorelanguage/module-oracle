@@ -35,95 +35,95 @@ static DateTimeNode* convert_date_time(unsigned char *str) {
 }
 
 void OraColumnValue::del(ExceptionSink *xsink) {
-   //printd(5, "OraColumnValue::del() this: %p dtype: %d buf.ptr: %p array: %d\n", this, dtype, buf.ptr, array);
+    //printd(5, "OraColumnValue::del() this: %p dtype: %d buf.ptr: %p array: %d\n", this, dtype, buf.ptr, array);
 
-   if (array) {
-      delete buf.arraybind;
-      array = false;
-      return;
-   }
+    if (array) {
+        delete buf.arraybind;
+        array = false;
+        return;
+    }
 
-   switch (dtype) {
-      case 0:
-      case SQLT_INT:
-      case SQLT_UIN:
-      case SQLT_FLT:
+    switch (dtype) {
+        case 0:
+        case SQLT_INT:
+        case SQLT_UIN:
+        case SQLT_FLT:
 #ifdef SQLT_BFLOAT
-      case SQLT_BFLOAT:
+        case SQLT_BFLOAT:
 #endif
 #ifdef SQLT_BDOUBLE
-      case SQLT_BDOUBLE:
+        case SQLT_BDOUBLE:
 #endif
 #ifdef SQLT_IBFLOAT
-      case SQLT_IBFLOAT:
+        case SQLT_IBFLOAT:
 #endif
 #ifdef SQLT_IBDOUBLE
-      case SQLT_IBDOUBLE:
+        case SQLT_IBDOUBLE:
 #endif
-      case SQLT_DAT:
-         break;
+        case SQLT_DAT:
+            break;
 
-      case SQLT_CLOB:
-      case SQLT_BLOB:
-         if (buf.ptr)
-            OCIDescriptorFree(buf.ptr, OCI_DTYPE_LOB);
-         break;
+        case SQLT_CLOB:
+        case SQLT_BLOB:
+            if (buf.ptr)
+                OCIDescriptorFree(buf.ptr, OCI_DTYPE_LOB);
+            break;
 
-      case SQLT_RDD:
-         if (buf.ptr)
-            OCIDescriptorFree(buf.ptr, OCI_DTYPE_ROWID);
-         break;
+        case SQLT_RDD:
+            if (buf.ptr)
+                OCIDescriptorFree(buf.ptr, OCI_DTYPE_ROWID);
+            break;
 
-      case SQLT_RSET:
-         if (buf.ptr)
-            OCIHandleFree(buf.ptr, OCI_HTYPE_STMT);
-         break;
+        case SQLT_RSET:
+            if (buf.ptr)
+                OCIHandleFree(buf.ptr, OCI_HTYPE_STMT);
+            break;
 
-      case SQLT_TIMESTAMP:
-      case SQLT_TIMESTAMP_TZ:
-      case SQLT_TIMESTAMP_LTZ:
-      case SQLT_DATE:
-         if (buf.odt) {
-            //printd(5, "OraColumnValue::del() this=%p freeing TIMESTAMP descriptor %p\n", this, buf.odt);
-            OCIDescriptorFree(buf.odt, QORE_DTYPE_TIMESTAMP);
-         }
-         break;
+        case SQLT_TIMESTAMP:
+        case SQLT_TIMESTAMP_TZ:
+        case SQLT_TIMESTAMP_LTZ:
+        case SQLT_DATE:
+            if (buf.odt) {
+                //printd(5, "OraColumnValue::del() this=%p freeing TIMESTAMP descriptor %p\n", this, buf.odt);
+                OCIDescriptorFree(buf.odt, QORE_DTYPE_TIMESTAMP);
+            }
+            break;
 
-      case SQLT_INTERVAL_YM:
-         if (buf.oi)
-            OCIDescriptorFree(buf.odt, OCI_DTYPE_INTERVAL_YM);
-         break;
+        case SQLT_INTERVAL_YM:
+            if (buf.oi)
+                OCIDescriptorFree(buf.odt, OCI_DTYPE_INTERVAL_YM);
+            break;
 
-      case SQLT_INTERVAL_DS:
-         if (buf.oi)
-            OCIDescriptorFree(buf.odt, OCI_DTYPE_INTERVAL_DS);
-         break;
+        case SQLT_INTERVAL_DS:
+            if (buf.oi)
+                OCIDescriptorFree(buf.odt, OCI_DTYPE_INTERVAL_DS);
+            break;
 
-      case SQLT_BIN:
-      case SQLT_LBI:
-      case SQLT_LVB: {
-         QoreOracleConnection *conn = stmt.getData();
-         //printd(5, "freeing binary pointer for SQLT_LVB %p\n", buf.ptr);
-         conn->rawFree((OCIRaw**)&buf.ptr, xsink);
-         break;
-      }
+        case SQLT_BIN:
+        case SQLT_LBI:
+        case SQLT_LVB: {
+            QoreOracleConnection *conn = stmt.getData();
+            //printd(5, "freeing binary pointer for SQLT_LVB %p\n", buf.ptr);
+            conn->rawFree((OCIRaw**)&buf.ptr, xsink);
+            break;
+        }
 
-      case SQLT_LNG:
-         if (buf.lng)
-            delete buf.lng;
-         break;
+        case SQLT_LNG:
+            if (buf.lng)
+                delete buf.lng;
+            break;
 
-      case SQLT_NTY:
-         freeObject(xsink);
-         break;
+        case SQLT_NTY:
+            freeObject(xsink);
+            break;
 
-      default:
-         if (buf.ptr) {
-            //printd(5, "freeing pointer with free(%p)\n", buf.ptr);
-            free(buf.ptr);
-         }
-         break;
-   }
+        default:
+            if (buf.ptr) {
+                //printd(5, "freeing pointer with free(%p)\n", buf.ptr);
+                free(buf.ptr);
+            }
+            break;
+    }
 }
 
 #define ORA_ROWID_LEN 25
@@ -275,35 +275,35 @@ QoreValue OraColumnValue::getValue(ExceptionSink *xsink, bool horizontal, bool d
 }
 
 QoreStringNode* OraColumnValue::doReturnString(bool destructive) {
-   assert(!array);
-   if (!destructive)
-      return new QoreStringNode((const char*)buf.ptr, stmt.getEncoding());
-   int len = strlen((char*)buf.ptr);
-   QoreStringNode* str = new QoreStringNode((char*)buf.ptr, len, len + 1, stmt.getEncoding());
-   //printd(5, "OraColumnValue::doReturnString() this: %p buf.ptr: %p\n", this, buf.ptr);
-   buf.ptr = 0;
-   return str;
+    assert(!array);
+    if (!destructive)
+        return new QoreStringNode((const char*)buf.ptr, stmt.getEncoding());
+    int len = strlen((char*)buf.ptr);
+    QoreStringNode* str = new QoreStringNode((char*)buf.ptr, len, len + 1, stmt.getEncoding());
+    //printd(5, "OraColumnValue::doReturnString() this: %p buf.ptr: %p\n", this, buf.ptr);
+    buf.ptr = nullptr;
+    return str;
 }
 
 void OraColumnValue::freeObject(ExceptionSink* xsink) {
-   assert(!array);
-   assert(dtype == SQLT_NTY);
-   assert(subdtype == SQLT_NTY_OBJECT || subdtype == SQLT_NTY_COLLECTION);
+    assert(!array);
+    assert(dtype == SQLT_NTY);
+    assert(subdtype == SQLT_NTY_OBJECT || subdtype == SQLT_NTY_COLLECTION);
 
-   QoreOracleConnection *conn = stmt.getData();
+    QoreOracleConnection *conn = stmt.getData();
 
-   // printd(5, "deleting object (OraColumn) buf.oraObj: %p, buf.oraColl: %p\n", buf.oraObj, buf.oraColl);
-   // objects are allocated in bind-methods and it has to be freed in any case
-   if (subdtype == SQLT_NTY_OBJECT) {
-      //printd(5, "OraColumnValue::getValue() freed OBJECT: %p\n", buf.oraObj);
-      if (buf.oraObj) {
-         OCI_ObjectFree2(&conn->ocilib, buf.oraObj, xsink);
-      }
-   }
-   else {
-      //printd(5, "OraColumnValue::freeObject() freed COLLECTION: %p\n", buf.oraColl);
-      if (buf.oraColl) {
-         OCI_CollFree2(&conn->ocilib, buf.oraColl, xsink);
-      }
-   }
+    // printd(5, "deleting object (OraColumn) buf.oraObj: %p, buf.oraColl: %p\n", buf.oraObj, buf.oraColl);
+    // objects are allocated in bind-methods and it has to be freed in any case
+    if (subdtype == SQLT_NTY_OBJECT) {
+        //printd(5, "OraColumnValue::getValue() freed OBJECT: %p\n", buf.oraObj);
+        if (buf.oraObj) {
+            OCI_ObjectFree2(&conn->ocilib, buf.oraObj, xsink);
+        }
+    }
+    else {
+        //printd(5, "OraColumnValue::freeObject() freed COLLECTION: %p\n", buf.oraColl);
+        if (buf.oraColl) {
+            OCI_CollFree2(&conn->ocilib, buf.oraColl, xsink);
+        }
+    }
 }

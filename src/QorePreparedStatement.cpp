@@ -1618,8 +1618,8 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
             if (*xsink)
                 return;
 
-            strncpy((char* )buf.ptr, str->c_str(), data.ph_maxsize);
-            ((char* )buf.ptr)[data.ph_maxsize] = '\0';
+            strncpy((char*)buf.ptr, str->c_str(), data.ph_maxsize);
+            ((char*)buf.ptr)[data.ph_maxsize] = '\0';
         }
         else
             ((char* )buf.ptr)[0] = '\0';
@@ -1627,7 +1627,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
         stmt.bindByPos(bndp, pos, buf.ptr, data.ph_maxsize + 1, SQLT_STR, xsink, &ind);
     }
     else if (data.isType("date")) {
-        //printd(5, "oraBindNode::bindPlaceholder() this: %p, timestamp dtype: %d\n", this, QORE_SQLT_TIMESTAMP);
+        //printd(5, "OraBindNode::bindPlaceholder() this: %p, timestamp dtype: %d\n", this, QORE_SQLT_TIMESTAMP);
         if (setupDateDescriptor(xsink))
             return;
 
@@ -2162,7 +2162,7 @@ int QorePreparedStatement::bindPlaceholders(const QoreListNode* args, ExceptionS
     unsigned arg_offset = 0;
     for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
         OraBindNode* w = node_list[i];
-        if (!w->isValue())
+        if (w->isValue())
             continue;
 
         // get bind argument
