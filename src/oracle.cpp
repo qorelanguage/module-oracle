@@ -341,7 +341,7 @@ static int oracle_opt_set(Datasource* ds, const char* opt, const QoreValue val, 
 static QoreValue oracle_opt_get(const Datasource* ds, const char* opt) {
    // get private data structure for connection
    QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
-   return conn.getOption(opt).takeNode();
+   return conn.getOption(opt);
 }
 
 QoreNamespace OraNS("Oracle");
