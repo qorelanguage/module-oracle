@@ -1,26 +1,26 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /*
-  ql_oracle.qpp
+    ql_oracle.qpp
 
-  Oracle OCI Interface to Qore DBI layer
+    Oracle OCI Interface to Qore DBI layer
 
-  Qore Programming Language
+    Qore Programming Language
 
-  Copyright 2003 - 2016 David Nichols
+    Copyright 2003 - 2018 Qore Technologies, s.r.o.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #include "oracle.h"
@@ -52,11 +52,11 @@ my hash $res = $ds.exec("begin qore_test.do_simple_inout(:ostr, :oint, :odt); en
                        );
     @endcode
  */
-hash bindInOut(any value, *string type) [flags=CONSTANT] {
-    QoreHashNode *h = new QoreHashNode();
+hash bindInOut(auto value, *string type) [flags=CONSTANT] {
+    QoreHashNode *h = new QoreHashNode;
     if (type)
        h->setKeyValue("type", type->refSelf(), xsink);
-    h->setKeyValue("value", value->refSelf(), xsink);
+    h->setKeyValue("value", value.refSelf(), xsink);
     return h;
 }
 
@@ -74,8 +74,8 @@ hash bindInOut(any value, *string type) [flags=CONSTANT] {
 $db.exec("insert into object_table (obj) values (%v)", bindOracleObject("MY_OBJECT", $h));
     @endcode
  */
-hash bindOracleObject(string tname, hash values) [flags=CONSTANT] {
-    QoreHashNode * h = new QoreHashNode;
+hash bindOracleObject(string tname, hash<auto> values) [flags=CONSTANT] {
+    QoreHashNode* h = new QoreHashNode;
     h->setKeyValue("type", new QoreStringNode(ORACLE_OBJECT), xsink);
     h->setKeyValue("^oratype^", tname->refSelf(), xsink);
     h->setKeyValue("^values^", values->refSelf(), xsink);
@@ -95,7 +95,7 @@ my hash $h = $db.exec("begin my_pkg.get_obj(:retval); end;", placeholderOracleOb
     @endcode
  */
 hash placeholderOracleObject(string tname) [flags=CONSTANT] {
-    QoreHashNode * h = new QoreHashNode;
+    QoreHashNode* h = new QoreHashNode;
     h->setKeyValue("type", new QoreStringNode(ORACLE_OBJECT), xsink);
     h->setKeyValue("value", tname->refSelf(), xsink);
     return h;
@@ -115,7 +115,7 @@ hash placeholderOracleObject(string tname) [flags=CONSTANT] {
 $db.exec("insert into object_table (obj) values (%v)", bindOracleObject("MY_OBJECT", $h));
     @endcode
  */
-hash bindOracleCollection(string tname, list values) [flags=CONSTANT] {
+hash bindOracleCollection(string tname, list<auto> values) [flags=CONSTANT] {
     QoreHashNode * h = new QoreHashNode;
     h->setKeyValue("type", new QoreStringNode(ORACLE_COLLECTION), xsink);
     h->setKeyValue("^oratype^", tname->refSelf(), xsink);

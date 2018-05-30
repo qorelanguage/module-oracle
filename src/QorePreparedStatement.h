@@ -1,24 +1,24 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /*
-  QorePreparedStatement.h
+    QorePreparedStatement.h
 
-  Qore Programming Language
+    Qore Programming Language
 
-  Copyright (C) 2006 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2006 - 2018 Qore Technologies, s.r.o.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #ifndef _QOREPREPAREDSTATEMENT_H
@@ -38,223 +38,222 @@ union ora_tmp_u {
 
 struct ora_bind {
 protected:
-   DLLLOCAL void resetTmp() {
-      if (tmp_type == OBT_NONE)
-         return;
+    DLLLOCAL void resetTmp() {
+        if (tmp_type == OBT_NONE)
+            return;
 
-      switch (tmp_type) {
-         case OBT_STR:
-            assert(tmp.tstr);
-            delete tmp.tstr;
-            break;
+        switch (tmp_type) {
+            case OBT_STR:
+                assert(tmp.tstr);
+                delete tmp.tstr;
+                break;
 
-         case OBT_BIN:
-            assert(tmp.bin);
-            tmp.bin->deref();
-            break;
+            case OBT_BIN:
+                assert(tmp.bin);
+                tmp.bin->deref();
+                break;
 
-         default:
-            assert(false);
-      }
+            default:
+                assert(false);
+        }
 
-      tmp_type = OBT_NONE;
-   }
+        tmp_type = OBT_NONE;
+    }
 
 public:
-   unsigned char type;
+    unsigned char type;
 
-   // placeholder: output name
-   char* ph_name;          // name for output hash
-   int ph_maxsize;         // maximum size, -1 = default for type
-   char* ph_type;          // qore datatype for column
+    // placeholder: output name
+    char* ph_name;          // name for output hash
+    int ph_maxsize;         // maximum size, -1 = default for type
+    char* ph_type;          // qore datatype for column
 
-   unsigned char tmp_type;
-   ora_tmp_u tmp;
+    unsigned char tmp_type;
+    ora_tmp_u tmp;
 
-   DLLLOCAL ora_bind() : type(OB_BIND), ph_name(0), ph_maxsize(0), ph_type(0), tmp_type(OBT_NONE) {
-   }
+    DLLLOCAL ora_bind() : type(OB_BIND), ph_name(0), ph_maxsize(0), ph_type(0), tmp_type(OBT_NONE) {
+    }
 
-   DLLLOCAL ora_bind(char* name, int size, const char* typ, unsigned char t = OB_PH)
-      : type(t), ph_name(name),
-        ph_maxsize(size), ph_type(typ ? strdup(typ) : 0), tmp_type(OBT_NONE) {
-      assert(name);
-   }
+    DLLLOCAL ora_bind(char* name, int size, const char* typ, unsigned char t = OB_PH)
+        : type(t), ph_name(name),
+            ph_maxsize(size), ph_type(typ ? strdup(typ) : 0), tmp_type(OBT_NONE) {
+        assert(name);
+    }
 
-   DLLLOCAL ~ora_bind() {
-      assert(!ph_name);
-      assert(!ph_type);
-      assert(tmp_type == OBT_NONE);
-   }
+    DLLLOCAL ~ora_bind() {
+        assert(!ph_name);
+        assert(!ph_type);
+        assert(tmp_type == OBT_NONE);
+    }
 
 #ifdef DEBUG
-   DLLLOCAL void dbg() {
-      printd(5, "ob: type: %d ph_name: %p (%s) ph_maxsize: %d ph_type: %p (%s) tmp_type: %d\n", (int)type, ph_name, ph_name ? ph_name : "n/a", ph_maxsize, ph_type, ph_type ? ph_type : "n/a", (int)tmp_type);
-   }
+    DLLLOCAL void dbg() {
+        printd(5, "ob: type: %d ph_name: %p (%s) ph_maxsize: %d ph_type: %p (%s) tmp_type: %d\n", (int)type, ph_name, ph_name ? ph_name : "n/a", ph_maxsize, ph_type, ph_type ? ph_type : "n/a", (int)tmp_type);
+    }
 #endif
 
-   DLLLOCAL const char* getName() const {
-      assert(ph_name);
-      return ph_name;
-   }
+    DLLLOCAL const char* getName() const {
+        assert(ph_name);
+        return ph_name;
+    }
 
-   DLLLOCAL void resetBind() {
-      resetTmp();
-   }
+    DLLLOCAL void resetBind() {
+        resetTmp();
+    }
 
-   DLLLOCAL void setMaxSize(int ms) {
-      assert(type == OB_PH);
-      ph_maxsize = ms;
-   }
+    DLLLOCAL void setMaxSize(int ms) {
+        assert(type == OB_PH);
+        ph_maxsize = ms;
+    }
 
-   DLLLOCAL void setType(const char* typ) {
-      assert(type == OB_PH);
-      if (ph_type)
-         free(ph_type);
-      ph_type = strdup(typ);
-   }
+    DLLLOCAL void setType(const char* typ) {
+        assert(type == OB_PH);
+        if (ph_type)
+            free(ph_type);
+        ph_type = strdup(typ);
+    }
 
-   DLLLOCAL void resetPlaceholder(bool free_name = true) {
-      assert(type == OB_PH);
+    DLLLOCAL void resetPlaceholder(bool free_name = true) {
+        assert(type == OB_PH);
 
-      if (free_name && ph_name) {
-         free(ph_name);
-         ph_name = 0;
-      }
+        if (free_name && ph_name) {
+            free(ph_name);
+            ph_name = 0;
+        }
 
-      if (ph_type) {
-         free(ph_type);
-         ph_type = 0;
-      }
+        if (ph_type) {
+            free(ph_type);
+            ph_type = 0;
+        }
 
-      resetTmp();
-   }
+        resetTmp();
+    }
 
-   DLLLOCAL void save(QoreString* nstr) {
-      assert(tmp_type == OBT_NONE);
-      tmp_type = OBT_STR;
-      tmp.tstr = nstr;
-   }
+    DLLLOCAL void save(QoreString* nstr) {
+        assert(tmp_type == OBT_NONE);
+        tmp_type = OBT_STR;
+        tmp.tstr = nstr;
+    }
 
-   DLLLOCAL void save(BinaryNode* tb) {
-      assert(tmp_type == OBT_NONE);
-      tmp_type = OBT_BIN;
-      tmp.bin = tb;
-   }
+    DLLLOCAL void save(BinaryNode* tb) {
+        assert(tmp_type == OBT_NONE);
+        tmp_type = OBT_BIN;
+        tmp.bin = tb;
+    }
 
-   DLLLOCAL bool isType(const char* t) const {
-      assert(type == OB_PH);
-      return !strcmp(ph_type, t);
-   }
+    DLLLOCAL bool isType(const char* t) const {
+        assert(type == OB_PH);
+        return !strcmp(ph_type, t);
+    }
 
-   DLLLOCAL bool isValue() const {
-      return type == OB_BIND;
-   }
+    DLLLOCAL bool isValue() const {
+        return type == OB_BIND;
+    }
 
-   DLLLOCAL bool isPlaceholder() const {
-      return type == OB_PH;
-   }
+    DLLLOCAL bool isPlaceholder() const {
+        return type == OB_PH;
+    }
 };
 
 class QorePreparedStatement;
 
 class OraBindNode : public OraColumnValue {
 protected:
-   DLLLOCAL void resetPlaceholder(ExceptionSink* xsink, bool free_name = true);
-   DLLLOCAL void resetValue(ExceptionSink* xsink);
+    DLLLOCAL void resetPlaceholder(ExceptionSink* xsink, bool free_name = true);
+    DLLLOCAL void resetValue(ExceptionSink* xsink);
 
-   DLLLOCAL void clearPlaceholder(ExceptionSink* xsink);
+    DLLLOCAL void clearPlaceholder(ExceptionSink* xsink);
 
-   DLLLOCAL void setValue(const AbstractQoreNode* v, ExceptionSink* xsink) {
-      if (value)
-         value->deref(xsink);
-      value = v ? v->refSelf() : 0;
-   }
+    DLLLOCAL void setValue(QoreValue v, ExceptionSink* xsink) {
+        value.discard(xsink);
+        value = v.refSelf();
+    }
 
-   DLLLOCAL void setPlaceholderIntern(int size, const char* typ, ExceptionSink* xsink) {
-      assert(!array);
-      data.setMaxSize(size);
-      data.setType(typ);
-   }
+    DLLLOCAL void setPlaceholderIntern(int size, const char* typ, ExceptionSink* xsink) {
+        assert(!array);
+        data.setMaxSize(size);
+        data.setType(typ);
+    }
 
-   /*
-   DLLLOCAL void setType(const char* typ) {
-      data.setType(typ);
-   }
-   */
+    /*
+    DLLLOCAL void setType(const char* typ) {
+        data.setType(typ);
+    }
+    */
 
-   DLLLOCAL void bindListValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool in_only);
+    DLLLOCAL void bindListValue(ExceptionSink* xsink, int pos, QoreValue v, bool in_only);
 
-   DLLLOCAL void bindValue(ExceptionSink* xsink, int pos, const AbstractQoreNode* v, bool in_only = true);
-   DLLLOCAL void bindPlaceholder(int pos, ExceptionSink* xsink);
-   DLLLOCAL int bindDate(int pos, ExceptionSink* xsink);
+    DLLLOCAL void bindValue(ExceptionSink* xsink, int pos, QoreValue v, bool in_only = true);
+    DLLLOCAL void bindPlaceholder(int pos, ExceptionSink* xsink);
+    DLLLOCAL int bindDate(int pos, ExceptionSink* xsink);
 
 public:
-   // value to be bound, if any
-   AbstractQoreNode* value;
-   ora_bind data;
-   OCILobLocator* strlob = nullptr;
-   OCIBind* bndp = nullptr;
+    // value to be bound, if any
+    QoreValue value;
+    ora_bind data;
+    OCILobLocator* strlob = nullptr;
+    OCIBind* bndp = nullptr;
 
-   bool lob_allocated = false;
+    bool lob_allocated = false;
 
-   // Variable indicator is used as a holder for QoreOracleStatement::bindByPos() indp argument
-   // which holds information about NULLs in the bound/placeholder-ed value. See:
-   //
-   // Pointer to an indicator variable or array. For all data types, this is a pointer to sb2 or an array of sb2s
-   // The only exception is SQLT_NTY, when this pointer is ignored and the actual pointer to the indicator structure
-   //or an array of indicator structures is initialized by OCIBindObject(). Ignored for dynamic binds.
-   //
-   // It prevents (for example) ORA-01405: fetched column value is NULL errors
-   // when is the Type::Date bound to OUT argument of PL/SQL procedure.
-   // See: OraBindNode::getValue() code.
-   sb2 indicator = 0;
-   dvoid* pIndicator;
+    // Variable indicator is used as a holder for QoreOracleStatement::bindByPos() indp argument
+    // which holds information about NULLs in the bound/placeholder-ed value. See:
+    //
+    // Pointer to an indicator variable or array. For all data types, this is a pointer to sb2 or an array of sb2s
+    // The only exception is SQLT_NTY, when this pointer is ignored and the actual pointer to the indicator structure
+    //or an array of indicator structures is initialized by OCIBindObject(). Ignored for dynamic binds.
+    //
+    // It prevents (for example) ORA-01405: fetched column value is NULL errors
+    // when is the Type::Date bound to OUT argument of PL/SQL procedure.
+    // See: OraBindNode::getValue() code.
+    sb2 indicator = 0;
+    dvoid* pIndicator;
 
-   // for value nodes
-   DLLLOCAL OraBindNode(QoreOracleStatement& stmt, const AbstractQoreNode* v) :
-      OraColumnValue(stmt),
-      value(v ? v->refSelf() : nullptr) {
-      pIndicator = (dvoid*)&indicator;
-   }
+    // for value nodes
+    DLLLOCAL OraBindNode(QoreOracleStatement& stmt, QoreValue v) :
+        OraColumnValue(stmt),
+        value(v.refSelf()) {
+        pIndicator = (dvoid*)&indicator;
+    }
 
-   // for placeholder nodes
-   DLLLOCAL OraBindNode(QoreOracleStatement& stmt, char* name, int size, const char* typ, const AbstractQoreNode* v = 0) :
-      OraColumnValue(stmt),
-      value(v ? v->refSelf() : nullptr), data(name, size, typ) {
-      pIndicator = (dvoid*)&indicator;
-   }
+    // for placeholder nodes
+    DLLLOCAL OraBindNode(QoreOracleStatement& stmt, char* name, int size, const char* typ, QoreValue v = QoreValue()) :
+        OraColumnValue(stmt),
+        value(v.refSelf()), data(name, size, typ) {
+        pIndicator = (dvoid*)&indicator;
+    }
 
-   DLLLOCAL ~OraBindNode() {
-      assert(!value);
-   }
+    DLLLOCAL ~OraBindNode() {
+        assert(!value);
+    }
 
 #ifdef DEBUG
-   DLLLOCAL void dbg() {
-      printd(5, "OBN: val: %p strlob: %p bndp: %p lob_allocated: %d indicator: %d\n", value, strlob, bndp, lob_allocated, indicator);
-      data.dbg();
-   }
+    DLLLOCAL void dbg() {
+        printd(5, "OBN: value: %s strlob: %p bndp: %p lob_allocated: %d indicator: %d\n", value.getTypeName(), strlob, bndp, lob_allocated, indicator);
+        data.dbg();
+    }
 #endif
 
-   DLLLOCAL bool isValue() const {
-      return data.isValue();
-   }
+    DLLLOCAL bool isValue() const {
+        return data.isValue();
+    }
 
-   DLLLOCAL bool isPlaceholder() const {
-      return data.isPlaceholder();
-   }
+    DLLLOCAL bool isPlaceholder() const {
+        return data.isPlaceholder();
+    }
 
-   // returns -1 = ERROR, 0 = OK
-   DLLLOCAL int set(const AbstractQoreNode* v, ExceptionSink* xsink);
-   DLLLOCAL void reset(ExceptionSink* xsink, bool free_name = true);
-   DLLLOCAL void clear(ExceptionSink* xsink, bool free_name = true);
+    // returns -1 = ERROR, 0 = OK
+    DLLLOCAL int set(QoreValue v, ExceptionSink* xsink);
+    DLLLOCAL void reset(ExceptionSink* xsink, bool free_name = true);
+    DLLLOCAL void clear(ExceptionSink* xsink, bool free_name = true);
 
-   DLLLOCAL void bind(int pos, ExceptionSink* xsink);
+    DLLLOCAL void bind(int pos, ExceptionSink* xsink);
 
-   DLLLOCAL AbstractQoreNode* getValue(bool horizontal, ExceptionSink* xsink);
+    DLLLOCAL QoreValue getValue(bool horizontal, ExceptionSink* xsink);
 
-   DLLLOCAL int setupDateDescriptor(ExceptionSink* xsink);
+    DLLLOCAL int setupDateDescriptor(ExceptionSink* xsink);
 
-   DLLLOCAL int setPlaceholder(const AbstractQoreNode* v, ExceptionSink* xsink);
+    DLLLOCAL int setPlaceholder(QoreValue v, ExceptionSink* xsink);
 };
 
 typedef std::vector<OraBindNode*> node_list_t;
@@ -322,14 +321,14 @@ public:
 
    DLLLOCAL int prepare(const QoreString& sql, const QoreListNode* args, bool parse, ExceptionSink* xsink);
 
-   DLLLOCAL OraBindNode* add(const AbstractQoreNode* v) {
+   DLLLOCAL OraBindNode* add(QoreValue v) {
       OraBindNode* c = new OraBindNode(*this, v);
       add(c);
       //printd(5, "QorePreparedStatement::add()\n");
       return c;
    }
 
-   DLLLOCAL OraBindNode* add(char* name, int size = -1, const char* type = 0, const AbstractQoreNode* val = 0) {
+   DLLLOCAL OraBindNode* add(char* name, int size = -1, const char* type = 0, QoreValue val = QoreValue()) {
       OraBindNode* c = new OraBindNode(*this, name, size, type, val);
       add(c);
       //printd(5, "QorePreparedStatement::add()\n");
@@ -365,7 +364,7 @@ public:
 
    DLLLOCAL QoreHashNode* describe(ExceptionSink* xsink);
 
-   DLLLOCAL AbstractQoreNode* execWithPrologue(ExceptionSink* xsink, bool rows, bool cols = false);
+   DLLLOCAL QoreValue execWithPrologue(ExceptionSink* xsink, bool rows, bool cols = false);
 
    DLLLOCAL QoreHashNode* selectRow(ExceptionSink* xsink);
 

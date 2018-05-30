@@ -1,24 +1,24 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /*
-  QoreOracleStatement.cpp
+    QoreOracleStatement.cpp
 
-  Qore Programming Language
+    Qore Programming Language
 
-  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
+    Copyright (C) 2003 - 2018 Qore Technologies, s.r.o.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #include "oracle.h"
@@ -60,45 +60,45 @@ int QoreOracleSimpleStatement::exec(const char* sql, unsigned len, ExceptionSink
 }
 
 QoreHashNode* QoreOracleStatement::fetchRow(OraResultSet& resultset, ExceptionSink* xsink) {
-   if (!fetch_done) {
-      xsink->raiseException("ORACLE-FETCH-ROW-ERROR", "call SQLStatement::next() before calling SQLStatement::fetchRow()");
-      return 0;
-   }
+    if (!fetch_done) {
+        xsink->raiseException("ORACLE-FETCH-ROW-ERROR", "call SQLStatement::next() before calling SQLStatement::fetchRow()");
+        return 0;
+    }
 
-   // set up hash for row
-   ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
+    // set up hash for row
+    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
 
-   // copy data or perform per-value processing if needed
-   for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
-      OraColumnBuffer *w = *i;
-      // assign value to hash
-      AbstractQoreNode* n = w->getValue(true, xsink);
-      if (*xsink) {
-         assert(!n);
-         return 0;
-      }
-      HashAssignmentHelper hah(**h, w->name.c_str());
-      // if we have a duplicate column
-      if (*hah) {
-         // find a unique column name
-         unsigned num = 1;
-         while (true) {
-            QoreStringMaker tmp("%s_%d", w->name.c_str(), num);
-            hah.reassign(tmp.c_str());
-            if (*hah) {
-               ++num;
-               continue;
+    // copy data or perform per-value processing if needed
+    for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
+        OraColumnBuffer *w = *i;
+        // assign value to hash
+        QoreValue n = w->getValue(true, xsink);
+        if (*xsink) {
+            assert(!n);
+            return 0;
+        }
+        HashAssignmentHelper hah(**h, w->name.c_str());
+        // if we have a duplicate column
+        if (!hah.get().isNothing()) {
+            // find a unique column name
+            unsigned num = 1;
+            while (true) {
+                QoreStringMaker tmp("%s_%d", w->name.c_str(), num);
+                hah.reassign(tmp.c_str());
+                if (!hah.get().isNothing()) {
+                    ++num;
+                    continue;
+                }
+                break;
             }
-            break;
-         }
-      }
+        }
 
-      hah.assign(n, xsink);
-      if (*xsink)
-         return 0;
-   }
+        hah.assign(n, xsink);
+        if (*xsink)
+            return 0;
+    }
 
-   return h.release();
+    return h.release();
 }
 
 QoreListNode* QoreOracleStatement::fetchRows(ExceptionSink* xsink) {
@@ -110,46 +110,46 @@ QoreListNode* QoreOracleStatement::fetchRows(ExceptionSink* xsink) {
 }
 
 QoreListNode* QoreOracleStatement::fetchRows(OraResultSet& resultset, int rows, ExceptionSink* xsink) {
-   if (fetch_warned) {
-      xsink->raiseException("ORACLE-SELECT-ROWS-ERROR", "SQLStatement::fetchRows() called after the end of data already received");
-      return 0;
-   }
+    if (fetch_warned) {
+        xsink->raiseException("ORACLE-SELECT-ROWS-ERROR", "SQLStatement::fetchRows() called after the end of data already received");
+        return 0;
+    }
 
-   ReferenceHolder<QoreListNode> l(new QoreListNode, xsink);
+    ReferenceHolder<QoreListNode> l(new QoreListNode, xsink);
 
-   if (fetch_complete) {
-      fetch_warned = true;
-      return l.release();
-   }
+    if (fetch_complete) {
+        fetch_warned = true;
+        return l.release();
+    }
 
-   if (setPrefetch(xsink, rows))
-      return 0;
+    if (setPrefetch(xsink, rows))
+        return 0;
 
-   // setup temporary row to accept values
-   if (resultset.define("QoreOracleStatement::fetchRows():define", xsink))
-      return 0;
+    // setup temporary row to accept values
+    if (resultset.define("QoreOracleStatement::fetchRows():define", xsink))
+        return 0;
 
-   // now finally fetch the data
-   while (next(xsink)) {
-      QoreHashNode* h = fetchRow(resultset, xsink);
-      if (!h)
-         return 0;
+    // now finally fetch the data
+    while (next(xsink)) {
+        QoreHashNode* h = fetchRow(resultset, xsink);
+        if (!h)
+            return 0;
 
-      // add row to list
-      l->push(h);
+        // add row to list
+        l->push(h, xsink);
 
-      if (rows > 0 && l->size() == static_cast<size_t>(rows))
-         break;
-   }
-   //printd(2, "QoreOracleStatement::fetchRows(): %d column(s), %d row(s) retrieved as output\n", resultset.size(), l->size());
-   if (!*xsink) {
-      if (!fetch_done)
-         fetch_done = true;
-      if ((int)l->size() < rows)
-         fetch_complete = true;
-      return l.release();
-   }
-   return 0;
+        if (rows > 0 && l->size() == static_cast<size_t>(rows))
+            break;
+    }
+    //printd(2, "QoreOracleStatement::fetchRows(): %d column(s), %d row(s) retrieved as output\n", resultset.size(), l->size());
+    if (!*xsink) {
+        if (!fetch_done)
+            fetch_done = true;
+        if ((int)l->size() < rows)
+            fetch_complete = true;
+        return l.release();
+    }
+    return 0;
 }
 
 QoreHashNode* QoreOracleStatement::fetchSingleRow(ExceptionSink* xsink) {
@@ -188,114 +188,114 @@ QoreHashNode* QoreOracleStatement::fetchSingleRow(ExceptionSink* xsink) {
 }
 
 void QoreOracleStatement::doColumns(OraResultSet& resultset, QoreHashNode& h) {
-   // create hash elements for each column, assign empty list
-   for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
-      //printd(5, "QoreOracleStatement::fetchColumns() allocating list for '%s' column\n", w->name);
-      h.setKeyValue((*i)->name, new QoreListNode, 0);
-   }
+    // create hash elements for each column, assign empty list
+    for (clist_t::iterator i = resultset.clist.begin(), e = resultset.clist.end(); i != e; ++i) {
+        //printd(5, "QoreOracleStatement::fetchColumns() allocating list for '%s' column\n", w->name);
+        h.setKeyValue((*i)->name.c_str(), new QoreListNode, 0);
+    }
 }
 
 // retrieve results from statement and return hash
 QoreHashNode* QoreOracleStatement::fetchColumns(bool cols, ExceptionSink* xsink) {
-   OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchColumns():params", xsink);
-   if (*xsink)
-      return 0;
+    OraResultSetHelper resultset(*this, "QoreOracleStatement::fetchColumns():params", xsink);
+    if (*xsink)
+        return 0;
 
-   return fetchColumns(**resultset, -1, cols, xsink);
+    return fetchColumns(**resultset, -1, cols, xsink);
 }
 
 // retrieve results from statement and return hash
 QoreHashNode* QoreOracleStatement::fetchColumns(OraResultSet& resultset, int rows, bool cols, ExceptionSink* xsink) {
-   if (fetch_warned) {
-      xsink->raiseException("ORACLE-SELECT-COLUMNS-ERROR", "SQLStatement::fetchColumns() called after the end of data already received");
-      return 0;
-   }
+    if (fetch_warned) {
+        xsink->raiseException("ORACLE-SELECT-COLUMNS-ERROR", "SQLStatement::fetchColumns() called after the end of data already received");
+        return 0;
+    }
 
-   // allocate result hash for result value
-   ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
+    // allocate result hash for result value
+    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
 
-   if (fetch_complete) {
-      assert(!cols);
-      fetch_warned = true;
-      return h.release();
-   }
+    if (fetch_complete) {
+        assert(!cols);
+        fetch_warned = true;
+        return h.release();
+    }
 
-   if (setPrefetch(xsink, rows))
-      return 0;
+    if (setPrefetch(xsink, rows))
+        return 0;
 
-   // setup temporary row to accept values
-   if (resultset.define("QoreOracleStatement::fetchColumns():define", xsink))
-      return 0;
+    // setup temporary row to accept values
+    if (resultset.define("QoreOracleStatement::fetchColumns():define", xsink))
+        return 0;
 
-   int num_rows = 0;
+    int num_rows = 0;
 
-   // tracks the column size for when columns are duplicated
-   unsigned csize = 0;
+    // tracks the column size for when columns are duplicated
+    unsigned csize = 0;
 
-   if (cols)
-      doColumns(resultset, **h);
+    if (cols)
+        doColumns(resultset, **h);
 
-   // now finally fetch the data
-   while (next(xsink)) {
-      if (h->empty())
-         doColumns(resultset, **h);
+    // now finally fetch the data
+    while (next(xsink)) {
+        if (h->empty())
+            doColumns(resultset, **h);
 
-      // copy data or perform per-value processing if needed
-      for (unsigned i = 0; i < resultset.clist.size(); ++i) {
-         OraColumnBuffer *w = resultset.clist[i];
-         // get pointer to value of target node
-         QoreListNode* l = reinterpret_cast<QoreListNode*>(h->getKeyValue(w->name, xsink));
-         if (!l)
-            break;
+        // copy data or perform per-value processing if needed
+        for (unsigned i = 0; i < resultset.clist.size(); ++i) {
+            OraColumnBuffer* w = resultset.clist[i];
+            // get pointer to value of target node
+            QoreListNode* l = h->getKeyValue(w->name, xsink).get<QoreListNode>();
+            if (!l)
+                break;
 
-         if (!i)
-            csize = l->size();
-         else {
-            // see if we have a duplicated column
-            if (l->size() > csize) {
-               // find a unique column name
-               unsigned num = 1;
-               QoreListNode* al;
-               while (true) {
-                  QoreStringMaker tmp("%s_%d", w->name.c_str(), num);
-                  al = reinterpret_cast<QoreListNode*>(h->getKeyValue(tmp.getBuffer(), xsink));
-                  if (!al) {
-                     al = new QoreListNode;
-                     h->setKeyValue(tmp.getBuffer(), al, xsink);
-                     break;
-                  }
-                  else if (al->size() == csize)
-                     break;
-                  ++num;
-               }
-               l = al;
+            if (!i)
+                csize = l->size();
+            else {
+                // see if we have a duplicated column
+                if (l->size() > csize) {
+                    // find a unique column name
+                    unsigned num = 1;
+                    QoreListNode* al;
+                    while (true) {
+                        QoreStringMaker tmp("%s_%d", w->name.c_str(), num);
+                        al = h->getKeyValue(tmp.c_str(), xsink).get<QoreListNode>();
+                        if (!al) {
+                            al = new QoreListNode;
+                            h->setKeyValue(tmp.c_str(), al, xsink);
+                            break;
+                        }
+                        else if (al->size() == csize)
+                            break;
+                        ++num;
+                    }
+                    l = al;
+                }
             }
-         }
 
-         AbstractQoreNode* n = w->getValue(false, xsink);
-         if (*xsink) {
-            assert(!n);
+            QoreValue n = w->getValue(false, xsink);
+            if (*xsink) {
+                assert(!n);
+                break;
+            }
+
+            l->push(n, xsink);
+            if (*xsink)
+                break;
+        }
+
+        ++num_rows;
+        if (rows > 0 && num_rows == rows)
             break;
-         }
-
-         l->push(n);
-         if (*xsink)
-            break;
-      }
-
-      ++num_rows;
-      if (rows > 0 && num_rows == rows)
-         break;
-   }
-   //printd(2, "QoreOracleStatement::fetchColumns(rows: %d): %d column(s), %d row(s) retrieved as output\n", rows, resultset.size(), num_rows);
-   if (!*xsink) {
-      if (!fetch_done)
-         fetch_done = true;
-      if (num_rows < rows)
-         fetch_complete = true;
-      return h.release();
-   }
-   return 0;
+    }
+    //printd(2, "QoreOracleStatement::fetchColumns(rows: %d): %d column(s), %d row(s) retrieved as output\n", rows, resultset.size(), num_rows);
+    if (!*xsink) {
+        if (!fetch_done)
+            fetch_done = true;
+        if (num_rows < rows)
+            fetch_complete = true;
+        return h.release();
+    }
+    return 0;
 }
 
 QoreHashNode* QoreOracleStatement::describe(OraResultSet& resultset, ExceptionSink* xsink) {
@@ -314,89 +314,89 @@ QoreHashNode* QoreOracleStatement::describe(OraResultSet& resultset, ExceptionSi
       OraColumnBuffer *w = *i;
       ReferenceHolder<QoreHashNode> col(new QoreHashNode, xsink);
       col->setKeyValue(namestr, new QoreStringNode(w->name), xsink);
-      col->setKeyValue(internalstr, new QoreBigIntNode(w->dtype), xsink);
+      col->setKeyValue(internalstr, w->dtype, xsink);
       switch (w->dtype) {
       case SQLT_CHR:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_STRING), xsink);
+         col->setKeyValue(typestr, NT_STRING, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("VARCHAR2"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/charSize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize/charSize, xsink);
          break;
       case SQLT_NUM:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_NUMBER), xsink);
+         col->setKeyValue(typestr, NT_NUMBER, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("NUMBER"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_INT:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_INT), xsink);
+         col->setKeyValue(typestr, NT_INT, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("INTEGER"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_FLT:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_FLOAT), xsink);
+         col->setKeyValue(typestr, NT_FLOAT, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("FLOAT"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_AFC:
       case SQLT_AVC:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_STRING), xsink);
+         col->setKeyValue(typestr, NT_STRING, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("CHAR"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/charSize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize/charSize, xsink);
          break;
       case SQLT_CLOB:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_STRING), xsink);
+         col->setKeyValue(typestr, NT_STRING, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("CLOB"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/charSize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize/charSize, xsink);
          break;
       case SQLT_BLOB:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_BINARY), xsink);
+         col->setKeyValue(typestr, NT_BINARY, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("BLOB"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize/charSize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize/charSize, xsink);
          break;
       case SQLT_NTY:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_HASH), xsink);
+         col->setKeyValue(typestr, NT_HASH, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("NAMED DATATYPE"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_DATE:
       case SQLT_DAT:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_DATE), xsink);
+         col->setKeyValue(typestr, NT_DATE, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("DATE"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_TIMESTAMP:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_DATE), xsink);
+         col->setKeyValue(typestr, NT_DATE, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("TIMESTAMP"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_TIMESTAMP_TZ:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_DATE), xsink);
+         col->setKeyValue(typestr, NT_DATE, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("TIMESTAMP WITH ZONE"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_TIMESTAMP_LTZ:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_DATE), xsink);
+         col->setKeyValue(typestr, NT_DATE, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("TIMESTAMP WITH LOCAL TIME ZONE"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_INTERVAL_YM:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_DATE), xsink);
+         col->setKeyValue(typestr, NT_DATE, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("INTERVAL YEAR TO MONTH"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_INTERVAL_DS:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_DATE), xsink);
+         col->setKeyValue(typestr, NT_DATE, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("INTERVAL DAY TO SECOND"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       case SQLT_RDD:
-         col->setKeyValue(typestr, new QoreBigIntNode(NT_STRING), xsink);
+         col->setKeyValue(typestr, NT_STRING, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("ROWID"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       default:
-         col->setKeyValue(typestr, new QoreBigIntNode(-1), xsink);
+         col->setKeyValue(typestr, -1, xsink);
          col->setKeyValue(dbtypestr, new QoreStringNode("n/a"), xsink);
-         col->setKeyValue(maxsizestr, new QoreBigIntNode(w->maxsize), xsink);
+         col->setKeyValue(maxsizestr, w->maxsize, xsink);
          break;
       } // switch
 

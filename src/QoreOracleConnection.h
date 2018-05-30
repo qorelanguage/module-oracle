@@ -1,24 +1,24 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /*
-  QoreOracleConnection.h
+    QoreOracleConnection.h
 
-  Qore Programming Language
+    Qore Programming Language
 
-  Copyright (C) 2003 - 2017 Qore Technologies, s.r.o.
+    Copyright (C) 2003 - 2018 Qore Technologies, s.r.o.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #ifndef _QORE_ORACLEDATA_H
@@ -39,368 +39,331 @@
 
 class QoreOracleEnvironment {
 protected:
-   OCIEnv* envhp;
+    OCIEnv* envhp;
 
 public:
-   DLLLOCAL QoreOracleEnvironment() : envhp(0) {
-   }
+    DLLLOCAL QoreOracleEnvironment() : envhp(0) {
+    }
 
-   DLLLOCAL ~QoreOracleEnvironment() {
-      if (envhp)
-         OCIHandleFree(envhp, OCI_HTYPE_ENV);
-   }
+    DLLLOCAL ~QoreOracleEnvironment() {
+        if (envhp)
+            OCIHandleFree(envhp, OCI_HTYPE_ENV);
+    }
 
-   DLLLOCAL int init() {
-      return OCIEnvCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0) == OCI_SUCCESS ? 0 : -1;
-   }
+    DLLLOCAL int init() {
+        return OCIEnvCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0) == OCI_SUCCESS ? 0 : -1;
+    }
 
-   DLLLOCAL int init(unsigned short charset) {
-      return OCIEnvNlsCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0, charset, charset) == OCI_SUCCESS ? 0 : -1;
-   }
+    DLLLOCAL int init(unsigned short charset) {
+        return OCIEnvNlsCreate(&envhp, QORE_OCI_FLAGS | OCI_NO_UCB, 0, 0, 0, 0, 0, 0, charset, charset) == OCI_SUCCESS ? 0 : -1;
+    }
 
-   DLLLOCAL int nlsNameMapToOracle(const char *name, QoreString &out) {
-      return nlsNameMap(name, out, OCI_NLS_CS_IANA_TO_ORA);
-   }
+    DLLLOCAL int nlsNameMapToOracle(const char *name, QoreString &out) {
+        return nlsNameMap(name, out, OCI_NLS_CS_IANA_TO_ORA);
+    }
 
-   DLLLOCAL int nlsNameMapToQore(const char *name, QoreString &out) {
-      return nlsNameMap(name, out, OCI_NLS_CS_ORA_TO_IANA);
-   }
+    DLLLOCAL int nlsNameMapToQore(const char *name, QoreString &out) {
+        return nlsNameMap(name, out, OCI_NLS_CS_ORA_TO_IANA);
+    }
 
-   DLLLOCAL int nlsNameMap(const char *name, QoreString &out, int dir) {
-      assert(envhp);
+    DLLLOCAL int nlsNameMap(const char *name, QoreString &out, int dir) {
+        assert(envhp);
 
-      out.clear();
-      out.reserve(OCI_NLS_MAXBUFSZ);
+        out.clear();
+        out.reserve(OCI_NLS_MAXBUFSZ);
 
-      int rc = OCINlsNameMap(envhp, (oratext*)out.getBuffer(), OCI_NLS_MAXBUFSZ, (oratext*)name, dir) == OCI_SUCCESS ? 0 : -1;
-      if (!rc)
-         out.terminate(strlen(out.getBuffer()));
-      return rc;
-   }
+        int rc = OCINlsNameMap(envhp, (oratext*)out.getBuffer(), OCI_NLS_MAXBUFSZ, (oratext*)name, dir) == OCI_SUCCESS ? 0 : -1;
+        if (!rc)
+            out.terminate(strlen(out.getBuffer()));
+        return rc;
+    }
 
-   DLLLOCAL unsigned short nlsCharSetNameToId(const char *name) {
-      assert(envhp);
-      return OCINlsCharSetNameToId(envhp, (oratext*)name);
-   }
+    DLLLOCAL unsigned short nlsCharSetNameToId(const char *name) {
+        assert(envhp);
+        return OCINlsCharSetNameToId(envhp, (oratext*)name);
+    }
 
-   DLLLOCAL operator bool() const {
-      return envhp;
-   }
+    DLLLOCAL operator bool() const {
+        return envhp;
+    }
 
-   DLLLOCAL OCIEnv *operator*() const {
-      return envhp;
-   }
+    DLLLOCAL OCIEnv *operator*() const {
+        return envhp;
+    }
 };
 
 #define OPT_NUM_OPTIMAL 0  // return numbers as int64 if it fits or "number" if not
 #define OPT_NUM_STRING  1  // always return number types as strings
 #define OPT_NUM_NUMERIC 2  // always return number types as "number"
 
-#ifdef _QORE_HAS_DBI_OPTIONS
 // return optimal numeric values if options are supported
 #define OPT_NUM_DEFAULT OPT_NUM_OPTIMAL
-#else
-// return numeric values as strings if options are not supported -- for backwards-compatibility
-#define OPT_NUM_DEFAULT OPT_NUM_STRING
-#endif
 
 class QoreOracleConnection {
 protected:
-   DLLLOCAL static sb4 readClobCallback(void *sp, CONST dvoid *bufp, ub4 len, ub1 piece) {
-      //printd(5, "QoreOracleConnection::readClobCallback(%p, %p, %d, %d)\n", sp, bufp, len, piece);
-      (reinterpret_cast<QoreStringNode *>(sp))->concat((char*)bufp, len);
-      return OCI_CONTINUE;
-   }
+    DLLLOCAL static sb4 readClobCallback(void *sp, CONST dvoid *bufp, ub4 len, ub1 piece) {
+        //printd(5, "QoreOracleConnection::readClobCallback(%p, %p, %d, %d)\n", sp, bufp, len, piece);
+        (reinterpret_cast<QoreStringNode *>(sp))->concat((char*)bufp, len);
+        return OCI_CONTINUE;
+    }
 
-   DLLLOCAL static sb4 readBlobCallback(void *bp, CONST dvoid *bufp, ub4 len, ub1 piece) {
-      //printd(5, "QoreOracleConnection::readBlobCallback(%p, %p, %d, %d)\n", bp, bufp, len, piece);
-      ((BinaryNode*)bp)->append((char*)bufp, len);
-      return OCI_CONTINUE;
-   }
+    DLLLOCAL static sb4 readBlobCallback(void *bp, CONST dvoid *bufp, ub4 len, ub1 piece) {
+        //printd(5, "QoreOracleConnection::readBlobCallback(%p, %p, %d, %d)\n", bp, bufp, len, piece);
+        ((BinaryNode*)bp)->append((char*)bufp, len);
+        return OCI_CONTINUE;
+    }
 
 public:
-   QoreOracleEnvironment env;
+    QoreOracleEnvironment env;
 
-   OCIError *errhp;
-   OCISvcCtx *svchp;
-   OCIServer *srvhp;
-   OCISession *usrhp;
+    OCIError *errhp;
+    OCISvcCtx *svchp;
+    OCIServer *srvhp;
+    OCISession *usrhp;
 
-   ub2 charsetid;
-   // "fake" connection for OCILIB stuff
-   OCI_Connection *ocilib_cn;
-   Datasource &ds;
-   bool ocilib_init;
-#ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
-   const AbstractQoreZoneInfo* server_tz;
-#endif
+    ub2 charsetid;
+    // "fake" connection for OCILIB stuff
+    OCI_Connection *ocilib_cn;
+    Datasource &ds;
+    bool ocilib_init;
+    const AbstractQoreZoneInfo* server_tz;
 
-   OCI_Library ocilib;
+    OCI_Library ocilib;
 
-   QoreString cstr; // connection string
-   int number_support;
+    QoreString cstr; // connection string
+    int number_support;
 
-   DLLLOCAL QoreOracleConnection(Datasource &n_ds, ExceptionSink* xsink);
-   DLLLOCAL ~QoreOracleConnection();
+    DLLLOCAL QoreOracleConnection(Datasource &n_ds, ExceptionSink* xsink);
+    DLLLOCAL ~QoreOracleConnection();
 
-   DLLLOCAL int checkerr(sword status, const char *query_name, ExceptionSink* xsink);
+    DLLLOCAL int checkerr(sword status, const char *query_name, ExceptionSink* xsink);
 
-   DLLLOCAL int doException(const char *query_name, text errbuf[], sb4 errcode, ExceptionSink *xsink);
+    DLLLOCAL int doException(const char *query_name, text errbuf[], sb4 errcode, ExceptionSink *xsink);
 
-   DLLLOCAL int descriptorAlloc(void **descpp, unsigned type, const char *who, ExceptionSink* xsink);
+    DLLLOCAL int descriptorAlloc(void **descpp, unsigned type, const char *who, ExceptionSink* xsink);
 
-   DLLLOCAL int handleAlloc(void **descpp, unsigned type, const char *who, ExceptionSink* xsink);
+    DLLLOCAL int handleAlloc(void **descpp, unsigned type, const char *who, ExceptionSink* xsink);
 
-   DLLLOCAL int logon(ExceptionSink* xsink);
+    DLLLOCAL int logon(ExceptionSink* xsink);
 
-   DLLLOCAL void clearWarnings() {
-      ub4 ix = 1;
-      int errcode;
-      text errbuf[512];
+    DLLLOCAL void clearWarnings() {
+        ub4 ix = 1;
+        int errcode;
+        text errbuf[512];
 
-      while (OCIErrorGet(errhp, ix, (text*)0, &errcode, errbuf, (ub4)sizeof(errbuf), OCI_HTYPE_ERROR) != OCI_NO_DATA) {
-#ifdef _QORE_HAS_DBI_EVENTS
-         doWarning(errcode, "ORACLE-WARNING", remove_trailing_newlines((char*)errbuf));
-#else
-         printd(0, "%s@%s: Oracle OCI Warning: %.*s\n", ds.getUsername(), ds.getDBName(), 512, remove_trailing_newlines((char*)errbuf));
-#endif
-         ++ix;
-      }
-   }
+        while (OCIErrorGet(errhp, ix, (text*)0, &errcode, errbuf, (ub4)sizeof(errbuf), OCI_HTYPE_ERROR) != OCI_NO_DATA) {
+            doWarning(errcode, "ORACLE-WARNING", remove_trailing_newlines((char*)errbuf));
+            ++ix;
+        }
+    }
 
-   // logoff but do not process error return values
-   DLLLOCAL int logoff() {
-      assert(svchp);
+    // logoff but do not process error return values
+    DLLLOCAL int logoff() {
+        assert(svchp);
 
-      // free all cached typeinfo objects
-      if (ocilib_cn)
-         clearCache();
+        // free all cached typeinfo objects
+        if (ocilib_cn)
+            clearCache();
 
-      int rc = OCISessionEnd(svchp, errhp, usrhp, 0);
-      OCIServerDetach(srvhp, errhp, OCI_DEFAULT);
-      return rc;
-   }
+        int rc = OCISessionEnd(svchp, errhp, usrhp, 0);
+        OCIServerDetach(srvhp, errhp, OCI_DEFAULT);
+        return rc;
+    }
 
-   // clear cached objects
-   DLLLOCAL void clearCache();
+    // clear cached objects
+    DLLLOCAL void clearCache();
 
-   DLLLOCAL int commit(ExceptionSink* xsink);
-   DLLLOCAL int rollback(ExceptionSink* xsink);
+    DLLLOCAL int commit(ExceptionSink* xsink);
+    DLLLOCAL int rollback(ExceptionSink* xsink);
 
-   DLLLOCAL DateTimeNode* getTimestamp(bool get_tz, OCIDateTime *odt, ExceptionSink* xsink);
+    DLLLOCAL DateTimeNode* getTimestamp(bool get_tz, OCIDateTime *odt, ExceptionSink* xsink);
 
-   DLLLOCAL DateTimeNode* getDate(OCIDate* dt);
+    DLLLOCAL DateTimeNode* getDate(OCIDate* dt);
 
-   DLLLOCAL DateTimeNode *getIntervalYearMonth(OCIInterval *oi, ExceptionSink* xsink) {
-      sb4 year, month;
-      if (checkerr(OCIIntervalGetYearMonth(*env, errhp, &year, &month, oi), "QoreOracleConnection::getIntervalYearMonth()", xsink))
-	 return 0;
+    DLLLOCAL DateTimeNode* getIntervalYearMonth(OCIInterval *oi, ExceptionSink* xsink) {
+        sb4 year, month;
+        if (checkerr(OCIIntervalGetYearMonth(*env, errhp, &year, &month, oi), "QoreOracleConnection::getIntervalYearMonth()", xsink))
+            return nullptr;
 
-      return new DateTimeNode(year, month, 0, 0, 0, 0, 0, true);
-   }
+        return new DateTimeNode(year, month, 0, 0, 0, 0, 0, true);
+    }
 
-   DLLLOCAL DateTimeNode *getIntervalDaySecond(OCIInterval *oi, ExceptionSink* xsink) {
-	 //printd(5, "QoreOracleConnection::getIntervalDaySecond() using INTERVAL_DS handle %p\n", buf.oi);
-	 sb4 day, hour, minute, second, nanosecond;
-	 if (checkerr(OCIIntervalGetDaySecond(*env, errhp, &day, &hour, &minute, &second, &nanosecond, oi), "QoreOracleConnection::getIntervalDaySecond()", xsink))
-	    return 0;
+    DLLLOCAL DateTimeNode *getIntervalDaySecond(OCIInterval *oi, ExceptionSink* xsink) {
+        //printd(5, "QoreOracleConnection::getIntervalDaySecond() using INTERVAL_DS handle %p\n", buf.oi);
+        sb4 day, hour, minute, second, nanosecond;
+        if (checkerr(OCIIntervalGetDaySecond(*env, errhp, &day, &hour, &minute, &second, &nanosecond, oi), "QoreOracleConnection::getIntervalDaySecond()", xsink))
+            return nullptr;
 
-#ifdef _QORE_HAS_TIME_ZONES
-	 return DateTimeNode::makeRelative(0, 0, day, hour, minute, second, nanosecond / 1000);
-#else
-	 return new DateTimeNode(0, 0, day, hour, minute, second, nanosecond / 1000000, true);
-#endif
-   }
+        return DateTimeNode::makeRelative(0, 0, day, hour, minute, second, nanosecond / 1000);
+    }
 
-   DLLLOCAL BinaryNode *getBinary(OCIRaw *rawp) {
-      BinaryNode *b = new BinaryNode;
-      b->append(OCIRawPtr(*env, rawp), OCIRawSize(*env, rawp));
-      return b;
-   }
+    DLLLOCAL BinaryNode *getBinary(OCIRaw *rawp) {
+        BinaryNode *b = new BinaryNode;
+        b->append(OCIRawPtr(*env, rawp), OCIRawSize(*env, rawp));
+        return b;
+    }
 
-   DLLLOCAL int rawResize(OCIRaw **rawp, unsigned short size, ExceptionSink* xsink) {
-      return checkerr(OCIRawResize(*env, errhp, size, rawp), "QoreOracleConnection::rawResize()", xsink);
-   }
+    DLLLOCAL int rawResize(OCIRaw **rawp, unsigned short size, ExceptionSink* xsink) {
+        return checkerr(OCIRawResize(*env, errhp, size, rawp), "QoreOracleConnection::rawResize()", xsink);
+    }
 
-   DLLLOCAL int rawFree(OCIRaw **rawp, ExceptionSink* xsink) {
-      return rawResize(rawp, 0, xsink);
-   }
+    DLLLOCAL int rawFree(OCIRaw **rawp, ExceptionSink* xsink) {
+        return rawResize(rawp, 0, xsink);
+    }
 
-   DLLLOCAL int dateTimeConstruct(OCIDateTime *odt, const DateTime &d, ExceptionSink* xsink) {
-#ifdef _QORE_HAS_TIME_ZONES
-      // get broken-down time information in the server's time zone
-      qore_tm info;
-      d.getInfo(getTZ(), info);
+    DLLLOCAL int dateTimeConstruct(OCIDateTime *odt, const DateTime &d, ExceptionSink* xsink) {
+        // get broken-down time information in the server's time zone
+        qore_tm info;
+        d.getInfo(getTZ(), info);
 
-      // only use OCIDateTimeConstruct if the year > 0001
-      if (info.year > 1) {
-         // issue #2448 Oracle does not handle time zone information correctly for DATE values in selects
-         // because we convert the date/time value to the server's expected timezone, and because Oracle
-         // always assumes that timestamp values without a timezone component have the current session
-         // timezone, we leave it off which also fixes the date issue
+        // only use OCIDateTimeConstruct if the year > 0001
+        if (info.year > 1) {
+            // issue #2448 Oracle does not handle time zone information correctly for DATE values in selects
+            // because we convert the date/time value to the server's expected timezone, and because Oracle
+            // always assumes that timestamp values without a timezone component have the current session
+            // timezone, we leave it off which also fixes the date issue
 
-         //printd(5, "QoreOracleConnection::dateTimeConstruct(year: %d, month: %d, day: %d, hour: %d, minute: %d, second: %d, us: %d) server tz: %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, info.regionName());
-         return checkerr(OCIDateTimeConstruct(*env, errhp, odt, info.year, info.month, info.day, info.hour, info.minute, info.second, (info.us * 1000), (oratext*)0, 6), "QoreOracleConnection::dateTimeConstruct()", xsink);
-      }
+            //printd(5, "QoreOracleConnection::dateTimeConstruct(year: %d, month: %d, day: %d, hour: %d, minute: %d, second: %d, us: %d) server tz: %s\n", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us, info.regionName());
+            return checkerr(OCIDateTimeConstruct(*env, errhp, odt, info.year, info.month, info.day, info.hour, info.minute, info.second, (info.us * 1000), (oratext*)0, 6), "QoreOracleConnection::dateTimeConstruct()", xsink);
+        }
 
-      QoreString dstr;
-      dstr.sprintf("%04d%02d%02d%02d%02d%06d", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us);
+        QoreString dstr;
+        dstr.sprintf("%04d%02d%02d%02d%02d%06d", info.year, info.month, info.day, info.hour, info.minute, info.second, info.us);
 
-      //printd(5, "QoreOracleConnection::dateTimeConstruct() d: %s (%s)\n", dstr.getBuffer(), ORA_BACKUP_DATE_FMT);
+        //printd(5, "QoreOracleConnection::dateTimeConstruct() d: %s (%s)\n", dstr.getBuffer(), ORA_BACKUP_DATE_FMT);
 
-      return checkerr(OCIDateTimeFromText(*env, errhp, (OraText*)dstr.getBuffer(),
-                                          dstr.strlen(), (OraText*)ORA_BACKUP_DATE_FMT,
-                                          sizeof(ORA_BACKUP_DATE_FMT), 0, 0, odt), "QoreOracleConnection::dateTimeConstruct() fromText", xsink);
-#else
-      return checkerr(OCIDateTimeConstruct(*env, errhp, odt, d.getYear(), d.getMonth(), d.getDay(), d.getHour(), d.getMinute(), d.getSecond(),
-                                           (d.getMillisecond() * 1000000), 0, 0), "QoreOracleConnection::dateTimeConstruct()", xsink);
-#endif
-   }
+        return checkerr(OCIDateTimeFromText(*env, errhp, (OraText*)dstr.getBuffer(),
+                                            dstr.strlen(), (OraText*)ORA_BACKUP_DATE_FMT,
+                                            sizeof(ORA_BACKUP_DATE_FMT), 0, 0, odt), "QoreOracleConnection::dateTimeConstruct() fromText", xsink);
+    }
 
-   DLLLOCAL QoreStringNode *getServerVersion(ExceptionSink* xsink) {
-      //printd(0, "QoreOracleConnection::getServerVersion() this: %p ds: %p envhp: %p svchp: %p errhp: %p\n", this, &ds, *env, svchp, errhp);
-      // buffer for version information
-      char version_buf[VERSION_BUF_SIZE + 1];
+    DLLLOCAL QoreStringNode *getServerVersion(ExceptionSink* xsink) {
+        //printd(0, "QoreOracleConnection::getServerVersion() this: %p ds: %p envhp: %p svchp: %p errhp: %p\n", this, &ds, *env, svchp, errhp);
+        // buffer for version information
+        char version_buf[VERSION_BUF_SIZE + 1];
 
-      // execute OCIServerVersion and check status code
-      if (checkerr(OCIServerVersion(svchp, errhp, (OraText*)version_buf, VERSION_BUF_SIZE, OCI_HTYPE_SVCCTX), "QoreOracleConnection::getServerVersion()", xsink))
-         return 0;
+        // execute OCIServerVersion and check status code
+        if (checkerr(OCIServerVersion(svchp, errhp, (OraText*)version_buf, VERSION_BUF_SIZE, OCI_HTYPE_SVCCTX), "QoreOracleConnection::getServerVersion()", xsink))
+            return nullptr;
 
-      return new QoreStringNode(version_buf);
-   }
+        return new QoreStringNode(version_buf);
+    }
 
-   DLLLOCAL BinaryNode *readBlob(OCILobLocator *lobp, ExceptionSink* xsink);
-   DLLLOCAL QoreStringNode *readClob(OCILobLocator *lobp, const QoreEncoding *enc, ExceptionSink* xsink);
+    DLLLOCAL BinaryNode *readBlob(OCILobLocator *lobp, ExceptionSink* xsink);
+    DLLLOCAL QoreStringNode *readClob(OCILobLocator *lobp, const QoreEncoding *enc, ExceptionSink* xsink);
 
-   DLLLOCAL int writeLob(OCILobLocator* lobp, void* bufp, oraub8 buflen, bool clob, const char* desc, ExceptionSink* xsink);
+    DLLLOCAL int writeLob(OCILobLocator* lobp, void* bufp, oraub8 buflen, bool clob, const char* desc, ExceptionSink* xsink);
 
-   DLLLOCAL int setOption(const char* opt, const AbstractQoreNode* val, ExceptionSink* xsink) {
-      if (!strcasecmp(opt, DBI_OPT_NUMBER_OPT)) {
-         number_support = OPT_NUM_OPTIMAL;
-         return 0;
-      }
-      if (!strcasecmp(opt, DBI_OPT_NUMBER_STRING)) {
-         number_support = OPT_NUM_STRING;
-         return 0;
-      }
-      if (!strcasecmp(opt, DBI_OPT_NUMBER_NUMERIC)) {
-         number_support = OPT_NUM_NUMERIC;
-         return 0;
-      }
-#ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
-      if (!strcasecmp(opt, DBI_OPT_TIMEZONE)) {
-         assert(get_node_type(val) == NT_STRING);
-         const QoreStringNode* str = reinterpret_cast<const QoreStringNode*>(val);
-         const AbstractQoreZoneInfo* tz = find_create_timezone(str->getBuffer(), xsink);
-         if (*xsink)
-            return -1;
-         server_tz = tz;
-         return 0;
-      }
-#endif
-      xsink->raiseException("ORACLE-OPTION-ERROR", "invalid option '%s'; please try again with a valid option name (syntax: option=value)", opt);
-      return -1;
-   }
+    DLLLOCAL int setOption(const char* opt, QoreValue val, ExceptionSink* xsink) {
+        if (!strcasecmp(opt, DBI_OPT_NUMBER_OPT)) {
+            number_support = OPT_NUM_OPTIMAL;
+            return 0;
+        }
+        if (!strcasecmp(opt, DBI_OPT_NUMBER_STRING)) {
+            number_support = OPT_NUM_STRING;
+            return 0;
+        }
+        if (!strcasecmp(opt, DBI_OPT_NUMBER_NUMERIC)) {
+            number_support = OPT_NUM_NUMERIC;
+            return 0;
+        }
+        if (!strcasecmp(opt, DBI_OPT_TIMEZONE)) {
+            assert(val.getType() == NT_STRING);
+            const QoreStringNode* str = val.get<const QoreStringNode>();
+            const AbstractQoreZoneInfo* tz = find_create_timezone(str->c_str(), xsink);
+            if (*xsink)
+                return -1;
+            server_tz = tz;
+            return 0;
+        }
+        xsink->raiseException("ORACLE-OPTION-ERROR", "invalid option '%s'; please try again with a valid option name (syntax: option=value)", opt);
+        return -1;
+    }
 
-   DLLLOCAL AbstractQoreNode* getOption(const char* opt) {
-      if (!strcasecmp(opt, DBI_OPT_NUMBER_OPT))
-         return get_bool_node(number_support == OPT_NUM_OPTIMAL);
+    DLLLOCAL QoreValue getOption(const char* opt) {
+        if (!strcasecmp(opt, DBI_OPT_NUMBER_OPT))
+            return number_support == OPT_NUM_OPTIMAL;
 
-      if (!strcasecmp(opt, DBI_OPT_NUMBER_STRING))
-         return get_bool_node(number_support == OPT_NUM_STRING);
+        if (!strcasecmp(opt, DBI_OPT_NUMBER_STRING))
+            return number_support == OPT_NUM_STRING;
 
-      if (!strcasecmp(opt, DBI_OPT_NUMBER_NUMERIC))
-         return get_bool_node(number_support == OPT_NUM_NUMERIC);
+        if (!strcasecmp(opt, DBI_OPT_NUMBER_NUMERIC))
+            return number_support == OPT_NUM_NUMERIC;
 
-#ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
-      assert(!strcasecmp(opt, DBI_OPT_TIMEZONE));
-      return new QoreStringNode(tz_get_region_name(server_tz));
-#else
-      assert(false);
-#endif
-      return 0;
-   }
+        assert(!strcasecmp(opt, DBI_OPT_TIMEZONE));
+        return new QoreStringNode(tz_get_region_name(server_tz));
+    }
 
-#ifdef _QORE_HAS_TIME_ZONES
-   DLLLOCAL const AbstractQoreZoneInfo* getTZ() const {
-#ifdef _QORE_HAS_FIND_CREATE_TIMEZONE
-      return server_tz;
-#else
-      return currentTZ();
-#endif
-   }
-#endif
+    DLLLOCAL const AbstractQoreZoneInfo* getTZ() const {
+        return server_tz;
+    }
 
-   DLLLOCAL int getNumberOption() const {
-      return number_support;
-   }
+    DLLLOCAL int getNumberOption() const {
+        return number_support;
+    }
 
-   DLLLOCAL AbstractQoreNode* getNumberOptimal(const char* str) const {
-      // see if the value can fit in an int
-      size_t len = strlen(str);
-      bool sign = str[0] == '-';
-      if (sign)
-         --len;
-      if (!strchr(str, '.')
-          && (len < 19
-              || (len == 19 &&
-                  ((!sign && strcmp(str, "9223372036854775807") <= 0)
-                   ||(sign && strcmp(str, "-9223372036854775808") <= 0)))))
-         return new QoreBigIntNode(strtoll(str, 0, 10));
+    DLLLOCAL QoreValue getNumberOptimal(const char* str) const {
+        // see if the value can fit in an int
+        size_t len = strlen(str);
+        bool sign = str[0] == '-';
+        if (sign)
+            --len;
+        if (!strchr(str, '.')
+            && (len < 19
+                || (len == 19 &&
+                    ((!sign && strcmp(str, "9223372036854775807") <= 0)
+                    ||(sign && strcmp(str, "-9223372036854775808") <= 0)))))
+            return strtoll(str, 0, 10);
 
-      return new QoreNumberNode(str);
-   }
+        return new QoreNumberNode(str);
+    }
 
-   DLLLOCAL void doWarning(int errcode, const char* warn, const char* desc) {
-#ifdef _QORE_HAS_DBI_EVENTS
-      Queue* q;
-      QoreHashNode* h = ds.getEventQueueHash(q, QDBI_EVENT_WARNING);
-      if (!h) {
-         //printd(5, "QoreOracleConnection::doWarning() this: %p %s: %s: IGNORING WARNING (h: %p q: %p)\n", this, warn, desc, h, q);
-         return;
-      }
-      h->setKeyValue("warning", new QoreStringNode(warn), 0);
-      h->setKeyValue("desc", new QoreStringNode(desc), 0);
-      q->pushAndTakeRef(h);
-      //printd(5, "QoreOracleConnection::doWarning() this: %p %s: %s: RAISED WARNING (q: %p size: %d)\n", this, warn, desc, q, q->size());
-#endif
-   }
+    DLLLOCAL void doWarning(int errcode, const char* warn, const char* desc) {
+        Queue* q;
+        QoreHashNode* h = ds.getEventQueueHash(q, QDBI_EVENT_WARNING);
+        if (!h) {
+            //printd(5, "QoreOracleConnection::doWarning() this: %p %s: %s: IGNORING WARNING (h: %p q: %p)\n", this, warn, desc, h, q);
+            return;
+        }
+        h->setKeyValue("warning", new QoreStringNode(warn), 0);
+        h->setKeyValue("desc", new QoreStringNode(desc), 0);
+        q->pushAndTakeRef(h);
+        //printd(5, "QoreOracleConnection::doWarning() this: %p %s: %s: RAISED WARNING (q: %p size: %d)\n", this, warn, desc, q, q->size());
+    }
 
 #if 0
-   DLLLOCAL void doWarningString(AbstractQoreNode* info, const char* warn, const char* fmt, ...) {
-#ifdef _QORE_HAS_DBI_EVENTS
-      Queue* q;
-      QoreHashNode* h = ds.getEventQueueHash(q, QDBI_EVENT_WARNING);
-      if (!h)
-         return;
+    DLLLOCAL void doWarningString(AbstractQoreNode* info, const char* warn, const char* fmt, ...) {
+        Queue* q;
+        QoreHashNode* h = ds.getEventQueueHash(q, QDBI_EVENT_WARNING);
+        if (!h)
+            return;
 
-      va_list args;
-      QoreStringNode* desc = new QoreStringNode;
+        va_list args;
+        QoreStringNode* desc = new QoreStringNode;
 
-      while (true) {
-         va_start(args, fmt);
-         int rc = desc->vsprintf(fmt, args);
-         va_end(args);
-         if (!rc)
-            break;
-      }
+        while (true) {
+            va_start(args, fmt);
+            int rc = desc->vsprintf(fmt, args);
+            va_end(args);
+            if (!rc)
+                break;
+        }
 
-      h->setKeyValue("warning", new QoreStringNode(warn), 0);
-      h->setKeyValue("desc", desc, 0);
-      if (info)
-         h->setKeyValue("info", info, 0);
-      q->pushAndTakeRef(h);
-#endif
-   }
+        h->setKeyValue("warning", new QoreStringNode(warn), 0);
+        h->setKeyValue("desc", desc, 0);
+        if (info)
+            h->setKeyValue("info", info, 0);
+        q->pushAndTakeRef(h);
+    }
 #endif
 
-   DLLLOCAL static void descriptorFree(void *descp, unsigned type) {
-      OCIDescriptorFree(descp, type);
-   }
+    DLLLOCAL static void descriptorFree(void *descp, unsigned type) {
+        OCIDescriptorFree(descp, type);
+    }
 
-   DLLLOCAL static void handleFree(void *hndlp, unsigned type) {
-      OCIHandleFree(hndlp, type);
-   }
+    DLLLOCAL static void handleFree(void *hndlp, unsigned type) {
+        OCIHandleFree(hndlp, type);
+    }
 };
 
 #endif

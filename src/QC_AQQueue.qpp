@@ -1,5 +1,22 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /*
+    Qore Programming Language
+
+    Copyright (C) 2006 - 2018 Qore Technologies, s.r.o.
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #include <qore/Qore.h>
@@ -72,13 +89,13 @@ protected:
 public:
    DLLLOCAL AQSubscriptionManager() : quit(false) {
    }
-   
+
    DLLLOCAL ~AQSubscriptionManager() {
       //printd(5, "~AQSubscriptionManager size: %d; tid: %d\n", objects.size(), tid);
       // std::set::size() is O(n) whereas set::empty() is O(1)
       assert(objects.empty());
    }
-   
+
    DLLLOCAL int add(AQQueuePriv* o, ExceptionSink* xsink) {
       bool start = false;
       {
@@ -174,15 +191,15 @@ void on_async_message(OCI_Dequeue* deq) {
 }
 
 const char* check_hash_key(const QoreHashNode* h, const char* key, const char* err, ExceptionSink *xsink) {
-   const AbstractQoreNode* p = h->getKeyValue(key);
-   if (is_nothing(p))
-      return 0;
+    QoreValue p = h->getKeyValue(key);
+    if (p.isNothing())
+        return nullptr;
 
-   if (p->getType() != NT_STRING) {
-      xsink->raiseException(err, "'%s' key is not type 'string' but is type '%s'", key, get_type_name(p));
-      return 0;
-   }
-   return reinterpret_cast<const QoreStringNode* >(p)->getBuffer();
+    if (p.getType() != NT_STRING) {
+        xsink->raiseException(err, "'%s' key is not type 'string' but is type '%s'", key, p.getTypeName());
+        return nullptr;
+    }
+    return p.get<const QoreStringNode>()->c_str();
 }
 
 AQQueuePriv::AQQueuePriv(Datasource *ds, const QoreStringNode *tname, const QoreStringNode *qname, ExceptionSink *xsink)
@@ -377,7 +394,7 @@ bool AQQueuePriv::post(AQMessagePriv *message, ExceptionSink *xsink) {
    AutoLocker al(l);
    if (checkValidUnlocked("post", xsink))
       return false;
-   
+
     if (!m_enqueue) {
        //printd(5, "Opening W queue: %s (%p)\n", m_qname->getBuffer(), m_typeInfo);
        m_enqueue = OCI_EnqueueCreate(&m_conn->ocilib, m_typeInfo, m_qname->getBuffer());
@@ -429,9 +446,9 @@ bool AQQueuePriv::post(AQMessagePriv *message, ExceptionSink *xsink) {
           xsink->raiseException("AQQUEUE-ERROR", "failed to set priority");
        return false;
     }
-    
+
     QoreStringNodeHolder correlation(message->getCorrelation());
-    
+
     if (*correlation) {
         TempEncodingHelper encoded(*correlation, m_conn->ds.getQoreEncoding(), xsink);
         if (*xsink)
@@ -490,7 +507,7 @@ bool AQQueuePriv::post(const QoreHashNode *h, ExceptionSink *xsink) {
        if (*xsink)
            return false;
    }
-   
+
    return true;
 }
 
@@ -561,7 +578,7 @@ QoreObject* AQQueuePriv::getMessage(QoreObject* self, int timeout, ExceptionSink
       break;
    }
 
-   OCI_Object *o = OCI_MsgGetObject(&m_conn->ocilib, msg);    
+   OCI_Object *o = OCI_MsgGetObject(&m_conn->ocilib, msg);
 
    if (!o) {
       printd(5, "AQQueuePriv::getMessage() object in message is NULL\n");
@@ -631,7 +648,7 @@ void AQQueuePriv::startSubscription(QoreObject* self, unsigned port, int64 timeo
    m_hasSubscription = true;
    m_port = port;
    m_timeout = timeout;
-   
+
    if (aqSubscriptionManager.add(this, xsink)) {
       stopSubscriptionUnlocked(xsink);
       return;
@@ -683,80 +700,80 @@ static int ds_set_options(Datasource& ds, const QoreHashNode* opts, ExceptionSin
       if (!strcmp(hi.getKey(), "min") || !strcmp(hi.getKey(), "max"))
          continue;
 
-      if (ds.setOption(hi.getKey(), hi.getValue(), xsink))
+      if (ds.setOption(hi.getKey(), hi.get(), xsink))
          return -1;
    }
    return 0;
 }
 
 static void aqqueue_constructor_hash(const QoreStringNode* queueName, const QoreStringNode* typeName, const QoreHashNode* opts, QoreObject* self, ExceptionSink* xsink) {
-   static const char *DSC_ERR = "AQQUEUE-CONSTRUCTOR-ERROR";
+    static const char *DSC_ERR = "AQQUEUE-CONSTRUCTOR-ERROR";
 
-   const char* str = check_hash_key(opts, "type", DSC_ERR, xsink);
-   if (*xsink) return;
+    const char* str = check_hash_key(opts, "type", DSC_ERR, xsink);
+    if (*xsink) return;
 
-   if (str && strcmp(str, "oracle")) {
-      xsink->raiseException(DSC_ERR, "if the 'type' key is present, then it must be 'oracle'; value provided: '%s'", str);
-      return;
-   }
+    if (str && strcmp(str, "oracle")) {
+        xsink->raiseException(DSC_ERR, "if the 'type' key is present, then it must be 'oracle'; value provided: '%s'", str);
+        return;
+    }
 
-   DBIDriver *db_driver = DBI.find("oracle", xsink);
-   // driver must be laoded because it's being executed now :)
-   assert(db_driver);
+    DBIDriver *db_driver = DBI.find("oracle", xsink);
+    // driver must be laoded because it's being executed now :)
+    assert(db_driver);
 
-   std::unique_ptr<Datasource> ds(new Datasource(db_driver));
+    std::unique_ptr<Datasource> ds(new Datasource(db_driver));
 
-   str = check_hash_key(opts, "user", DSC_ERR, xsink);
-   if (*xsink) return;
-   if (str) ds->setPendingUsername(str);
+    str = check_hash_key(opts, "user", DSC_ERR, xsink);
+    if (*xsink) return;
+    if (str) ds->setPendingUsername(str);
 
-   str = check_hash_key(opts, "pass", DSC_ERR, xsink);
-   if (*xsink) return;
-   if (str) ds->setPendingPassword(str);
+    str = check_hash_key(opts, "pass", DSC_ERR, xsink);
+    if (*xsink) return;
+    if (str) ds->setPendingPassword(str);
 
-   str = check_hash_key(opts, "db", DSC_ERR, xsink);
-   if (*xsink) return;
-   if (str) ds->setPendingDBName(str);
+    str = check_hash_key(opts, "db", DSC_ERR, xsink);
+    if (*xsink) return;
+    if (str) ds->setPendingDBName(str);
 
-   str = check_hash_key(opts, "charset", DSC_ERR, xsink);
-   if (*xsink) return;
-   if (str) ds->setPendingDBEncoding(str);
+    str = check_hash_key(opts, "charset", DSC_ERR, xsink);
+    if (*xsink) return;
+    if (str) ds->setPendingDBEncoding(str);
 
-   str = check_hash_key(opts, "host", DSC_ERR, xsink);
-   if (*xsink) return;
-   if (str) ds->setPendingHostName(str);
+    str = check_hash_key(opts, "host", DSC_ERR, xsink);
+    if (*xsink) return;
+    if (str) ds->setPendingHostName(str);
 
-   bool found;
-   int port = (int)opts->getKeyAsBigInt("port", found);
-   if (port) {
-      if (port < 0) {
-         xsink->raiseException(DSC_ERR, "port value must be zero (meaning use the default port) or positive (value given: %d)", port);
-         return;
-      }
-
-      ds->setPendingPort(port);
-   }
-
-   {
-      const AbstractQoreNode* p = opts->getKeyValue("options");
-
-      if (!is_nothing(p)) {
-         if (get_node_type(p) != NT_HASH) {
-            xsink->raiseException(DSC_ERR, "'options' key is not type 'hash' but is type '%s'", get_type_name(p));
+    bool found;
+    int port = (int)opts->getKeyAsBigInt("port", found);
+    if (port) {
+        if (port < 0) {
+            xsink->raiseException(DSC_ERR, "port value must be zero (meaning use the default port) or positive (value given: %d)", port);
             return;
-         }
-         const QoreHashNode *oh = reinterpret_cast<const QoreHashNode*>(p);
-         if (ds_set_options(*ds.get(), oh, xsink))
-            return;
-      }
-   }
+        }
 
-   ds->open(xsink);
-   if (*xsink) {
-      return;
-   }
+        ds->setPendingPort(port);
+    }
 
-   self->setPrivate(CID_AQQUEUE, new AQQueuePriv(ds.release(), typeName, queueName, xsink));
+    {
+        QoreValue p = opts->getKeyValue("options");
+
+        if (!p.isNothing()) {
+            if (p.getType() != NT_HASH) {
+                xsink->raiseException(DSC_ERR, "'options' key is not type 'hash' but is type '%s'", p.getTypeName());
+                return;
+            }
+            const QoreHashNode* oh = p.get<const QoreHashNode>();
+            if (ds_set_options(*ds.get(), oh, xsink))
+                return;
+        }
+    }
+
+    ds->open(xsink);
+    if (*xsink) {
+        return;
+    }
+
+    self->setPrivate(CID_AQQUEUE, new AQQueuePriv(ds.release(), typeName, queueName, xsink));
 }
 
 //! Implementation of AQ Queue.
@@ -796,7 +813,7 @@ AQQueue::constructor(string queueName, string typeName, string desc) {
     - \c port: (@ref softint_type "softint") The port number for the new connection. If this key is present and is 0 then an exception will be raised.
     - \c options: (@ref hash_or_nothing_type "*hash") Any options for the new connection
 
-    @throw AQQUEUE-CONSTRUCTOR-ERROR invalid arguments to constructor    
+    @throw AQQUEUE-CONSTRUCTOR-ERROR invalid arguments to constructor
     @throw DBI-OPTION-ERROR unknown or unsupported option passed to the Oracle driver
  */
 AQQueue::constructor(string queueName, string typeName, hash opts) {
@@ -812,7 +829,7 @@ AQQueue::destructor() {
 }
 
 //! Copying objects of this class is not supported, an exception will be thrown
-/** 
+/**
     @throw AQQUEUE-COPY-ERROR copying AQQueue objects is not yet supported
  */
 AQQueue::copy() {
@@ -849,19 +866,19 @@ nothing AQQueue::post(hash msg) {
 /** @param port an optional non-negative port number (0 = use the default port)
     @param timeout an optional timeout value in seconds; any positive value in seconds is valid. The value 0 is accepted and means that it does not wait for messages and returns immediately if no messages are available.  The value -1 is accepted and means it waits for ever (until a message is available in the queue)
 
-    @throw AQQUEUE-ERROR port or timeout value invalid; subscription already active for this object 
+    @throw AQQUEUE-ERROR port or timeout value invalid; subscription already active for this object
  */
 nothing AQQueue::startSubscription(int port = 0, int timeout = 0) {
    if (port < 0) {
       xsink->raiseException("AQQUEUE-ERROR", "Port number has to be greater than or equal to 0");
-      return 0;
+      return QoreValue();
    }
-   
+
    if (timeout < -1) {
       xsink->raiseException("AQQUEUE-ERROR", "Timeout value has to be greater than or equal to -1");
-      return 0;
+      return QoreValue();
    }
-   
+
    priv->startSubscription(self, (unsigned)port, timeout, xsink);
 }
 
@@ -890,8 +907,8 @@ bool AQQueue::rollback() {
 
 //! Automatically called when a new message is received on the queue when there is an active subscription
 /** A method which is called when there is a new message in the queue.
-    
-    The default implementation throws an exception; this method must be overridden in subclasses to receive messages; 
+
+    The default implementation throws an exception; this method must be overridden in subclasses to receive messages;
     use the @ref AQQueue::getMessage() method to receive the message
 
     @throw AQQUEUE-ONASYNCMESSAGE-ERROR abstract implementation of AQQueue::onAsyncMessage called
