@@ -54,7 +54,10 @@ QLIB_TMP_DOXYFILES = docs/qlib/OracleExtensions.qm.dox.h docs/qlib/Doxyfile.Orac
 QDX = qdx
 DX_CLEANFILES = ${DOXYFILES} $(QLIB_TMP_DOXYFILES)
 
-docs/qlib/Doxyfile.OracleExtensions: docs/qlib/Doxyfile.tmpl
+docs/qlib/Doxyfile.tmp: docs/qlib/Doxyfile.tmpl
+	sed s:__USERMODDIR__:${usermoddir}: $< > $@
+
+docs/qlib/Doxyfile.OracleExtensions: docs/qlib/Doxyfile.tmp
 	$(QDX) -M=qlib/OracleExtensions.qm:qlib/OracleExtensions.qm.dox.h $< $@
 
 docs/qlib/OracleExtensions.qm.dox.h: qlib/OracleExtensions.qm
@@ -72,7 +75,7 @@ docs/mainpage.doxygen: docs/mainpage.doxygen.tmpl
 	$(QDX) -d $< $@
 
 docs/doxyfile: docs/doxyfile.tmpl
-	sed s/__VERSION__/${VERSION}/ $< > $@
+	sed -e s/__VERSION__/${VERSION}/ -e s:__USERMODDIR__:${usermoddir}: $< > $@
 
 doxygen-doc: $(DOXYGEN_OUTPUT)
 
