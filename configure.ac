@@ -410,6 +410,7 @@ get_oracle_version() {
 
       lf=`basename "$lf" | sed s/.*${SHLIB_SUFFIX}\.//`
       case "$lf" in
+        18*) ORACLE_VERSION=18 ;;
         12*) ORACLE_VERSION=12 ;;
         11*) ORACLE_VERSION=11 ;;
         10*) ORACLE_VERSION=10 ;;
@@ -500,7 +501,7 @@ fi
 AC_SUBST(ORACLE_INCLUDES)
 
 case "$ORACLE_VERSION" in
-   9*|10*|11*|12*) if test "$windows" = "yes"; then
+   9*|10*|11*|12*|18*) if test "$windows" = "yes"; then
         ORACLE_LIBS="-L$oracle_lib_dir -loci"
     else
         ORACLE_LIBS="-L$oracle_lib_dir -lclntsh"
