@@ -395,7 +395,9 @@ get_oracle_version() {
     test -z "$ORACLE_VERSION" && ORACLE_VERSION=7.3
   else
     if test "$windows" = "yes"; then
-      if test -f $1/oraocci12.dll; then
+      if test -f $1/oraocci18.dll; then
+        ORACLE_VERSION=18
+      elif test -f $1/oraocci12.dll; then
         ORACLE_VERSION=12
       elif test -f $1/oraociei11.dll -o -f $1/oraocci11.dll; then
         ORACLE_VERSION=11
@@ -410,6 +412,7 @@ get_oracle_version() {
 
       lf=`basename "$lf" | sed s/.*${SHLIB_SUFFIX}\.//`
       case "$lf" in
+        18*) ORACLE_VERSION=18 ;;
         12*) ORACLE_VERSION=12 ;;
         11*) ORACLE_VERSION=11 ;;
         10*) ORACLE_VERSION=10 ;;
@@ -500,7 +503,7 @@ fi
 AC_SUBST(ORACLE_INCLUDES)
 
 case "$ORACLE_VERSION" in
-   9*|10*|11*|12*) if test "$windows" = "yes"; then
+   9*|10*|11*|12*|18*) if test "$windows" = "yes"; then
         ORACLE_LIBS="-L$oracle_lib_dir -loci"
     else
         ORACLE_LIBS="-L$oracle_lib_dir -lclntsh"
