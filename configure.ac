@@ -395,7 +395,9 @@ get_oracle_version() {
     test -z "$ORACLE_VERSION" && ORACLE_VERSION=7.3
   else
     if test "$windows" = "yes"; then
-      if test -f $1/oraocci12.dll; then
+      if test -f $1/oraocci18.dll; then
+        ORACLE_VERSION=18
+      elif test -f $1/oraocci12.dll; then
         ORACLE_VERSION=12
       elif test -f $1/oraociei11.dll -o -f $1/oraocci11.dll; then
         ORACLE_VERSION=11
