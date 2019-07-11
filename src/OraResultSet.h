@@ -4,7 +4,7 @@
 
     Qore Programming Language
 
-    Copyright (C) 2003 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2003 - 2019 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -46,8 +46,8 @@ public:
         // printf("DLLLOCAL void del(Datasource *ds, ExceptionSink *xsink)\n");
         if (defp) {
             OraColumnValue::del(xsink);
-        OCIHandleFree(defp, OCI_HTYPE_DEFINE);
-            defp = 0;
+            OCIHandleFree(defp, OCI_HTYPE_DEFINE);
+            defp = nullptr;
         }
     }
 
@@ -60,58 +60,58 @@ typedef std::vector<OraColumnBuffer *> clist_t;
 
 class OraResultSet {
 protected:
-   QoreOracleStatement &stmt;
-   bool defined;
+    QoreOracleStatement &stmt;
+    bool defined;
 
 public:
-   clist_t clist;
+    clist_t clist;
 
-   DLLLOCAL OraResultSet(QoreOracleStatement &n_stmt, const char *str, ExceptionSink *xsink);
+    DLLLOCAL OraResultSet(QoreOracleStatement &n_stmt, const char *str, ExceptionSink *xsink);
 
-   DLLLOCAL ~OraResultSet() {
-      assert(clist.empty());
-   }
+    DLLLOCAL ~OraResultSet() {
+        assert(clist.empty());
+    }
 
-   DLLLOCAL void del(ExceptionSink *xsink) {
-      for (clist_t::iterator i = clist.begin(), e = clist.end(); i != e; ++i) {
-         (*i)->del(xsink);
-         delete (*i);
-      }
-      clist.clear();
-      defined = false;
-   }
+    DLLLOCAL void del(ExceptionSink *xsink) {
+        for (clist_t::iterator i = clist.begin(), e = clist.end(); i != e; ++i) {
+            (*i)->del(xsink);
+            delete (*i);
+        }
+        clist.clear();
+        defined = false;
+    }
 
-   DLLLOCAL void add(const char *name, int nlen, int maxsize, ub2 dtype, ub2 char_len, int subtype=SQLT_NTY_NONE, QoreString subdtn = "") {
-      OraColumnBuffer *c = new OraColumnBuffer(stmt, name, nlen, maxsize, dtype, char_len, subtype, subdtn);
+    DLLLOCAL void add(const char *name, int nlen, int maxsize, ub2 dtype, ub2 char_len, int subtype=SQLT_NTY_NONE, QoreString subdtn = "") {
+        OraColumnBuffer *c = new OraColumnBuffer(stmt, name, nlen, maxsize, dtype, char_len, subtype, subdtn);
 
-      clist.push_back(c);
-      // printd(5, "column: '%s'\n", c->name);
-      //printd(0, "OraResultSet::add() %2d name='%s' (max %d) type=%d\n", size(), c->name, c->maxsize, dtype);
-   }
+        clist.push_back(c);
+        // printd(5, "column: '%s'\n", c->name);
+        //printd(0, "OraResultSet::add() %2d name='%s' (max %d) type=%d\n", size(), c->name, c->maxsize, dtype);
+    }
 
-   DLLLOCAL unsigned size() const {
-      return clist.size();
-   }
+    DLLLOCAL unsigned size() const {
+        return clist.size();
+    }
 
-   DLLLOCAL int define(const char *str, ExceptionSink *xsink);
+    DLLLOCAL int define(const char *str, ExceptionSink *xsink);
 };
 
 class OraResultSetHelper {
 protected:
-   OraResultSet *col;
-   ExceptionSink *xsink;
+    OraResultSet *col;
+    ExceptionSink *xsink;
 
 public:
-   DLLLOCAL OraResultSetHelper(QoreOracleStatement &stmt, const char *str, ExceptionSink *n_xsink) : col(new OraResultSet(stmt, str, n_xsink)), xsink(n_xsink) {
-   }
+    DLLLOCAL OraResultSetHelper(QoreOracleStatement &stmt, const char *str, ExceptionSink *n_xsink) : col(new OraResultSet(stmt, str, n_xsink)), xsink(n_xsink) {
+    }
 
-   DLLLOCAL ~OraResultSetHelper() {
-      col->del(xsink);
-      delete col;
-   }
+    DLLLOCAL ~OraResultSetHelper() {
+        col->del(xsink);
+        delete col;
+    }
 
-   DLLLOCAL OraResultSet *operator*() { return col; }
-   DLLLOCAL OraResultSet *operator->() { return col; }
+    DLLLOCAL OraResultSet *operator*() { return col; }
+    DLLLOCAL OraResultSet *operator->() { return col; }
 };
 
 #endif
