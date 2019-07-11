@@ -112,10 +112,6 @@ int OraBindNode::setPlaceholder(QoreValue v, ExceptionSink* xsink) {
 }
 
 void OraBindNode::clearPlaceholder(ExceptionSink* xsink) {
-    /* if (array) {
-        delete buf.arraybind;
-        array = false;
-    } else */
     if (dtype) {
         // free buffer data if any
         del(xsink);
