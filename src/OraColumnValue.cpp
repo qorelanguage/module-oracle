@@ -4,7 +4,7 @@
 
     Qore Programming Language
 
-    Copyright (C) 2003 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2003 - 2019 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -24,14 +24,14 @@
 #include "oracle.h"
 
 static DateTimeNode* convert_date_time(unsigned char *str) {
-   int year;
-   if ((str[0] < 100) || (str[1] < 100))
-      year = 9999;
-   else
-      year = (str[0] - 100) * 100 + (str[1] - 100);
+    int year;
+    if ((str[0] < 100) || (str[1] < 100))
+        year = 9999;
+    else
+        year = (str[0] - 100) * 100 + (str[1] - 100);
 
-   //printd(5, "convert_date_time(): %d %d = %04d-%02d-%02d %02d:%02d:%02d\n", str[0], str[1], year, str[2], str[3], str[4] - 1, str[5] - 1, str[6] - 1);
-   return new DateTimeNode(year, str[2], str[3], str[4] - 1, str[5] - 1, str[6] - 1);
+    //printd(5, "convert_date_time(): %d %d = %04d-%02d-%02d %02d:%02d:%02d\n", str[0], str[1], year, str[2], str[3], str[4] - 1, str[5] - 1, str[6] - 1);
+    return new DateTimeNode(year, str[2], str[3], str[4] - 1, str[5] - 1, str[6] - 1);
 }
 
 void OraColumnValue::del(ExceptionSink *xsink) {
@@ -298,12 +298,13 @@ void OraColumnValue::freeObject(ExceptionSink* xsink) {
         //printd(5, "OraColumnValue::getValue() freed OBJECT: %p\n", buf.oraObj);
         if (buf.oraObj) {
             OCI_ObjectFree2(&conn->ocilib, buf.oraObj, xsink);
+            buf.oraObj = nullptr;
         }
-    }
-    else {
+    } else {
         //printd(5, "OraColumnValue::freeObject() freed COLLECTION: %p\n", buf.oraColl);
         if (buf.oraColl) {
             OCI_CollFree2(&conn->ocilib, buf.oraColl, xsink);
+            buf.oraColl = nullptr;
         }
     }
 }

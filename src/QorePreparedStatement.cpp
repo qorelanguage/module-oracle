@@ -112,35 +112,20 @@ int OraBindNode::setPlaceholder(QoreValue v, ExceptionSink* xsink) {
 }
 
 void OraBindNode::clearPlaceholder(ExceptionSink* xsink) {
-   if (array) {
-      delete buf.arraybind;
-      array = false;
-      return;
-   }
+    if (dtype) {
+        // free buffer data if any
+        del(xsink);
 
-   // free buffer data if any
-   del(xsink);
-
-   dtype = 0;
-   if (alt_output)
-      alt_output = false;
+        if (alt_output) {
+            alt_output = false;
+        }
+        dtype = 0;
+    }
 }
 
 void OraBindNode::resetPlaceholder(ExceptionSink* xsink, bool free_name) {
-   data.resetPlaceholder(free_name);
-
-   if (array) {
-      delete buf.arraybind;
-      array = false;
-      return;
-   }
-
-   // free buffer data if any
-   del(xsink);
-
-   dtype = 0;
-   if (alt_output)
-      alt_output = false;
+    data.resetPlaceholder(free_name);
+    clearPlaceholder(xsink);
 }
 
 int OraBindNode::set(QoreValue v, ExceptionSink* xsink) {
@@ -154,10 +139,11 @@ int OraBindNode::set(QoreValue v, ExceptionSink* xsink) {
 }
 
 void OraBindNode::clear(ExceptionSink* xsink, bool free_name) {
-    if (isValue())
+    if (isValue()) {
         resetValue(xsink);
-    else
+    } else {
         clearPlaceholder(xsink);
+    }
 }
 
 void OraBindNode::reset(ExceptionSink* xsink, bool free_name) {
@@ -1887,14 +1873,14 @@ void OraBindNode::resetValue(ExceptionSink* xsink) {
         }
         //printd(5, "freeing lob descriptor\n");
         OCIDescriptorFree(strlob, OCI_DTYPE_LOB);
-        strlob = 0;
-    }
-    else if (dtype == SQLT_NTY)
+        strlob = nullptr;
+    } else if (dtype == SQLT_NTY) {
         freeObject(xsink);
-    else if (dtype == QORE_SQLT_TIMESTAMP) {
+    } else if (dtype == QORE_SQLT_TIMESTAMP) {
         if (buf.odt) {
             //printd(5, "OraBindNode::resetValue() freeing timestamp descriptor type %d ptr %p\n", QORE_DTYPE_TIMESTAMP, buf.odt);
             OCIDescriptorFree(buf.odt, QORE_DTYPE_TIMESTAMP);
+            buf.odt = nullptr;
         }
     }
 
