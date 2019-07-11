@@ -104,7 +104,7 @@ void OraColumnValue::del(ExceptionSink *xsink) {
         case SQLT_LVB: {
             QoreOracleConnection *conn = stmt.getData();
             //printd(5, "freeing binary pointer for SQLT_LVB %p\n", buf.ptr);
-            conn->rawFree((OCIRaw**)&buf.ptr, xsink);   int year;
+            conn->rawFree((OCIRaw**)&buf.ptr, xsink);
             break;
         }
 
