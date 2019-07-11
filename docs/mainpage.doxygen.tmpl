@@ -527,6 +527,8 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     @section ora_releasenotes Release Notes
 
     @subsection oracle33 oracle Driver Version 3.3
+    - fixed a crash with open statements with NTY placeholders with a connection loss
+      (<a href="https://github.com/qorelanguage/qore/issues/3446">issue 3446</a>)
     - added support for the <tt>STMT EXEC DESCRIBE</tt> DBI method for efficient describing of SQL statements without
       executing the statement itself and therefore avoiding a large performance penalty for this operation
       (<a href="https://github.com/qorelanguage/qore/issues/2773">issue 2773</a>)

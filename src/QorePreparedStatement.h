@@ -1,24 +1,24 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /*
-  QorePreparedStatement.h
+    QorePreparedStatement.h
 
-  Qore Programming Language
+    Qore Programming Language
 
-  Copyright (C) 2006 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2006 - 2019 Qore Technologies, s.r.o.
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #ifndef _QOREPREPAREDSTATEMENT_H
@@ -38,121 +38,121 @@ union ora_tmp_u {
 
 struct ora_bind {
 protected:
-   DLLLOCAL void resetTmp() {
-      if (tmp_type == OBT_NONE)
-         return;
+    DLLLOCAL void resetTmp() {
+        if (tmp_type == OBT_NONE)
+            return;
 
-      switch (tmp_type) {
-         case OBT_STR:
-            assert(tmp.tstr);
-            delete tmp.tstr;
-            break;
+        switch (tmp_type) {
+            case OBT_STR:
+                assert(tmp.tstr);
+                delete tmp.tstr;
+                break;
 
-         case OBT_BIN:
-            assert(tmp.bin);
-            tmp.bin->deref();
-            break;
+            case OBT_BIN:
+                assert(tmp.bin);
+                tmp.bin->deref();
+                break;
 
-         default:
-            assert(false);
-      }
+            default:
+                assert(false);
+        }
 
-      tmp_type = OBT_NONE;
-   }
+        tmp_type = OBT_NONE;
+    }
 
 public:
-   unsigned char type;
+    unsigned char type;
 
-   // placeholder: output name
-   char* ph_name;          // name for output hash
-   int ph_maxsize;         // maximum size, -1 = default for type
-   char* ph_type;          // qore datatype for column
+    // placeholder: output name
+    char* ph_name;          // name for output hash
+    int ph_maxsize;         // maximum size, -1 = default for type
+    char* ph_type;          // qore datatype for column
 
-   unsigned char tmp_type;
-   ora_tmp_u tmp;
+    unsigned char tmp_type;
+    ora_tmp_u tmp;
 
-   DLLLOCAL ora_bind() : type(OB_BIND), ph_name(0), ph_maxsize(0), ph_type(0), tmp_type(OBT_NONE) {
-   }
+    DLLLOCAL ora_bind() : type(OB_BIND), ph_name(0), ph_maxsize(0), ph_type(0), tmp_type(OBT_NONE) {
+    }
 
-   DLLLOCAL ora_bind(char* name, int size, const char* typ, unsigned char t = OB_PH)
-      : type(t), ph_name(name),
-        ph_maxsize(size), ph_type(typ ? strdup(typ) : 0), tmp_type(OBT_NONE) {
-      assert(name);
-   }
+    DLLLOCAL ora_bind(char* name, int size, const char* typ, unsigned char t = OB_PH)
+        : type(t), ph_name(name),
+            ph_maxsize(size), ph_type(typ ? strdup(typ) : 0), tmp_type(OBT_NONE) {
+        assert(name);
+    }
 
-   DLLLOCAL ~ora_bind() {
-      assert(!ph_name);
-      assert(!ph_type);
-      assert(tmp_type == OBT_NONE);
-   }
+    DLLLOCAL ~ora_bind() {
+        assert(!ph_name);
+        assert(!ph_type);
+        assert(tmp_type == OBT_NONE);
+    }
 
 #ifdef DEBUG
-   DLLLOCAL void dbg() {
-      printd(5, "ob: type: %d ph_name: %p (%s) ph_maxsize: %d ph_type: %p (%s) tmp_type: %d\n", (int)type, ph_name, ph_name ? ph_name : "n/a", ph_maxsize, ph_type, ph_type ? ph_type : "n/a", (int)tmp_type);
-   }
+    DLLLOCAL void dbg() {
+        printd(5, "ob: type: %d ph_name: %p (%s) ph_maxsize: %d ph_type: %p (%s) tmp_type: %d\n", (int)type, ph_name, ph_name ? ph_name : "n/a", ph_maxsize, ph_type, ph_type ? ph_type : "n/a", (int)tmp_type);
+    }
 #endif
 
-   DLLLOCAL const char* getName() const {
-      assert(ph_name);
-      return ph_name;
-   }
+    DLLLOCAL const char* getName() const {
+        assert(ph_name);
+        return ph_name;
+    }
 
-   DLLLOCAL void resetBind() {
-      resetTmp();
-   }
+    DLLLOCAL void resetBind() {
+        resetTmp();
+    }
 
-   DLLLOCAL void setMaxSize(int ms) {
-      assert(type == OB_PH);
-      ph_maxsize = ms;
-   }
+    DLLLOCAL void setMaxSize(int ms) {
+        assert(type == OB_PH);
+        ph_maxsize = ms;
+    }
 
-   DLLLOCAL void setType(const char* typ) {
-      assert(type == OB_PH);
-      if (ph_type)
-         free(ph_type);
-      ph_type = strdup(typ);
-   }
+    DLLLOCAL void setType(const char* typ) {
+        assert(type == OB_PH);
+        if (ph_type)
+            free(ph_type);
+        ph_type = strdup(typ);
+    }
 
-   DLLLOCAL void resetPlaceholder(bool free_name = true) {
-      assert(type == OB_PH);
+    DLLLOCAL void resetPlaceholder(bool free_name = true) {
+        assert(type == OB_PH);
 
-      if (free_name && ph_name) {
-         free(ph_name);
-         ph_name = 0;
-      }
+        if (free_name && ph_name) {
+            free(ph_name);
+            ph_name = 0;
+        }
 
-      if (ph_type) {
-         free(ph_type);
-         ph_type = 0;
-      }
+        if (ph_type) {
+            free(ph_type);
+            ph_type = 0;
+        }
 
-      resetTmp();
-   }
+        resetTmp();
+    }
 
-   DLLLOCAL void save(QoreString* nstr) {
-      assert(tmp_type == OBT_NONE);
-      tmp_type = OBT_STR;
-      tmp.tstr = nstr;
-   }
+    DLLLOCAL void save(QoreString* nstr) {
+        assert(tmp_type == OBT_NONE);
+        tmp_type = OBT_STR;
+        tmp.tstr = nstr;
+    }
 
-   DLLLOCAL void save(BinaryNode* tb) {
-      assert(tmp_type == OBT_NONE);
-      tmp_type = OBT_BIN;
-      tmp.bin = tb;
-   }
+    DLLLOCAL void save(BinaryNode* tb) {
+        assert(tmp_type == OBT_NONE);
+        tmp_type = OBT_BIN;
+        tmp.bin = tb;
+    }
 
-   DLLLOCAL bool isType(const char* t) const {
-      assert(type == OB_PH);
-      return !strcmp(ph_type, t);
-   }
+    DLLLOCAL bool isType(const char* t) const {
+        assert(type == OB_PH);
+        return !strcmp(ph_type, t);
+    }
 
-   DLLLOCAL bool isValue() const {
-      return type == OB_BIND;
-   }
+    DLLLOCAL bool isValue() const {
+        return type == OB_BIND;
+    }
 
-   DLLLOCAL bool isPlaceholder() const {
-      return type == OB_PH;
-   }
+    DLLLOCAL bool isPlaceholder() const {
+        return type == OB_PH;
+    }
 };
 
 class QorePreparedStatement;

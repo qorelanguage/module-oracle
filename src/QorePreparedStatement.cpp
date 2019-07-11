@@ -112,64 +112,54 @@ int OraBindNode::setPlaceholder(const AbstractQoreNode* v, ExceptionSink* xsink)
 }
 
 void OraBindNode::clearPlaceholder(ExceptionSink* xsink) {
-   if (array) {
-      delete buf.arraybind;
-      array = false;
-      return;
-   }
+    /* if (array) {
+        delete buf.arraybind;
+        array = false;
+    } else */
+    if (dtype) {
+        // free buffer data if any
+        del(xsink);
 
-   // free buffer data if any
-   del(xsink);
-
-   dtype = 0;
-   if (alt_output)
-      alt_output = false;
+        if (alt_output) {
+            alt_output = false;
+        }
+        dtype = 0;
+    }
 }
 
 void OraBindNode::resetPlaceholder(ExceptionSink* xsink, bool free_name) {
-   data.resetPlaceholder(free_name);
-
-   if (array) {
-      delete buf.arraybind;
-      array = false;
-      return;
-   }
-
-   // free buffer data if any
-   del(xsink);
-
-   dtype = 0;
-   if (alt_output)
-      alt_output = false;
+    data.resetPlaceholder(free_name);
+    clearPlaceholder(xsink);
 }
 
 int OraBindNode::set(const AbstractQoreNode* v, ExceptionSink* xsink) {
-   if (isValue()) {
-      resetValue(xsink);
-      setValue(v, xsink);
-      return *xsink ? -1 : 0;
-   }
+    if (isValue()) {
+        resetValue(xsink);
+        setValue(v, xsink);
+        return *xsink ? -1 : 0;
+    }
 
-   return setPlaceholder(v, xsink);
+    return setPlaceholder(v, xsink);
 }
 
 void OraBindNode::clear(ExceptionSink* xsink, bool free_name) {
-   if (isValue())
-      resetValue(xsink);
-   else
-      clearPlaceholder(xsink);
+    if (isValue()) {
+        resetValue(xsink);
+    } else {
+        clearPlaceholder(xsink);
+    }
 }
 
 void OraBindNode::reset(ExceptionSink* xsink, bool free_name) {
-   if (value) {
-      value->deref(xsink);
-      value = nullptr;
-   }
+    if (value) {
+        value->deref(xsink);
+        value = nullptr;
+    }
 
-   if (isValue())
-      resetValue(xsink);
-   else
-      resetPlaceholder(xsink, free_name);
+    if (isValue())
+        resetValue(xsink);
+    else
+        resetPlaceholder(xsink, free_name);
 }
 
 int OraBindNode::setupDateDescriptor(ExceptionSink* xsink) {
@@ -1861,40 +1851,40 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
 }
 
 void OraBindNode::resetValue(ExceptionSink* xsink) {
-   if (!dtype) {
-      assert(data.tmp_type == OBT_NONE);
-      return;
-   }
+    if (!dtype) {
+        assert(data.tmp_type == OBT_NONE);
+        return;
+    }
 
-   data.resetBind();
+    data.resetBind();
 
-   if (array) {
-      delete buf.arraybind;
-      array = false;
-      return;
-   }
+    if (array) {
+        delete buf.arraybind;
+        array = false;
+        return;
+    }
 
-   if (strlob) {
-      if (lob_allocated) {
-         QoreOracleConnection* conn = stmt.getData();
-         //printd(5, "deallocating temporary clob\n");
-         conn->checkerr(OCILobFreeTemporary(conn->svchp, conn->errhp, strlob), "OraBindNode::resetValue() free temporary LOB", xsink);
-         lob_allocated = false;
-      }
-      //printd(5, "freeing lob descriptor\n");
-      OCIDescriptorFree(strlob, OCI_DTYPE_LOB);
-      strlob = 0;
-   }
-   else if (dtype == SQLT_NTY)
-      freeObject(xsink);
-   else if (dtype == QORE_SQLT_TIMESTAMP) {
-      if (buf.odt) {
-         //printd(5, "OraBindNode::resetValue() freeing timestamp descriptor type %d ptr %p\n", QORE_DTYPE_TIMESTAMP, buf.odt);
-         OCIDescriptorFree(buf.odt, QORE_DTYPE_TIMESTAMP);
-      }
-   }
+    if (strlob) {
+        if (lob_allocated) {
+            QoreOracleConnection* conn = stmt.getData();
+            //printd(5, "deallocating temporary clob\n");
+            conn->checkerr(OCILobFreeTemporary(conn->svchp, conn->errhp, strlob), "OraBindNode::resetValue() free temporary LOB", xsink);
+            lob_allocated = false;
+        }
+        //printd(5, "freeing lob descriptor\n");
+        OCIDescriptorFree(strlob, OCI_DTYPE_LOB);
+        strlob = nullptr;
+    } else if (dtype == SQLT_NTY) {
+        freeObject(xsink);
+    } else if (dtype == QORE_SQLT_TIMESTAMP) {
+        if (buf.odt) {
+            //printd(5, "OraBindNode::resetValue() freeing timestamp descriptor type %d ptr %p\n", QORE_DTYPE_TIMESTAMP, buf.odt);
+            OCIDescriptorFree(buf.odt, QORE_DTYPE_TIMESTAMP);
+            buf.odt = nullptr;
+        }
+    }
 
-   dtype = 0;
+    dtype = 0;
 }
 
 AbstractQoreNode* OraBindNode::getValue(bool horizontal, ExceptionSink* xsink) {
