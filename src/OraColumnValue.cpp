@@ -105,14 +105,6 @@ void OraColumnValue::del(ExceptionSink *xsink) {
             QoreOracleConnection *conn = stmt.getData();
             //printd(5, "freeing binary pointer for SQLT_LVB %p\n", buf.ptr);
             conn->rawFree((OCIRaw**)&buf.ptr, xsink);   int year;
-   if ((str[0] < 100) || (str[1] < 100))
-      year = 9999;
-   else
-      year = (str[0] - 100) * 100 + (str[1] - 100);
-
-   //printd(5, "convert_date_time(): %d %d = %04d-%02d-%02d %02d:%02d:%02d\n", str[0], str[1], year, str[2], str[3], str[4] - 1, str[5] - 1, str[6] - 1);
-   return new DateTimeNode(year, str[2], str[3], str[4] - 1, str[5] - 1, str[6] - 1);
-
             break;
         }
 
