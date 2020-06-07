@@ -4,7 +4,7 @@
 
     Qore Programming Language
 
-    Copyright (C) 2003 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2003 - 2020 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,8 @@
 #define _QORE_ORACLEDATA_H
 
 #include <stdarg.h>
+
+#include <set>
 
 //#define QORE_OCI_FLAGS (OCI_DEFAULT|OCI_THREADED|OCI_NO_MUTEX|OCI_OBJECT)
 #define QORE_OCI_FLAGS (OCI_DEFAULT|OCI_THREADED|OCI_OBJECT|OCI_ENV_EVENTS)
@@ -99,32 +101,22 @@ public:
 // return optimal numeric values if options are supported
 #define OPT_NUM_DEFAULT OPT_NUM_OPTIMAL
 
+// forward reference
+class QorePreparedStatement;
+
 class QoreOracleConnection {
-protected:
-    DLLLOCAL static sb4 readClobCallback(void *sp, CONST dvoid *bufp, ub4 len, ub1 piece) {
-        //printd(5, "QoreOracleConnection::readClobCallback(%p, %p, %d, %d)\n", sp, bufp, len, piece);
-        (reinterpret_cast<QoreStringNode *>(sp))->concat((char*)bufp, len);
-        return OCI_CONTINUE;
-    }
-
-    DLLLOCAL static sb4 readBlobCallback(void *bp, CONST dvoid *bufp, ub4 len, ub1 piece) {
-        //printd(5, "QoreOracleConnection::readBlobCallback(%p, %p, %d, %d)\n", bp, bufp, len, piece);
-        ((BinaryNode*)bp)->append((char*)bufp, len);
-        return OCI_CONTINUE;
-    }
-
 public:
     QoreOracleEnvironment env;
 
-    OCIError *errhp;
-    OCISvcCtx *svchp;
-    OCIServer *srvhp;
-    OCISession *usrhp;
+    OCIError* errhp;
+    OCISvcCtx* svchp;
+    OCIServer* srvhp;
+    OCISession* usrhp;
 
     ub2 charsetid;
     // "fake" connection for OCILIB stuff
-    OCI_Connection *ocilib_cn;
-    Datasource &ds;
+    OCI_Connection* ocilib_cn;
+    Datasource& ds;
     bool ocilib_init;
     const AbstractQoreZoneInfo* server_tz;
 
@@ -136,7 +128,9 @@ public:
     DLLLOCAL QoreOracleConnection(Datasource &n_ds, ExceptionSink* xsink);
     DLLLOCAL ~QoreOracleConnection();
 
-    DLLLOCAL int checkerr(sword status, const char *query_name, ExceptionSink* xsink);
+    DLLLOCAL int checkerr(sword status, const char *query_name, ExceptionSink* xsink, bool* retry = nullptr);
+
+    DLLLOCAL bool handleError(ExceptionSink* xsink, const char* who, bool can_retry);
 
     DLLLOCAL int doException(const char *query_name, text errbuf[], sb4 errcode, ExceptionSink *xsink);
 
@@ -357,12 +351,40 @@ public:
     }
 #endif
 
+    DLLLOCAL void registerStatement(QorePreparedStatement* stmt) {
+        assert(stmt_set.find(stmt) == stmt_set.end());
+        stmt_set.insert(stmt);
+    }
+
+    DLLLOCAL void deregisterStatement(QorePreparedStatement* stmt) {
+        stmt_set_t::iterator i = stmt_set.find(stmt);
+        if (i != stmt_set.end()) {
+            stmt_set.erase(i);
+        }
+    }
+
     DLLLOCAL static void descriptorFree(void *descp, unsigned type) {
         OCIDescriptorFree(descp, type);
     }
 
     DLLLOCAL static void handleFree(void *hndlp, unsigned type) {
         OCIHandleFree(hndlp, type);
+    }
+
+protected:
+    typedef std::set<QorePreparedStatement*> stmt_set_t;
+    stmt_set_t stmt_set;
+
+    DLLLOCAL static sb4 readClobCallback(void *sp, CONST dvoid *bufp, ub4 len, ub1 piece) {
+        //printd(5, "QoreOracleConnection::readClobCallback(%p, %p, %d, %d)\n", sp, bufp, len, piece);
+        (reinterpret_cast<QoreStringNode *>(sp))->concat((char*)bufp, len);
+        return OCI_CONTINUE;
+    }
+
+    DLLLOCAL static sb4 readBlobCallback(void *bp, CONST dvoid *bufp, ub4 len, ub1 piece) {
+        //printd(5, "QoreOracleConnection::readBlobCallback(%p, %p, %d, %d)\n", bp, bufp, len, piece);
+        ((BinaryNode*)bp)->append((char*)bufp, len);
+        return OCI_CONTINUE;
     }
 };
 

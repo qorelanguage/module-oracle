@@ -4,7 +4,7 @@
 
     Qore Programming Language
 
-    Copyright (C) 2006 - 2019 Qore Technologies, s.r.o.
+    Copyright (C) 2006 - 2020 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -260,116 +260,116 @@ typedef std::vector<OraBindNode*> node_list_t;
 
 class QorePreparedStatement : public QoreOracleStatement {
 protected:
-   node_list_t node_list;
-   QoreString* str = nullptr;
-   OraResultSet* columns = nullptr;
-   QoreListNode* args_copy = nullptr;
-   bool hasOutput = false;
-   bool defined = false;
+    node_list_t node_list;
+    QoreString* str = nullptr;
+    OraResultSet* columns = nullptr;
+    QoreListNode* args_copy = nullptr;
+    bool hasOutput = false;
+    bool defined = false;
 
-   DLLLOCAL void parseQuery(const QoreListNode* args, ExceptionSink* xsink);
+    DLLLOCAL void parseQuery(const QoreListNode* args, ExceptionSink* xsink);
 
-   DLLLOCAL void add(OraBindNode* c) {
-      node_list.push_back(c);
-   }
+    DLLLOCAL void add(OraBindNode* c) {
+        node_list.push_back(c);
+    }
 
-   DLLLOCAL int bindOracle(ExceptionSink* xsink);
+    DLLLOCAL int bindOracle(ExceptionSink* xsink);
 
-   DLLLOCAL void resetIntern(ExceptionSink* xsink);
+    DLLLOCAL void resetIntern(ExceptionSink* xsink);
 
 public:
-   //DLLLOCAL QorePreparedStatement(Datasource* ods, const QoreString* ostr, const QoreListNode* args, ExceptionSink* n_xsink, bool doBinding = true);
+    //DLLLOCAL QorePreparedStatement(Datasource* ods, const QoreString* ostr, const QoreListNode* args, ExceptionSink* n_xsink, bool doBinding = true);
 
-   DLLLOCAL QorePreparedStatement(Datasource* ods, OCIStmt* stmthp = nullptr) : QoreOracleStatement(ods, stmthp) {
-   }
+    DLLLOCAL QorePreparedStatement(Datasource* ods, OCIStmt* stmthp = nullptr) : QoreOracleStatement(ods, stmthp) {
+    }
 
-   DLLLOCAL ~QorePreparedStatement() {
-      assert(!str);
-      assert(!stmthp);
-      assert(!columns);
-      assert(!args_copy);
-      assert(node_list.empty());
-   }
+    DLLLOCAL ~QorePreparedStatement() {
+        assert(!str);
+        assert(!stmthp);
+        assert(!columns);
+        assert(!args_copy);
+        assert(node_list.empty());
+    }
 
 #ifdef DEBUG
-   DLLLOCAL void dbg() {
-      for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
-         node_list[i]->dbg();
-      }
-   }
+    DLLLOCAL void dbg() {
+        for (unsigned i = 0, end = node_list.size(); i < end; ++i) {
+            node_list[i]->dbg();
+        }
+    }
 #endif
 
-   // this function is called when the DB connection is lost while executing SQL so that
-   // the current state can be freed while the driver-specific context data is still present
-   // reset the query but does not clear the SQL string or saved args
-   DLLLOCAL void clear(ExceptionSink* xsink);
+    // this function is called when the DB connection is lost while executing SQL so that
+    // the current state can be freed while the driver-specific context data is still present
+    // reset the query but does not clear the SQL string or saved args
+    DLLLOCAL void clear(ExceptionSink* xsink);
 
-   // this function is called after the connection has been lost and reconnected to recreate the statement
-   DLLLOCAL int rebindAbortedConnection(ExceptionSink* xsink) {
-      assert(str);
-      QoreString* ns = str;
-      str = 0;
+    // this function is called after the connection has been lost and reconnected to recreate the statement
+    DLLLOCAL int rebindAbortedConnection(ExceptionSink* xsink) {
+        assert(str);
+        QoreString* ns = str;
+        str = 0;
 
-      if (prepare(*ns, 0, false, xsink))
-         return -1;
+        if (prepare(*ns, 0, false, xsink))
+            return -1;
 
-      return 0;
-   }
+        return 0;
+    }
 
-   // this function is called when the DB connection has been lost to free all the statement's data
-   DLLLOCAL void reset(ExceptionSink* xsink);
+    // this function is called when the DB connection has been lost to free all the statement's data
+    DLLLOCAL void reset(ExceptionSink* xsink);
 
-   DLLLOCAL int prepare(const QoreString& sql, const QoreListNode* args, bool parse, ExceptionSink* xsink);
+    DLLLOCAL int prepare(const QoreString& sql, const QoreListNode* args, bool parse, ExceptionSink* xsink);
 
-   DLLLOCAL OraBindNode* add(QoreValue v) {
-      OraBindNode* c = new OraBindNode(*this, v);
-      add(c);
-      //printd(5, "QorePreparedStatement::add()\n");
-      return c;
-   }
+    DLLLOCAL OraBindNode* add(QoreValue v) {
+        OraBindNode* c = new OraBindNode(*this, v);
+        add(c);
+        //printd(5, "QorePreparedStatement::add()\n");
+        return c;
+    }
 
-   DLLLOCAL OraBindNode* add(char* name, int size = -1, const char* type = 0, QoreValue val = QoreValue()) {
-      OraBindNode* c = new OraBindNode(*this, name, size, type, val);
-      add(c);
-      //printd(5, "QorePreparedStatement::add()\n");
-      hasOutput = true;
-      return c;
-   }
+    DLLLOCAL OraBindNode* add(char* name, int size = -1, const char* type = 0, QoreValue val = QoreValue()) {
+        OraBindNode* c = new OraBindNode(*this, name, size, type, val);
+        add(c);
+        //printd(5, "QorePreparedStatement::add()\n");
+        hasOutput = true;
+        return c;
+    }
 
-   DLLLOCAL int execute(ExceptionSink* xsink, const char* who, int oci_flags = 0);
+    DLLLOCAL int execute(ExceptionSink* xsink, const char* who, int oci_flags = 0);
 
-   DLLLOCAL int bind(const QoreListNode* args, ExceptionSink* xsink);
-   DLLLOCAL int bindPlaceholders(const QoreListNode* args, ExceptionSink* xsink);
-   DLLLOCAL int bindValues(const QoreListNode* args, ExceptionSink* xsink);
+    DLLLOCAL int bind(const QoreListNode* args, ExceptionSink* xsink);
+    DLLLOCAL int bindPlaceholders(const QoreListNode* args, ExceptionSink* xsink);
+    DLLLOCAL int bindValues(const QoreListNode* args, ExceptionSink* xsink);
 
-   DLLLOCAL int exec(ExceptionSink* xsink);
+    DLLLOCAL int exec(ExceptionSink* xsink);
 
-   DLLLOCAL int execDescribe(ExceptionSink* xsink);
+    DLLLOCAL int execDescribe(ExceptionSink* xsink);
 
-   DLLLOCAL int define(ExceptionSink* xsink);
+    DLLLOCAL int define(ExceptionSink* xsink);
 
-   DLLLOCAL int affectedRows(ExceptionSink* xsink);
+    DLLLOCAL int affectedRows(ExceptionSink* xsink);
 
-   DLLLOCAL QoreHashNode* getOutput(ExceptionSink* xsink) {
-      return getOutputHash(false, xsink);
-   }
+    DLLLOCAL QoreHashNode* getOutput(ExceptionSink* xsink) {
+        return getOutputHash(false, xsink);
+    }
 
-   DLLLOCAL QoreHashNode* getOutputRows(ExceptionSink* xsink) {
-      return getOutputHash(true, xsink);
-   }
+    DLLLOCAL QoreHashNode* getOutputRows(ExceptionSink* xsink) {
+        return getOutputHash(true, xsink);
+    }
 
-   DLLLOCAL QoreHashNode* fetchRow(ExceptionSink* xsink);
-   DLLLOCAL QoreListNode* fetchRows(int rows, ExceptionSink* xsink);
-   DLLLOCAL QoreHashNode* fetchColumns(int rows, ExceptionSink* xsink);
+    DLLLOCAL QoreHashNode* fetchRow(ExceptionSink* xsink);
+    DLLLOCAL QoreListNode* fetchRows(int rows, ExceptionSink* xsink);
+    DLLLOCAL QoreHashNode* fetchColumns(int rows, ExceptionSink* xsink);
 
-   DLLLOCAL QoreHashNode* describe(ExceptionSink* xsink);
+    DLLLOCAL QoreHashNode* describe(ExceptionSink* xsink);
 
-   DLLLOCAL QoreValue execWithPrologue(ExceptionSink* xsink, bool rows, bool cols = false);
+    DLLLOCAL QoreValue execWithPrologue(ExceptionSink* xsink, bool rows, bool cols = false);
 
-   DLLLOCAL QoreHashNode* selectRow(ExceptionSink* xsink);
+    DLLLOCAL QoreHashNode* selectRow(ExceptionSink* xsink);
 
-   // rows = true means get a list of hashes, otherwise the default is a hash of lists
-   DLLLOCAL QoreHashNode* getOutputHash(bool rows, ExceptionSink* xsink);
+    // rows = true means get a list of hashes, otherwise the default is a hash of lists
+    DLLLOCAL QoreHashNode* getOutputHash(bool rows, ExceptionSink* xsink);
 };
 
 class QorePreparedStatementHelper : public QorePreparedStatement {

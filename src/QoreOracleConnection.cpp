@@ -4,7 +4,7 @@
 
     Qore Programming Language
 
-    Copyright (C) 2003 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2003 - 2020 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -219,51 +219,154 @@ void QoreOracleConnection::clearCache() {
    OCI_ListClear(&ocilib, ocilib_cn->tinfs);
 }
 
-int QoreOracleConnection::checkerr(sword status, const char *query_name, ExceptionSink *xsink) {
-   sb4 errcode = 0;
+int QoreOracleConnection::checkerr(sword status, const char* query_name, ExceptionSink* xsink, bool* retry) {
+    sb4 errcode = 0;
 
-   //printd(5, "QoreOracleConnection::checkerr(%p, %d, %s, isEvent=%d)\n", errhp, status, query_name ? query_name : "none", *xsink);
-   switch (status) {
-      case OCI_SUCCESS:
-         return 0;
-      case OCI_SUCCESS_WITH_INFO: {
-         text errbuf[512];
+    //printd(5, "QoreOracleConnection::checkerr(%p, %d, %s, isEvent=%d)\n", errhp, status, query_name ? query_name : "none", *xsink);
+    switch (status) {
+        case OCI_SUCCESS:
+            return 0;
 
-         OCIErrorGet((dvoid *)errhp, (ub4) 1, (text *) NULL, &errcode, errbuf, (ub4) sizeof(errbuf), OCI_HTYPE_ERROR);
-         //printd(5, "WARNING: %s returned OCI_SUCCESS_WITH_INFO: %s\n", query_name ? query_name : "<unknown>", remove_trailing_newlines((char *)errbuf));
-         // ignore SUCCESS_WITH_INFO codes
-         return 0;
-      }
+        case OCI_SUCCESS_WITH_INFO: {
+            text errbuf[512];
 
-      case OCI_ERROR: {
-         text errbuf[512];
-         OCIErrorGet((dvoid *)errhp, (ub4) 1, (text *) NULL, &errcode, errbuf, (ub4) sizeof(errbuf), OCI_HTYPE_ERROR);
-         doException(query_name, errbuf, errcode, xsink);
-         break;
-      }
-      case OCI_INVALID_HANDLE:
-         if (query_name)
-            xsink->raiseException("DBI:ORACLE:OCI-INVALID-HANDLE", "%s@%s: %s: an invalid OCI handle was used", ds.getUsername(), ds.getDBName(), query_name);
-         else
-            xsink->raiseException("DBI:ORACLE:OCI-INVALID-HANDLE", "%s@%s: an invalid OCI handle was used", ds.getUsername(), ds.getDBName());
-         break;
-      case OCI_NEED_DATA:
-         xsink->raiseException("DBI:ORACLE:OCI-NEED-DATA", "Oracle OCI error");
-         break;
-      case OCI_NO_DATA:
-         xsink->raiseException("DBI:ORACLE:OCI-NODATA", "Oracle OCI error");
-         break;
-      case OCI_STILL_EXECUTING:
-         xsink->raiseException("DBI:ORACLE:OCI-STILL-EXECUTING", "Oracle OCI error");
-         break;
-      case OCI_CONTINUE:
-         xsink->raiseException("DBI:ORACLE:OCI-CONTINUE", "Oracle OCI error");
-         break;
-      default:
-         xsink->raiseException("DBI:ORACLE:UNKNOWN-ERROR", "unknown OCI error code %d", status);
-         break;
-   }
-   return -1;
+            OCIErrorGet((dvoid *)errhp, (ub4) 1, (text *) NULL, &errcode, errbuf, (ub4) sizeof(errbuf), OCI_HTYPE_ERROR);
+            //printd(5, "WARNING: %s returned OCI_SUCCESS_WITH_INFO: %s\n", query_name ? query_name : "<unknown>", remove_trailing_newlines((char *)errbuf));
+            // ignore SUCCESS_WITH_INFO codes
+            return 0;
+        }
+
+        case OCI_ERROR: {
+            bool retry_flag = handleError(xsink, query_name, (bool)retry);
+            if (retry) {
+                assert(!*retry);
+                *retry = retry_flag;
+            }
+            break;
+        }
+
+        case OCI_INVALID_HANDLE:
+            if (query_name)
+                xsink->raiseException("DBI:ORACLE:OCI-INVALID-HANDLE", "%s@%s: %s: an invalid OCI handle was used", ds.getUsername(), ds.getDBName(), query_name);
+            else
+                xsink->raiseException("DBI:ORACLE:OCI-INVALID-HANDLE", "%s@%s: an invalid OCI handle was used", ds.getUsername(), ds.getDBName());
+            break;
+
+        case OCI_NEED_DATA:
+            xsink->raiseException("DBI:ORACLE:OCI-NEED-DATA", "Oracle OCI error");
+            break;
+
+        case OCI_NO_DATA:
+            xsink->raiseException("DBI:ORACLE:OCI-NODATA", "Oracle OCI error");
+            break;
+
+        case OCI_STILL_EXECUTING:
+            xsink->raiseException("DBI:ORACLE:OCI-STILL-EXECUTING", "Oracle OCI error");
+            break;
+
+        case OCI_CONTINUE:
+            xsink->raiseException("DBI:ORACLE:OCI-CONTINUE", "Oracle OCI error");
+            break;
+
+        default:
+            xsink->raiseException("DBI:ORACLE:UNKNOWN-ERROR", "unknown OCI error code %d", status);
+            break;
+    }
+    return -1;
+}
+
+bool QoreOracleConnection::handleError(ExceptionSink* xsink, const char* who, bool can_retry) {
+    /*
+    sb4 errcode = 0;
+    text errbuf[512];
+    OCIErrorGet((dvoid*)errhp, (ub4) 1, (text*)nullptr, &errcode, errbuf, (ub4) sizeof(errbuf), OCI_HTYPE_ERROR);
+    doException(query_name, errbuf, errcode, xsink);
+    return false;
+    */
+
+    // see if we have a lost connection from the error code
+    int ping = -1;
+
+    // get and save error information
+    sb4 errcode;
+    text errbuf[512];
+    OCIErrorGet((dvoid*)errhp, (ub4)1, (text*)nullptr, &errcode, errbuf, (ub4)sizeof(errbuf), OCI_HTYPE_ERROR);
+    // ORA-03113 and ORA-03114 are lost connections
+    // issue #802: ORA-01041 is only raised due to a bug in Oracle pre 12c
+    if (errcode == 3113 || errcode == 3114 || errcode == 1041)
+        ping = 0;
+
+    //dbg();
+    // see if server is connected
+    if (ping == -1 && ocilib_init) {
+        ExceptionSink xsink2;
+        ping = OCI_Ping(&ocilib, ocilib_cn, &xsink2);
+        // do not allow ping exceptions to be propagated to the caller
+        xsink2.clear();
+    }
+
+    if (!ping) {
+        // if there is at least one SQLStatement active on the connection, there will be a transaction in place
+        // therefore in all cases all statements will be invalidated and closed when we lose a connection
+        // we can only recover a plain "exec" or "select" call
+        if (ds.activeTransaction()) {
+            xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost " \
+                "while in a transaction; transaction has been lost", ds.getUsername(), ds.getDBName());
+        }
+
+        // reset current statement state while the driver-specific context data is still present
+        for (auto& i : stmt_set) {
+            i->clear(xsink);
+        }
+        // free and reset statement states for all active statements while the driver-specific context data is still present
+        ds.connectionLost(xsink);
+
+        if (can_retry) {
+            // try to reconnect
+            logoff();
+
+            //printd(5, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect (trans: %d)\n", ds->activeTransaction());
+            if (logon(xsink)) {
+                //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", &conn);
+                // free state completely
+                for (auto& i : stmt_set) {
+                    i->reset(xsink);
+                }
+                // close datasource and remove private data
+                ds.connectionAborted(xsink);
+                return false;
+            }
+
+            // clear warnings
+            clearWarnings();
+
+            // don't execute again if any exceptions have occured, including if the connection was aborted while in a transaction
+            if (*xsink) {
+                // close all statements and remove private data but leave datasource open
+                ds.connectionRecovered(xsink);
+                return false;
+            }
+
+            for (auto& i : stmt_set) {
+                // try to recreate the statement context
+                if (i->rebindAbortedConnection(xsink))
+                    return false;
+            }
+
+            return true;
+        }
+
+        for (auto& i : stmt_set) {
+            i->reset(xsink);
+        }
+        // close datasource and remove private data
+        ds.connectionAborted(xsink);
+        return false;
+    }
+
+    //printd(5, "QoreOracleStatement::execute() error, but it's connected; status: %d who: %s\n", status, who);
+    doException(who, errbuf, errcode, xsink);
+    return false;
 }
 
 int QoreOracleConnection::doException(const char *query_name, text errbuf[], sb4 errcode, ExceptionSink *xsink) {
@@ -327,19 +430,19 @@ int QoreOracleConnection::logon(ExceptionSink *xsink) {
    return stmt.exec(session_sql, sizeof(session_sql), xsink);
 }
 
-int QoreOracleConnection::descriptorAlloc(void **descpp, unsigned type, const char *who, ExceptionSink *xsink) {
+int QoreOracleConnection::descriptorAlloc(void** descpp, unsigned type, const char* who, ExceptionSink* xsink) {
    return checkerr(OCIDescriptorAlloc(*env, descpp, type, 0, 0), who, xsink);
 }
 
-int QoreOracleConnection::handleAlloc(void **hndlpp, unsigned type, const char *who, ExceptionSink *xsink) {
+int QoreOracleConnection::handleAlloc(void** hndlpp, unsigned type, const char* who, ExceptionSink* xsink) {
    return checkerr(OCIHandleAlloc(*env, hndlpp, type, 0, 0), who, xsink);
 }
 
-int QoreOracleConnection::commit(ExceptionSink *xsink) {
+int QoreOracleConnection::commit(ExceptionSink* xsink) {
    return checkerr(OCITransCommit(svchp, errhp, (ub4) 0), "QoreOracleConnection:commit()", xsink);
 }
 
-int QoreOracleConnection::rollback(ExceptionSink *xsink) {
+int QoreOracleConnection::rollback(ExceptionSink* xsink) {
    return checkerr(OCITransRollback(svchp, errhp, (ub4) 0), "QoreOracleConnection:rollback()", xsink);
 }
 
