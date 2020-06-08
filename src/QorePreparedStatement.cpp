@@ -1,10 +1,10 @@
 /* -*- mode: c++; indent-tabs-mode: nil -*- */
 /*
-    QorePreparedStatement.h
+    QorePreparedStatement.cpp
 
     Qore Programming Language
 
-    Copyright (C) 2006 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2006 - 2020 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -1606,13 +1606,11 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
 
             strncpy((char*)buf.ptr, str->c_str(), data.ph_maxsize);
             ((char*)buf.ptr)[data.ph_maxsize] = '\0';
-        }
-        else
+        } else
             ((char* )buf.ptr)[0] = '\0';
 
         stmt.bindByPos(bndp, pos, buf.ptr, data.ph_maxsize + 1, SQLT_STR, xsink, &ind);
-    }
-    else if (data.isType("date")) {
+    } else if (data.isType("date")) {
         //printd(5, "OraBindNode::bindPlaceholder() this: %p, timestamp dtype: %d\n", this, QORE_SQLT_TIMESTAMP);
         if (setupDateDescriptor(xsink))
             return;
@@ -1627,8 +1625,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
         //conn->checkerr(OCIBindByPos(stmthp, &bndp, conn->errhp, pos, &buf.odt, 0, QORE_SQLT_TIMESTAMP, &ind, (ub2 *)NULL, (ub2 *)NULL, (ub4)0, (ub4 *)NULL, OCI_DEFAULT), "OraBindNode::bindPlaceholder() timestamp", xsink);
         if (bindDate(pos, xsink))
             return;
-    }
-    else if (data.isType("binary")) {
+    } else if (data.isType("binary")) {
         dtype = SQLT_LVB;
         buf.ptr = 0;
 
@@ -1649,8 +1646,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
                 if (conn->checkerr(OCIRawAssignBytes(*conn->env, conn->errhp, (const ub1*)bin->getPtr(), bin->size(), (OCIRaw**)&buf.ptr), "OraBindNode::bindPlaceholder() bind binary value", xsink)) {
                     return;
                 }
-            }
-            else {
+            } else {
                 QoreStringValueHelper str(value, stmt.getEncoding(), xsink);
                 if (*xsink)
                     return;
@@ -1668,8 +1664,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
                 if (conn->checkerr(OCIRawAssignBytes(*conn->env, conn->errhp, (const ub1*)str->getBuffer(), str->strlen(), (OCIRaw**)&buf.ptr), "OraBindNode::bindPlaceholder() bind binary value from string", xsink))
                     return;
             }
-        }
-        else {
+        } else {
             data.ph_maxsize = ORA_RAW_SIZE;
             buf.ptr = 0;
 
@@ -1678,8 +1673,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
         }
 
         stmt.bindByPos(bndp, pos, buf.ptr, ORA_RAW_SIZE, SQLT_LVB, xsink, &ind);
-    }
-    else if (data.isType("clob")) {
+    } else if (data.isType("clob")) {
         dtype = SQLT_CLOB;
         buf.ptr = NULL;
 
@@ -1688,8 +1682,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
 
         // printd(5, "OraBindNode::bindPlaceholder() got LOB locator handle %p\n", buf.ptr);
         stmt.bindByPos(bndp, pos, &buf.ptr, 0, SQLT_CLOB, xsink, &ind);
-    }
-    else if (data.isType("blob")) {
+    } else if (data.isType("blob")) {
         dtype = SQLT_BLOB;
         buf.ptr = NULL;
 
@@ -1699,15 +1692,13 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
         // printd(5, "bindPalceholder() got LOB locator handle %p\n", buf.ptr);
 
         stmt.bindByPos(bndp, pos, &buf.ptr, 0, SQLT_BLOB, xsink, &ind);
-    }
-    else if (data.isType("integer")) {
+    } else if (data.isType("integer")) {
         dtype = SQLT_INT;
 
         buf.i8 = value.getAsBigInt();
 
         stmt.bindByPos(bndp, pos, &buf.i8, sizeof(int64), SQLT_INT, xsink, &ind);
-    }
-    else if (data.isType("float")) {
+    } else if (data.isType("float")) {
         buf.f8 = value.getAsFloat();
 
 #if defined(SQLT_BDOUBLE) && defined(USE_NEW_NUMERIC_TYPES)
@@ -1717,8 +1708,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
         dtype = SQLT_FLT;
         stmt.bindByPos(bndp, pos, &buf.f8, sizeof(double), SQLT_FLT, xsink, &ind);
 #endif
-    }
-    else if (data.isType("number")) {
+    } else if (data.isType("number")) {
         dtype = SQLT_NUM;
         buf.ptr = 0;
 
@@ -1733,8 +1723,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
                 size = 100;
             buf.ptr = malloc(sizeof(char) * (size + 1));
             strcpy((char*)buf.ptr, str->getBuffer());
-        }
-        else {
+        } else {
             size = 100;
             buf.ptr = malloc(sizeof(char) * (size + 1));
             ((char*)buf.ptr)[0] = '\0';
@@ -1742,8 +1731,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
 
         // we actually bind as a string
         stmt.bindByPos(bndp, pos, buf.ptr, size, SQLT_STR, xsink, &ind);
-    }
-    else if (data.isType("hash")) {
+    } else if (data.isType("hash")) {
         dtype = SQLT_RSET;
 
         // allocate statement handle for result list
@@ -1751,8 +1739,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
             buf.ptr = nullptr;
         else
             stmt.bindByPos(bndp, pos, &buf.ptr, 0, SQLT_RSET, xsink, &ind);
-    }
-    else if (data.isType("resultset")) {
+    } else if (data.isType("resultset")) {
         dtype = SQLT_RSET;
 
         // allocate statement handle for result list
@@ -1762,8 +1749,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
             stmt.bindByPos(bndp, pos, &buf.ptr, 0, SQLT_RSET, xsink, &ind);
             alt_output = true;
         }
-    }
-    else if (data.isType(ORACLE_OBJECT)) {
+    } else if (data.isType(ORACLE_OBJECT)) {
         subdtype = SQLT_NTY_OBJECT;
         dtype = SQLT_NTY;
 
@@ -1807,8 +1793,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
                         "OraBindNode::bindPlaceholder() OCIBindObject", xsink);
 
         //printd(5, "OraBindNode::bindValue() object '%s' tdo=0x%x handle=0x%x\n", h->getBuffer(), buf.oraObj->typinf->tdo, buf.oraObj->handle);
-    }
-    else if (data.isType(ORACLE_COLLECTION)) {
+    } else if (data.isType(ORACLE_COLLECTION)) {
         subdtype = SQLT_NTY_COLLECTION;
         dtype = SQLT_NTY;
 
@@ -1843,8 +1828,7 @@ void OraBindNode::bindPlaceholder(int pos, ExceptionSink* xsink) {
                                     ),
                         "OraBindNode::bindPlaceholder() OCIBindObject collection", xsink);
     //         assert(0);
-    }
-    else {
+    } else {
         //printd(5, "OraBindNode::bindPlaceholder(ds: %p, pos: %d) type: %s, size: %d)\n", ds, pos, data.ph.type, data.ph.maxsize);
         xsink->raiseException("BIND-EXCEPTION", "type '%s' is not supported for SQL binding", data.ph_type);
     }
@@ -1899,98 +1883,112 @@ QoreValue OraBindNode::getValue(bool horizontal, ExceptionSink* xsink) {
 }
 
 int QorePreparedStatement::execute(ExceptionSink* xsink, const char* who, int oci_flags) {
-   assert(conn.svchp);
-   ub4 iters;
-   if (is_select)
-      iters = 0;
-   else
-      iters = !array_size ? 1 : array_size;
-   int status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT | oci_flags);
+    assert(conn.svchp);
+    ub4 iters;
+    if (is_select)
+        iters = 0;
+    else
+        iters = !array_size ? 1 : array_size;
+    int status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT | oci_flags);
 
-   //printd(5, "QoreOracleStatement::execute() stmthp: %p status: %d (OCI_ERROR: %d)\n", stmthp, status, OCI_ERROR);
-   if (status == OCI_ERROR) {
-      // see if we have a lost connection from the error code
-      int ping = -1;
-
-      // get and save error information
-      sb4 errcode;
-      text errbuf[512];
-      OCIErrorGet((dvoid*)conn.errhp, (ub4)1, (text*)nullptr, &errcode, errbuf, (ub4)sizeof(errbuf), OCI_HTYPE_ERROR);
-      // ORA-03113 and ORA-03114 are lost connections
-      // issue #802: ORA-01041 is only raised due to a bug in Oracle pre 12c
-      if (errcode == 3113 || errcode == 3114 || errcode == 1041)
-         ping = 0;
-
-      //dbg();
-      // see if server is connected
-      if (ping == -1) {
-         ExceptionSink xsink2;
-         ping = OCI_Ping(&conn.ocilib, conn.ocilib_cn, &xsink2);
-         // do not allow ping exceptions to be propagated to the caller
-         xsink2.clear();
-      }
-
-      if (!ping) {
-         // if there is at least one SQLStatement active on the connection, there will be a transaction in place
-         // therefore in all cases all statements will be invalidated and closed when we lose a connection
-         // we can only recover a plain "exec" or "select" call
-         if (ds->activeTransaction())
-            xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost while in a transaction; transaction has been lost", ds->getUsername(), ds->getDBName());
-
-         // reset current statement state while the driver-specific context data is still present
-         clear(xsink);
-         // free and reset statement states for all active statements while the driver-specific context data is still present
-         ds->connectionLost(xsink);
-
-         // try to reconnect
-         conn.logoff();
-
-         //printd(5, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect (trans: %d)\n", ds->activeTransaction());
-         if (conn.logon(xsink)) {
-            //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", &conn);
-            // free state completely
-            reset(xsink);
-            // close datasource and remove private data
-            ds->connectionAborted(xsink);
+    //printd(5, "QoreOracleStatement::execute() stmthp: %p status: %d (OCI_ERROR: %d)\n", stmthp, status, OCI_ERROR);
+    if (status == OCI_ERROR) {
+        if (!conn.handleError(xsink, who, true)) {
+            assert(*xsink);
             return -1;
-         }
+        }
 
-         // clear warnings
-         conn.clearWarnings();
+        assert(!*xsink);
 
-         // don't execute again if any exceptions have occured, including if the connection was aborted while in a transaction
-         if (*xsink) {
-            // close all statements and remove private data but leave datasource open
-            ds->connectionRecovered(xsink);
+        //printd(5, "QoreOracleStatement::execute() returned from OCILogon() status: %d\n", status);
+        status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT | oci_flags);
+        if (status && conn.checkerr(status, who, xsink)) {
             return -1;
-         }
+        }
 
-         // try to recreate the statement context
-         if (rebindAbortedConnection(xsink))
+        /*
+        // see if we have a lost connection from the error code
+        int ping = -1;
+
+        // get and save error information
+        sb4 errcode;
+        text errbuf[512];
+        OCIErrorGet((dvoid*)conn.errhp, (ub4)1, (text*)nullptr, &errcode, errbuf, (ub4)sizeof(errbuf), OCI_HTYPE_ERROR);
+        // ORA-03113 and ORA-03114 are lost connections
+        // issue #802: ORA-01041 is only raised due to a bug in Oracle pre 12c
+        if (errcode == 3113 || errcode == 3114 || errcode == 1041)
+            ping = 0;
+
+        //dbg();
+        // see if server is connected
+        if (ping == -1) {
+            ExceptionSink xsink2;
+            ping = OCI_Ping(&conn.ocilib, conn.ocilib_cn, &xsink2);
+            // do not allow ping exceptions to be propagated to the caller
+            xsink2.clear();
+        }
+
+        if (!ping) {
+            // if there is at least one SQLStatement active on the connection, there will be a transaction in place
+            // therefore in all cases all statements will be invalidated and closed when we lose a connection
+            // we can only recover a plain "exec" or "select" call
+            if (ds->activeTransaction())
+                xsink->raiseException("DBI:ORACLE:TRANSACTION-ERROR", "connection to Oracle database server %s@%s lost while in a transaction; transaction has been lost", ds->getUsername(), ds->getDBName());
+
+            // reset current statement state while the driver-specific context data is still present
+            clear(xsink);
+            // free and reset statement states for all active statements while the driver-specific context data is still present
+            ds->connectionLost(xsink);
+
+            // try to reconnect
+            conn.logoff();
+
+            //printd(5, "QoreOracleStatement::execute() about to execute OCILogon() for reconnect (trans: %d)\n", ds->activeTransaction());
+            if (conn.logon(xsink)) {
+                //printd(5, "QoreOracleStatement::execute() conn: %p reconnect failed, marking connection as closed\n", &conn);
+                // free state completely
+                reset(xsink);
+                // close datasource and remove private data
+                ds->connectionAborted(xsink);
+                return -1;
+            }
+
+            // clear warnings
+            conn.clearWarnings();
+
+            // don't execute again if any exceptions have occured, including if the connection was aborted while in a transaction
+            if (*xsink) {
+                // close all statements and remove private data but leave datasource open
+                ds->connectionRecovered(xsink);
+                return -1;
+            }
+
+            // try to recreate the statement context
+            if (rebindAbortedConnection(xsink))
+                return -1;
+
+            assert(!*xsink);
+
+            //printd(5, "QoreOracleStatement::execute() returned from OCILogon() status: %d\n", status);
+            status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT | oci_flags);
+            if (status && conn.checkerr(status, who, xsink))
+                return -1;
+        } else {
+            //printd(5, "QoreOracleStatement::execute() error, but it's connected; status: %d who: %s\n", status, who);
+            conn.doException(who, errbuf, errcode, xsink);
+            //conn.checkerr(status, who, xsink);
             return -1;
+        }
+        */
+    }
+    else if (status && conn.checkerr(status, who, xsink))
+        return -1;
 
-         assert(!*xsink);
-
-         //printd(5, "QoreOracleStatement::execute() returned from OCILogon() status: %d\n", status);
-         status = OCIStmtExecute(conn.svchp, stmthp, conn.errhp, iters, 0, 0, 0, OCI_DEFAULT | oci_flags);
-         if (status && conn.checkerr(status, who, xsink))
-            return -1;
-      }
-      else {
-         //printd(5, "QoreOracleStatement::execute() error, but it's connected; status: %d who: %s\n", status, who);
-         conn.doException(who, errbuf, errcode, xsink);
-         //conn.checkerr(status, who, xsink);
-         return -1;
-      }
-   }
-   else if (status && conn.checkerr(status, who, xsink))
-      return -1;
-
-   return 0;
+    return 0;
 }
 
 int QorePreparedStatement::exec(ExceptionSink* xsink) {
-   return execute(xsink, "QorePreparedStatement::exec()");
+    return execute(xsink, "QorePreparedStatement::exec()");
 }
 
 int QorePreparedStatement::execDescribe(ExceptionSink* xsink) {
@@ -1999,23 +1997,23 @@ int QorePreparedStatement::execDescribe(ExceptionSink* xsink) {
 }
 
 void QorePreparedStatement::clear(ExceptionSink* xsink) {
-   //printd(5, "QorePreparedStatement::clear() this: %p\n", this);
+    //printd(5, "QorePreparedStatement::clear() this: %p\n", this);
 
-   QoreOracleStatement::reset(xsink);
+    QoreOracleStatement::reset(xsink);
 
-   // clear all nodes without deleting the values
-   for (node_list_t::iterator i = node_list.begin(), e = node_list.end(); i != e; ++i) {
-      (*i)->clear(xsink);
-   }
+    // clear all nodes without deleting the values
+    for (node_list_t::iterator i = node_list.begin(), e = node_list.end(); i != e; ++i) {
+        (*i)->clear(xsink);
+    }
 
-   if (columns) {
-      columns->del(xsink);
-      delete columns;
-      columns = nullptr;
-      array_size = 0;
-   }
+    if (columns) {
+        columns->del(xsink);
+        delete columns;
+        columns = nullptr;
+        array_size = 0;
+    }
 
-   defined = false;
+    defined = false;
 }
 
 void QorePreparedStatement::reset(ExceptionSink* xsink) {
@@ -2031,7 +2029,7 @@ void QorePreparedStatement::reset(ExceptionSink* xsink) {
     if (columns) {
         columns->del(xsink);
         delete columns;
-        columns = 0;
+        columns = nullptr;
         array_size = 0;
     }
 
@@ -2040,13 +2038,15 @@ void QorePreparedStatement::reset(ExceptionSink* xsink) {
 
     if (str) {
         delete str;
-        str = 0;
+        str = nullptr;
     }
 
     if (args_copy) {
         args_copy->deref(xsink);
-        args_copy = 0;
+        args_copy = nullptr;
     }
+
+   conn.deregisterStatement(this);
 }
 
 int QorePreparedStatement::define(ExceptionSink* xsink) {
@@ -2062,6 +2062,7 @@ int QorePreparedStatement::define(ExceptionSink* xsink) {
     }
 
     defined = true;
+    conn.registerStatement(this);
     columns->define("QorePreparedStatement::define()", xsink);
     return *xsink ? -1 : 0;
 }
@@ -2212,8 +2213,7 @@ void QorePreparedStatement::parseQuery(const QoreListNode* args, ExceptionSink* 
                     p += 2;
                     continue;
                 }
-            }
-            else {
+            } else {
                 if (comment == QODC_LINE) {
                     if ((*p) == '\n' || ((*p) == '\r'))
                         comment = 0;
@@ -2323,27 +2323,27 @@ void QorePreparedStatement::parseQuery(const QoreListNode* args, ExceptionSink* 
 }
 
 QoreHashNode* QorePreparedStatement::getOutputHash(bool rows, ExceptionSink* xsink) {
-   ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
+    ReferenceHolder<QoreHashNode> h(new QoreHashNode, xsink);
 
-   for (node_list_t::iterator i = node_list.begin(), e = node_list.end(); i != e; ++i) {
-      //printd(5, "QorePreparedStatement::getOutputHash() this: %p i: %p '%s' (%s) dtype: %d\n", this, *i, (*i)->data.getName(), (*i)->data.ph_type, (*i)->dtype);
-      if ((*i)->isPlaceholder())
-         h->setKeyValue((*i)->data.getName(), (*i)->getValue(rows, xsink), xsink);
-   }
+    for (node_list_t::iterator i = node_list.begin(), e = node_list.end(); i != e; ++i) {
+        //printd(5, "QorePreparedStatement::getOutputHash() this: %p i: %p '%s' (%s) dtype: %d\n", this, *i, (*i)->data.getName(), (*i)->data.ph_type, (*i)->dtype);
+        if ((*i)->isPlaceholder())
+            h->setKeyValue((*i)->data.getName(), (*i)->getValue(rows, xsink), xsink);
+    }
 
-   return *xsink ? 0 : h.release();
+    return *xsink ? nullptr : h.release();
 }
 
 QoreHashNode* QorePreparedStatement::selectRow(ExceptionSink* xsink) {
-   if (!is_select) {
-      xsink->raiseException("DBI-SELECT-ROW-ERROR", "the SQL passed to the selectRow() method is not a select statement");
-      return 0;
-   }
+    if (!is_select) {
+        xsink->raiseException("DBI-SELECT-ROW-ERROR", "the SQL passed to the selectRow() method is not a select statement");
+        return nullptr;
+    }
 
-   if (exec(xsink))
-      return 0;
+    if (exec(xsink))
+        return nullptr;
 
-   return fetchSingleRow(xsink);
+    return fetchSingleRow(xsink);
 }
 
 QoreValue QorePreparedStatement::execWithPrologue(ExceptionSink* xsink, bool rows, bool cols) {
@@ -2367,8 +2367,7 @@ QoreValue QorePreparedStatement::execWithPrologue(ExceptionSink* xsink, bool row
         }
     } else if (hasOutput) {
         rv = getOutputHash(rows, xsink);
-    }
-    else {
+    } else {
         // get row count
         int rc = affectedRows(xsink);
         rv = *xsink ? QoreValue() : QoreValue(rc);

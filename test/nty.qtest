@@ -1,0 +1,770 @@
+#!/usr/bin/env qore
+
+%new-style
+%strict-args
+%require-types
+%enable-all-warnings
+
+%requires oracle
+%requires ssh2
+
+%requires QUnit
+%requires Util
+
+%exec-class OracleNtyTest
+
+class OracleNtyTest inherits Test {
+    private {
+        Datasource db;
+        TestHelper th;
+
+        const TestObj = {
+            "A_TEXT": "1",
+            "A_NUMBER": 2,
+            "A_NUM_1": 1,
+            "A_TEXTC": "foo bar",
+            "A_CLOB": "lorem ipsum clob sir amet",
+            "A_DATE": 2020-06-08T08:25:47Z,
+            "A_TSTAMP": 2020-06-08T08:25:47.493810Z,
+            "A_TSTAMP_TZ": 2020-06-08T08:25:47Z,
+            "A_OBJECT": bindOracleObject("TEST_OBJECT_2", {"TEXT2": "foobar", "NUMBER2": 500}),
+        };
+
+        const OracleScripts = (
+            "TYPE_OMQTEST_COL_TEST.sql",
+            "TYPE_OMQTEST_TEST_OBJECT.sql",
+            "TYPE_OMQTEST_COL_TEST_CLOB.sql",
+            "TYPE_OMQTEST_COL_TEST_NUM.sql",
+            "TYPE_OMQTEST_TEST_TAB_OBJECT.sql",
+            "TABLE_FAMILY_OMQTEST_T_OBJECT_TEST.sql",
+            "PACKAGE_BODY_OMQTEST_QORE_TEST.sql",
+            "PACKAGE_OMQTEST_QORE_TEST.sql",
+        );
+
+        const Objects = {
+            "types": (
+                "test_object_2",
+                "test_object",
+                "col_test",
+                "col_test_date",
+                "col_test_obj",
+                "col_test_coll_obj",
+                "col_test_coll_str",
+                "col_test_timestamp_tz",
+                "col_test_clob",
+                "col_test_num",
+                "test_tab_object",
+                "test_tab_coll",
+                "test_object_timestamp",
+            ),
+            "tables": (
+                "t_object_test",
+            ),
+            "packages": (
+                "qore_test",
+            ),
+        };
+
+        const MyOpts = Opts + {
+            "reconn": "R,reconnect-tests",
+            "connstr": "c,conn=s",
+        };
+
+        const OptionColumn = 22;
+    }
+
+    constructor() : Test("OracleNtyTest", "1.0", \ARGV, MyOpts) {
+        th = new TestHelper(m_options.reconn ?? False, m_options.verbose ?? 0);
+        addTestCase("varchar", \testVarchar());
+        addTestCase("number", \testNumber());
+        addTestCase("clob", \testClob());
+        addTestCase("date", \testDate());
+        addTestCase("object", \testObject());
+        addTestCase("string collection", \testStringColl());
+        addTestCase("object collection", \testObjectColl());
+        addTestCase("timestamp collection", \testTimestampColl());
+        set_return_value(main());
+    }
+
+    testVarchar() {
+        if (!db) {
+            testSkip("no DB connection");
+        }
+
+        list<auto> col = ('foo', 'bar', NULL, NOTHING, "the end");
+
+        th.set("COLLECTION IN varchar");
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                hash<auto> c = db.exec("begin qore_test.do_coll(%v, :retval); end;",
+                    bindOracleCollection("COL_TEST", col));
+                assertEq({"retval": "|1=foo|2=bar|3={NULL}|4={NULL}|5=the end|"}, c);
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+
+        th.set("COLLECTION OUT varchar2");
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto r2 = db.exec("begin qore_test.get_coll(:retval); end;", placeholderOracleCollection("COL_TEST"));
+                assertEq((Type::String, Type::String, Type::NullType, Type::String), (map $1.type(), r2.retval));
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+    }
+
+    testNumber() {
+        if (!db) {
+            testSkip("no DB connection");
+        }
+
+        th.set("COLLECTION IN number");
+        list<auto> col = (2, 213, NULL, NOTHING, "23932", 500n, 3.1415927);
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                hash<auto> c = db.exec("begin qore_test.do_coll_num(%v, :retval); end;",
+                                bindOracleCollection("COL_TEST_NUM", col));
+                assertEq({"retval": "|1=2|2=213|3=|4=|5=23932|6=500|7=3.1415927|"}, c);
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+
+        th.set("COLLECTION OUT number");
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto r2 = db.exec("begin qore_test.get_coll_num(:retval); end;", placeholderOracleCollection("COL_TEST_NUM"));
+                assertEq((Type::Int, Type::Int, Type::NullType, Type::Int), (map $1.type(), r2.retval));
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+    }
+
+    testClob() {
+        if (!db) {
+            testSkip("no DB connection");
+        }
+
+        th.set("COLLECTION IN clob");
+        list<auto> col = ('foo', 'bar', NULL, NOTHING, "the end");
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto c = db.exec("begin qore_test.do_coll_clob(%v, :retval); end;",
+                                bindOracleCollection("COL_TEST_CLOB", col));
+                assertEq({"retval": "|1=foo|2=bar|3=|4=|5=the end|"}, c);
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+
+        th.set("COLLECTION OUT clob");
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto r2 = db.exec("begin qore_test.get_coll_clob(:retval); end;", placeholderOracleCollection("COL_TEST_clob"));
+                assertEq((Type::String, Type::String, Type::NullType, Type::String), (map $1.type(), r2.retval));
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+    }
+
+    testDate() {
+        if (!db) {
+            testSkip("no DB connection");
+        }
+
+        th.set("COLLECTION IN date");
+        list<auto> cold = (
+            2020-06-08T08:13:08Z,
+            2020-06-08T08:13:24.231232Z,
+            NULL,
+            NOTHING,
+            2020-06-08T08:13:47Z,
+        );
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto c = db.exec("begin qore_test.do_coll_date(%v, :retval); end;",
+                                bindOracleCollection("COL_TEST_date", cold));
+                assertEq({"retval": "|1=08-JUN-20|2=08-JUN-20|3=|4=|5=08-JUN-20|"}, c);
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+
+        th.set("COLLECTION OUT date");
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto r3 = db.exec("begin qore_test.get_coll_date(:retval); end;", placeholderOracleCollection("COL_TEST_date"));
+                assertEq((Type::Date, Type::Date, Type::NullType, Type::Date), (map $1.type(), r3.retval));
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+    }
+
+    testObject() {
+        if (!db) {
+            testSkip("no DB connection");
+        }
+
+        th.set("COLLECTION IN object");
+        list<auto> colo = (
+            bindOracleObject("TEST_OBJECT", TestObj),
+            bindOracleObject("TEST_OBJECT", TestObj),
+            bindOracleObject("TEST_OBJECT", TestObj),
+        );
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto d = db.exec("begin qore_test.do_coll_obj(%v, :retval); end;",
+                                bindOracleCollection("COL_TEST_obj", colo));
+                assertEq({"retval": "|1=2-1-foo bar-lorem ipsum clob sir amet-08-JUN-20|2=2-1-foo bar-lorem ipsum "
+                    "clob sir amet-08-JUN-20|3=2-1-foo bar-lorem ipsum clob sir amet-08-JUN-20|"}, d);
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+
+        th.set("COLLECTION OUT object");
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto r3 = db.exec("begin qore_test.get_coll_obj(:retval); end;", placeholderOracleCollection("COL_TEST_obj"));
+                assertEq((Type::Hash, Type::NullType, Type::Hash, Type::Hash), (map $1.type(), r3.retval));
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+    }
+
+    testStringColl() {
+        if (!db) {
+            testSkip("no DB connection");
+        }
+
+        th.set("COLLECTION IN string collections");
+        list<auto> colcs = (
+            bindOracleCollection("col_test", ("foo", "bar")),
+            NULL,
+            bindOracleCollection("col_test", ("lorem", "ipsum"))
+        );
+
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto dcs = db.exec("begin qore_test.do_coll_coll_str(%v, :retval); end;",
+                    bindOracleCollection("COL_TEST_coll_str", colcs));
+                assertEq({"retval": "\n1=foo|2=bar|\n{NULL}\n1=lorem|2=ipsum|"}, dcs);
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+
+        th.set("COLLECTION OUT string collections");
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto r4 = db.exec("begin qore_test.get_coll_coll_str(:retval); end;",
+                    placeholderOracleCollection("COL_TEST_coll_str"));
+                assertEq((Type::List, Type::NullType, Type::List, Type::List), (map $1.type(), r4.retval));
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+    }
+
+    testObjectColl() {
+        if (!db) {
+            testSkip("no DB connection");
+        }
+
+        th.set("COLLECTION IN objects collections");
+        list<auto> colco = (
+            bindOracleCollection("col_test_obj", (bindOracleObject("TEST_OBJECT", TestObj), bindOracleObject("TEST_OBJECT", TestObj))),
+            NULL,
+            bindOracleCollection("col_test_obj", (bindOracleObject("TEST_OBJECT", TestObj), NULL, bindOracleObject("TEST_OBJECT", TestObj)))
+        );
+
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto dco = db.exec("begin qore_test.do_coll_coll_obj(%v, :retval); end;",
+                    bindOracleCollection("COL_TEST_coll_obj", colco));
+                assertEq({"retval": "\n|1=2-1-foo bar-lorem ipsum clob sir amet-08-JUN-20|2=2-1-foo bar-lorem ipsum "
+                    "clob sir amet-08-JUN-20|\n{NULL}\n|1=2-1-foo bar-lorem ipsum clob sir amet-08-JUN-20|2=2-1-foo "
+                    "bar-lorem ipsum clob sir amet-08-JUN-20|3=2-1-foo bar-lorem ipsum clob sir amet-08-JUN-20|"}, dco);
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+
+        th.set("COLLECTION OUT objects collections");
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto r5 = db.exec("begin qore_test.get_coll_coll_obj(:retval); end;", placeholderOracleCollection("COL_TEST_coll_obj"));
+                assertEq((Type::List, Type::NullType, Type::List, Type::List), (map $1.type(), r5.retval));
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+    }
+
+    testTimestampColl() {
+        if (!db) {
+            testSkip("no DB connection");
+        }
+
+        th.set("COLLECTION IN timestamp");
+        list<auto> colt = (
+            2020-06-08T08:31:38Z,
+            2020-06-08T08:31:38.684Z,
+            NULL,
+            NOTHING,
+            2020-06-08T08:31:48Z,
+        );
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto d = db.exec("begin qore_test.do_coll_timestamp_tz(%v, :retval); end;",
+                                bindOracleCollection("COL_TEST_timestamp_tz", colt));
+                # ignore time zone offset
+                d.retval =~ s/ \+[0-9][0-9]:/ +xx:/g;
+                assertEq({"retval": "|1=08-JUN-20 08.31.38.000000 AM +xx:00|2=08-JUN-20 08.31.38.684000 AM +xx:00"
+                    "|3=|4=|5=08-JUN-20 08.31.48.000000 AM +xx:00|"}, d);
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+
+        th.set("COLLECTION OUT timestamp");
+        while (True) {
+            try {
+                on_exit db.rollback();
+
+                auto r4 = db.exec("begin qore_test.get_coll_timestamp_tz(:retval); end;", placeholderOracleCollection("COL_TEST_timestamp_tz"));
+                assertEq((Type::Date, Type::Date, Type::NullType, Type::Date), (map $1.type(), r4.retval));
+                th.test();
+            } catch (hash<ExceptionInfo> ex) {
+                *string err = restart_transaction(ex);
+                if (err) {
+                    printf("%s\n", err);
+                    th.err();
+                    continue;
+                }
+                rethrow;
+            }
+            break;
+        }
+    }
+
+    private usageIntern() {
+        TestReporter::usageIntern(OptionColumn);
+        printOption("-c,--conn=ARG", "set DB connection argument (ex: \"oracle:user/pass@db\")", OptionColumn);
+    }
+
+    private globalSetUp() {
+        if (!m_options.connstr) {
+            m_options.connstr = ENV.QORE_DB_CONNSTR_ORACLE;
+        }
+        try {
+            db = new Datasource(m_options.connstr);
+            if (db.getDriverName() != "oracle")
+                throw "ORACLE-ERROR", sprintf("cannot execute the oracle tests on a connection using driver %y",
+                    db.getDriverName());
+            db.open();
+        } catch (hash<ExceptionInfo> ex) {
+            if (m_options.verbose) {
+                printf("%y: %s: %s\n", m_options.connstr, ex.err, ex.desc);
+            }
+        }
+
+        dropAll();
+        string dir = normalize_dir(get_script_dir() + "/nty");
+
+        try {
+            foreach string script in (OracleScripts) {
+                playScript(dir + "/" + script);
+                #system("sqlplus " + ora_conn + " < " + dir + "/" + script + " > /dev/null");
+            }
+        } catch (hash<ExceptionInfo> ex) {
+            printf("error setting up Oracle objects: %s: %s\n", ex.err, ex.desc);
+            delete db;
+        }
+    }
+
+    private playScript(string script) {
+        FileLineIterator i(script);
+
+        string buf;
+
+        int block_cnt = 0;
+
+        code exec = sub () {
+            if (buf) {
+                try {
+                    on_error db.rollback();
+                    on_success db.commit();
+
+                    db.exec(buf);
+                } catch (hash<ExceptionInfo> ex) {
+                    throw ex.err, sprintf("%y: %s (SQL: %s)", script, ex.desc, buf), ex.arg;
+                }
+                remove buf;
+            }
+        };
+
+        code add = sub (string line) {
+            if (buf) {
+                buf += "\n";
+            }
+            buf += line;
+        };
+
+        while (i.next()) {
+            string line = i.getValue();
+            # remove comments
+            line =~ s/--.*//g;
+            # skip empty lines
+            if (!line || line =~ /^\s+$/) {
+                continue;
+            }
+
+            if (line =~ /begin/ || line =~ /create\s+(or\s+replace\s+)?package/i) {
+                ++block_cnt;
+                add(line);
+                continue;
+            }
+
+            if (line =~ /end;/) {
+                --block_cnt;
+                if (!block_cnt) {
+                    #line =~ s/;$//;
+                    add(line);
+                    exec();
+                } else {
+                    add(line);
+                }
+                continue;
+            }
+
+            if (line =~ /;$/ && !block_cnt) {
+                line =~ s/;$//;
+                add(line);
+                exec();
+                continue;
+            }
+
+            if (line == "/") {
+                exec();
+                continue;
+            }
+
+            buf += "\n" + line;
+        }
+
+        exec();
+    }
+
+    private dropAll() {
+        string ora_conn = m_options.connstr;
+        ora_conn =~ s/^oracle://;
+        ora_conn =~ s/\(.*//;
+        ora_conn =~ s/%.*//;
+        ora_conn =~ s/{.*//;
+
+        foreach string name in (Objects.packages) {
+            if (m_options.verbose > 2) {
+                printf("drop package %y\n", name);
+            }
+            try {
+                on_error db.rollback();
+                on_success db.commit();
+
+                db.exec("drop package " + name);
+            } catch (hash<ExceptionInfo> ex) {
+                if (m_options.verbose > 2) {
+                    printf("package %y: %s: %s: %s\n", name, get_ex_pos(ex), ex.err, ex.desc);
+                }
+            }
+        }
+
+        foreach string name in (Objects.tables) {
+            if (m_options.verbose > 2) {
+                printf("drop table %y\n", name);
+            }
+            try {
+                on_error db.rollback();
+                on_success db.commit();
+
+                db.exec("drop table " + name);
+            } catch (hash<ExceptionInfo> ex) {
+                if (m_options.verbose > 2) {
+                    printf("table %y: %s: %s: %s\n", name, get_ex_pos(ex), ex.err, ex.desc);
+                }
+            }
+        }
+
+        foreach string name in (new ListReverseIterator(Objects.types)) {
+            if (m_options.verbose > 2) {
+                printf("drop type %y\n", name);
+            }
+            try {
+                on_error db.rollback();
+                on_success db.commit();
+
+                db.exec("drop type " + name);
+            } catch (hash<ExceptionInfo> ex) {
+                if (m_options.verbose > 2) {
+                    printf("type %y: %s: %s: %s\n", name, get_ex_pos(ex), ex.err, ex.desc);
+                }
+            }
+        }
+    }
+
+    private globalTearDown() {
+        if (db) {
+            dropAll();
+        }
+    }
+}
+
+#! Restart transaction if there is a connection error
+/** errors:
+    - ORA-01041: internal error. hostdef extension doesn't exist
+    - ORA-2540[1-9]: cluster failover errors
+    - ORA-03113: end-of-file on communication channel
+    - ORA-03114: not connected to ORACLE
+    - ORA-12541:
+    - ORA-12514:
+    - ORA-12528:
+    - ORA-01033:
+*/
+*string sub restart_transaction(hash<auto> ex) {
+    *string err = (ex.desc =~ x/(ORA-01041|ORA-2540[1-9]|ORA-0311[34]|ORA-12541|ORA-12514|ORA-12528|ORA-01033)/)[0];
+    if (!err) {
+        return;
+    }
+    return sprintf("cluster failover detected: %s: %s: %s: %s", get_ex_pos(ex), err, ex.err, ex.desc);
+}
+
+class TestHelper {
+    private {
+        bool enabled;
+        int verbose;
+        string test;
+
+        SSH2Client client("ol8");
+        SSH2Channel channel;
+    }
+
+    constructor(bool enabled, int verbose) {
+        self.enabled = enabled;
+        self.verbose = verbose;
+        if (enabled) {
+            string sshdir = ENV.HOME + "/.ssh";
+            if (is_file(sshdir + "/id_rsa.old")) {
+                client.setKeys(sshdir + "/id_rsa.old");
+            } else if (is_file(sshdir + "/id_rsa")) {
+                client.setKeys(sshdir + "/id_rsa");
+            } else if (is_file(sshdir + "/id_dsa")) {
+                client.setKeys(sshdir + "/id_dsa");
+            }
+
+            client.connect();
+            channel = client.openSessionChannel();
+            channel.requestPty("vt100");
+            channel.shell();
+            readUntilPrompt();
+        }
+    }
+
+    set(string test) {
+        self.test = test;
+    }
+
+    test() {
+        if (!enabled) {
+            return;
+        }
+        if (test) {
+            # stop oracle
+            printf("stopping Oracle\n");
+            doSshCmd("sudo systemctl stop oracle");
+        } else {
+            printf("continuing\n");
+        }
+    }
+
+    err() {
+        if (!enabled) {
+            return;
+        }
+        # start oracle
+        printf("starting Oracle\n");
+        doSshCmd("sudo systemctl start oracle");
+        delete test;
+    }
+
+    private doSshCmd(string cmd) {
+        channel.write(cmd + "\n");
+        readUntilPrompt();
+    }
+
+    private readUntilPrompt(timeout timeout_ms = 60s) {
+        string str;
+        do {
+            # read with a 120 second timeout
+            str = channel.read(0, timeout_ms);
+            if (verbose > 2) {
+                printf("%s", str);
+            }
+        } while (str !~ /[\#\$\>] *$/);
+    }
+}
