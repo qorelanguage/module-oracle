@@ -513,22 +513,98 @@ class OracleNtyTest inherits Test {
 
         dropAll();
 
+        /*
         string ora_conn = m_options.connstr;
         ora_conn =~ s/^oracle://;
-        ora_conn =~ s/\(.*//;
-        ora_conn =~ s/%.*//;
-        ora_conn =~ s/{.*//;
+        ora_conn =~ s/\(.* //;
+        ora_conn =~ s/%.* //;
+        ora_conn =~ s/{.* //;
+        */
 
         string dir = normalize_dir(get_script_dir() + "/nty");
 
         try {
             foreach string script in (OracleScripts) {
-                system("sqlplus " + ora_conn + " < " + dir + "/" + script + " > /dev/null");
+                playScript(dir + "/" + script);
+                #system("sqlplus " + ora_conn + " < " + dir + "/" + script + " > /dev/null");
             }
         } catch (hash<ExceptionInfo> ex) {
             printf("error setting up Oracle objects: %s: %s\n", ex.err, ex.desc);
             delete db;
         }
+    }
+
+    private playScript(string script) {
+        FileLineIterator i(script);
+
+        string buf;
+
+        int block_cnt = 0;
+
+        code exec = sub () {
+            if (buf) {
+                try {
+                    on_error db.rollback();
+                    on_success db.commit();
+
+                    db.exec(buf);
+                } catch (hash<ExceptionInfo> ex) {
+                    throw ex.err, sprintf("%y: %s (SQL: %s)", script, ex.desc, buf), ex.arg;
+                }
+                remove buf;
+            }
+        };
+
+        code add = sub (string line) {
+            if (buf) {
+                buf += "\n";
+            }
+            buf += line;
+        };
+
+        while (i.next()) {
+            string line = i.getValue();
+            # remove comments
+            line =~ s/--.*//g;
+            # skip empty lines
+            if (!line || line =~ /^\s+$/) {
+                continue;
+            }
+
+            if (line =~ /begin/ || line =~ /create\s+(or\s+replace\s+)?package/i) {
+                ++block_cnt;
+                add(line);
+                continue;
+            }
+
+            if (line =~ /end;/) {
+                --block_cnt;
+                if (!block_cnt) {
+                    #line =~ s/;$//;
+                    add(line);
+                    exec();
+                } else {
+                    add(line);
+                }
+                continue;
+            }
+
+            if (line =~ /;$/ && !block_cnt) {
+                line =~ s/;$//;
+                add(line);
+                exec();
+                continue;
+            }
+
+            if (line == "/") {
+                exec();
+                continue;
+            }
+
+            buf += "\n" + line;
+        }
+
+        exec();
     }
 
     private dropAll() {
