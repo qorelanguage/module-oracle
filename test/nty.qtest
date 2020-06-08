@@ -24,10 +24,10 @@ class OracleNtyTest inherits Test {
             "A_NUM_1": 1,
             "A_TEXTC": "foo bar",
             "A_CLOB": "lorem ipsum clob sir amet",
-            "A_DATE": 2020-06-08T08:25:47,
-            "A_TSTAMP": 2020-06-08T08:25:47.493810,
-            "A_TSTAMP_TZ": 2020-06-08T08:25:47,
-            "A_OBJECT": bindOracleObject("TEST_OBJECT_2", {"TEXT2" : "foobar", "NUMBER2" : 500}),
+            "A_DATE": 2020-06-08T08:25:47Z,
+            "A_TSTAMP": 2020-06-08T08:25:47.493810Z,
+            "A_TSTAMP_TZ": 2020-06-08T08:25:47Z,
+            "A_OBJECT": bindOracleObject("TEST_OBJECT_2", {"TEXT2": "foobar", "NUMBER2": 500}),
         };
 
         const OracleScripts = (
@@ -237,7 +237,13 @@ class OracleNtyTest inherits Test {
         }
 
         th.set("COLLECTION IN date");
-        list<auto> cold = (2020-06-08T08:13:08, 2020-06-08T08:13:24.231232, NULL, NOTHING, 2020-06-08T08:13:47);
+        list<auto> cold = (
+            2020-06-08T08:13:08Z,
+            2020-06-08T08:13:24.231232Z,
+            NULL,
+            NOTHING,
+            2020-06-08T08:13:47Z,
+        );
         while (True) {
             try {
                 on_exit db.rollback();
@@ -447,7 +453,13 @@ class OracleNtyTest inherits Test {
         }
 
         th.set("COLLECTION IN timestamp");
-        list<auto> colt = (2020-06-08T08:31:38, 2020-06-08T08:31:38.684, NULL, NOTHING, 2020-06-08T08:31:48);
+        list<auto> colt = (
+            2020-06-08T08:31:38Z,
+            2020-06-08T08:31:38.684Z,
+            NULL,
+            NOTHING,
+            2020-06-08T08:31:48Z,
+        );
         while (True) {
             try {
                 on_exit db.rollback();
