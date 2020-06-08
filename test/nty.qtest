@@ -466,8 +466,10 @@ class OracleNtyTest inherits Test {
 
                 auto d = db.exec("begin qore_test.do_coll_timestamp_tz(%v, :retval); end;",
                                 bindOracleCollection("COL_TEST_timestamp_tz", colt));
-                assertEq({"retval": "|1=08-JUN-20 08.31.38.000000 AM +02:00|2=08-JUN-20 08.31.38.684000 AM +02:00"
-                    "|3=|4=|5=08-JUN-20 08.31.48.000000 AM +02:00|"}, d);
+                # ignore time zone offset
+                d.retval =~ s/ \+[0-9][0-9]:/ +xx:/g;
+                assertEq({"retval": "|1=08-JUN-20 08.31.38.000000 AM +xx:00|2=08-JUN-20 08.31.38.684000 AM +xx:00"
+                    "|3=|4=|5=08-JUN-20 08.31.48.000000 AM +xx:00|"}, d);
                 th.test();
             } catch (hash<ExceptionInfo> ex) {
                 *string err = restart_transaction(ex);
@@ -524,15 +526,6 @@ class OracleNtyTest inherits Test {
         }
 
         dropAll();
-
-        /*
-        string ora_conn = m_options.connstr;
-        ora_conn =~ s/^oracle://;
-        ora_conn =~ s/\(.* //;
-        ora_conn =~ s/%.* //;
-        ora_conn =~ s/{.* //;
-        */
-
         string dir = normalize_dir(get_script_dir() + "/nty");
 
         try {
