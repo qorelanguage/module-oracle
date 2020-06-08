@@ -276,14 +276,6 @@ int QoreOracleConnection::checkerr(sword status, const char* query_name, Excepti
 }
 
 bool QoreOracleConnection::handleError(ExceptionSink* xsink, const char* who, bool can_retry) {
-    /*
-    sb4 errcode = 0;
-    text errbuf[512];
-    OCIErrorGet((dvoid*)errhp, (ub4) 1, (text*)nullptr, &errcode, errbuf, (ub4) sizeof(errbuf), OCI_HTYPE_ERROR);
-    doException(query_name, errbuf, errcode, xsink);
-    return false;
-    */
-
     // see if we have a lost connection from the error code
     int ping = -1;
 
