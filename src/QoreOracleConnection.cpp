@@ -58,8 +58,7 @@ QoreOracleConnection::QoreOracleConnection(Datasource &n_ds, ExceptionSink *xsin
 
          // get character set ID
          charsetid = tmpenv.nlsCharSetNameToId(ds.getDBEncoding());
-      }
-      else { // get Oracle character set name from OS character set name
+      } else { // get Oracle character set name from OS character set name
          if (tmpenv.nlsNameMapToOracle(QCS_DEFAULT->getCode(), encoding) != OCI_SUCCESS) {
             xsink->raiseException("DBI:ORACLE:UNKNOWN-CHARACTER-ENCODING", "cannot map default OS encoding '%s' to Oracle character encoding", QCS_DEFAULT->getCode());
             return;
