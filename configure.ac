@@ -409,38 +409,29 @@ get_oracle_version() {
     test -z "$ORACLE_VERSION" && ORACLE_VERSION=7.3
   else
     if test "$windows" = "yes"; then
-      if test -f $1/oraocci19.dll; then
-        ORACLE_VERSION=19
-      elif test -f $1/oraocci18.dll; then
-        ORACLE_VERSION=18
-      elif test -f $1/oraocci12.dll; then
-        ORACLE_VERSION=12
-      elif test -f $1/oraociei11.dll -o -f $1/oraocci11.dll; then
-        ORACLE_VERSION=11
-      elif test -f $1/oraociei10.dll; then
-        ORACLE_VERSION=10
+      lf=`ls $1/oraocci.@<:@1-9@:>@.dll 2>/dev/null|tail -1`
+      if test -z "$lf"; then
+        AC_MSG_ERROR([Oracle libraries not found in $1, check oracle installation])
       fi
-    else
+      lf=`echo $lf | sed -e s/.*oraocci// -e 's/\.dll$//'`
+    else 
       lf=`ls $1/libclntsh.${SHLIB_SUFFIX}.@<:@1-9@:>@* 2>/dev/null|tail -1`
       if test -z "$lf"; then
         AC_MSG_ERROR([Oracle libraries not found in $1, check oracle installation])
       fi
-
-      lf=`basename "$lf" | sed s/.*${SHLIB_SUFFIX}\.//`
-      case "$lf" in
-        19*) ORACLE_VERSION=19 ;;
-        18*) ORACLE_VERSION=18 ;;
-        12*) ORACLE_VERSION=12 ;;
-        11*) ORACLE_VERSION=11 ;;
-        10*) ORACLE_VERSION=10 ;;
-        9*) ORACLE_VERSION=9 ;;
-        8*) ORACLE_VERSION=8 ;;
-      esac
-
-      if test -z "$ORACLE_VERSION" -a -f $1/libclntsh.a; then
-        ORACLE_VERSION=8
-      fi
+      lf=`basename "$lf" | sed -e s/.*${SHLIB_SUFFIX}\.// -e 's/\..*$//'`
     fi
+
+    case "$lf" in
+      2*) ORACLE_VERSION=$lf ;;
+      19*) ORACLE_VERSION=19 ;;
+      18*) ORACLE_VERSION=18 ;;
+      12*) ORACLE_VERSION=12 ;;
+      11*) ORACLE_VERSION=11 ;;
+      10*) ORACLE_VERSION=10 ;;
+      9*) ORACLE_VERSION=9 ;;
+      8*) ORACLE_VERSION=8 ;;
+    esac
   fi
 
   if test -z "$ORACLE_VERSION"; then
@@ -520,7 +511,7 @@ fi
 AC_SUBST(ORACLE_INCLUDES)
 
 case "$ORACLE_VERSION" in
-   9*|10*|11*|12*|18*|19*) if test "$windows" = "yes"; then
+   9*|10*|11*|12*|18*|19*|2*) if test "$windows" = "yes"; then
         ORACLE_LIBS="-L$oracle_lib_dir -loci"
     else
         ORACLE_LIBS="-L$oracle_lib_dir -lclntsh"
