@@ -303,15 +303,31 @@ class OracleTest inherits QUnit::Test {
         stmt.exec();
         stmt.commit();
 
-        hash results = Columns;
-        foreach string key in (results.keys()) {
-            if (exists results{key}.expected)
-                results{key} = results{key}.expected;
+        hash expected_results = Columns;
+        foreach string key in (expected_results.keys()) {
+            if (exists expected_results{key}.expected)
+                expected_results{key} = expected_results{key}.expected;
             else
-                results{key} = results{key}.values;
+                expected_results{key} = expected_results{key}.values;
         }
 
-        assertEq(results, ds.exec("SELECT * FROM " + tableName));
+        hash actual_results = ds.exec("SELECT * FROM " + tableName);
+
+        # on alpine linux treat the bindbl case separately
+        if ((ENV.MACHTYPE ?? "").find("alpine") > -1) {
+            list expected_bindbl = expected_results.bindbl;
+            list actual_bindbl = actual_results.bindbl;
+
+            for (int i = 0; i < expected_bindbl.size(); i++) {
+                assertNumberEq(expected_bindbl[i], actual_bindbl[i], 0.00000000000001n);
+            }
+
+            delete expected_results.bindbl;
+            delete actual_results.bindbl;
+        }
+
+        assertEq(expected_results, actual_results);
+
         ds.exec("DROP TABLE " + tableName);
         ds.commit();
     }
