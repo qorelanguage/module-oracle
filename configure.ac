@@ -426,12 +426,12 @@ get_oracle_version() {
         test -z "$ORACLE_VERSION" && ORACLE_VERSION=7.3
     else
         if test "$windows" = "yes"; then
-            lf=`ls $1/oraocci.@<:@1-9@:>@.dll 2>/dev/null|tail -1`
+            lf=`ls $1/oraocci*.dll | grep -v d.dll 2>/dev/null|tail -1`
             if test -z "$lf"; then
                 AC_MSG_ERROR([Oracle libraries not found in $1, check oracle installation])
             fi
             lf=`echo $lf | sed -e s/.*oraocci// -e 's/\.dll$//'`
-        else 
+        else
             lf=`ls $1/libclntsh.${SHLIB_SUFFIX}.@<:@1-9@:>@* 2>/dev/null|tail -1`
             if test -z "$lf"; then
                 AC_MSG_ERROR([Oracle libraries not found in $1, check oracle installation])
