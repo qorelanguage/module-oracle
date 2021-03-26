@@ -1,5 +1,5 @@
 /*
-   +----------------------------------------------------------------------+   
+   +----------------------------------------------------------------------+
    |                                                                      |
    |                     OCILIB - C Driver for Oracle                     |
    |                                                                      |
@@ -25,7 +25,7 @@
    | Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.   |
    +----------------------------------------------------------------------+
    |          Author: Vincent ROGIER <vince.rogier@ocilib.net>            |
-   +----------------------------------------------------------------------+ 
+   +----------------------------------------------------------------------+
 */
 
 /* ------------------------------------------------------------------------ *
@@ -69,14 +69,14 @@ boolean OCI_TypeInfoClose(OCI_TypeInfo *typinf)
  * OCI_TypeInfoGet
  * ------------------------------------------------------------------------ */
 /*
-OCI_TypeInfo * OCI_API OCI_TypeInfoGet(OCI_Connection *con, const mtext *name, 
+OCI_TypeInfo * OCI_API OCI_TypeInfoGet(OCI_Connection *con, const mtext *name,
                                        unsigned int type)
 {
    return OCI_TypeInfoGet2(&OCILib, con, name, type);
 }
 */
 
-OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *con, const mtext *name, 
+OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *con, const mtext *name,
 					unsigned int type, ExceptionSink* xsink)
 {
     OCI_TypeInfo *typinf = NULL;
@@ -93,7 +93,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
     boolean res          = TRUE;
     boolean found        = FALSE;
     ub2 i;
-    
+
     mtext obj_schema[OCI_SIZE_OBJ_NAME+1];
     mtext obj_name[OCI_SIZE_OBJ_NAME+1];
 
@@ -152,7 +152,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
     while (item != NULL)
     {
         typinf = (OCI_TypeInfo *) item->data;
-     
+
         if ((typinf != NULL) && (typinf->type == type))
         {
             if ((mtscasecmp(typinf->name,   obj_name  ) == 0) &&
@@ -164,7 +164,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
         }
 
         item = item->next;
-    } 
+    }
 
     /* Not found, so create type object */
 
@@ -185,20 +185,20 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
             typinf->struct_size = 0;
 
             res = (OCI_SUCCESS == OCI_HandleAlloc2(pOCILib, pOCILib->env,
-                                                  (dvoid **) (void *) &dschp, 
-                                                  OCI_HTYPE_DESCRIBE, (size_t) 0, 
+                                                  (dvoid **) (void *) &dschp,
+                                                  OCI_HTYPE_DESCRIBE, (size_t) 0,
                                                   (dvoid **) NULL));
         }
 
         if (res == TRUE)
         {
             if (type == OCI_TIF_TYPE)
-            {            
+            {
                 void *ostr1 = NULL;
                 void *ostr2 = NULL;
                 int osize1  = -1;
                 int osize2  = -1;
-               
+
                 attr_type = OCI_ATTR_LIST_TYPE_ATTRS;
                 num_type  = OCI_ATTR_NUM_TYPE_ATTRS;
                 ptype     = OCI_DESC_TYPE;
@@ -208,12 +208,12 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
                 OCI_CALL2Q
                 (
-		   pOCILib, res, con, 
-                   
+		   pOCILib, res, con,
+
 		   OCITypeByName(pOCILib->env, con->err, con->cxt,
-                                 (text *) ostr1, (ub4) osize1, 
-                                 (text *) ostr2, (ub4) osize2, 
-                                 (text *) NULL, (ub4) 0, 
+                                 (text *) ostr1, (ub4) osize1,
+                                 (text *) ostr2, (ub4) osize2,
+                                 (text *) NULL, (ub4) 0,
                                  OCI_DURATION_SESSION, OCI_TYPEGET_ALL,
                                  &typinf->tdo),
 
@@ -222,23 +222,23 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
                 OCI_CALL2Q
                 (
-                    pOCILib, res, con, 
-                    
+                    pOCILib, res, con,
+
                     OCIDescribeAny(con->cxt, con->err, (void *) typinf->tdo,
-                                   0, OCI_OTYPE_PTR, OCI_DEFAULT, 
+                                   0, OCI_OTYPE_PTR, OCI_DEFAULT,
                                    OCI_PTYPE_TYPE, dschp),
 
 		    xsink
                 )
-                
+
                 OCI_ReleaseMetaString(ostr1);
                 OCI_ReleaseMetaString(ostr2);
             }
             else
             {
                 mtext buffer[(OCI_SIZE_OBJ_NAME*2) + 2];
-                
-                size_t size = sizeof(buffer)/sizeof(mtext);
+
+                size_t size = (sizeof(buffer) - 1)/sizeof(mtext);
                 void *ostr1 = NULL;
                 int osize1  = -1;
 
@@ -247,7 +247,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
                 ptype     = OCI_DESC_TABLE;
                 str       = buffer;
 
-                str[0] = 0;                
+                str[0] = 0;
 
                 if ((typinf->schema != NULL) && (typinf->schema[0] != 0))
                 {
@@ -263,10 +263,10 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
                 OCI_CALL2Q
                 (
-                    pOCILib, res, con, 
-                    
-                    OCIDescribeAny(con->cxt, con->err, (dvoid *) ostr1, 
-                                   (ub4) osize1, OCI_OTYPE_NAME, 
+                    pOCILib, res, con,
+
+                    OCIDescribeAny(con->cxt, con->err, (dvoid *) ostr1,
+                                   (ub4) osize1, OCI_OTYPE_NAME,
                                    OCI_DEFAULT, item_type, dschp),
 
 		    xsink
@@ -274,12 +274,12 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
                 OCI_ReleaseMetaString(ostr1);
             }
-                  
+
             OCI_CALL2Q
             (
-                pOCILib, res, con, 
-                
-                OCIAttrGet(dschp, OCI_HTYPE_DESCRIBE, &parmh1, 
+                pOCILib, res, con,
+
+                OCIAttrGet(dschp, OCI_HTYPE_DESCRIBE, &parmh1,
                            NULL, OCI_ATTR_PARAM, con->err),
 
 		xsink
@@ -291,9 +291,9 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
             {
                 OCI_CALL2Q
                 (
-                    pOCILib, res, con, 
-                    
-                    OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &typinf->tcode, 
+                    pOCILib, res, con,
+
+                    OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &typinf->tcode,
                                NULL, OCI_ATTR_TYPECODE, con->err),
 
 		    xsink
@@ -302,18 +302,18 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
             }
 
             if (typinf->tcode == SQLT_NCO)
-            {      
+            {
                 typinf->nb_cols = 1;
-                
+
                 ptype  = OCI_DESC_COLLECTION;
                 //etype  = OCI_DESC_TYPE;
                 parmh2 = parmh1;
 
                 OCI_CALL2Q
                 (
-                    pOCILib, res, con, 
-                    
-                    OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &typinf->ccode, 
+                    pOCILib, res, con,
+
+                    OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &typinf->ccode,
                                NULL, OCI_ATTR_COLLECTION_TYPECODE, con->err),
 
 		    xsink
@@ -323,9 +323,9 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
             {
                 OCI_CALL2Q
                 (
-                    pOCILib, res, con, 
-                    
-                    OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &parmh2, 
+                    pOCILib, res, con,
+
+                    OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &parmh2,
                                NULL, attr_type, con->err),
 
 		    xsink
@@ -333,15 +333,15 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
 
                 OCI_CALL2Q
                 (
-                    pOCILib, res, con, 
-                    
+                    pOCILib, res, con,
+
                     OCIAttrGet(parmh1, OCI_DTYPE_PARAM, &typinf->nb_cols,
                                NULL, num_type, con->err),
 
 		    xsink
                 )
             }
-         
+
             /* allocates memory for cached offsets */
 
             if (typinf->nb_cols > 0)
@@ -374,9 +374,9 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
                 {
                     for (i = 0; i < typinf->nb_cols; i++)
                     {
-		        res = res && OCI_ColumnDescribe2(pOCILib, &typinf->cols[i], con, 
+		        res = res && OCI_ColumnDescribe2(pOCILib, &typinf->cols[i], con,
 							 NULL, parmh2, i + 1, ptype, xsink);
-                        
+
 		        res = res && OCI_ColumnMap2(pOCILib, &typinf->cols[i], NULL);
 
                         if (res == FALSE)
@@ -386,7 +386,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
                 else
                     res = FALSE;
             }
-  
+
             /* free describe handle */
 
             if (dschp != NULL)
@@ -412,7 +412,7 @@ OCI_TypeInfo * OCI_API OCI_TypeInfoGet2(OCI_Library *pOCILib, OCI_Connection *co
     if (typinf != NULL)
         typinf->refcount++;
 
-    return typinf; 
+    return typinf;
 }
 
 /* ------------------------------------------------------------------------ *
@@ -461,7 +461,7 @@ unsigned int OCI_API OCI_TypeInfoGetType2(OCI_Library *pOCILib, OCI_TypeInfo *ty
 unsigned int OCI_API OCI_TypeInfoGetColumnCount2(OCI_Library *pOCILib, OCI_TypeInfo *typinf)
 {
     OCI_CHECK_PTR(pOCILib, OCI_IPC_TYPE_INFO, typinf, 0);
-  
+
     OCI_RESULT(pOCILib, TRUE);
 
     return typinf->nb_cols;
