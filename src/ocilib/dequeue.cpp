@@ -78,7 +78,7 @@ OCI_Dequeue * OCI_API OCI_DequeueCreate
                                                   (size_t) 0, (dvoid **) NULL));
 
         /* create local message for OCI_DequeueGet() */
-	
+
         if (res == TRUE)
         {
 	   dequeue->msg = OCI_MsgCreate(pOCILib, dequeue->typinf, xsink);
@@ -883,7 +883,7 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
             OCIAttrSet((dvoid *) dequeue->subhp, (ub4) OCI_HTYPE_SUBSCRIPTION,
 		       (dvoid *) &oci_port, (ub4) sizeof (oci_port),
 		       (ub4) OCI_ATTR_SUBSCR_PORTNO, con->err),
-	    
+
 	    xsink
         )
     }
@@ -913,7 +913,7 @@ OCI_EXPORT boolean OCI_API  OCI_DequeueSubscribe
         mtext buffer[(OCI_SIZE_OBJ_NAME*2) + 2] = MT("");
 
         mtext *str  = NULL;
-        size_t size = sizeof(buffer)/sizeof(mtext);
+        size_t size = (sizeof(buffer) - 1)/sizeof(mtext);
 
         void *ostr  = NULL;
         int osize   = -1;
