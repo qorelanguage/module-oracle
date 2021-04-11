@@ -2164,7 +2164,7 @@ void QorePreparedStatement::parseQuery(const QoreListNode* args, ExceptionSink* 
                 ++p;
                 if ((*p) == 'd') {
                     DBI_concat_numeric(&tmp, v);
-                    str->replace(offset, 2, &tmp);
+                    str->replace(offset, 2, tmp.c_str());
                     p = str->getBuffer() + offset + tmp.strlen();
                     tmp.clear();
                     continue;
@@ -2172,7 +2172,7 @@ void QorePreparedStatement::parseQuery(const QoreListNode* args, ExceptionSink* 
                 if ((*p) == 's') {
                     if (DBI_concat_string(&tmp, v, xsink))
                         break;
-                    str->replace(offset, 2, &tmp);
+                    str->replace(offset, 2, tmp.c_str());
                     p = str->getBuffer() + offset + tmp.strlen();
                     tmp.clear();
                     continue;
@@ -2189,7 +2189,7 @@ void QorePreparedStatement::parseQuery(const QoreListNode* args, ExceptionSink* 
 
                 // replace value marker with generated name
                 tmp.sprintf(":qdodvrs___%d", node_list.size());
-                str->replace(offset, 2, &tmp);
+                str->replace(offset, 2, tmp.c_str());
                 p = str->getBuffer() + offset + tmp.strlen();
                 tmp.clear();
 
