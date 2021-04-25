@@ -1,7 +1,7 @@
 # -*- mode: qore; indent-tabs-mode: nil -*-
 # @file OracleExtensions.qm OracleExtensions module definition
 
-/*  OracleExtensions.qm Copyright (C) 2012 - 2014 Qore Technologies s.r.o.
+/*  OracleExtensions.qm Copyright (C) 2012 - 2021 Qore Technologies s.r.o.
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -321,11 +321,9 @@ public class OracleInstrumentationBase
     setAppInfo(*OracleExtensions::OracleApplicationInfo audit, bool fromSystem=True) {
         if (exists userInfo && (!exists audit || audit.isEmpty())) {
             userInfo = NOTHING;
-        }
-        else if (!fromSystem) {
+        } else if (!fromSystem) {
             userInfo = audit;
-        }
-        else if (exists userInfo &&  exists audit
+        } else if (exists userInfo &&  exists audit
                  && userInfo.client == audit.client
                  && userInfo.module == audit.module
                  && userInfo.action == audit.action) {
@@ -334,8 +332,7 @@ public class OracleInstrumentationBase
 
         try {
             setAppInfoCallback(audit.client, audit.module, audit.action);
-        }
-        catch (ex) {
+        } catch (hash<ExceptionInfo> ex) {
             # We don't want to throw a real error here because it's just a helper
             # functionality - business logic should continue when there is no DBMS_APPLICATION_INFO
             # available...
