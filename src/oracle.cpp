@@ -6,7 +6,7 @@
 
     Qore Programming Language
 
-    Copyright (C) 2003 - 2018 Qore Technologies, s.r.o.
+    Copyright (C) 2003 - 2021 Qore Technologies, s.r.o.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -71,7 +71,7 @@ static int dbi_oracle_caps = (
    |DBI_CAP_EVENTS
    |DBI_CAP_HAS_ARRAY_BIND
    |DBI_CAP_HAS_RESULTSET_OUTPUT
-   );
+);
 
 static int oracle_commit(Datasource* ds, ExceptionSink* xsink) {
    QoreOracleConnection& conn = ds->getPrivateDataRef<QoreOracleConnection>();
@@ -344,7 +344,7 @@ static QoreValue oracle_opt_get(const Datasource* ds, const char* opt) {
    return conn.getOption(opt);
 }
 
-QoreNamespace OraNS("Oracle");
+QoreNamespace OraNS("Qore::Oracle");
 
 QoreStringNode* oracle_module_init() {
    QORE_TRACE("oracle_module_init()");
