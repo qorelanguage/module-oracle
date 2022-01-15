@@ -1,4 +1,4 @@
-%define mod_ver 3.3
+%define mod_ver 3.3.1
 
 %{?_datarootdir: %global mydatarootdir %_datarootdir}
 %{!?_datarootdir: %global mydatarootdir /usr/share}
@@ -72,6 +72,7 @@ procedure and function execution, etc.
 
 %build
 %{__make}
+%{__make} html
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -103,6 +104,9 @@ This RPM provides API documentation, test and example programs
 %doc docs/oracle/html test/db.qtest test/sql-stmt.qtest test/aq-test.q test/sql-stmt-describe.q test/oracle.qtest
 
 %changelog
+* Sat Jan 15 2022 David Nichols <david@qore.org> - 3.3.1
+- updated to version 3.3.1
+
 * Sun Jun 11 2017 David Nichols <david@qore.org> - 3.3
 - updated to version 3.3
 

@@ -557,9 +557,10 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     @subsection oracle3_3_1 oracle Driver Version 3.3.1
     - fixed inconsistent bind exceptions to all use \c BIND-ERROR
       (<a href="https://github.com/qorelanguage/qore/issues/4390">issue 4390</a>)
-    - fixed a bug where the driver wopuld accept array binds for select statements and only bind the first array
+    - fixed a bug where the driver would accept array binds for select statements and only bind the first array
       value, silently returning erroneous results
       (<a href="https://github.com/qorelanguage/qore/issues/2154">issue 2154</a>)
+    - added cmake build solution for this module
 
     @subsection oracle33 oracle Driver Version 3.3
     - fixed two off-by-one errors in ocilib code

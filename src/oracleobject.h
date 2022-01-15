@@ -1,7 +1,7 @@
 #ifndef ORACLEOBJECT_H
 #define ORACLEOBJECT_H
 
-#include "../config.h"
+#include "config.h"
 #include <qore/Qore.h>
 #include <map>
 #include "ocilib.h"

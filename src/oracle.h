@@ -4,7 +4,7 @@
 
   Qore Programming Language
 
-  Copyright (C) 2003 - 2010 David Nichols
+  Copyright (C) 2003 - 2022 David Nichols
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,7 @@
 
 #define QORE_ORACLE_H
 
-#include "../config.h"
+#include "config.h"
 #include "oracle-config.h"
 #include "oracleobject.h"
 #include <qore/Qore.h>

@@ -25,7 +25,7 @@
 
 #define _QORE_QOREORACLESTATEMENT_H
 
-#include "../config.h"
+#include "config.h"
 #include "oracle-config.h"
 #include <qore/Qore.h>
 
