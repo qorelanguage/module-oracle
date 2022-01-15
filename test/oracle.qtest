@@ -167,8 +167,7 @@ class OracleTest inherits QUnit::Test {
     globalSetUp() {
         try {
             initDatasource();
-        }
-        catch (hash ex) {
+        } catch (hash<ExceptionInfo> ex) {
             printf("Exception happened during datasource initialization:\n%s: %s\n", ex.err, ex.desc);
             exit(1);
         }
@@ -178,8 +177,7 @@ class OracleTest inherits QUnit::Test {
         if (ds) {
             try {
                 ds.exec("DROP TABLE " + tableName);
-            }
-            catch (hash ex) {
+            } catch (hash<ExceptionInfo> ex) {
                 if (ex.err != "DBI:ORACLE:OCI-ERROR")
                     rethrow;
             }
@@ -189,7 +187,7 @@ class OracleTest inherits QUnit::Test {
     }
 
     initDatasource() {
-        connStr = ENV.QORE_DB_CONNSTR_ORACLE ? ENV.QORE_DB_CONNSTR_ORACLE : ENV.QORE_DB_CONNSTR;
+        connStr = ENV.QORE_DB_CONNSTR_ORACLE ?? ENV.QORE_DB_CONNSTR;
         if (!connStr) {
             printf("No connection string set. Cannot run the tests.\n");
             exit(1);
@@ -206,14 +204,18 @@ class OracleTest inherits QUnit::Test {
     basicTest() {
         try {
             ds.exec("DROP TABLE " + tableName);
-        }
-        catch (hash ex) {
+        } catch (hash<ExceptionInfo> ex) {
             if (ex.err != "DBI:ORACLE:OCI-ERROR")
                 rethrow;
         }
         ds.commit();
         assertEq(0, ds.exec("CREATE TABLE " + tableName + " (id int PRIMARY KEY, text varchar(128))"));
         ds.commit();
+
+        on_exit {
+            ds.exec("DROP TABLE " + tableName);
+            ds.commit();
+        }
 
         assertEq(1, ds.exec("INSERT INTO " + tableName + " (id, text) VALUES (1, 'abcdef123456')"));
         ds.commit();
@@ -232,8 +234,10 @@ class OracleTest inherits QUnit::Test {
         assertEq(results1, ds.exec("SELECT * FROM " + tableName));
         assertEq(results1, ds.select("SELECT * FROM " + tableName));
         assertEq(results2, ds.selectRows("SELECT * FROM " + tableName));
-        ds.exec("DROP TABLE " + tableName);
-        ds.commit();
+
+        assertThrows("BIND-ERROR", \ds.select(), ("select * from " + tableName + " where id in (%v)", (1, 2)));
+        assertThrows("BIND-ERROR", \ds.selectRows(), ("select * from " + tableName + " where id in (%v)", (1, 2)));
+        assertThrows("BIND-ERROR", \ds.exec(), ("select * from " + tableName + " where id in (%v)", (1, 2)));
     }
 
     prepareTypesTest() {
@@ -243,14 +247,14 @@ class OracleTest inherits QUnit::Test {
 
         # Try additional Oracle types.
         string oracleTable = "oracle_types_test";
-        try { ds.exec("DROP TABLE " + oracleTable); } catch (e) {}
+        try { ds.exec("DROP TABLE " + oracleTable); } catch (hash<ExceptionInfo> e) {}
         HashIterator oracle(OracleColumns);
         while (oracle.next()) {
             try {
                 ds.exec("CREATE TABLE " + oracleTable + " (" + oracle.getKey() + " " + oracle.getValue().type + ")");
             }
-            catch (hash ex) { printf("type: %y fail, exception: %y\n", oracle.getValue().type, ex);continue; }
-            try { ds.exec("DROP TABLE " + oracleTable); } catch (e) {}
+            catch (hash<ExceptionInfo> ex) { printf("type: %y fail, exception: %y\n", oracle.getValue().type, ex);continue; }
+            try { ds.exec("DROP TABLE " + oracleTable); } catch (hash<ExceptionInfo> e) {}
 
             # Add the type to the typesTest Columns.
             Columns{oracle.getKey()} = oracle.getValue();
@@ -276,8 +280,7 @@ class OracleTest inherits QUnit::Test {
         ds.setOption("numeric-numbers", True);
         try {
             ds.exec("DROP TABLE " + tableName);
-        }
-        catch (hash ex) {
+        } catch (hash<ExceptionInfo> ex) {
             if (ex.err != "DBI:ORACLE:OCI-ERROR")
                 rethrow;
         }
@@ -303,7 +306,7 @@ class OracleTest inherits QUnit::Test {
         stmt.exec();
         stmt.commit();
 
-        hash expected_results = Columns;
+        hash<auto> expected_results = Columns;
         foreach string key in (expected_results.keys()) {
             if (exists expected_results{key}.expected)
                 expected_results{key} = expected_results{key}.expected;
@@ -339,8 +342,7 @@ class OracleTest inherits QUnit::Test {
 
         try {
             tzDs.exec("DROP TABLE " + tableName);
-        }
-        catch (hash ex) {
+        } catch (hash<ExceptionInfo> ex) {
             if (ex.err != "DBI:ORACLE:OCI-ERROR")
                 rethrow;
         }
@@ -363,8 +365,7 @@ class OracleTest inherits QUnit::Test {
     arrayBindTest() {
         try {
             ds.exec("DROP TABLE " + tableName);
-        }
-        catch (hash ex) {
+        } catch (hash<ExceptionInfo> ex) {
             if (ex.err != "DBI:ORACLE:OCI-ERROR")
                 rethrow;
         }
@@ -393,8 +394,7 @@ class OracleTest inherits QUnit::Test {
     dateTest() {
         try {
             ds.exec("DROP TABLE " + tableName);
-        }
-        catch (hash ex) {
+        } catch (hash<ExceptionInfo> ex) {
             if (ex.err != "DBI:ORACLE:OCI-ERROR")
                 rethrow;
         }

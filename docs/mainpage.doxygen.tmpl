@@ -25,7 +25,8 @@
     unconditionally regardless of how the Qore library was initialized).
 
     Also included with the binary oracle module:
-    - <a href="../../OracleExtensions/html/index.html">OracleExtensions</a> user module providng transparent SQL tracing support using Oracle's \c DBMS_APPLICATION_INFO package.</a>
+    - <a href="../../OracleExtensions/html/index.html">OracleExtensions</a> user module providng transparent SQL
+      tracing support using Oracle's \c DBMS_APPLICATION_INFO package.</a>
 
     Example of creating an Oracle Datasource (note that \a db_encoding, \a host,
     and \a port are optional - using the hostname and port allows connections
@@ -89,10 +90,14 @@
     @section ora_options Driver Options
 
     When compiled again Qore 0.8.6+ the oracle driver support the following DBI options on each connection:
-    - \c "optimal-numbers": return <tt>NUMBER</tt> types as an integer if possible, if not as an arbitrary-precision number
+    - \c "optimal-numbers": return <tt>NUMBER</tt> types as an integer if possible, if not as an arbitrary-precision
+      number
     - \c "string-numbers": return <tt>NUMBER</tt> types as strings (for backwards-compatibility)
     - \c "numeric-numbers": return <tt>NUMBER</tt> types as arbitrary-precision number values
-    - \c "timezone": accepts a string argument that can be either a region name (ex: \c "Europe/Prague") or a UTC offset (ex: \c "+01:00") to set the server's time zone rules; this is useful if connecting to a database server in a different time zone.  If this option is not set then the server's time zone is assumed to be the same as the client's time zone; see @ref timezone.
+    - \c "timezone": accepts a string argument that can be either a region name (ex: \c "Europe/Prague") or a UTC
+      offset (ex: \c "+01:00") to set the server's time zone rules; this is useful if connecting to a database server
+      in a different time zone.  If this option is not set then the server's time zone is assumed to be the same as
+      the client's time zone; see @ref timezone.
 
     Options can be set in the \c Datasource or \c DatasourcePool constructors as in the following examples:
     @code
@@ -104,9 +109,14 @@
 
     @subsection number_options Number Options
 
-    The number options (\c "optimal-numbers", \c "string-numbers", and \c "numeric-numbers") are all mutually-exclusive; setting one automatically disables the others.   These options also ignore their arguments; the last one set takes effect (also note that setting it with any value sets the option, even @ref False).
+    The number options (\c "optimal-numbers", \c "string-numbers", and \c "numeric-numbers") are all mutually-
+    exclusive; setting one automatically disables the others.   These options also ignore their arguments; the last
+    one set takes effect (also note that setting it with any value sets the option, even @ref False).
 
-    The default if no other option is explicitly set is \c "optimal-numbers".  Note that this represents a change from previous versions where Oracle <tt>NUMBER</tt> values were returned as strings in order to avoid the loss of information.  To set the old behavior, set the \c "string-numbers" option when creating the \c Datasource or \c DatasourcePool object.
+    The default if no other option is explicitly set is \c "optimal-numbers".  Note that this represents a change from
+    previous versions where Oracle <tt>NUMBER</tt> values were returned as strings in order to avoid the loss of
+    information.  To set the old behavior, set the \c "string-numbers" option when creating the \c Datasource or
+    \c DatasourcePool object.
 
     @section bindings_and_types Binding and Types
 
@@ -135,8 +145,8 @@
     value, and the placeholder names are prefixed by a colon):
 
     @code
-    hash result = ds.exec("begin h3g_psft_order_import.insert_h3g_psft_customers(%v, %v, :status_code, :error_code, :error_description); end;",
-                          "Customer Name", "Customer-ID", Type::Int, Type::Int);
+hash<auto> result = ds.exec("begin h3g_psft_order_import.insert_h3g_psft_customers(%v, %v, :status_code,
+    :error_code, :error_description); end;", "Customer Name", "Customer-ID", Type::Int, Type::Int);
     printf("%N\n", result);
     @endcode
 
@@ -157,19 +167,25 @@
 
     @subsection timezone Time Zone Support
 
-    The driver now sets the server's time zone rules when the connection is established; this is taken from the current time zone settings of the calling Program object and can also be overridden/changed by setting the \c "timezone" driver option (see @ref ora_options).
+    The driver now sets the server's time zone rules when the connection is established; this is taken from the
+    current time zone settings of the calling Program object and can also be overridden/changed by setting the
+    \c "timezone" driver option (see @ref ora_options).
 
-    All date/time values bound by value are converted to the server's time zone before binding to ensure that date/time values are stored correctly in the server.
+    All date/time values bound by value are converted to the server's time zone before binding to ensure that
+    date/time values are stored correctly in the server.
 
     When selecting date/time values, the values returned are tagged with the server's time zone.
 
-    Note that the above rules are applied when the current Program's time zone settings are different than the connection's time zone settings at the time when the write operation (bind) read operation (select) is performed.  This is meant to provide consistent support to connecting to a database server in a different time zone.
+    Note that the above rules are applied when the current Program's time zone settings are different than the
+    connection's time zone settings at the time when the write operation (bind) read operation (select) is performed.
+    This is meant to provide consistent support to connecting to a database server in a different time zone.
 
     @section select_with_dup_col Selects With Duplicated Columns
 
-    When columns are duplicated in select statements, the duplicated columns are renamed by the driver with an underscore and a numerix suffix (<i>column</i><tt>_</tt><i>#</i>) as follows:
+    When columns are duplicated in select statements, the duplicated columns are renamed by the driver with an
+    underscore and a numerix suffix (<i>column</i><tt>_</tt><i>#</i>) as follows:
     @code
-hash h = ds.select("select a.id, b.id, c.id from a, b, c where a.id = b.id = c.id");
+hash<auto> h = ds.select("select a.id, b.id, c.id from a, b, c where a.id = b.id = c.id");
     @endcode
 
     Would return a result as follows (assuming 1 row in each table with \a id = 1):
@@ -245,10 +261,16 @@ hash h = ds.select("select a.id, b.id, c.id from a, b, c where a.id = b.id = c.i
 
     @par Example:
     @code
-int rows = ds.exec("merge into merge_target t using (select %v as id, %v as val, %v as code from dual) source on (t.id = source.id) when not matched then insert (id, val, code) values (source.id, source.val, source.code) when matched then update set val = source.val, code = source.code", (1, 2, 3), ("val1", "val2", "val3"), "const_code");
+int rows = ds.exec("merge into merge_target t using (select %v as id, %v as val, %v as code from dual) source
+    on (t.id = source.id)
+    when not matched then
+        insert (id, val, code) values (source.id, source.val, source.code)
+    when matched then
+        update set val = source.val, code = source.code", (1, 2, 3), ("val1", "val2", "val3"), "const_code");
     @endcode
 
-    @see @ref named_types "named types" and collections as an alternative approach to high-volume SQL operations in single commands
+    @see @ref named_types "named types" and collections as an alternative approach to high-volume SQL operations in
+    single commands
 
     @subsection string_sizes CHAR and VARCHAR2 to Qore String
 
@@ -333,10 +355,13 @@ int rows = ds.exec("merge into merge_target t using (select %v as id, %v as val,
     explicitly required as above.
 
     |!Function|!Description|
-    |Qore::Oracle::bindOracleObject()|Binds a Qore \c value as a Object type \c typename. Hash keys are object attributes
-    |Qore::Oracle::placeholderOracleObject()|Allows fetching Object type \c typename. The returned hash is a plain Qore hash with keys set as the object's attributes
+    |Qore::Oracle::bindOracleObject()|Binds a Qore \c value as a Object type \c typename. Hash keys are object \
+        attributes
+    |Qore::Oracle::placeholderOracleObject()|Allows fetching Object type \c typename. The returned hash is a plain \
+        %Qore hash with keys set as the object's attributes
     |Qore::Oracle::bindOracleCollection()|Binds \c value as a Collection \c typename
-    |Qore::Oracle::placeholderOracleCollection()|Allows fetching a Collection \c typename. The returned list is a plain Qore list of values with the collection's type
+    |Qore::Oracle::placeholderOracleCollection()|Allows fetching a Collection \c typename. The returned list is a \
+        plain %Qore list of values with the collection's type
 
     Type names (strings) are case insensitive.
 
@@ -346,7 +371,8 @@ int rows = ds.exec("merge into merge_target t using (select %v as id, %v as val,
     Keys which are not found in the keys-attribute mappings are silently
     ignored. If there is a missing key for any attribute, an exception is thrown.
 
-    @note Strings/integers are converted to date in collections and objects when required - collection of datetimes, object datetime attributes, etc. So eg. 1970-01-01 is the value of "wrong" strings.
+    @note Strings/integers are converted to date in collections and objects when required - collection of datetimes,
+    object datetime attributes, etc. So eg. 1970-01-01 is the value of "wrong" strings.
 
     Functions can be nested so there can be for example list (collection)
     of objects and vice versa:
@@ -519,12 +545,22 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     @verbatim install_name_tool -add_rpath ${ORACLE_LIB_DIR} ${MODULE_NAME}@endverbatim
 
     for example:
-    @verbatim sudo install_name_tool -add_rpath ${ORACLE_INSTANT_CLIENT} /usr/local/lib/qore-modules/oracle*.qmod@endverbatim
+    @verbatim
+    sudo install_name_tool -add_rpath ${ORACLE_INSTANT_CLIENT} /usr/local/lib/qore-modules/oracle*.qmod
+    @endverbatim
 
     Note that this should not be necessary when building and installing on the same system,
     as the rpath used when linking is set automatically when the module is installed.
 
     @section ora_releasenotes Release Notes
+
+    @subsection oracle3_3_1 oracle Driver Version 3.3.1
+    - fixed inconsistent bind exceptions to all use \c BIND-ERROR
+      (<a href="https://github.com/qorelanguage/qore/issues/4390">issue 4390</a>)
+    - fixed a bug where the driver would accept array binds for select statements and only bind the first array
+      value, silently returning erroneous results
+      (<a href="https://github.com/qorelanguage/qore/issues/2154">issue 2154</a>)
+    - added cmake build solution for this module
 
     @subsection oracle33 oracle Driver Version 3.3
     - fixed two off-by-one errors in ocilib code
@@ -541,47 +577,78 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     - added support for the \c RESULTSET placeholder specification and the \c DBI_CAP_HAS_RESULTSET_OUTPUT driver capability
       that allow result set output variables to be returned as @ref Qore::SQL::SQLStatement "SQLStatement" objects
       (<a href="https://github.com/qorelanguage/qore/issues/1300">issue 1300</a>)
-    - fixed a bug where NTY truncated CLOBs to a quarter of their lengths (<a href="https://github.com/qorelanguage/qore/issues/1802">issue 1802</a>)
-    - fixed a bug where \c ORA-03113 and \c ORA-03114 were not treated as lost connections (<a href="https://github.com/qorelanguage/qore/issues/1963">issue 1963</a>)
-    - fixed a bug where \c DBI-SELECT-ROW-ERROR exceptions were being raised as \c ORACLE-SELECT-ROW-ERROR exceptions (<a href="https://github.com/qorelanguage/qore/issues/2542">issue 2542</a>)
-    - implemented a workaround for a bug in Oracle pre 12c related to \c ORA-01041 errors (<a href="https://github.com/qorelanguage/qore/issues/802">issue 802</a>)
-    - fixed issues related to rpath handling on Darwin/macOS (<a href="https://github.com/qorelanguage/qore/issues/475">issue 475</a>)
-    - fixed an issue selecting large \c LONG column values (<a href="https://github.com/qorelanguage/qore/issues/2609">issue 2609</a>)
+    - fixed a bug where NTY truncated CLOBs to a quarter of their lengths
+      (<a href="https://github.com/qorelanguage/qore/issues/1802">issue 1802</a>)
+    - fixed a bug where \c ORA-03113 and \c ORA-03114 were not treated as lost connections
+      (<a href="https://github.com/qorelanguage/qore/issues/1963">issue 1963</a>)
+    - fixed a bug where \c DBI-SELECT-ROW-ERROR exceptions were being raised as \c ORACLE-SELECT-ROW-ERROR exceptions
+      (<a href="https://github.com/qorelanguage/qore/issues/2542">issue 2542</a>)
+    - implemented a workaround for a bug in Oracle pre 12c related to \c ORA-01041 errors
+      (<a href="https://github.com/qorelanguage/qore/issues/802">issue 802</a>)
+    - fixed issues related to rpath handling on Darwin/macOS
+      (<a href="https://github.com/qorelanguage/qore/issues/475">issue 475</a>)
+    - fixed an issue selecting large \c LONG column values
+      (<a href="https://github.com/qorelanguage/qore/issues/2609">issue 2609</a>)
 
     @subsection oracle321 oracle Driver Version 3.2.1
-    - updated SQLStatement::fetchColumns() to return an empty hash when no data is available in all cases (<a href="https://github.com/qorelanguage/qore/issues/1241">issue 1241</a>)
-    - implemented support for the lost connection API added in Qore 0.8.12.10 (<a href="https://github.com/qorelanguage/qore/issues/1250">issue 1250</a>)
-    - fixed a memory leak in connection handling (<a href="https://github.com/qorelanguage/qore/issues/1272">issue 1272</a>)
-    - fixed a memory leak in error handling (<a href="https://github.com/qorelanguage/qore/issues/1583">issue 1583</a>)
-    - fixed a bug in connection handling where statement and bind handles acquired on the old connection context were freed on the new connection context after the old connection context had been freed itself (<a href="https://github.com/qorelanguage/qore/issues/1717">issue 1717</a>)
-    - fixed a bug where NTY truncated CLOBs to a quarter of their lengths (<a href="https://github.com/qorelanguage/qore/issues/1802">issue 1802</a>)
-    - worked around a bug in Oracle handling \c DATE values in selects with dates bound by value when the date is in the same time zone as the server's time zone but has a different DST offset (<a href="https://github.com/qorelanguage/qore/issues/2448">issue 2448</a>)
+    - updated SQLStatement::fetchColumns() to return an empty hash when no data is available in all cases
+      (<a href="https://github.com/qorelanguage/qore/issues/1241">issue 1241</a>)
+    - implemented support for the lost connection API added in Qore 0.8.12.10
+      (<a href="https://github.com/qorelanguage/qore/issues/1250">issue 1250</a>)
+    - fixed a memory leak in connection handling
+      (<a href="https://github.com/qorelanguage/qore/issues/1272">issue 1272</a>)
+    - fixed a memory leak in error handling
+      (<a href="https://github.com/qorelanguage/qore/issues/1583">issue 1583</a>)
+    - fixed a bug in connection handling where statement and bind handles acquired on the old connection context were
+      freed on the new connection context after the old connection context had been freed itself
+      (<a href="https://github.com/qorelanguage/qore/issues/1717">issue 1717</a>)
+    - fixed a bug where NTY truncated CLOBs to a quarter of their lengths
+      (<a href="https://github.com/qorelanguage/qore/issues/1802">issue 1802</a>)
+    - worked around a bug in Oracle handling \c DATE values in selects with dates bound by value when the date is in
+      the same time zone as the server's time zone but has a different DST offset
+      (<a href="https://github.com/qorelanguage/qore/issues/2448">issue 2448</a>)
 
     @subsection oracle32 oracle Driver Version 3.2
     - added more Qore exception handling in ocilib object/NTY APIs
     - ensure all strings written to the DB are converted to the target character encoding before writing
-    - copy all values when binding by value in case they are bound to an IN OUT variable, in which case memory corruption would occur previously
-    - support for IN OUT variables by giving a hash argument with the "value" key as the input value for the output variable
+    - copy all values when binding by value in case they are bound to an IN OUT variable, in which case memory
+      corruption would occur previously
+    - support for IN OUT variables by giving a hash argument with the "value" key as the input value for the output
+      variable
     - placeholders and quotes in SQL comments are ignored
-    - user modules moved to top-level qore module directory from version-specific module directory since they are valid for multiple versions of qore
-    - fixed a major bug where a lost connection during an SQL operation using named types could cause a crash due to the database-specific private context becoming invalid and then used after deletion
-    - fixed a major bug where a crash generated internally in the OCI library would occur when NTYs were bound in a prepared statement and the statement was executed in a new logon session after transparent reconnection
+    - user modules moved to top-level qore module directory from version-specific module directory since they are
+      valid for multiple versions of qore
+    - fixed a major bug where a lost connection during an SQL operation using named types could cause a crash due to
+      the database-specific private context becoming invalid and then used after deletion
+    - fixed a major bug where a crash generated internally in the OCI library would occur when NTYs were bound in a
+      prepared statement and the statement was executed in a new logon session after transparent reconnection
     - fixed bugs binding values to number attributes of NTYs and collections
-    - fixed a crashing bug handling the case when there are multiple objects of different incompatible types added to a collection; now an exception is raised
+    - fixed a crashing bug handling the case when there are multiple objects of different incompatible types added to
+      a collection; now an exception is raised
     - implemented binding number types by placeholder (including in/out vars)
     - implemented binding arrays of scalar values for input and output
-    - implemented support for returning an empty list or hash after a short read with SQLStatement::fetchRows() or SQLStatement::fetchColumns(); if one of these methods is called a second time after returning an empty data structure, then an exception is raised
-    - implemented support for bulk DML with selects by default and explicitly with SQLStatement::fetchRows() and SQLStatement::fetchColumns(); default prefetch row count: 1000
+    - implemented support for returning an empty list or hash after a short read with SQLStatement::fetchRows() or
+      SQLStatement::fetchColumns(); if one of these methods is called a second time after returning an empty data
+      structure, then an exception is raised
+    - implemented support for bulk DML with selects by default and explicitly with SQLStatement::fetchRows() and
+      SQLStatement::fetchColumns(); default prefetch row count: 1000
     - fixed a bug in driver option processing that could lead to a crash
     - fixed a bug where duplicated columns would result in corrupt lists when selected in column mode
     - fixed a bug where very large numbers were being retrieved incorrectly and would result in an \c ORA-01406 error
-    - fixed a bug where number values were being returned with decimal points truncated in locales where the decimal position is not marked with a dot
-    - fixed a bug where collections with no columns (but based on a table for example) could not be used (<a href="https://github.com/qorelanguage/qore/issues/455">issue 455</a>)
-    - fixed a bug where cached NTY information was reused with stale pointers when connections were reestablished (<a href="https://github.com/qorelanguage/qore/issues/537">issue 537</a>)
+    - fixed a bug where number values were being returned with decimal points truncated in locales where the decimal
+      position is not marked with a dot
+    - fixed a bug where collections with no columns (but based on a table for example) could not be used
+      (<a href="https://github.com/qorelanguage/qore/issues/455">issue 455</a>)
+    - fixed a bug where cached NTY information was reused with stale pointers when connections were reestablished
+      (<a href="https://github.com/qorelanguage/qore/issues/537">issue 537</a>)
     - fixed a bug where SQLStatement::describe() was failing even though result set information was available
-    - fixed a bug rewriting column names when selecting with row formats (https://github.com/qorelanguage/qore/issues/828)
-    - fixed a bug where binary values were bound directly which caused \c ORA-01461 errors when more than one binary value > 4000 bytes was bound (<a href="https://github.com/qorelanguage/qore/issues/875">issue 875</a>)
-    - fixed some potentially ambiguous method declarations in \c OracleDatasourceBase in <a href="../../OracleExtensions/html/index.html">OracleExtensions</a> for forward-compatibility with future versions of Qore
+    - fixed a bug rewriting column names when selecting with row formats
+      (https://github.com/qorelanguage/qore/issues/828)
+    - fixed a bug where binary values were bound directly which caused \c ORA-01461 errors when more than one binary
+      value > 4000 bytes was bound (<a href="https://github.com/qorelanguage/qore/issues/875">issue 875</a>)
+    - fixed some potentially ambiguous method declarations in \c OracleDatasourceBase in
+      <a href="../../OracleExtensions/html/index.html">OracleExtensions</a> for forward-compatibility with future
+      versions of %Qore
 
     @subsection oracle31 oracle Driver Version 3.1
 
@@ -595,27 +662,40 @@ kpcest_err_handler: Max errors exceeded..Closing connection
     <b>New Features and Bug Fixes</b>
     - driver supports Oracle Advanced Queuing
     - driver supports selecting data from LONG columns (deprecated but used in system catalog tables for example)
-    - driver now claims support for DBI_CAP_AUTORECONNECT, however the underlying functionality has been present for a long time
+    - driver now claims support for DBI_CAP_AUTORECONNECT, however the underlying functionality has been present for a
+      long time
 
     @subsection oracle221 oracle Driver Version 2.2.1
 
     <b>Bug Fixes</b>
     - fixed a bug where non-integer values were returned as integers
-    - fixed a bug in returning negative integer values that were being returned as arbitrary-precision numeric values instead of integers
-    - updated CLOB writing to use the streaming APIs instead of trying to write in one large block since there are bugs in some oracle client libraries related to trying to write large blocks, and using the streaming apis resolves the problem
+    - fixed a bug in returning negative integer values that were being returned as arbitrary-precision numeric values
+      instead of integers
+    - updated CLOB writing to use the streaming APIs instead of trying to write in one large block since there are
+      bugs in some oracle client libraries related to trying to write large blocks, and using the streaming apis
+      resolves the problem
 
     @subsection oracle22 oracle Driver Version 2.2
 
     <b>New Features and Bug Fixes</b>
-    - fixed bugs in named type support - when an unknown named type is accessed for the first time, ocilib keeps an invalid entry for the named type in the type list; the second time the type is accessed, a crash results (bug reported and already fixed in upstream ocilib)
+    - fixed bugs in named type support - when an unknown named type is accessed for the first time, ocilib keeps an
+      invalid entry for the named type in the type list; the second time the type is accessed, a crash results (bug
+      reported and already fixed in upstream ocilib)
     - fixed memory bugs in handling named type bind parameters created by hand where the value type is incorrect
-    - now the driver throws an exception if SQLStatement::fetchRow() is called before SQLStatement::next() (before it would return garbage data)
+    - now the driver throws an exception if SQLStatement::fetchRow() is called before SQLStatement::next() (before it
+      would return garbage data)
     - supports the arbitrary-precision numeric type in qore 0.8.6+
     - supports DBI options with qore 0.8.6+; options supported:
-      - \c "optimal-numbers": return <tt>NUMBER</tt> values as an integer if possible, if not as an arbitrary-precision number
+      - \c "optimal-numbers": return <tt>NUMBER</tt> values as an integer if possible, if not as an arbitrary-
+        precision number
       - \c "string-numbers": return <tt>NUMBER</tt> values as strings (for backwards-compatibility)
       - \c "numeric-numbers": return <tt>NUMBER</tt> values as arbitrary-precision number values
-      - \c "timezone": accepts a string argument that can be either a region name (ex: \c "Europe/Prague") or a UTC offset (ex: \c "+01:00") to set the server's time zone rules; this is useful if connecting to a database server in a different time zone.  If this option is not set then the server's time zone is assumed to be the same as the client's time zone; see @ref timezone.
-    - the default for the number options (see @ref number_options) is now "optimal-numbers" - meaning that <tt>NUMBER</tt> values are retrieved as <tt>int</tt> if possible, otherwise as a <tt>number</tt> type is returned.\n
+      - \c "timezone": accepts a string argument that can be either a region name (ex: \c "Europe/Prague") or a UTC
+        offset (ex: \c "+01:00") to set the server's time zone rules; this is useful if connecting to a database
+        server in a different time zone.  If this option is not set then the server's time zone is assumed to be the
+        same as the client's time zone; see @ref timezone.
+    - the default for the number options (see @ref number_options) is now "optimal-numbers" - meaning that
+      <tt>NUMBER</tt> values are retrieved as <tt>int</tt> if possible, otherwise as a <tt>number</tt> type is
+      returned.\n
       For backwards-compatibility, set the \c "string-numbers" option to return <tt>NUMBER</tt> values as strings
 */
