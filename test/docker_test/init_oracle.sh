@@ -18,8 +18,7 @@ if [ -n "$DOCKER_ORACLE" ]; then
     echo export ORACLE_PDB=OMQPDB >> /tmp/env.sh
     echo export ORACLE_PWD=omq >> /tmp/env.sh
     echo export SYS_OMQ_DB_STRING=oracle:pdbadmin/omq@oracle >> /tmp/env.sh
-    echo export OMQ_DB_STRING=oracle:omq/omq@oracle >> /tmp/env.sh
-    echo export OMQUSER_DB_STRING=oracle:omq/omq@oracle >> /tmp/env.sh
+    echo export QORE_DB_CONNSTR_ORACLE=oracle:omq/omq@oracle >> /tmp/env.sh
 
     . /tmp/env.sh
     set +e
@@ -64,8 +63,7 @@ else
     echo export ORACLE_SID=rippy >> /tmp/env.sh
     echo export ORACLE_PWD=omq >> /tmp/env.sh
     echo export ORACLE_USER=${ORACLE_USER} >> /tmp/env.sh
-    echo export OMQ_DB_STRING=oracle:${ORACLE_USER}/omq@rippy%rippy:1521 >> /tmp/env.sh
-    echo export OMQUSER_DB_STRING=oracle:${ORACLE_USER}/omq@rippy%rippy:1521 >> /tmp/env.sh
+    echo export QORE_DB_CONNSTR_ORACLE=oracle:${ORACLE_USER}/omq@rippy%rippy:1521 >> /tmp/env.sh
 
     # create user for test
     qore -ne "Datasource ds(\"oracle:system/qore@rippy%rippy:1521\"); ds.exec(\"create user ${ORACLE_USER} identified by omq default tablespace omq_data temporary tablespace temp\"); ds.exec(\"grant create session, create procedure, create sequence, create table, create trigger, create type, create view, unlimited tablespace to ${ORACLE_USER}\"); ds.commit();"
