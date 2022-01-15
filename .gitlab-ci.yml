@@ -12,13 +12,13 @@ default:
     - set +e
 
 variables:
-  QORE_DB_CONNSTR_ORACLE: 'oracle:omquser/omquser@xbox%xbox:1521'
   REPO_NAME: module-oracle
 
 test-ubuntu:
   stage: test
   image: $CI_REGISTRY/infrastructure/qore-test-base/qore-test-base:develop
   script:
+    - test/docker_test/init_oracle.sh
     - |
         if test/docker_test/test-ubuntu.sh; then
           curl "https://api.github.com/repos/qorelanguage/${REPO_NAME}/statuses/${CI_COMMIT_SHA}" \
@@ -36,6 +36,7 @@ test-alpine:
   stage: test
   image: $CI_REGISTRY/infrastructure/qore-test-base/qore-test-base:develop-alpine
   script:
+    - test/docker_test/init_oracle.sh
     - |
         if test/docker_test/test-alpine.sh; then
           curl "https://api.github.com/repos/qorelanguage/${REPO_NAME}/statuses/${CI_COMMIT_SHA}" \
