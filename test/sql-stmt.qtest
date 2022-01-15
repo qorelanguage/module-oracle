@@ -34,16 +34,14 @@ public class SqlStmtTest inherits QUnit::Test {
     globalSetUp() {
         try {
             initDatasource();
-        }
-        catch (hash ex) {
+        } catch (hash<ExceptionInfo> ex) {
             printf("Exception happened during datasource pool initialization:\n%s: %s\n", ex.err, ex.desc);
             exit(1);
         }
 
         try {
             createTable();
-        }
-        catch (hash ex) {
+        } catch (hash<ExceptionInfo> ex) {
             printf("Exception happened when creating test table:\n%s: %s\n", ex.err, ex.desc);
             exit(1);
         }
@@ -70,8 +68,7 @@ public class SqlStmtTest inherits QUnit::Test {
 
         try {
             dropStmt.exec();
-        }
-        catch () { # ignore error
+        } catch () { # ignore error
         }
 
         string createStr = "create table " + OracleTableName;
@@ -169,8 +166,7 @@ public class SqlStmtTest inherits QUnit::Test {
             stmt.beginTransaction();
             stmt.exec();
             fail();
-        }
-        catch (ex) {
+        } catch (hash<ExceptionInfo> ex) {
             assertTrue(True);
         }
 
@@ -179,8 +175,7 @@ public class SqlStmtTest inherits QUnit::Test {
             on_error stmt.rollback();
             any rv = stmt.fetchColumns(-1);
             fail();
-        }
-        catch (ex) {
+        } catch (hash<ExceptionInfo> ex) {
             assertTrue(True);
         }
     }
