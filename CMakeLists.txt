@@ -88,6 +88,10 @@ set(CPP_SRC
     src/ocilib/typeinfo.cpp
 )
 
+set(QMOD
+    OracleExtensions.qm
+)
+
 qore_wrap_qpp_value(QPP_SOURCES ${QPP_SRC})
 add_custom_target(QPP_GENERATED_FILES DEPENDS ${QPP_SOURCES})
 
@@ -108,7 +112,10 @@ if (WIN32 AND MINGW AND MSYS)
     target_compile_definitions(${module_name} PUBLIC BUILDING_DLL)
 endif (WIN32 AND MINGW AND MSYS)
 
-qore_binary_module(${module_name} ${PROJECT_VERSION} ${ORACLE_LIBRARY_CLNTSH} Threads::Threads)
+qore_external_binary_module(${module_name} ${PROJECT_VERSION} ${ORACLE_LIBRARY_CLNTSH} Threads::Threads)
+qore_user_modules("${QMOD}")
+
+qore_external_user_module("qlib/OracleExtensions.qm" "")
 
 qore_dist(${PROJECT_VERSION})
 
