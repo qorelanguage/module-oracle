@@ -89,7 +89,7 @@ set(CPP_SRC
 )
 
 set(QMOD
-    OracleExtensions.qm
+    qlib/OracleExtensions.qm
 )
 
 qore_wrap_qpp_value(QPP_SOURCES ${QPP_SRC})
