@@ -84,7 +84,7 @@ void AQMessagePriv::setCorrelation(const QoreStringNode* c, ExceptionSink *xsink
 
 /** @defgroup aqmessage_status_constants AQ Message Status Constants
 */
-//@{
+///@{
 namespace Oracle;
 
 //! Unknown status
@@ -102,7 +102,7 @@ const OCI_AMS_PROCESSED     = 3;
 //! Expired status
 const OCI_AMS_EXPIRED       = 4;
 
-//@}
+///@}
 
 
 //! Implementation of message to enqueue/dequeue from/to queues
