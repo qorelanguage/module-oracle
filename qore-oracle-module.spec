@@ -1,4 +1,4 @@
-%define mod_ver 3.3.1
+%define mod_ver 3.3.2
 
 %{?_datarootdir: %global mydatarootdir %_datarootdir}
 %{!?_datarootdir: %global mydatarootdir /usr/share}
@@ -19,10 +19,8 @@
 # get *suse release minor version without trailing zeros
 %define os_min %(echo %suse_version|rev|cut -b-2|rev|sed s/0*$//)
 
-%if %suse_version > 1010
+%if %suse_version
 %define dist .opensuse%{os_maj}_%{os_min}
-%else
-%define dist .suse%{os_maj}_%{os_min}
 %endif
 
 %endif
@@ -42,15 +40,18 @@ Summary: Oracle DBI module for Qore
 Name: qore-oracle-module
 Version: %{mod_ver}
 Release: 1%{dist}
-License: LGPL
-Group: Development/Languages
+License: MIT
+Group: Development/Languages/Other
 URL: http://www.qoretechnologies.com/qore
 Source: http://prdownloads.sourceforge.net/qore/%{name}-%{version}.tar.bz2
 #Source0: %{name}-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+BuildRequires: cmake >= 3.5
 BuildRequires: gcc-c++
-BuildRequires: qore-devel >= 0.9
-BuildRequires: qore
+BuildRequires: qore-devel >= 1.12.4
+BuildRequires: qore-stdlib >= 1.12.4
+BuildRequires: qore >= 1.12.4
+BuildRequires: doxygen
 BuildRequires: oracle-instantclient
 BuildRequires: oracle-instantclient-devel
 Requires: /usr/bin/env
@@ -61,25 +62,27 @@ Oracle DBI driver module for the Qore Programming Language. The Oracle driver is
 character set aware, supports multithreading, transaction management, stored
 procedure and function execution, etc.
 
-
 %if 0%{?suse_version}
 %debug_package
 %endif
 
 %prep
 %setup -q
-./configure RPM_OPT_FLAGS="$RPM_OPT_FLAGS" --prefix=/usr --disable-debug
 
 %build
-%{__make}
-%{__make} html
+%if 0%{?el7}
+# enable devtoolset7
+. /opt/rh/devtoolset-7/enable
+unset msgpackPATH
+%endif
+export CXXFLAGS="%{?optflags}"
+cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_BUILD_TYPE=RELWITHDEBINFO -DCMAKE_SKIP_RPATH=1 -DCMAKE_SKIP_INSTALL_RPATH=1 -DCMAKE_SKIP_BUILD_RPATH=1 -DCMAKE_PREFIX_PATH=${_prefix}/lib64/cmake/Qore .
+make %{?_smp_mflags}
+make %{?_smp_mflags} docs
+sed -i 's/#!\/usr\/bin\/env qore/#!\/usr\/bin\/qore/' test/*.q*
 
 %install
-rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/%{module_dir}
-mkdir -p $RPM_BUILD_ROOT/%{user_module_dir}
-mkdir -p $RPM_BUILD_ROOT/usr/share/doc/qore-oracle-module
-make install DESTDIR=$RPM_BUILD_ROOT
+make DESTDIR=%{buildroot} install %{?_smp_mflags}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -92,7 +95,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %package doc
 Summary: oracle module for Qore
-Group: Development/Languages
+Group: Development/Languages/Other
 
 %description doc
 Oracle module for the Qore Programming Language.
@@ -101,9 +104,13 @@ This RPM provides API documentation, test and example programs
 
 %files doc
 %defattr(-,root,root,-)
-%doc docs/oracle/html test/db.qtest test/sql-stmt.qtest test/aq-test.q test/sql-stmt-describe.q test/oracle.qtest
+%doc docs/oracle test/*.q*
 
 %changelog
+* Mon Dec 19 2022 David Nichols <david@qore.org> - 3.3.2
+- updated to version 3.3.2
+- updated spec file to use cmake
+
 * Sat Jan 15 2022 David Nichols <david@qore.org> - 3.3.1
 - updated to version 3.3.1
 
