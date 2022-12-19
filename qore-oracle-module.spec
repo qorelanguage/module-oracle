@@ -44,7 +44,6 @@ License: MIT
 Group: Development/Languages/Other
 URL: http://www.qoretechnologies.com/qore
 Source: http://prdownloads.sourceforge.net/qore/%{name}-%{version}.tar.bz2
-#Source0: %{name}-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: cmake >= 3.5
 BuildRequires: gcc-c++
@@ -76,7 +75,7 @@ procedure and function execution, etc.
 unset msgpackPATH
 %endif
 export CXXFLAGS="%{?optflags}"
-cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_BUILD_TYPE=RELWITHDEBINFO -DCMAKE_SKIP_RPATH=1 -DCMAKE_SKIP_INSTALL_RPATH=1 -DCMAKE_SKIP_BUILD_RPATH=1 -DCMAKE_PREFIX_PATH=${_prefix}/lib64/cmake/Qore .
+cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_BUILD_TYPE=RELWITHDEBINFO -DCMAKE_SKIP_RPATH=1 -DCMAKE_SKIP_INSTALL_RPATH=1 -DCMAKE_SKIP_BUILD_RPATH=1 -DCMAKE_PREFIX_PATH=${_prefix}/lib64/cmake/Qore -DORACLE_PATH_INCLUDES=/usr/include/oracle/21.1.0.0.0/client .
 make %{?_smp_mflags}
 make %{?_smp_mflags} docs
 sed -i 's/#!\/usr\/bin\/env qore/#!\/usr\/bin\/qore/' test/*.q*
